@@ -6,6 +6,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httputil"
+
+	"github.com/armory-io/dinghy/pkg/github"
+	"github.com/armory-io/dinghy/pkg/util"
 )
 
 // Router defines the routes for the application.
@@ -30,4 +33,22 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	log.Info("Received payload: ", string(body))
+	p := github.Payload{}
+	util.ReadJSON(r.Body, &p)
+	processPayload(p)
+	w.Write([]byte(`{"status":"accepted"}`))
+}
+
+const (
+	dinghyFile   = "dinghyfile"
+	templateRepo = "dinghy-templates"
+)
+
+func processPayload(p github.Payload) {
+	if p.Contains(dinghyFile) {
+		// rebuild template
+	}
+	if p.IsRepo(templateRepo) {
+		// rebuild all upstream templates.
+	}
 }
