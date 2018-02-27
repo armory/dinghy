@@ -3,9 +3,8 @@
   "pipelines": [
     {
       "application": "dinghy",
-      "index": 1,
+      "index": 2,
       "keepWaitingPipelines": false,
-      "lastModifiedBy": "andrewbackes",
       "limitConcurrent": true,
       "name": "Simple",
       "stages": [
@@ -17,14 +16,12 @@
           "waitTime": 10
         }
       ],
-      "triggers": [],
-      "updateTs": "1519756635000"
+      "triggers": []
     },
     {
       "application": "dinghy",
-      "index": 2,
+      "index": 3,
       "keepWaitingPipelines": false,
-      "lastModifiedBy": "andrewbackes",
       "limitConcurrent": true,
       "name": "Made By Dinghy",
       "stages": [
@@ -36,8 +33,7 @@
           "waitTime": 10
         }
       ],
-      "triggers": [],
-      "updateTs": "1519756635000"
+      "triggers": []
     }
   ]
 }
