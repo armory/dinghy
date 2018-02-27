@@ -2,7 +2,9 @@ package github
 
 // Payload is received from a GitHub webhook.
 type Payload struct {
-	Commits []Commit `json:"commits"`
+	Commits    []Commit   `json:"commits"`
+	Repository Repository `json:"repository"`
+	Ref        string     `json:"ref"`
 }
 
 type Commit struct {
@@ -10,8 +12,12 @@ type Commit struct {
 	Modified []string `json:"modified"`
 }
 
-// Contains checks to see if a given file is in the payload.
-func (p *Payload) Contains(file string) bool {
+type Repository struct {
+	Name string `json:"name"`
+}
+
+// ContainsFile checks to see if a given file is in the payload.
+func (p *Payload) ContainsFile(file string) bool {
 	if p.Commits == nil {
 		return false
 	}
@@ -30,12 +36,12 @@ func (p *Payload) Contains(file string) bool {
 	return false
 }
 
-// IsRepo detects if the payload has to do with a certain repo.
-func (p *Payload) IsRepo(repo string) bool {
-	return false
+// Repo returns the name of the repo.
+func (p *Payload) Repo() string {
+	return p.Repository.Name
 }
 
 // IsMaster detects if the branch is master.
 func (p *Payload) IsMaster() bool {
-	return true
+	return p.Ref == "refs/heads/master"
 }

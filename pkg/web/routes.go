@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -8,7 +9,13 @@ import (
 	"net/http/httputil"
 
 	"github.com/armory-io/dinghy/pkg/github"
+	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/util"
+)
+
+var (
+	// ErrMalformedJSON is more specific than just returning 422.
+	ErrMalformedJSON = errors.New("malformed json")
 )
 
 // Router defines the routes for the application.
@@ -35,27 +42,33 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	log.Info("Received payload: ", string(body))
 	p := github.Payload{}
 	util.ReadJSON(r.Body, &p)
-	processPayload(p)
+	err = processPayload(p)
+	if err == ErrMalformedJSON {
+		w.Write([]byte(fmt.Sprintf(`{"error":"%v"}`, err)))
+		w.WriteHeader(422)
+		return
+	}
 	w.Write([]byte(`{"status":"accepted"}`))
 }
 
-const (
-	dinghyFile   = "dinghyfile"
-	templateRepo = "dinghy-templates"
-)
-
-func processPayload(p github.Payload) {
-	if p.Contains(dinghyFile) {
-		// update commit message to in progress
-		// rebuild template
-		// validate
-		// update commit message to green check or red x
-		if p.IsMaster() {
-			// post to Spinnaker
+func processPayload(p github.Payload) error {
+	if p.ContainsFile(settings.DinghyFilename) {
+		// todo: update commit message to in progress
+		file, err := github.Download(settings.GitHubOrg, p.Repo(), settings.DinghyFilename)
+		if err != nil {
+			return ErrMalformedJSON
+		}
+		log.Info("Downloaded: ", file)
+		// todo: rebuild template
+		// todo: validate
+		// todo: update commit message to green check or red x
+		if p.IsMaster() == true {
+			// todo: post to Spinnaker
 		}
 	}
-	if p.IsRepo(templateRepo) {
-		// rebuild all upstream templates.
-		// post them to Spinnaker
+	if p.Repo() == settings.TemplateRepo {
+		// todo: rebuild all upstream templates.
+		// todo: post them to Spinnaker
 	}
+	return nil
 }
