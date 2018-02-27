@@ -1,22 +1,12 @@
 package main
 
 import (
+	"github.com/armory-io/dinghy/pkg/web"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
 func main() {
-	log.Info("Program started.")
-	serve()
-}
-
-// Serve starts the http server.
-func serve() {
-	http.HandleFunc("/", healthcheck)
-	log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-func healthcheck(w http.ResponseWriter, r *http.Request) {
-	log.Info(r.RemoteAddr, " Requested ", r.RequestURI)
-	w.Write([]byte(`{"status":"ok"}`))
+	log.Info("Dinghy started.")
+	log.Fatal(http.ListenAndServe(":8080", web.Router()))
 }
