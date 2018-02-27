@@ -34,3 +34,8 @@ func (p *Payload) Contains(file string) bool {
 func (p *Payload) IsRepo(repo string) bool {
 	return false
 }
+
+// IsMaster detects if the branch is master.
+func (p *Payload) IsMaster() bool {
+	return true
+}

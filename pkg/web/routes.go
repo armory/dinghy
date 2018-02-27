@@ -46,9 +46,16 @@ const (
 
 func processPayload(p github.Payload) {
 	if p.Contains(dinghyFile) {
+		// update commit message to in progress
 		// rebuild template
+		// validate
+		// update commit message to green check or red x
+		if p.IsMaster() {
+			// post to Spinnaker
+		}
 	}
 	if p.IsRepo(templateRepo) {
 		// rebuild all upstream templates.
+		// post them to Spinnaker
 	}
 }
