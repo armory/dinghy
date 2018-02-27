@@ -10,7 +10,9 @@ import (
 	"net/http/httputil"
 
 	"github.com/armory-io/dinghy/pkg/dinghyfile"
+	"github.com/armory-io/dinghy/pkg/git"
 	"github.com/armory-io/dinghy/pkg/git/github"
+	"github.com/armory-io/dinghy/pkg/git/status"
 	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/spinnaker"
 	"github.com/armory-io/dinghy/pkg/util"
@@ -27,7 +29,7 @@ func Router() *mux.Router {
 	r.HandleFunc("/", healthcheck)
 	r.HandleFunc("/health", healthcheck)
 	r.HandleFunc("/healthcheck", healthcheck)
-	r.HandleFunc("/v1/webhooks/github", webhookHandler).Methods("POST")
+	r.HandleFunc("/v1/webhooks/github", githubWebhookHandler).Methods("POST")
 	return r
 }
 
@@ -36,7 +38,7 @@ func healthcheck(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status":"ok"}`))
 }
 
-func webhookHandler(w http.ResponseWriter, r *http.Request) {
+func githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := httputil.DumpRequest(r, true)
 	if err != nil {
 		w.Write([]byte(fmt.Sprintf(`{"status": 500, "error": "%v"}`, err)))
@@ -46,7 +48,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	p := github.Push{}
 	util.ReadJSON(r.Body, &p)
 	// todo: this hangs the client until spinnaker has been updated. shouldn't do that.
-	err = processPayload(p)
+	err = processPayload(&p, &github.FileService{})
 	if err == ErrMalformedJSON {
 		w.Write([]byte(fmt.Sprintf(`{"error":"%v"}`, err)))
 		w.WriteHeader(422)
@@ -55,14 +57,14 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status":"accepted"}`))
 }
 
-func processPayload(p github.Push) error {
+func processPayload(p git.Push, f git.Downloader) error {
 	if p.ContainsFile(settings.DinghyFilename) {
 		log.Info("Dinghyfile found in commit for repo " + p.Repo())
-		p.SetCommitStatus(github.Pending)
-		file, err := github.Download(settings.GitHubOrg, p.Repo(), settings.DinghyFilename)
+		p.SetCommitStatus(status.Pending)
+		file, err := f.Download(settings.GitHubOrg, p.Repo(), settings.DinghyFilename)
 		if err != nil {
 			log.Error("Could not download dinghy file ", err)
-			p.SetCommitStatus(github.Error)
+			p.SetCommitStatus(status.Error)
 			return err
 		}
 		log.Info("Downloaded: ", file)
@@ -70,7 +72,7 @@ func processPayload(p github.Push) error {
 		err = json.Unmarshal([]byte(file), &d)
 		if err != nil {
 			log.Error("Could not unmarshall file.", err)
-			p.SetCommitStatus(github.Failure)
+			p.SetCommitStatus(status.Failure)
 			return ErrMalformedJSON
 		}
 		log.Info("Unmarshalled: ", d)
@@ -86,20 +88,20 @@ func processPayload(p github.Push) error {
 				err = spinnaker.UpdatePipeline(pipeline)
 				if err != nil {
 					log.Error("Could not post pipeline to Spinnaker ", err)
-					p.SetCommitStatus(github.Error)
+					p.SetCommitStatus(status.Error)
 					return err
 				}
 			}
 		} else {
 			log.Info("Skipping Spinnaker pipeline update because this is not master")
 		}
-		p.SetCommitStatus(github.Success)
+		p.SetCommitStatus(status.Success)
 	}
 	if p.Repo() == settings.TemplateRepo {
-		p.SetCommitStatus(github.Pending)
+		p.SetCommitStatus(status.Pending)
 		// todo: rebuild all upstream templates.
 		// todo: post them to Spinnaker
-		p.SetCommitStatus(github.Success)
+		p.SetCommitStatus(status.Success)
 	}
 	return nil
 }

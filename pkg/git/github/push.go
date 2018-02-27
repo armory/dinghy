@@ -1,5 +1,9 @@
 package github
 
+import (
+	"github.com/armory-io/dinghy/pkg/git/status"
+)
+
 // Payload is received from a GitHub webhook.
 type Push struct {
 	Commits    []Commit   `json:"commits"`
@@ -46,7 +50,7 @@ func (p *Push) IsMaster() bool {
 	return p.Ref == "refs/heads/master"
 }
 
-func (p *Push) SetCommitStatus(s Status) error {
+func (p *Push) SetCommitStatus(s status.Status) error {
 	// todo: for each commit
 	return nil
 }

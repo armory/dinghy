@@ -7,8 +7,11 @@ import (
 	"net/http"
 )
 
+// FileService is for working with repositories
+type FileService struct{}
+
 // Download a file from github.
-func Download(org, repo, file string) (string, error) {
+func (f *FileService) Download(org, repo, file string) (string, error) {
 	url := fmt.Sprintf(`https://raw.githubusercontent.com/%s/%s/master/%s`, org, repo, file)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
