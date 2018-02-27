@@ -14,7 +14,7 @@ func Router() *mux.Router {
 	r.HandleFunc("/", healthcheck)
 	r.HandleFunc("/health", healthcheck)
 	r.HandleFunc("/healthcheck", healthcheck)
-	r.HandleFunc("/webhooks/github", webhookHandler)
+	r.HandleFunc("/v1/webhooks/github", webhookHandler)
 	return r
 }
 
