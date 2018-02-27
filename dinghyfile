@@ -13,7 +13,7 @@
           "refId": "1",
           "requisiteStageRefIds": [],
           "type": "wait",
-          "waitTime": 15
+          "waitTime": 30
         }
       ],
       "triggers": []
@@ -30,7 +30,7 @@
           "refId": "1",
           "requisiteStageRefIds": [],
           "type": "wait",
-          "waitTime": 15
+          "waitTime": 30
         }
       ],
       "triggers": []
