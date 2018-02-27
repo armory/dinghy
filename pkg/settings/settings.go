@@ -7,6 +7,7 @@ const (
 	TemplateRepo      = "dinghy-templates"
 	AutoLockPipelines = true
 	SpinnakerAPIURL   = "https://spinnaker.armory.io:8085"
+	SpinnakerUIURL    = "https://spinnaker.armory.io"
 	CertPath          = "/mnt/secrets/client.pem"
 
 	// Temporary token. It only has access to repos and can not delete.
