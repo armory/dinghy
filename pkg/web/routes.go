@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -8,8 +9,10 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/armory-io/dinghy/pkg/dinghyfile"
 	"github.com/armory-io/dinghy/pkg/github"
 	"github.com/armory-io/dinghy/pkg/settings"
+	"github.com/armory-io/dinghy/pkg/spinnaker"
 	"github.com/armory-io/dinghy/pkg/util"
 )
 
@@ -53,22 +56,39 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 func processPayload(p github.Payload) error {
 	if p.ContainsFile(settings.DinghyFilename) {
-		// todo: update commit message to in progress
+		log.Info("Dinghyfile found in commit for repo " + p.Repo())
+		p.SetCommitStatus(github.Pending)
 		file, err := github.Download(settings.GitHubOrg, p.Repo(), settings.DinghyFilename)
 		if err != nil {
-			return ErrMalformedJSON
+			p.SetCommitStatus(github.Error)
+			return err
 		}
 		log.Info("Downloaded: ", file)
+		d := dinghyfile.Dinghyfile{}
+		err = json.Unmarshal([]byte(file), &d)
+		if err != nil {
+			p.SetCommitStatus(github.Failure)
+			return ErrMalformedJSON
+		}
 		// todo: rebuild template
 		// todo: validate
-		// todo: update commit message to green check or red x
 		if p.IsMaster() == true {
-			// todo: post to Spinnaker
+			for _, pipeline := range d.Pipelines {
+				log.Info("Updating pipeline...")
+				err = spinnaker.UpdatePipeline(pipeline)
+				if err != nil {
+					p.SetCommitStatus(github.Error)
+					return err
+				}
+			}
 		}
+		p.SetCommitStatus(github.Success)
 	}
 	if p.Repo() == settings.TemplateRepo {
+		p.SetCommitStatus(github.Pending)
 		// todo: rebuild all upstream templates.
 		// todo: post them to Spinnaker
+		p.SetCommitStatus(github.Success)
 	}
 	return nil
 }
