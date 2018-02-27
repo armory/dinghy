@@ -79,18 +79,11 @@ func processPayload(p git.Push, f git.Downloader) error {
 		// todo: rebuild template
 		// todo: validate
 		if p.IsMaster() == true {
-			for _, pipeline := range d.Pipelines {
-				log.Info("Updating pipeline: " + pipeline.Name())
-				if settings.AutoLockPipelines {
-					log.Info("Locking pipeline")
-					pipeline.Lock()
-				}
-				err = spinnaker.UpdatePipeline(pipeline)
-				if err != nil {
-					log.Error("Could not post pipeline to Spinnaker ", err)
-					p.SetCommitStatus(status.Error)
-					return err
-				}
+			err = spinnaker.UpdatePipelines(d.Pipelines)
+			if err != nil {
+				log.Error("Could not update all pipelines ", err)
+				p.SetCommitStatus(status.Error)
+				return err
 			}
 		} else {
 			log.Info("Skipping Spinnaker pipeline update because this is not master")
