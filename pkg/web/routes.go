@@ -45,6 +45,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	log.Info("Received payload: ", string(body))
 	p := github.Payload{}
 	util.ReadJSON(r.Body, &p)
+	// todo: this hangs the client until spinnaker has been updated. shouldn't do that.
 	err = processPayload(p)
 	if err == ErrMalformedJSON {
 		w.Write([]byte(fmt.Sprintf(`{"error":"%v"}`, err)))
@@ -60,6 +61,7 @@ func processPayload(p github.Payload) error {
 		p.SetCommitStatus(github.Pending)
 		file, err := github.Download(settings.GitHubOrg, p.Repo(), settings.DinghyFilename)
 		if err != nil {
+			log.Error("Could not download dinghy file ", err)
 			p.SetCommitStatus(github.Error)
 			return err
 		}
@@ -67,9 +69,11 @@ func processPayload(p github.Payload) error {
 		d := dinghyfile.Dinghyfile{}
 		err = json.Unmarshal([]byte(file), &d)
 		if err != nil {
+			log.Error("Could not unmarshall file.", err)
 			p.SetCommitStatus(github.Failure)
 			return ErrMalformedJSON
 		}
+		log.Info("Unmarshalled: ", d)
 		// todo: rebuild template
 		// todo: validate
 		if p.IsMaster() == true {
@@ -77,10 +81,13 @@ func processPayload(p github.Payload) error {
 				log.Info("Updating pipeline...")
 				err = spinnaker.UpdatePipeline(pipeline)
 				if err != nil {
+					log.Error("Could not post pipeline to Spinnaker ", err)
 					p.SetCommitStatus(github.Error)
 					return err
 				}
 			}
+		} else {
+			log.Info("Skipping Spinnaker pipeline update because this is not master")
 		}
 		p.SetCommitStatus(github.Success)
 	}

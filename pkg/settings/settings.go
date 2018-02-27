@@ -7,7 +7,8 @@ const (
 	TemplateRepo   = "dinghy-templates"
 
 	SpinnakerAPIURL = "https://spinnaker.armory.io:8085"
-	CertPath        = "/mnt/secrets/client.pem"
+	// CertPath        = "/mnt/secrets/client.pem"
+	CertPath = "secrets/client.pem"
 
 	// Temporary token. It only has access to repos and can not delete.
 	GitHubUsername = "andrewbackes"
