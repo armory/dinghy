@@ -78,7 +78,11 @@ func processPayload(p github.Payload) error {
 		// todo: validate
 		if p.IsMaster() == true {
 			for _, pipeline := range d.Pipelines {
-				log.Info("Updating pipeline...")
+				log.Info("Updating pipeline: " + pipeline.Name())
+				if settings.AutoLockPipelines {
+					log.Info("Locking pipeline")
+					pipeline.Lock()
+				}
 				err = spinnaker.UpdatePipeline(pipeline)
 				if err != nil {
 					log.Error("Could not post pipeline to Spinnaker ", err)

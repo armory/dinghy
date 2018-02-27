@@ -17,6 +17,27 @@ import (
 // Pipeline is the structure used by spinnaker
 type Pipeline map[string]interface{}
 
+// Lock is embetted in the pipeline if it should be disabled in the UI.
+type Lock struct {
+	UI            bool `json:"ui"`
+	AllowUnlockUI bool `json:"allowUnlockUi"`
+}
+
+// Lock disables the pipeline from being edited from the Spinnaker UI.
+func (p Pipeline) Lock() {
+	p["locked"] = Lock{UI: true, AllowUnlockUI: true}
+}
+
+// Name returns the name of the pipeline.
+func (p Pipeline) Name() string {
+	val, exists := p["name"]
+	if exists {
+		name := val.(string)
+		return name
+	}
+	return ""
+}
+
 // UpdatePipeline posts a pipeline to Spinnaker
 func UpdatePipeline(p Pipeline) error {
 	b, err := json.Marshal(p)
