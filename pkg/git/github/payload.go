@@ -1,7 +1,7 @@
 package github
 
 // Payload is received from a GitHub webhook.
-type Payload struct {
+type Push struct {
 	Commits    []Commit   `json:"commits"`
 	Repository Repository `json:"repository"`
 	Ref        string     `json:"ref"`
@@ -16,18 +16,8 @@ type Repository struct {
 	Name string `json:"name"`
 }
 
-// Status wires up to the green check or red x next to a GitHub commit.
-type Status string
-
-const (
-	Pending Status = "pending"
-	Error          = "error"
-	Success        = "success"
-	Failure        = "failure"
-)
-
-// ContainsFile checks to see if a given file is in the payload.
-func (p *Payload) ContainsFile(file string) bool {
+// ContainsFile checks to see if a given file is in the push.
+func (p *Push) ContainsFile(file string) bool {
 	if p.Commits == nil {
 		return false
 	}
@@ -47,16 +37,16 @@ func (p *Payload) ContainsFile(file string) bool {
 }
 
 // Repo returns the name of the repo.
-func (p *Payload) Repo() string {
+func (p *Push) Repo() string {
 	return p.Repository.Name
 }
 
 // IsMaster detects if the branch is master.
-func (p *Payload) IsMaster() bool {
+func (p *Push) IsMaster() bool {
 	return p.Ref == "refs/heads/master"
 }
 
-func (p *Payload) SetCommitStatus(s Status) error {
+func (p *Push) SetCommitStatus(s Status) error {
 	// todo: for each commit
 	return nil
 }
