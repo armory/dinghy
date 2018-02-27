@@ -17,4 +17,4 @@ There are two primitives:
 How it might work:
 - GitHub webhooks are sent off when either the templates or the definitions are modified.
 - Templates should be versioned by hash when they are used.
-- Dinghy will keep a dependency graph of downstream templates. When a dependency is modified, the pipeline definition will be rebuilt and re-posted to Spinnaker.
+- Dinghy will keep a dependency graph of downstream templates. When a dependency is modified, the pipeline definition will be rebuilt and re-posted to Spinnaker. (sound familiar? haha)
