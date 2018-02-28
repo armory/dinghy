@@ -47,10 +47,13 @@ func (p *Push) SetCommitStatus(s status.Status) {
 			return
 		}
 		log.Info(fmt.Sprintf("Updating commit %s for %s/%s to %s.", sha, p.Org(), p.Repo(), string(s)))
-		resp, err := http.Post(url, "application/json", strings.NewReader(string(body)))
+		log.Debug("POST ", url, " - ", string(body))
+		req, err := http.NewRequest("POST", url, strings.NewReader(string(body)))
+		req.Header.Add("Authorization", "token "+settings.GitHubToken)
+		resp, err := http.DefaultClient.Do(req)
+		httputil.DumpResponse(resp, true)
 		if err != nil {
 			log.Error(err)
-			httputil.DumpResponse(resp, true)
 			return
 		}
 	}
