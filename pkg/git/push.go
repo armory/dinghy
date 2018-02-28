@@ -9,6 +9,7 @@ import (
 type Push interface {
 	ContainsFile(file string) bool
 	Repo() string
+	Org() string
 	IsMaster() bool
 	SetCommitStatus(s status.Status)
 }
