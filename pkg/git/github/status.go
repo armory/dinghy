@@ -46,7 +46,7 @@ func (p *Push) SetCommitStatus(s status.Status) {
 			log.Debug("Could not unmarshall ", update, ": ", err)
 			return
 		}
-		log.Info(fmt.Sprintf("Updating commit state for %s/%s to %s.", p.Org(), p.Repo(), string(s)))
+		log.Info(fmt.Sprintf("Updating commit %s for %s/%s to %s.", sha, p.Org(), p.Repo(), string(s)))
 		resp, err := http.Post(url, "application/json", strings.NewReader(string(body)))
 		if err != nil {
 			log.Error(err)
