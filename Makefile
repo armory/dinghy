@@ -29,7 +29,7 @@ dependencies:
 	dep ensure
 
 run:
-	go run ./cmd/main.go
+	go run ./cmd/dinghy.go
 
 build: ./cmd/main.go
 	cd ${PROJECT_DIR}; \
