@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	log.SetLevel(log.DebugLevel)
 	log.Info("Dinghy started.")
 	log.Fatal(http.ListenAndServe(":8080", web.Router()))
 }

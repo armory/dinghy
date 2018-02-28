@@ -1,9 +1,5 @@
 package github
 
-import (
-	"github.com/armory-io/dinghy/pkg/git/status"
-)
-
 // Payload is received from a GitHub webhook.
 type Push struct {
 	Commits    []Commit   `json:"commits"`
@@ -12,12 +8,14 @@ type Push struct {
 }
 
 type Commit struct {
+	ID       string   `json:"id"`
 	Added    []string `json:"added"`
 	Modified []string `json:"modified"`
 }
 
 type Repository struct {
-	Name string `json:"name"`
+	Name         string `json:"name"`
+	Organization string `json:"organization"`
 }
 
 // ContainsFile checks to see if a given file is in the push.
@@ -45,12 +43,11 @@ func (p *Push) Repo() string {
 	return p.Repository.Name
 }
 
+func (p *Push) Org() string {
+	return p.Repository.Organization
+}
+
 // IsMaster detects if the branch is master.
 func (p *Push) IsMaster() bool {
 	return p.Ref == "refs/heads/master"
-}
-
-func (p *Push) SetCommitStatus(s status.Status) error {
-	// todo: for each commit
-	return nil
 }

@@ -10,5 +10,5 @@ type Push interface {
 	ContainsFile(file string) bool
 	Repo() string
 	IsMaster() bool
-	SetCommitStatus(s status.Status) error
+	SetCommitStatus(s status.Status)
 }
