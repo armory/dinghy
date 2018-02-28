@@ -31,9 +31,9 @@ dependencies:
 run:
 	go run ./cmd/dinghy.go
 
-build: ./cmd/main.go
+build: ./cmd/dinghy.go
 	cd ${PROJECT_DIR}; \
-	go build -i ${LDFLAGS} -o ${BUILD_DIR}/main ./cmd/main.go ; \
+	go build -i ${LDFLAGS} -o ${BUILD_DIR}/main ./cmd/dinghy.go ; \
 
 test: dependencies
 	go test -v ./...
