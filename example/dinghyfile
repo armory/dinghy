@@ -2,13 +2,14 @@
   "application": "dinghy",
   "variables": {
     "WaitTime1": 60,
-    "WaitTime2": 60
+    "WaitTime2": 60,
+    "limit": 1
   },
   "pipelines": [
     {
       "application": "dinghy",
       "keepWaitingPipelines": false,
-      "limitConcurrent": true,
+      "limitConcurrent": {{ variable limit }},
       "name": "Simple",
       "stages": [
         {{ module "./wait.stage.module"  {Name: "waitTime", Value: 10}  }}
