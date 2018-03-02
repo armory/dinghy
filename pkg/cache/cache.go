@@ -1,11 +1,15 @@
 package cache
 
+// Node represents either a dinghyfile or a module.
+// The URL is the github URL for the dinghyfile or module that can optionally
+// include the commit hash for versioning purposes.
 type Node struct {
 	URL      string
 	Children []*Node
 	Parents  []*Node
 }
 
+// NewNode allocates a new node in the cache
 func NewNode(url string) *Node {
 	return &Node{
 		URL:      url,
@@ -14,40 +18,34 @@ func NewNode(url string) *Node {
 	}
 }
 
+// Cache is the datastructure that maintains a mapping of dinghyfiles and their dependencies
 type Cache map[string]*Node
 
+// NewCache initialize a new cache
 func NewCache() Cache {
 	return map[string]*Node{}
 }
 
-/*
-func (c Cache) Add(n *Node) {
-	c[n.URL] = n
-	for _, child := range n.Children {
-		p := child.Parents
-		p = append(p, n)
-		child.Parents = p
+// Add adds a node to the cache and updates its links
+func (c Cache) Add(url string, depURLs ...string) {
+	// check if it already exists in cache
+	if _, exists := c[url]; !exists {
+		c[url] = NewNode(url)
 	}
-}
-*/
+	n := c[url]
 
-func (c Cache) UpstreamDinghyfile(url string) string {
-	return ""
-}
-
-func (c Cache) Add(url string, depUrls ...string) {
-	n := NewNode(url)
-	c[url] = n
-	for _, depUrl := range depUrls {
-		if _, exists := c[depUrl]; !exists {
-			depNode := NewNode(depUrl)
-			c[depUrl] = depNode
+	for _, depURL := range depURLs {
+		if _, exists := c[depURL]; !exists {
+			depNode := NewNode(depURL)
+			c[depURL] = depNode
 		}
-		depNode := c[depUrl]
+		depNode := c[depURL]
+
 		// update parents of child
 		parents := depNode.Parents
 		parents = append(parents, n)
 		depNode.Parents = parents
+
 		// update children of parent
 		children := n.Children
 		children = append(children, depNode)
@@ -55,28 +53,40 @@ func (c Cache) Add(url string, depUrls ...string) {
 	}
 }
 
-func (c Cache) RootsOf(n *Node) []*Node {
+// UpstreamNodes returns two arrays:
+// 1) Array of all upstream nodes from a node
+// 2) Array of only the _Root_ nodes (dinghyfiles) for a given node
+func (c Cache) UpstreamNodes(n *Node) ([]*Node, []*Node) {
+	upstreams := make([]*Node, 0)
 	roots := make([]*Node, 0)
 	if n == nil {
 		// means n isnt in the cache
-		return nil
+		return nil, nil
 	}
-	vistedSet := map[*Node]struct{}{}
+	vistedSet := map[*Node]bool{}
 	q := make(chan *Node, len(c))
 	q <- n
 	for len(q) > 0 {
 		curr := <-q
-		vistedSet[curr] = struct{}{}
+		vistedSet[curr] = true
+		if curr != n {
+			// don't add self to the list of upstreams or roots
+			upstreams = append(upstreams, curr)
+			if len(curr.Parents) == 0 {
+				roots = append(roots, curr)
+			}		
+		}
+
+		// enqueue the upstream nodes if not already visited
 		for _, parent := range curr.Parents {
 			if _, visted := vistedSet[parent]; !visted {
 				q <- parent
+				vistedSet[parent] = true
 			}
 		}
-		if len(curr.Parents) == 0 {
-			roots = append(roots, curr)
-		}
 	}
-	return roots
+
+	return upstreams, roots
 }
 
 func (n *Node) String() string {
