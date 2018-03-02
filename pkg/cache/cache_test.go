@@ -38,12 +38,12 @@ func TestUpstreamsAndRoots(t *testing.T) {
 
 /* The test dependency graph we are working with
    looks like this:
-   
+
     df1    df2
      /\    /\
     /  \  /  \
  mod1  mod2   \
-    \      `-\ |
+    \      `\  |
      `------ mod3
               |
               |
