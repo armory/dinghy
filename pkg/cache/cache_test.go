@@ -35,6 +35,23 @@ func TestUpstreamsAndRoots(t *testing.T) {
 	assert.ElementsMatchf(t, roots, []*Node{c["df1"], c["df2"]}, "mod6's root nodes aren't quite right!")
 }
 
+
+/* The test dependency graph we are working with
+   looks like this:
+   
+    df1    df2
+     /\    /\
+    /  \  /  \
+ mod1  mod2   \
+    \      `-\ |
+     `------ mod3
+              |
+              |
+             mod4
+              /\
+             /  \
+          mod5  mod6
+*/
 func createCache() Cache {
 	dinghyfiles := map[string][]string{
 		"df1": []string{"mod1", "mod2"},
