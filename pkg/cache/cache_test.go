@@ -2,7 +2,7 @@ package cache
 
 import (
 	"fmt"
-	// "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -24,13 +24,22 @@ func TestRoots(t *testing.T) {
 	for module, deps := range modules {
 		c.Add(module, deps...)
 	}
-	n := c["mod5"]
-	roots := c.RootsOf(n)
-	fmt.Println(roots)
-	// expected1 := c["df1"]
-	// expected2 := c["df2"]
-	// assert.Contains(t, roots, expected1)
-	// assert.Contains(t, roots, expected2)
+
+	assert.Contains(t, c["mod1"].Parents, c["df1"])
+
+	assert.Equal(t, "[df1]", fmt.Sprint(c["mod1"].Parents))
+	assert.Equal(t, "[df1 df2]", fmt.Sprint(c["mod2"].Parents))
+	assert.Equal(t, "[df2 mod2 mod1]", fmt.Sprint(c["mod3"].Parents))
+	assert.Equal(t, "[mod1 mod2]", fmt.Sprint(c["df1"].Children))
+	assert.Equal(t, "[mod2 mod3]", fmt.Sprint(c["df2"].Children))
+	assert.Equal(t, "[mod4]", fmt.Sprint(c["mod3"].Children))
+	assert.Equal(t, "[mod3]", fmt.Sprint(c["mod4"].Parents))
+	assert.Equal(t, "[mod5 mod6]", fmt.Sprint(c["mod4"].Children))
+	assert.Equal(t, "[mod4]", fmt.Sprint(c["mod5"].Parents))
+	assert.Equal(t, "[mod4]", fmt.Sprint(c["mod6"].Parents))
+
+	n := c["mod3"]
+	fmt.Println(c.UpstreamNodes(n))
 
 }
 
