@@ -1,12 +1,41 @@
 package cache
 
 import (
-	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestRoots(t *testing.T) {
+func TestCache(t *testing.T) {
+	c := createCache()
+	assert.ElementsMatchf(t, c["df1"].Parents, []*Node{}, "df1 should not have any parents")
+	assert.ElementsMatchf(t, c["df2"].Parents, []*Node{}, "df2 should not have any parents")
+	assert.ElementsMatchf(t, c["df1"].Children, []*Node{c["mod1"], c["mod2"]}, "df1's children list is wrong")
+	assert.ElementsMatchf(t, c["df2"].Children, []*Node{c["mod2"], c["mod3"]}, "df2's children list is wrong")
+	assert.ElementsMatchf(t, c["mod1"].Parents, []*Node{c["df1"]},"mod1's parent list is wrong")
+	assert.ElementsMatchf(t, c["mod2"].Parents, []*Node{c["df1"], c["df2"]}, "mod2's parent list is wrong")
+	assert.ElementsMatchf(t, c["mod3"].Parents, []*Node{c["mod1"], c["mod2"], c["df2"]}, "mod3's parent list is wrong")
+	assert.ElementsMatchf(t, c["mod4"].Parents, []*Node{c["mod3"]}, "mod4's parent list is wrong")
+	assert.ElementsMatchf(t, c["mod5"].Parents, []*Node{c["mod4"]}, "mod5's parent list is wrong")
+	assert.ElementsMatchf(t, c["mod6"].Parents, []*Node{c["mod4"]}, "mod6's parent list is wrong")
+	assert.ElementsMatchf(t, c["mod3"].Children, []*Node{c["mod4"]}, "mod4's children list is wrong")
+	assert.ElementsMatchf(t, c["mod4"].Children, []*Node{c["mod5"], c["mod6"]}, "mod6's children list is wrong")
+	assert.ElementsMatchf(t, c["mod5"].Children, []*Node{}, "mod5 should not have any parents")
+	assert.ElementsMatchf(t, c["mod6"].Children, []*Node{}, "mod6 should not have any parents")
+}
+
+func TestUpstreamsAndRoots(t *testing.T) {
+	c := createCache()
+	up, roots := c.UpstreamNodes(c["mod3"])
+	assert.ElementsMatchf(t, up, []*Node{c["mod1"], c["mod2"], c["df1"], c["df2"]}, "mod3's upstream nodes aren't quite right!")
+	assert.ElementsMatchf(t, roots, []*Node{c["df1"], c["df2"]}, "mod3's root nodes aren't quite right!")
+
+	up, roots = c.UpstreamNodes(c["mod6"])
+	assert.ElementsMatchf(t, up, []*Node{c["mod1"], c["mod2"], c["mod3"], c["mod4"], c["df1"], c["df2"]}, "mod6's upstream nodes aren't quite right!")
+	assert.ElementsMatchf(t, roots, []*Node{c["df1"], c["df2"]}, "mod6's root nodes aren't quite right!")
+}
+
+func createCache() Cache {
 	dinghyfiles := map[string][]string{
 		"df1": []string{"mod1", "mod2"},
 		"df2": []string{"mod2", "mod3"},
@@ -24,50 +53,5 @@ func TestRoots(t *testing.T) {
 	for module, deps := range modules {
 		c.Add(module, deps...)
 	}
-
-	assert.Contains(t, c["mod1"].Parents, c["df1"])
-
-	assert.Equal(t, "[df1]", fmt.Sprint(c["mod1"].Parents))
-	assert.Equal(t, "[df1 df2]", fmt.Sprint(c["mod2"].Parents))
-	assert.Equal(t, "[df2 mod2 mod1]", fmt.Sprint(c["mod3"].Parents))
-	assert.Equal(t, "[mod1 mod2]", fmt.Sprint(c["df1"].Children))
-	assert.Equal(t, "[mod2 mod3]", fmt.Sprint(c["df2"].Children))
-	assert.Equal(t, "[mod4]", fmt.Sprint(c["mod3"].Children))
-	assert.Equal(t, "[mod3]", fmt.Sprint(c["mod4"].Parents))
-	assert.Equal(t, "[mod5 mod6]", fmt.Sprint(c["mod4"].Children))
-	assert.Equal(t, "[mod4]", fmt.Sprint(c["mod5"].Parents))
-	assert.Equal(t, "[mod4]", fmt.Sprint(c["mod6"].Parents))
-
-	n := c["mod3"]
-	fmt.Println(c.UpstreamNodes(n))
-
+	return c
 }
-
-func TestCircularDep(t *testing.T) {
-
-}
-
-/*
-	q := make(chan *Node, 100) // 100 is a magic number
-	for dinghyfile, deps := range dinghyfiles {
-		n := NewNode(dinghyfile)
-		for _, dep := range deps {
-			d := NewNode(dep)
-			n.Children = append(n.Children, d)
-			q <- d
-		}
-		cache.Add(n)
-	}
-	for len(q) > 0 {
-		mod := <-q
-		modDeps, ok := modules[mod.URL]
-		if ok {
-			for _, dep := range modDeps {
-				d := NewNode(dep)
-				mod.Children = append(mod.Children, d)
-				q <- d
-			}
-			cache.Add(mod)
-		}
-	}
-*/

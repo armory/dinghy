@@ -63,21 +63,26 @@ func (c Cache) UpstreamNodes(n *Node) ([]*Node, []*Node) {
 		// means n isnt in the cache
 		return nil, nil
 	}
-	vistedSet := map[*Node]struct{}{}
+	vistedSet := map[*Node]bool{}
 	q := make(chan *Node, len(c))
 	q <- n
 	for len(q) > 0 {
 		curr := <-q
-		vistedSet[curr] = struct{}{}
-		upstreams = append(upstreams, curr)
+		vistedSet[curr] = true
+		if curr != n {
+			// don't add self to the list of upstreams or roots
+			upstreams = append(upstreams, curr)
+			if len(curr.Parents) == 0 {
+				roots = append(roots, curr)
+			}		
+		}
+
+		// enqueue the upstream nodes if not already visited
 		for _, parent := range curr.Parents {
 			if _, visted := vistedSet[parent]; !visted {
 				q <- parent
+				vistedSet[parent] = true
 			}
-		}
-		_, currVisted := vistedSet[curr]
-		if len(curr.Parents) == 0 && !currVisted {
-			roots = append(roots, curr)
 		}
 	}
 
