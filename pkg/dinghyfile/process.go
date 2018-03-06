@@ -3,6 +3,7 @@ package dinghyfile
 import (
 	"encoding/json"
 	"errors"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/armory-io/dinghy/pkg/git"
@@ -29,8 +30,11 @@ func DownloadAndUpdate(p git.Push, f git.Downloader) error {
 			return err
 		}
 		log.Info("Downloaded: ", file)
+
+		buf := Render(file, p.Org(), p.Repo(), f)
+
 		d := Dinghyfile{}
-		err = json.Unmarshal([]byte(file), &d)
+		err = json.Unmarshal(buf.Bytes(), &d)
 		if err != nil {
 			log.Error("Could not unmarshall file.", err)
 			p.SetCommitStatus(status.Failure)
