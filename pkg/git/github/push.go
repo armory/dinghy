@@ -38,6 +38,19 @@ func (p *Push) ContainsFile(file string) bool {
 	return false
 }
 
+// Files returns a slice containing filenames that were added/modified
+func (p *Push) Files() []string {
+	ret := make([]string, 0, 0)
+	if p.Commits == nil {
+		return ret
+	}
+	for _, c := range p.Commits {
+		ret = append(ret, c.Added...)
+		ret = append(ret, c.Modified...)
+	}
+	return ret
+}
+
 // Repo returns the name of the repo.
 func (p *Push) Repo() string {
 	return p.Repository.Name

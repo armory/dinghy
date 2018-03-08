@@ -1,5 +1,9 @@
 package cache
 
+import (
+	log "github.com/sirupsen/logrus"
+)
+
 // Node represents either a dinghyfile or a module.
 // The URL is the github URL for the dinghyfile or module that can optionally
 // include the commit hash for versioning purposes.
@@ -21,6 +25,9 @@ func NewNode(url string) *Node {
 // Cache is the datastructure that maintains a mapping of dinghyfiles and their dependencies
 type Cache map[string]*Node
 
+// C is the in memory cache (depencency graph) for dinghyfiles and modules
+var C Cache
+
 // NewCache initialize a new cache
 func NewCache() Cache {
 	return map[string]*Node{}
@@ -28,6 +35,7 @@ func NewCache() Cache {
 
 // Add adds a node to the cache and updates its links
 func (c Cache) Add(url string, depURLs ...string) {
+	log.Debug("Adding " + url + " to cache")
 	// check if it already exists in cache
 	if _, exists := c[url]; !exists {
 		c[url] = NewNode(url)
@@ -42,15 +50,24 @@ func (c Cache) Add(url string, depURLs ...string) {
 		depNode := c[depURL]
 
 		// update parents of child
-		parents := depNode.Parents
-		parents = append(parents, n)
-		depNode.Parents = parents
+		if !inSlice(n, depNode.Parents) {
+			depNode.Parents = append(depNode.Parents, n)
+		}
 
 		// update children of parent
-		children := n.Children
-		children = append(children, depNode)
-		n.Children = children
+		if !inSlice(depNode, n.Children) {
+			n.Children = append(n.Children, depNode)
+		}
 	}
+}
+
+func inSlice(n *Node, slice []*Node) bool {
+	for _, i := range slice {
+		if i == n {
+			return true
+		}
+	}
+	return false
 }
 
 // UpstreamNodes returns two arrays:
@@ -74,7 +91,7 @@ func (c Cache) UpstreamNodes(n *Node) ([]*Node, []*Node) {
 			upstreams = append(upstreams, curr)
 			if len(curr.Parents) == 0 {
 				roots = append(roots, curr)
-			}		
+			}
 		}
 
 		// enqueue the upstream nodes if not already visited
@@ -91,4 +108,21 @@ func (c Cache) UpstreamNodes(n *Node) ([]*Node, []*Node) {
 
 func (n *Node) String() string {
 	return n.URL
+}
+
+// DumpCache prints the cache, used for debugging
+func (c Cache) DumpCache() {
+	for k, v := range c {
+		log.Debug("-----------")
+		log.Debug(k)
+		log.Debug("Parents:")
+		for _, p := range v.Parents {
+			log.Debug("  " + p.URL)
+		}
+		log.Debug("Children:")
+		for _, c := range v.Children {
+			log.Debug("  " + c.URL)
+		}
+		log.Debug("-----------")
+	}
 }

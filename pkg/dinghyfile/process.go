@@ -10,6 +10,8 @@ import (
 	"github.com/armory-io/dinghy/pkg/git/status"
 	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/spinnaker"
+	"github.com/armory-io/dinghy/pkg/cache"
+	"github.com/armory-io/dinghy/pkg/util"
 )
 
 var (
@@ -30,8 +32,9 @@ func DownloadAndUpdate(p git.Push, f git.Downloader) error {
 			return err
 		}
 		log.Info("Downloaded: ", file)
-
-		buf := Render(file, p.Org(), p.Repo(), f)
+		// add the dinghyfile to cache
+		cache.C.Add(util.GitURL(p.Org(), p.Repo(), settings.DinghyFilename))
+		buf := Render(cache.C, settings.DinghyFilename, file, p.Org(), p.Repo(), f)
 
 		d := Dinghyfile{}
 		err = json.Unmarshal(buf.Bytes(), &d)

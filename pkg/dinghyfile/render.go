@@ -7,19 +7,22 @@ import (
 
 	"text/template"
 
+	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/git"
+	"github.com/armory-io/dinghy/pkg/settings"
+	"github.com/armory-io/dinghy/pkg/util"
 	log "github.com/sirupsen/logrus"
 )
 
 // Render function renders the template
-func Render(input, gitOrg, gitRepo string, f git.Downloader) *bytes.Buffer {
+func Render(c cache.Cache, fileName, file, gitOrg, gitRepo string, f git.Downloader) *bytes.Buffer {
 	// this is the temp struct we decode the module into for
 	// variable substitution
 	var tmp map[string]interface{}
 
 	funcMap := template.FuncMap{
 		"module": func(mod string, vars ...interface{}) string {
-			dat, err := f.Download(gitOrg, gitRepo, mod)
+			dat, err := f.Download(settings.GitHubOrg, settings.TemplateRepo, mod)
 			if err != nil {
 				log.Fatal("could not read module: ", mod, err)
 			}
@@ -45,12 +48,15 @@ func Render(input, gitOrg, gitRepo string, f git.Downloader) *bytes.Buffer {
 			if err != nil {
 				log.Fatal("could not marshal variable substituted json for module: ", mod, err)
 			}
+			parent := util.GitURL(gitOrg, gitRepo, fileName)
+			child := util.GitURL(gitOrg, settings.TemplateRepo, mod)
+			c.Add(parent, child)
 			return string(byt)
 		},
 	}
 
 	// Create a template, add the function map, and parse the text.
-	tmpl, err := template.New("moduleTest").Funcs(funcMap).Parse(input)
+	tmpl, err := template.New("moduleTest").Funcs(funcMap).Parse(file)
 	if err != nil {
 		log.Fatalf("template parsing: %s", err)
 	}

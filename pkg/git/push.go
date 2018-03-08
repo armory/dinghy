@@ -8,6 +8,7 @@ import (
 // Push represented a push notification from a git service.
 type Push interface {
 	ContainsFile(file string) bool
+	Files() []string
 	Repo() string
 	Org() string
 	IsMaster() bool

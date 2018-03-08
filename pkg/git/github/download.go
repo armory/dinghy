@@ -11,6 +11,8 @@ import (
 type FileService struct{}
 
 // Download a file from github.
+// note that "file" is really the full path relative to the repo root
+// eg: src/foo/bar/filename
 func (f *FileService) Download(org, repo, file string) (string, error) {
 	url := fmt.Sprintf(`https://raw.githubusercontent.com/%s/%s/master/%s`, org, repo, file)
 	req, err := http.NewRequest("GET", url, nil)
