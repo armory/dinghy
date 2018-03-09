@@ -20,6 +20,8 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 		return "", err
 	}
 	req.Header.Add("Authorization", "token "+settings.GitHubToken)
+	req.Header.Add("Accept", "application/vnd.github.v3.raw")
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
