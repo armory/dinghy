@@ -49,14 +49,14 @@ func Rebuild(p git.Push) error {
 // updates the pipelines in its specification.
 func ProcessAffectedDinghy(url string) error {
 
-	r, _ := regexp.Compile("https://raw.githubusercontent.com/(.+)/(.+)/master/(.+)")
+	r, _ := regexp.Compile("https://api.github.com/repos/(.+)/(.+)/contents/(.+)")
 	match := r.FindStringSubmatch(url)
 	org := match[1]
 	repo := match[2]
-	file := match[3]
+	path := match[3]
 	f := &github.FileService{}
-	log.Info("Processing Dinghyfile: " + org + "/" + repo + "/" + file)
-	file, err := f.Download(org, repo, file)
+	log.Info("Processing Dinghyfile: " + org + "/" + repo + "/" + path)
+	file, err := f.Download(org, repo, path)
 	if err != nil {
 		log.Error("Could not download upstream dinghy file  ", err)
 		return err
