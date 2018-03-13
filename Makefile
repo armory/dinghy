@@ -2,7 +2,7 @@
 # https://github.com/silven/go-example/blob/master/Makefile
 # https://vic.demuzere.be/articles/golang-makefile-crosscompile/
 
-BINARY = platform
+BINARY = dinghy
 VET_REPORT = vet.report
 TEST_REPORT = tests.xml
 GOARCH = amd64
@@ -30,11 +30,11 @@ dependencies:
 	dep ensure
 
 run:
-	go run ./cmd/dinghy.go
+	go run ./cmd/${BINARY}.go
 
-build: ./cmd/dinghy.go
+build: ./cmd/${BINARY}.go
 	cd ${PROJECT_DIR}; \
-	go build -i ${LDFLAGS} -o ${BUILD_DIR}/main ./cmd/dinghy.go ; \
+	go build -i ${LDFLAGS} -o ${BUILD_DIR}/main ./cmd/${BINARY}.go ; \
 
 test: dependencies
 	go test -v $(PKGS)
