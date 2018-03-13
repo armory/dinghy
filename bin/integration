@@ -1,0 +1,24 @@
+#!/bin/bash
+set -e
+WORKDIR=/go/src/github.com/armory-io/dinghy
+
+mkdir -p ${HOME}/.armory/cache
+aws s3 cp s3://armory-keys/client.pem ${HOME}/.armory/cache/client.pem
+
+docker run --rm \
+  -v "$PWD:$WORKDIR" \
+  -w $WORKDIR \
+  -e "GOOS=linux" \
+  -e "GOARCH=amd64" \
+  -e "CGO_ENABLED=0" \
+  andrexus/golang-dep \
+  make integration
+
+docker run --rm \
+  -v "$PWD:$WORKDIR" \
+  -v "${HOME}/.armory/cache/:/creds/" \
+  -w $WORKDIR \
+  -e "CLIENT_CERT_PATH=/creds/client.pem" \
+  --entrypoint $WORKDIR/bin/test_runner_harness \
+  "$DOCKER_IMAGE"
+

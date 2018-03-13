@@ -1,0 +1,17 @@
+#!/bin/sh
+# We want to run the integration tests in the same container as the platform
+# executable ends up in. But the runtime container doesn't have all the go
+# tools. So we compile the tests outside, and then mount them into the runtime
+# container to execute. Each integration test is an executable of it's own,
+# so we need something to gather them and run them (or a very complicated
+# Docker command to run the tests).
+
+set -e
+cd "$(dirname "$0")/.."
+
+TESTDIR=/go/src/github.com/armory-io/dinghy/build/tests
+
+for TEST in $(ls $TESTDIR); do
+    echo "Running test script $TEST"
+    $TESTDIR/$TEST -test.v
+done

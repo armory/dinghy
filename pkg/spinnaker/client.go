@@ -15,7 +15,7 @@ var defaultClient *http.Client
 func init() {
 	c, err := newX509Client()
 	if err != nil {
-		log.Error("Could not create x509 client.")
+		log.Error("Could not create x509 client.", err)
 	}
 	defaultClient = c
 }

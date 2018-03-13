@@ -13,6 +13,7 @@ BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 REPO=$(shell basename $(shell git rev-parse --show-toplevel))
 #select all packages except a few folders because it's an integration test
 PKGS := $(shell go list ./... | grep -v -e /integration -e /vendor)
+INTEGRATION_PKGS := $(shell go list ./... | grep /integration)
 ORG=armory-io
 PROJECT_DIR=${GOPATH}/src/github.com/${ORG}/${REPO}
 BUILD_DIR=${GOPATH}/src/github.com/${ORG}/${REPO}/build
@@ -36,7 +37,15 @@ build: ./cmd/dinghy.go
 	go build -i ${LDFLAGS} -o ${BUILD_DIR}/main ./cmd/dinghy.go ; \
 
 test: dependencies
-	go test -v ./...
+	go test -v $(PKGS)
+
+integration: dependencies
+	cd ${PROJECT_DIR} ; \
+	mkdir -p ${BUILD_DIR}/tests ; \
+	for TESTPKG in $(INTEGRATION_PKGS); do \
+	    EXENAME=$$(echo "$$TESTPKG" | tr / _) ; \
+	    go test -c -o ${BUILD_DIR}/tests/$$EXENAME $$TESTPKG ; \
+	done
 
 GOLINT=$(GOPATH)/bin/golint
 
