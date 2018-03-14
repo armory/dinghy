@@ -32,7 +32,7 @@ type applicationTaskAttributes struct {
 // Applications returns a list of applications
 func Applications() []string {
 	ret := make([]string, 0)
-	url := fmt.Sprintf("%s/applications", settings.SpinnakerAPIURL)
+	url := fmt.Sprintf("%s/applications", settings.S.SpinnakerAPIURL)
 	resp, err := getWithRetry(url)
 	if err != nil {
 		log.Info("Failed to get application.")

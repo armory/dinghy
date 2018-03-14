@@ -21,7 +21,7 @@ import (
 func Rebuild(p git.Push) error {
 	c := cache.C
 
-	if p.Repo() == settings.TemplateRepo {
+	if p.Repo() == settings.S.TemplateRepo {
 		p.SetCommitStatus(status.Pending)
 		files := p.Files()
 		for _, f := range files {
@@ -64,7 +64,7 @@ func ProcessAffectedDinghy(url string) error {
 	log.Info("Downloaded: ", file)
 
 	// todo: handle recursive updates
-	buf := dinghyfile.Render(cache.C, settings.DinghyFilename, file, org, repo, f)
+	buf := dinghyfile.Render(cache.C, settings.S.DinghyFilename, file, org, repo, f)
 	d := dinghyfile.Dinghyfile{}
 	err = json.Unmarshal(buf.Bytes(), &d)
 	if err != nil {

@@ -61,7 +61,7 @@ func UpdatePipelines(p []Pipeline) (err error) {
 			pipeline["id"] = id
 		}
 		log.Info("Updating pipeline: " + pipeline.Name())
-		if settings.AutoLockPipelines {
+		if settings.S.AutoLockPipelines == "true" {
 			log.Debug("Locking pipeline ", pipeline.Name())
 			pipeline.Lock()
 		}
@@ -80,7 +80,7 @@ func updatePipeline(p Pipeline) error {
 		return err
 	}
 	log.Info("Potsing pipeline to Spinnaker: ", string(b))
-	url := fmt.Sprintf(`%s/pipelines`, settings.SpinnakerAPIURL)
+	url := fmt.Sprintf(`%s/pipelines`, settings.S.SpinnakerAPIURL)
 	_, err = postWithRetry(url, b)
 	if err != nil {
 		return err
@@ -92,7 +92,7 @@ func updatePipeline(p Pipeline) error {
 // PipelineIDs returns the pipeline IDs keyed by name for an application.
 func pipelineIDs(app string) (map[string]string, error) {
 	ids := map[string]string{}
-	url := fmt.Sprintf("%s/applications/%s/pipelineConfigs", settings.SpinnakerAPIURL, app)
+	url := fmt.Sprintf("%s/applications/%s/pipelineConfigs", settings.S.SpinnakerAPIURL, app)
 	log.Info("Looking up existing pipelines")
 	resp, err := getWithRetry(url)
 	if err != nil {

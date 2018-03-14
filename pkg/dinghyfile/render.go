@@ -22,7 +22,7 @@ func Render(c cache.Cache, fileName, file, gitOrg, gitRepo string, f git.Downloa
 
 	funcMap := template.FuncMap{
 		"module": func(mod string, vars ...interface{}) string {
-			dat, err := f.Download(settings.GitHubOrg, settings.TemplateRepo, mod)
+			dat, err := f.Download(settings.S.GitHubOrg, settings.S.TemplateRepo, mod)
 			if err != nil {
 				log.Fatal("could not read module: ", mod, err)
 			}
@@ -49,7 +49,7 @@ func Render(c cache.Cache, fileName, file, gitOrg, gitRepo string, f git.Downloa
 				log.Fatal("could not marshal variable substituted json for module: ", mod, err)
 			}
 			parent := util.GitURL(gitOrg, gitRepo, fileName)
-			child := util.GitURL(gitOrg, settings.TemplateRepo, mod)
+			child := util.GitURL(gitOrg, settings.S.TemplateRepo, mod)
 			c.Add(parent, child)
 			return string(byt)
 		},
