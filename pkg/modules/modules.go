@@ -73,7 +73,7 @@ func ProcessAffectedDinghy(url string) error {
 	}
 	log.Info("Unmarshalled: ", d)
 
-	err = spinnaker.UpdatePipelines(d.Pipelines)
+	err = spinnaker.UpdatePipelines(d.Application, d.Pipelines)
 	if err != nil {
 		log.Error("Could not update all pipelines ", err)
 		return err

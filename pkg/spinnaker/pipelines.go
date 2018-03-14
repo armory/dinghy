@@ -44,21 +44,24 @@ func (p Pipeline) Application() string {
 }
 
 // UpdatePipelines posts pipelines to Spinnaker.
-func UpdatePipelines(p []Pipeline) (err error) {
-	if len(p) == 0 {
-		return
-	}
-	app := p[0].Application()
+func UpdatePipelines(app string, p []Pipeline) (err error) {
 	if !applicationExists(app) {
 		NewApplication("unknown@unknown.com", app)
 	}
 	ids, _ := pipelineIDs(app)
+	checklist := make(map[string]bool)
+	idToName := make(map[string]string)
+	for name, id := range ids {
+		checklist[id] = false
+		idToName[id] = name
+	}
 	log.Info("Found pipelines for ", app, ": ", ids)
 	for _, pipeline := range p {
 		// Add ids to existing pipelines
 		if id, exists := ids[pipeline.Name()]; exists {
 			log.Debug("Added id ", id, " to pipeline ", pipeline.Name())
 			pipeline["id"] = id
+			checklist[id] = true
 		}
 		log.Info("Updating pipeline: " + pipeline.Name())
 		if settings.S.AutoLockPipelines == "true" {
@@ -70,6 +73,12 @@ func UpdatePipelines(p []Pipeline) (err error) {
 			log.Error("Could not post pipeline to Spinnaker ", err)
 		}
 	}
+	// clear existing pipelines that weren't updated
+	for id, updated := range checklist {
+		if !updated {
+			deletePipeline(app, idToName[id])
+		}
+	}
 	return
 }
 
@@ -79,13 +88,29 @@ func updatePipeline(p Pipeline) error {
 		log.Error("Could not marshal pipeline ", err)
 		return err
 	}
-	log.Info("Potsing pipeline to Spinnaker: ", string(b))
-	url := fmt.Sprintf(`%s/pipelines`, settings.S.SpinnakerAPIURL)
-	_, err = postWithRetry(url, b)
+
+	if id, exists := p["id"]; exists {
+		log.Info("Updating existing pipeline: ", string(b))
+		url := fmt.Sprintf(`%s/pipelines/%s`, settings.S.SpinnakerAPIURL, id)
+		_, err = putWithRetry(url, b)
+	} else {
+		log.Info("Posting pipeline to Spinnaker: ", string(b))
+		url := fmt.Sprintf(`%s/pipelines`, settings.S.SpinnakerAPIURL)
+		_, err = postWithRetry(url, b)
+	}
+
 	if err != nil {
 		return err
 	}
 	log.Info("Successfully posted pipeline to Spinnaker.")
+	return nil
+}
+
+func deletePipeline(app string, pipelineName string) error {
+	url := fmt.Sprintf("%s/pipelines/%s/%s", settings.S.SpinnakerAPIURL, app, pipelineName)
+	if _, err := deleteWithRetry(url); err != nil {
+		return err
+	}
 	return nil
 }
 

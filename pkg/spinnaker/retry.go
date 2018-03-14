@@ -7,36 +7,15 @@ import (
 	"net/http/httputil"
 	"strings"
 	"time"
+	"io"
+	"io/ioutil"
 )
 
-func postWithRetry(url string, body []byte) (resp *http.Response, err error) {
-	for retry := 0; retry < 10; retry++ {
-		log.Debug("POST ", url)
-		resp, err = defaultClient.Post(url, "application/json", strings.NewReader(string(body)))
-		timeout := time.Duration(retry*200) * time.Millisecond
-		if err != nil {
-			log.Error(err)
-			time.Sleep(timeout)
-			continue
-		}
-		if resp.StatusCode > 399 {
-			log.Error("Spinnaker returned ", resp.StatusCode)
-			httputil.DumpResponse(resp, true)
-			time.Sleep(timeout)
-			continue
-		}
-		break
-	}
-	if resp != nil && resp.StatusCode > 399 {
-		err = fmt.Errorf("spinnaker returned %d", resp.StatusCode)
-	}
-	return resp, nil
-}
+type callback func() (*http.Response, error)
 
-func getWithRetry(url string) (resp *http.Response, err error) {
+func requestWithRetry(cb callback) (resp *http.Response, err error) {
 	for retry := 0; retry < 10; retry++ {
-		log.Debug("GET ", url)
-		resp, err = defaultClient.Get(url)
+		resp, err = cb()
 		timeout := time.Duration(retry*200) * time.Millisecond
 		if err != nil {
 			log.Error(err)
@@ -48,6 +27,8 @@ func getWithRetry(url string) (resp *http.Response, err error) {
 		}
 		if resp.StatusCode > 399 {
 			log.Error("Spinnaker returned ", resp.StatusCode)
+			body, _ := ioutil.ReadAll(resp.Body)
+			log.Print(string(body))
 			httputil.DumpResponse(resp, true)
 			time.Sleep(timeout)
 			continue
@@ -57,5 +38,44 @@ func getWithRetry(url string) (resp *http.Response, err error) {
 	if resp != nil && resp.StatusCode > 399 {
 		err = fmt.Errorf("spinnaker returned %d", resp.StatusCode)
 	}
-	return
+	return resp, err
+}
+
+func postWithRetry(url string, body []byte) (resp *http.Response, err error) {
+	return requestWithRetry(func() (*http.Response, error) {
+		log.Debug("POST ", url)
+		return defaultClient.Post(url, "application/json", strings.NewReader(string(body)))
+	})
+}
+
+func getWithRetry(url string) (resp *http.Response, err error) {
+	return requestWithRetry(func() (*http.Response, error) {
+		log.Debug("GET ", url)
+		return defaultClient.Get(url)
+	})
+}
+
+func request(method, url string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, body)
+	req.Header.Set("Content-Type", "application/json")
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return defaultClient.Do(req)
+}
+
+func deleteWithRetry(url string) (resp *http.Response, err error) {
+	return requestWithRetry(func() (*http.Response, error) {
+		log.Debug("DELETE ", url)
+		return request("DELETE", url, nil)
+	})
+}
+
+func putWithRetry(url string, body []byte) (resp *http.Response, err error) {
+	return requestWithRetry(func() (*http.Response, error) {
+		log.Debug("PUT ", url)
+		return request("PUT", url, strings.NewReader(string(body)))
+	})
 }
