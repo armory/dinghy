@@ -14,14 +14,14 @@ const dinghf = `{
 	"application": "dinghyintegration",
 	"pipelines": [
 	  {
-		"application": "dinghyintegration",
-		"keepWaitingPipelines": false,
-		"limitConcurrent": false,
-		"name": "This is new",
-		"stages": [
-			{{ module "wait.stage.module" "waitTime" 10 }}
-		],
-		"triggers": []
+			"application": "dinghyintegration",
+			"keepWaitingPipelines": false,
+			"limitConcurrent": false,
+			"name": "This is new",
+			"stages": [
+				{{ module "wait.stage.module" "waitTime" 100 }}
+			],
+			"triggers": []
 	  }
 	]
 }`
@@ -60,7 +60,7 @@ func (p *Push) IsMaster() bool {
 
 // Files returns the list of files modified
 func (p *Push) Files() []string {
-	return []string{"foo"}
+	return []string{"dinghyfile"}
 }
 
 // Repo returns the repo

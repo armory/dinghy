@@ -47,7 +47,7 @@ func DownloadAndUpdate(p git.Push, f git.Downloader) error {
 		// todo: rebuild template
 		// todo: validate
 		if p.IsMaster() == true {
-			err = spinnaker.UpdatePipelines(d.Pipelines)
+			err = spinnaker.UpdatePipelines(d.Application, d.Pipelines)
 			if err != nil {
 				log.Error("Could not update all pipelines ", err)
 				p.SetCommitStatus(status.Error)
