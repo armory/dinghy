@@ -10,7 +10,7 @@ import (
 	"github.com/armory-io/dinghy/pkg/git/status"
 )
 
-const dinghf = `{
+const dinghfNew = `{
 	"application": "dinghyintegration",
 	"pipelines": [
 	  {
@@ -26,6 +26,11 @@ const dinghf = `{
 	]
 }`
 
+const dinghfEmpty = `{
+	"application": "dinghyintegration",
+	"pipelines": []
+}`
+
 const mod = `{
     "name": "Wait",
     "refId": "1",
@@ -35,12 +40,17 @@ const mod = `{
 }`
 
 // FileService is for working with repositories
-type FileService struct{}
+type FileService struct {
+	Empty bool
+}
 
 // Download a file from github.
 func (f *FileService) Download(org, repo, file string) (string, error) {
 	if file == "dinghyfile" {
-		return dinghf, nil
+		if f.Empty {
+			return dinghfEmpty, nil
+		}
+		return dinghfNew, nil
 	}
 	return mod, nil
 }
@@ -82,6 +92,10 @@ func (p *Push) SetCommitStatus(s status.Status) {
 // hence it is an integration test and not a unit-test
 func TestSpinnakerPipelineUpdate(t *testing.T) {
 	cache.C = cache.NewCache()
-	err := dinghyfile.DownloadAndUpdate(&Push{}, &FileService{})
+
+	err := dinghyfile.DownloadAndUpdate(&Push{}, &FileService{Empty: false})
+	assert.Equal(t, nil, err)
+
+	err = dinghyfile.DownloadAndUpdate(&Push{}, &FileService{Empty: true})
 	assert.Equal(t, nil, err)
 }
