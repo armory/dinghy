@@ -117,6 +117,7 @@ func getTask(refURL string) (*ExecutionResponse, error) {
 	return &task, nil
 }
 
+// ExtractRetrofitError extracts retrofit error from response
 func (e ExecutionResponse) ExtractRetrofitError() *RetrofitErrorResponse {
 	for _, v := range e.Variables {
 		if v.Key == "exception" {

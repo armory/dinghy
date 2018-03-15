@@ -63,7 +63,6 @@ func TestUpstreamsAndRoots(t *testing.T) {
 	assert.ElementsMatchf(t, roots, []*Node{c["df1"], c["df2"]}, "mod6's root nodes aren't quite right!")
 }
 
-
 /* The test dependency graph we are working with
    looks like this:
 

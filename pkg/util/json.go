@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 )
@@ -19,6 +20,7 @@ func ReadJSON(reader io.Reader, dest interface{}) {
 	decoder := json.NewDecoder(reader)
 	err := decoder.Decode(&dest)
 	if err != nil {
+		log.Error(err)
 		panic(err)
 	}
 }
