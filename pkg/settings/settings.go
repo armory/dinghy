@@ -46,8 +46,8 @@ var S = Settings{
 // else initialize with default (Armory) values
 func init() {
 	var s Settings
-	configFile := util.GetenvOrDefault("DINGHY_CONFIG", "")
-	if configFile != "" {
+	configFile := util.GetenvOrDefault("DINGHY_CONFIG", "/opt/spinnaker/dinghy-local.yml")
+	if _, err := os.Stat(configFile); err == nil {
 		bytes, err := ioutil.ReadFile(configFile)
 		if err != nil {
 			log.Errorf("Unable to open config file: %v", err)
@@ -60,6 +60,8 @@ func init() {
 		}
 		log.Infof("Configured with settings from file: ", configFile)
 		S = s
+	} else {
+		log.Info("Config file ", configFile, " not present falling back to default settings")
 	}
 
 	// load github api token
