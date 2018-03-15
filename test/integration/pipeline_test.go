@@ -14,7 +14,7 @@ import (
 const dinghfNew = `{
 	"application": "dinghyintegration",
 	"pipelines": [
-	  {
+		{
 			"application": "dinghyintegration",
 			"keepWaitingPipelines": false,
 			"limitConcurrent": false,
@@ -23,7 +23,7 @@ const dinghfNew = `{
 				{{ module "wait.stage.module" "waitTime" 100 }}
 			],
 			"triggers": []
-	  }
+		}
 	]
 }`
 
