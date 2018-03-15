@@ -7,6 +7,7 @@ import (
 
 	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/dinghyfile"
+	"github.com/armory-io/dinghy/pkg/git/github"
 	"github.com/armory-io/dinghy/pkg/git/status"
 )
 
@@ -53,6 +54,16 @@ func (f *FileService) Download(org, repo, file string) (string, error) {
 		return dinghfNew, nil
 	}
 	return mod, nil
+}
+
+// GitURL returns the git url for a given org, repo, path
+func (f *FileService) GitURL(org, repo, path string) string {
+	return (&github.FileService{}).GitURL(org, repo, path)
+}
+
+// ParseGitURL takes a url and returns the org, repo, path
+func (f *FileService) ParseGitURL(url string) (org, repo, path string) {
+	return (&github.FileService{}).ParseGitURL(url)
 }
 
 // Push is for a github push notification

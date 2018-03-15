@@ -6,12 +6,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/git"
 	"github.com/armory-io/dinghy/pkg/git/status"
 	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/spinnaker"
-	"github.com/armory-io/dinghy/pkg/cache"
-	"github.com/armory-io/dinghy/pkg/util"
 )
 
 var (
@@ -33,7 +32,7 @@ func DownloadAndUpdate(p git.Push, f git.Downloader) error {
 		}
 		log.Info("Downloaded: ", file)
 		// add the dinghyfile to cache
-		cache.C.Add(util.GitURL(p.Org(), p.Repo(), settings.DinghyFilename))
+		cache.C.Add(f.GitURL(p.Org(), p.Repo(), settings.DinghyFilename))
 		buf := Render(cache.C, settings.DinghyFilename, file, p.Org(), p.Repo(), f)
 
 		d := Dinghyfile{}

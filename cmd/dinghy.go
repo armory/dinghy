@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/armory-io/dinghy/pkg/web"
 	"github.com/armory-io/dinghy/pkg/cache"
+	"github.com/armory-io/dinghy/pkg/web"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 )

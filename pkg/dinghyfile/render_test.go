@@ -3,7 +3,9 @@ package dinghyfile
 import (
 	"strings"
 	"testing"
-    "github.com/armory-io/dinghy/pkg/cache"
+
+	"github.com/armory-io/dinghy/pkg/cache"
+	"github.com/armory-io/dinghy/pkg/git/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,6 +44,16 @@ func (f *FileService) Download(org, repo, file string) (string, error) {
         "waitTime": 12044
     }`
 	return ret, nil
+}
+
+// GitURL returns the git url for a given org, repo, path
+func (f *FileService) GitURL(org, repo, path string) string {
+	return (&github.FileService{}).GitURL(org, repo, path)
+}
+
+// ParseGitURL takes a url and returns the org, repo, path
+func (f *FileService) ParseGitURL(url string) (org, repo, path string) {
+	return (&github.FileService{}).ParseGitURL(url)
 }
 
 func TestSimpleWaitStage(t *testing.T) {

@@ -26,6 +26,7 @@ POST /repos/:owner/:repo/statuses/:sha
 
 */
 
+// Status is a payload that we send to the Github API to set commit status
 type Status struct {
 	State       string `json:"state"`
 	TargetURL   string `json:"target_url"`
@@ -33,6 +34,7 @@ type Status struct {
 	Context     string `json:"context"`
 }
 
+// SetCommitStatus sets the commit status
 func (p *Push) SetCommitStatus(s status.Status) {
 	update := newStatus(s)
 	for _, c := range p.Commits {

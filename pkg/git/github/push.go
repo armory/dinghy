@@ -1,18 +1,20 @@
 package github
 
-// Payload is received from a GitHub webhook.
+// Push is the payload received from a GitHub webhook.
 type Push struct {
 	Commits    []Commit   `json:"commits"`
 	Repository Repository `json:"repository"`
 	Ref        string     `json:"ref"`
 }
 
+// Commit is a commit received from Github webhook
 type Commit struct {
 	ID       string   `json:"id"`
 	Added    []string `json:"added"`
 	Modified []string `json:"modified"`
 }
 
+// Repository is a repo received from Github webhook
 type Repository struct {
 	Name         string `json:"name"`
 	Organization string `json:"organization"`
@@ -56,6 +58,7 @@ func (p *Push) Repo() string {
 	return p.Repository.Name
 }
 
+// Org returns the organization of the push
 func (p *Push) Org() string {
 	return p.Repository.Organization
 }

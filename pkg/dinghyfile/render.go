@@ -10,7 +10,6 @@ import (
 	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/git"
 	"github.com/armory-io/dinghy/pkg/settings"
-	"github.com/armory-io/dinghy/pkg/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,7 +21,7 @@ func Render(c cache.Cache, fileName, file, gitOrg, gitRepo string, f git.Downloa
 
 	funcMap := template.FuncMap{
 		"module": func(mod string, vars ...interface{}) string {
-			dat, err := f.Download(settings.GitHubOrg, settings.TemplateRepo, mod)
+			dat, err := f.Download(settings.TemplateOrg, settings.TemplateRepo, mod)
 			if err != nil {
 				log.Fatal("could not read module: ", mod, err)
 			}
@@ -48,8 +47,8 @@ func Render(c cache.Cache, fileName, file, gitOrg, gitRepo string, f git.Downloa
 			if err != nil {
 				log.Fatal("could not marshal variable substituted json for module: ", mod, err)
 			}
-			parent := util.GitURL(gitOrg, gitRepo, fileName)
-			child := util.GitURL(gitOrg, settings.TemplateRepo, mod)
+			parent := f.GitURL(gitOrg, gitRepo, fileName)
+			child := f.GitURL(gitOrg, settings.TemplateRepo, mod)
 			c.Add(parent, child)
 			return string(byt)
 		},
