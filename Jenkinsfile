@@ -29,5 +29,6 @@ node {
         sh '''
           arm push
         '''
+        archiveArtifacts artifacts: 'build.properties'
     }
 }
