@@ -17,16 +17,16 @@ spec:
             memory: "128M"
             cpu: "1000m"
         ports:
-        - containerPort: 8080
+        - containerPort: 8081
         livenessProbe:
           httpGet:
             path: /
-            port: 8080
+            port: 8081
           initialDelaySeconds: 5
           timeoutSeconds: 2
         readinessProbe:
           httpGet:
             path: /
-            port: 8080
+            port: 8081
           initialDelaySeconds: 5
           timeoutSeconds: 2

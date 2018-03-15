@@ -1,6 +1,6 @@
 FROM alpine:3.6
 
-EXPOSE 8080
+EXPOSE 8081
 
 WORKDIR /usr/local/bin/
 
