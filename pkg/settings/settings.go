@@ -88,7 +88,7 @@ func init() {
 		if len(c) < 2 {
 			panic("stash creds file should have format 'username:token'")
 		}
-		S.StashToken = c[0]
+		S.StashUsername = c[0]
 		S.StashToken = c[1]
 		log.Info("Successfully loaded github api creds")
 	}

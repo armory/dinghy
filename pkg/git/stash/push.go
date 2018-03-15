@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
 	"strconv"
 
 	"github.com/armory-io/dinghy/pkg/settings"
@@ -19,20 +18,19 @@ type Push struct {
 
 // WebhookPayload is the payload from the webhook
 type WebhookPayload struct {
-	EventKey   string            `json:"eventKey"`
-	Repository WebhookRepository `json:"repository"`
-	Changes    []WebhookChange   `json:"changes"`
-}
+	EventKey   *string `json:"eventKey"`
+	Repository struct {
+		Slug    string `json:"slug"`
+		Project struct {
+			Key string `json:"key"`
+		} `json:"project"`
+	} `json:"repository"`
 
-// WebhookRepository is a repo object from the webhook
-type WebhookRepository struct {
-	Slug    string         `json:"slug"`
-	Project WebhookProject `json:"project"`
-}
-
-// WebhookProject is a project object from the webhook
-type WebhookProject struct {
-	Key string `json:"key"`
+	// bitbucket and old stash use different keys for `changes` but
+	// the structure is the same
+	BBSChanges   []WebhookChange `json:"changes"`
+	StashChanges []WebhookChange `json:"refChanges"`
+	IsOldStash   bool
 }
 
 // WebhookChange is a change object from the webhook
@@ -40,6 +38,11 @@ type WebhookChange struct {
 	RefID    string `json:"refId"`
 	FromHash string `json:"fromHash"`
 	ToHash   string `json:"toHash"`
+}
+
+// IsMaster detects if a change was on master
+func (c *WebhookChange) IsMaster() bool {
+	return c.RefID == "refs/heads/master"
 }
 
 // APIResponse is the response from Stash API
@@ -55,17 +58,12 @@ type APIDiff struct {
 	} `json:"path"`
 }
 
-// IsMaster detects if a change was on master
-func (c *WebhookChange) IsMaster() bool {
-	return c.RefID == "refs/heads/master"
-}
-
-func getFilesChanged(push *Push, fromCommitHash, toCommitHash string, start int) (nextStart int, err error) {
+func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (nextStart int, err error) {
 	url := fmt.Sprintf(
 		`%s/projects/%s/repos/%s/commits/%s/changes`,
 		settings.S.StashEndpoint,
-		push.Payload.Repository.Project.Key,
-		push.Payload.Repository.Slug,
+		p.Payload.Repository.Project.Key,
+		p.Payload.Repository.Slug,
 		toCommitHash,
 	)
 
@@ -99,7 +97,7 @@ func getFilesChanged(push *Push, fromCommitHash, toCommitHash string, start int)
 		nextStart = *body.NextPageStart
 	}
 	for _, diff := range body.Diffs {
-		push.ChangedFiles = append(push.ChangedFiles, diff.Destination.Path)
+		p.ChangedFiles = append(p.ChangedFiles, diff.Destination.Path)
 	}
 
 	return
@@ -112,14 +110,16 @@ func NewPush(payload WebhookPayload) (*Push, error) {
 		ChangedFiles: make([]string, 0),
 	}
 
-	for _, change := range payload.Changes {
-		var nextStart int
-		var err error
-		for start := -1; start != 0; start = nextStart {
-			nextStart, err = getFilesChanged(p, change.FromHash, change.ToHash, start)
+	for _, change := range p.changes() {
+		if !change.IsMaster() {
+			continue
+		}
+		for start := -1; start != 0; {
+			nextStart, err := p.getFilesChanged(change.FromHash, change.ToHash, start)
 			if err != nil {
 				return nil, err
 			}
+			start = nextStart
 		}
 	}
 
@@ -151,9 +151,16 @@ func (p *Push) Org() string {
 	return p.Payload.Repository.Project.Key
 }
 
+func (p *Push) changes() []WebhookChange {
+	if p.Payload.IsOldStash {
+		return p.Payload.StashChanges
+	}
+	return p.Payload.BBSChanges
+}
+
 // IsMaster detects if the branch is master.
 func (p *Push) IsMaster() bool {
-	for _, change := range p.Payload.Changes {
+	for _, change := range p.changes() {
 		if change.IsMaster() {
 			return true
 		}
