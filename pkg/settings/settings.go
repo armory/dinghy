@@ -46,7 +46,7 @@ var S = Settings{
 // else initialize with default (Armory) values
 func init() {
 	var s Settings
-	configFile := util.GetenvOrDefault("DINGHY_CONFIG", "/opt/spinnaker/dinghy-local.yml")
+	configFile := util.GetenvOrDefault("DINGHY_CONFIG", "/opt/spinnaker/config/dinghy-local.yml")
 	if _, err := os.Stat(configFile); err == nil {
 		bytes, err := ioutil.ReadFile(configFile)
 		if err != nil {
