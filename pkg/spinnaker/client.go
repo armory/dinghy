@@ -23,11 +23,11 @@ func init() {
 func newX509Client() (*http.Client, error) {
 	var c http.Client
 	log.Info("Configuring TLS Spinnaker Client with certificate")
-	cert, err := tls.LoadX509KeyPair(settings.CertPath, settings.CertPath)
+	cert, err := tls.LoadX509KeyPair(settings.S.CertPath, settings.S.CertPath)
 	if err != nil {
 		return nil, err
 	}
-	clientCA, err := ioutil.ReadFile(settings.CertPath)
+	clientCA, err := ioutil.ReadFile(settings.S.CertPath)
 	if err != nil {
 		return nil, err
 	}

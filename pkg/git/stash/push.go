@@ -63,7 +63,7 @@ func (c *WebhookChange) IsMaster() bool {
 func getFilesChanged(push *Push, fromCommitHash, toCommitHash string, start int) (nextStart int, err error) {
 	url := fmt.Sprintf(
 		`%s/projects/%s/repos/%s/commits/%s/changes`,
-		settings.StashEndpoint,
+		settings.S.StashEndpoint,
 		push.Payload.Repository.Project.Key,
 		push.Payload.Repository.Slug,
 		toCommitHash,
@@ -81,7 +81,7 @@ func getFilesChanged(push *Push, fromCommitHash, toCommitHash string, start int)
 		query.Add("start", strconv.Itoa(start))
 	}
 	req.URL.RawQuery = query.Encode()
-	req.SetBasicAuth(settings.StashUsername, settings.StashToken)
+	req.SetBasicAuth(settings.S.StashUsername, settings.S.StashToken)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

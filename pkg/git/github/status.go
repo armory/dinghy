@@ -51,7 +51,7 @@ func (p *Push) SetCommitStatus(s status.Status) {
 		log.Info(fmt.Sprintf("Updating commit %s for %s/%s to %s.", sha, p.Org(), p.Repo(), string(s)))
 		log.Debug("POST ", url, " - ", string(body))
 		req, err := http.NewRequest("POST", url, strings.NewReader(string(body)))
-		req.Header.Add("Authorization", "token "+settings.GitHubToken)
+		req.Header.Add("Authorization", "token "+settings.S.GitHubToken)
 		resp, err := http.DefaultClient.Do(req)
 		httputil.DumpResponse(resp, true)
 		if err != nil {
@@ -64,7 +64,7 @@ func (p *Push) SetCommitStatus(s status.Status) {
 func newStatus(s status.Status) Status {
 	ret := Status{
 		State:     string(s),
-		TargetURL: settings.SpinnakerUIURL,
+		TargetURL: settings.S.SpinnakerUIURL,
 		Context:   "continuous-deployment/dinghy",
 	}
 	switch s {

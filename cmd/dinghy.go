@@ -1,14 +1,23 @@
 package main
 
 import (
+	"net/http"
+	"os"
+
 	"github.com/armory-io/dinghy/pkg/cache"
+	"github.com/armory-io/dinghy/pkg/util"
 	"github.com/armory-io/dinghy/pkg/web"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func main() {
-	log.SetLevel(log.DebugLevel)
+	log.SetOutput(os.Stdout)
+	logLevelStr := util.GetenvOrDefault("DEBUG_LEVEL", "info")
+	logLevel, err := log.ParseLevel(logLevelStr)
+	if err != nil {
+		log.Panic("Invalid log level : " + logLevelStr)
+	}
+	log.SetLevel(logLevel)
 	log.Info("Dinghy started.")
 	cache.C = cache.NewCache()
 	log.Fatal(http.ListenAndServe(":8080", web.Router()))

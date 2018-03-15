@@ -21,10 +21,10 @@ var (
 // DownloadAndUpdate downloads a dinghyfile if it is in the push notification.
 // After it downloads, then it updates the pipelines in its specification.
 func DownloadAndUpdate(p git.Push, f git.Downloader) error {
-	if p.ContainsFile(settings.DinghyFilename) {
+	if p.ContainsFile(settings.S.DinghyFilename) {
 		log.Info("Dinghyfile found in commit for repo " + p.Repo())
 		p.SetCommitStatus(status.Pending)
-		file, err := f.Download(p.Org(), p.Repo(), settings.DinghyFilename)
+		file, err := f.Download(p.Org(), p.Repo(), settings.S.DinghyFilename)
 		if err != nil {
 			log.Error("Could not download dinghy file ", err)
 			p.SetCommitStatus(status.Error)
@@ -32,8 +32,8 @@ func DownloadAndUpdate(p git.Push, f git.Downloader) error {
 		}
 		log.Info("Downloaded: ", file)
 		// add the dinghyfile to cache
-		cache.C.Add(f.GitURL(p.Org(), p.Repo(), settings.DinghyFilename))
-		buf := Render(cache.C, settings.DinghyFilename, file, p.Org(), p.Repo(), f)
+		cache.C.Add(f.GitURL(p.Org(), p.Repo(), settings.S.DinghyFilename))
+		buf := Render(cache.C, settings.S.DinghyFilename, file, p.Org(), p.Repo(), f)
 
 		d := Dinghyfile{}
 		err = json.Unmarshal(buf.Bytes(), &d)

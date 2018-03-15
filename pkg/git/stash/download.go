@@ -31,7 +31,7 @@ func (f *FileService) downloadLines(org, repo, path string, start int) (lines []
 		query.Add("start", strconv.Itoa(start))
 		req.URL.RawQuery = query.Encode()
 	}
-	req.SetBasicAuth(settings.StashUsername, settings.StashToken)
+	req.SetBasicAuth(settings.S.StashUsername, settings.S.StashToken)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return
@@ -69,7 +69,7 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 
 // GitURL returns the git url for a given org, repo, path
 func (f *FileService) GitURL(org, repo, path string) string {
-	return fmt.Sprintf(`%s/projects/%s/repos/%s/browse/%s?raw`, settings.StashEndpoint, org, repo, path)
+	return fmt.Sprintf(`%s/projects/%s/repos/%s/browse/%s?raw`, settings.S.StashEndpoint, org, repo, path)
 }
 
 // ParseGitURL takes a url and returns the org, repo, path
