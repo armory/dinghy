@@ -11,7 +11,6 @@ import (
 
 	"github.com/armory-io/dinghy/pkg/dinghyfile"
 	"github.com/armory-io/dinghy/pkg/git/github"
-	// "github.com/armory-io/dinghy/pkg/git/stash"
 	"github.com/armory-io/dinghy/pkg/git/stash"
 	"github.com/armory-io/dinghy/pkg/util"
 )
@@ -24,7 +23,7 @@ func Router() *mux.Router {
 	r.HandleFunc("/healthcheck", healthcheck)
 	r.HandleFunc("/v1/webhooks/github", githubWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/stash", stashWebhookHandler).Methods("POST")
-	r.HandleFunc("/v1/webhooks/bbs", bbsWebhookHandler).Methods("POST")
+	r.HandleFunc("/v1/webhooks/bitbucket", bitbucketServerWebhookHandler).Methods("POST")
 	return r
 }
 
@@ -94,7 +93,7 @@ func stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status":"accepted"}`))
 }
 
-func bbsWebhookHandler(w http.ResponseWriter, r *http.Request) {
+func bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := httputil.DumpRequest(r, true)
 	if err != nil {
 		util.WriteHTTPError(w, err)
