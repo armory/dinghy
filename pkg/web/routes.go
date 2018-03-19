@@ -42,6 +42,12 @@ func githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p := github.Push{}
 	util.ReadJSON(r.Body, &p)
 
+	if p.Ref == "" {
+		// Unmarshal failed, might be a non-Push notification. Log event and return
+		log.Debug("Possibly a non-Push notification received")
+		return
+	}
+
 	downloader := &github.FileService{}
 	// todo: this hangs the connection until spinnaker has been updated. shouldn't do that.
 	err = dinghyfile.DownloadAndUpdate(&p, downloader)
