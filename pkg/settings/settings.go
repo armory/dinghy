@@ -90,6 +90,6 @@ func init() {
 		}
 		S.StashUsername = c[0]
 		S.StashToken = c[1]
-		log.Info("Successfully loaded github api creds")
+		log.Info("Successfully loaded stash api creds")
 	}
 }
