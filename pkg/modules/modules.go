@@ -6,7 +6,6 @@ import (
 	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/dinghyfile"
 	"github.com/armory-io/dinghy/pkg/git"
-	"github.com/armory-io/dinghy/pkg/git/github"
 	"github.com/armory-io/dinghy/pkg/git/status"
 	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/spinnaker"
@@ -46,9 +45,8 @@ func Rebuild(p git.Push, downloader git.Downloader) error {
 // updates the pipelines in its specification.
 func ProcessAffectedDinghy(url string, downloader git.Downloader) error {
 	org, repo, path := downloader.ParseGitURL(url)
-	f := &github.FileService{}
 	log.Info("Processing Dinghyfile: " + org + "/" + repo + "/" + path)
-	file, err := f.Download(org, repo, path)
+	file, err := downloader.Download(org, repo, path)
 	if err != nil {
 		log.Error("Could not download upstream dinghy file  ", err)
 		return err
@@ -56,7 +54,7 @@ func ProcessAffectedDinghy(url string, downloader git.Downloader) error {
 	log.Info("Downloaded: ", file)
 
 	// todo: handle recursive updates
-	buf := dinghyfile.Render(cache.C, settings.S.DinghyFilename, file, org, repo, f)
+	buf := dinghyfile.Render(cache.C, settings.S.DinghyFilename, file, org, repo, downloader)
 	d := dinghyfile.Dinghyfile{}
 	err = json.Unmarshal(buf.Bytes(), &d)
 	if err != nil {
