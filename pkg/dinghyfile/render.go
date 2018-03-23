@@ -26,7 +26,8 @@ func Render(c cache.Cache, fileName, file, gitOrg, gitRepo string, f git.Downloa
 				log.Fatal("could not read module: ", mod, err)
 			}
 
-			_ = json.Unmarshal([]byte(dat), &tmp)
+			rendered := Render(c, mod, dat, settings.S.TemplateOrg, settings.S.TemplateRepo, f)
+			json.Unmarshal(rendered.Bytes(), &tmp)
 
 			if len(vars)%2 != 0 {
 				log.Fatal(errors.New("invalid number of args to module: " + mod))
