@@ -9,6 +9,7 @@ import (
 
 	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/git"
+	"github.com/armory-io/dinghy/pkg/preprocessor"
 	"github.com/armory-io/dinghy/pkg/settings"
 	log "github.com/sirupsen/logrus"
 )
@@ -40,8 +41,26 @@ func Render(c cache.Cache, fileName, file, gitOrg, gitRepo string, f git.Downloa
 				}
 				if val, ok := tmp[key]; ok {
 					newVal := vars[i+1]
-					log.Info(" ** variable substitution in ", mod, " for key: ", key, ", value ", val, " --> ", newVal)
-					tmp[key] = newVal
+					log.Info("newval: ", newVal)
+					if jsonStr, ok := newVal.(string); ok {
+						/* act on str */
+						var js map[string]interface{}
+						var ar interface{}
+						if jsonStr[0] == '{' {
+							json.Unmarshal([]byte(jsonStr), &js)
+							tmp[key] = js
+						} else if jsonStr[0] == '[' {
+							json.Unmarshal([]byte(jsonStr), &ar)
+							tmp[key] = ar
+						} else {
+							/* not json object */
+							tmp[key] = newVal
+						}
+					} else {
+						/* not string */
+						tmp[key] = newVal
+					}
+					log.Info(" ** variable substitution in ", mod, " for key: ", key, ", value ", val, " --> ", tmp[key])
 				}
 			}
 			byt, err := json.Marshal(tmp)
@@ -54,6 +73,9 @@ func Render(c cache.Cache, fileName, file, gitOrg, gitRepo string, f git.Downloa
 			return string(byt)
 		},
 	}
+
+	// preprocess to stringify any json args in calls to modules
+	file = preprocessor.Preprocess(file)
 
 	// Create a template, add the function map, and parse the text.
 	tmpl, err := template.New("moduleTest").Funcs(funcMap).Parse(file)

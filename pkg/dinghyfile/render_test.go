@@ -14,7 +14,7 @@ import (
 const simpleTempl = `
 {
     "stages": [
-        {{ module "wait.stage.module" "waitTime" 10 }}
+        {{ module "wait.stage.module" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" [1, 2, 3] }}
     ],
 }
 `
@@ -24,8 +24,8 @@ const expected = `
     "stages": [
         {
             "name": "Wait",
-            "refId": "1",
-            "requisiteStageRefIds": [],
+            "refId": { "c": "d" },
+            "requisiteStageRefIds": [1, 2, 3],
             "type": "wait",
             "waitTime": 10
         }
@@ -40,7 +40,7 @@ type FileService struct{}
 func (f *FileService) Download(org, repo, file string) (string, error) {
 	ret := `{
         "name": "Wait",
-        "refId": "1",
+        "refId": {},
         "requisiteStageRefIds": [],
         "type": "wait",
         "waitTime": 12044
