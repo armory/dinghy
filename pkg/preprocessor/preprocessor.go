@@ -15,8 +15,8 @@ func Preprocess(rawText string) string {
 					end = j
 					i = j + 2
 					innerText := rawText[start:end]
-					replacementText := quoteArray(innerText)
-					replacementText = stringifyArgs(replacementText)
+					replacementText := stringifyJSON(innerText, '[', ']')
+					replacementText = stringifyJSON(replacementText, '{', '}')
 					outputText := rawText[0:start] + replacementText + Preprocess(rawText[end:])
 					return outputText
 				}
@@ -26,31 +26,23 @@ func Preprocess(rawText string) string {
 	return rawText
 }
 
-// this is a hack, there are complexities to escaping [] inside a json object
-// for our purposes since a stringified [] is still an []
-func quoteArray(args string) string {
-	args = strings.Replace(args, `[`, `"[`, 1)
-	args = strings.Replace(args, `]`, `]"`, 1)
-	return args
-}
-
-func stringifyArgs(args string) string {
+func stringifyJSON(text string, lparen, rparen byte) string {
 	stack := ""
 	var start, end int
-	for i := 0; i < len(args); i++ {
-		if args[i] == '{' {
+	for i := 0; i < len(text); i++ {
+		if text[i] == lparen {
 			if len(stack) == 0 {
 				start = i
 			}
-			stack += "{" // push
-		} else if args[i] == '}' && len(stack) > 0 {
+			stack += string(lparen) // push
+		} else if text[i] == rparen && len(stack) > 0 {
 			stack = stack[:len(stack)-1] // pop
 			if len(stack) == 0 {
 				end = i
-				stringified := `"` + strings.Replace(args[start:end+1], `"`, `\"`, -1) + `"`
-				return args[:start] + stringified + stringifyArgs(args[end+1:])
+				stringified := `"` + strings.Replace(text[start:end+1], `"`, `\"`, -1) + `"`
+				return text[:start] + stringified + stringifyJSON(text[end+1:], lparen, rparen)
 			}
 		}
 	}
-	return args
+	return text
 }
