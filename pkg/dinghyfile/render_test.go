@@ -14,7 +14,7 @@ import (
 const simpleTempl = `
 {
     "stages": [
-        {{ module "wait.stage.module" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" [1, 2, 3] }}
+        {{ module "wait.stage.module" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" ["1", "2", "3"] }}
     ],
 }
 `
@@ -25,7 +25,7 @@ const expected = `
         {
             "name": "Wait",
             "refId": { "c": "d" },
-            "requisiteStageRefIds": [1, 2, 3],
+            "requisiteStageRefIds": ["1", "2", "3"],
             "type": "wait",
             "waitTime": 10
         }
