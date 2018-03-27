@@ -26,6 +26,8 @@ type Settings struct {
 	StashUsername     string
 	StashToken        string
 	StashEndpoint     string `json:"stashEndpoint" yaml:"stashEndpoint"`
+	RedisServer       string `json:"redisServer" yaml:"redisServer"`
+	RedisPassword     string `json:"redisPassword" yaml:"redisPassword"`
 }
 
 // S is the global settings structure

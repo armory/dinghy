@@ -19,6 +19,6 @@ func main() {
 	}
 	log.SetLevel(logLevel)
 	log.Info("Dinghy started.")
-	cache.C = cache.NewCache()
+	cache.C = cache.NewMemoryCacheStore()
 	log.Fatal(http.ListenAndServe(":8081", web.Router()))
 }

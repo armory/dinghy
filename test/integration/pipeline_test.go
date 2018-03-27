@@ -102,7 +102,7 @@ func (p *Push) SetCommitStatus(s status.Status) {
 // even though it mocks out the github part, it talks to spinnaker
 // hence it is an integration test and not a unit-test
 func TestSpinnakerPipelineUpdate(t *testing.T) {
-	cache.C = cache.NewCache()
+	cache.C = cache.NewMemoryCacheStore()
 
 	err := dinghyfile.DownloadAndUpdate(&Push{}, &FileService{Empty: false})
 	assert.Equal(t, nil, err)

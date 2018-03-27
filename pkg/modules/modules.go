@@ -23,16 +23,14 @@ func Rebuild(p git.Push, downloader git.Downloader) error {
 		for _, f := range files {
 			url := downloader.GitURL(p.Org(), p.Repo(), f)
 			log.Info("Processing module: " + url)
-			if _, exists := c[url]; exists {
-				// update all upstream dinghyfiles
-				_, roots := c.UpstreamNodes(c[url])
-				for _, r := range roots {
-					// todo: generalize and call download and update here
-					err := ProcessAffectedDinghy(r.URL, downloader)
-					if err != nil {
-						p.SetCommitStatus(status.Error)
-						return err
-					}
+
+			_, rootURLs := c.UpstreamURLs(url)
+			for _, r := range rootURLs {
+				// todo: generalize and call download and update here
+				err := ProcessAffectedDinghy(r, downloader)
+				if err != nil {
+					p.SetCommitStatus(status.Error)
+					return err
 				}
 			}
 		}

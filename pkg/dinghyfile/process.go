@@ -31,8 +31,6 @@ func DownloadAndUpdate(p git.Push, f git.Downloader) error {
 			return err
 		}
 		log.Info("Downloaded: ", file)
-		// add the dinghyfile to cache
-		cache.C.Add(f.GitURL(p.Org(), p.Repo(), settings.S.DinghyFilename))
 		buf := Render(cache.C, settings.S.DinghyFilename, file, p.Org(), p.Repo(), f)
 
 		d := Dinghyfile{}
