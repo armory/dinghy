@@ -1,9 +1,9 @@
 package cache
 
 import (
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBlahBlah(t *testing.T) {
