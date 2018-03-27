@@ -46,10 +46,10 @@ func TestDeletingDependency(t *testing.T) {
 	c.SetDeps("df1", "mod1", "mod2")
 	c.SetDeps("df2", "mod2", "mod3")
 
-	_, roots:= c.UpstreamURLs("mod2")
+	_, roots := c.UpstreamURLs("mod2")
 	assert.ElementsMatchf(t, roots, []string{"df1", "df2"}, "mod2 should have df1 and df2 as parents")
 
-  // remove mod2 as a dependency from df2
+	// remove mod2 as a dependency from df2
 	c.SetDeps("df2", "mod3", "mod4")
 
 	_, roots = c.UpstreamURLs("mod2")
