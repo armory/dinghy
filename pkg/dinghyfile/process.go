@@ -31,7 +31,7 @@ func DownloadAndUpdate(p git.Push, f git.Downloader) error {
 			return err
 		}
 		log.Info("Downloaded: ", file)
-		buf := Render(cache.C, settings.S.DinghyFilename, file, p.Org(), p.Repo(), f)
+		buf := Render(cache.C, settings.S.DinghyFilename, file, p.Org(), p.Repo(), f, nil)
 		log.Debug("JSON str: ", buf.String())
 
 		d := Dinghyfile{}

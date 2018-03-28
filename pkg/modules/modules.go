@@ -52,7 +52,7 @@ func ProcessAffectedDinghy(url string, downloader git.Downloader) error {
 	log.Info("Downloaded: ", file)
 
 	// todo: handle recursive updates
-	buf := dinghyfile.Render(cache.C, settings.S.DinghyFilename, file, org, repo, downloader)
+	buf := dinghyfile.Render(cache.C, settings.S.DinghyFilename, file, org, repo, downloader, nil)
 	d := dinghyfile.Dinghyfile{}
 	err = json.Unmarshal(buf.Bytes(), &d)
 	if err != nil {
