@@ -63,7 +63,7 @@ func (f *FileService) ParseGitURL(url string) (org, repo, path string) {
 }
 
 func TestSimpleWaitStage(t *testing.T) {
-	buf := Render(cache.NewMemoryCacheStore(), "simpleTempl", simpleTempl, "org", "repo", &FileService{})
+	buf := Render(cache.NewMemoryCacheStore(), "simpleTempl", simpleTempl, "org", "repo", &FileService{}, nil)
 	const expected = `
 	{
 		"stages": [
@@ -83,7 +83,7 @@ func TestSimpleWaitStage(t *testing.T) {
 }
 
 func TestSpillover(t *testing.T) {
-	buf := Render(cache.NewMemoryCacheStore(), "df", df, "org", "repo", &FileService{})
+	buf := Render(cache.NewMemoryCacheStore(), "df", df, "org", "repo", &FileService{}, nil)
 	const expected = `
 	{
 		"stages": [
@@ -103,12 +103,12 @@ type MultilevelFileService struct{}
 func (f *MultilevelFileService) Download(org, repo, file string) (string, error) {
 	switch file {
 	case "dinghyfile":
-		return `{{ module "wait.stage.module" "foo" "baz" }}`, nil
+		return `{{ module "wait.stage.module" "foo" "baz" "waitTime" 100 }}`, nil
 
 	case "wait.stage.module":
 		return `{
 			"foo": "bar",
-			"nested": {{ module "wait.dep.module" "waitTime" 100 }}
+			"nested": {{ module "wait.dep.module" }}
 		}`, nil
 
 	case "wait.dep.module":
@@ -137,7 +137,7 @@ func TestModuleVariableSubstitution(t *testing.T) {
 	file, err := f.Download("org", "repo", "dinghyfile")
 	assert.Equal(t, nil, err)
 
-	ret := Render(cache.C, "dinghyfile", file, "org", "repo", &f)
+	ret := Render(cache.C, "dinghyfile", file, "org", "repo", &f, nil)
 
 	type testStruct struct {
 		Foo    string `json:"foo"`

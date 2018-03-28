@@ -15,7 +15,7 @@ import (
 )
 
 // Render function renders the template
-func Render(c cache.CacheStore, fileName, file, gitOrg, gitRepo string, f git.Downloader) *bytes.Buffer {
+func Render(c cache.CacheStore, fileName, file, gitOrg, gitRepo string, f git.Downloader, v []interface{}) *bytes.Buffer {
 	deps := make([]string, 0)
 
 	funcMap := template.FuncMap{
@@ -29,22 +29,23 @@ func Render(c cache.CacheStore, fileName, file, gitOrg, gitRepo string, f git.Do
 				log.Fatal("could not read module: ", mod, " err: ", err)
 			}
 
-			rendered := Render(c, mod, dat, settings.S.TemplateOrg, settings.S.TemplateRepo, f)
+			rendered := Render(c, mod, dat, settings.S.TemplateOrg, settings.S.TemplateRepo, f, vars)
 			err = json.Unmarshal(rendered.Bytes(), &tmp)
 			if err != nil {
 				log.Fatal("could not unmarshal module after rendering: ", mod, " err: ", err)
 			}
-			if len(vars)%2 != 0 {
+			allVars := append(vars, v...)
+			if len(allVars)%2 != 0 {
 				log.Fatal(errors.New("invalid number of args to module: " + mod))
 			}
 
-			for i := 0; i < len(vars); i += 2 {
-				key, ok := vars[i].(string)
+			for i := 0; i < len(allVars); i += 2 {
+				key, ok := allVars[i].(string)
 				if !ok {
 					log.Fatal(errors.New("dict keys must be strings in module: " + mod))
 				}
 				if val, ok := tmp[key]; ok {
-					newVal := vars[i+1]
+					newVal := allVars[i+1]
 					log.Info("newval: ", newVal)
 					if jsonStr, ok := newVal.(string); ok {
 						/* act on str */
