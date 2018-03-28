@@ -14,38 +14,42 @@ import (
 const simpleTempl = `
 {
     "stages": [
-        {{ module "wait.stage.module" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" ["1", "2", "3"] }}
-    ],
+		{{ module "wait.stage.module" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" ["1", "2", "3"] }}
+    ]
 }
 `
-
-const expected = `
-{
-    "stages": [
-        {
-            "name": "Wait",
-            "refId": { "c": "d" },
-            "requisiteStageRefIds": ["1", "2", "3"],
-            "type": "wait",
-            "waitTime": 10
-        }
-    ],
-}
-`
+const df = `{
+	"stages": [
+		{{ module "mod1" }},
+		{{ module "mod2" }}
+	]
+}`
 
 // FileService is for working with repositories
 type FileService struct{}
 
 // Download a file from github.
 func (f *FileService) Download(org, repo, file string) (string, error) {
-	ret := `{
-        "name": "Wait",
-        "refId": {},
-        "requisiteStageRefIds": [],
-        "type": "wait",
-        "waitTime": 12044
-    }`
-	return ret, nil
+	switch file {
+	case "mod1":
+		return `{
+			"foo": "bar",
+			"type": "deploy"
+		  }`, nil
+	case "mod2":
+		return `{
+			"type": "jenkins"
+		  }`, nil
+	case "wait.stage.module":
+		return `{
+				"name": "Wait",
+				"refId": {},
+				"requisiteStageRefIds": [],
+				"type": "wait",
+				"waitTime": 12044
+			}`, nil
+	}
+	return "", nil
 }
 
 // GitURL returns the git url for a given org, repo, path
@@ -60,7 +64,33 @@ func (f *FileService) ParseGitURL(url string) (org, repo, path string) {
 
 func TestSimpleWaitStage(t *testing.T) {
 	buf := Render(cache.NewMemoryCacheStore(), "simpleTempl", simpleTempl, "org", "repo", &FileService{})
+	const expected = `
+	{
+		"stages": [
+			{
+				"name": "Wait",
+				"refId": { "c": "d" },
+				"requisiteStageRefIds": ["1", "2", "3"],
+				"type": "wait",
+				"waitTime": 10
+			}
+		]
+	}`
+	// strip whitespace from both strings for assertion
+	exp := strings.Join(strings.Fields(expected), "")
+	actual := strings.Join(strings.Fields(buf.String()), "")
+	assert.Equal(t, exp, actual)
+}
 
+func TestSpillover(t *testing.T) {
+	buf := Render(cache.NewMemoryCacheStore(), "df", df, "org", "repo", &FileService{})
+	const expected = `
+	{
+		"stages": [
+			{"foo":"bar","type":"deploy"},
+			{"type":"jenkins"}
+		]
+	} `
 	// strip whitespace from both strings for assertion
 	exp := strings.Join(strings.Fields(expected), "")
 	actual := strings.Join(strings.Fields(buf.String()), "")
