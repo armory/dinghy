@@ -14,38 +14,42 @@ import (
 const simpleTempl = `
 {
     "stages": [
-        {{ module "wait.stage.module" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" ["1", "2", "3"] }}
-    ],
+		{{ module "wait.stage.module" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" ["1", "2", "3"] }}
+    ]
 }
 `
-
-const expected = `
-{
-    "stages": [
-        {
-            "name": "Wait",
-            "refId": { "c": "d" },
-            "requisiteStageRefIds": ["1", "2", "3"],
-            "type": "wait",
-            "waitTime": 10
-        }
-    ],
-}
-`
+const df = `{
+	"stages": [
+		{{ module "mod1" }},
+		{{ module "mod2" }}
+	]
+}`
 
 // FileService is for working with repositories
 type FileService struct{}
 
 // Download a file from github.
 func (f *FileService) Download(org, repo, file string) (string, error) {
-	ret := `{
-        "name": "Wait",
-        "refId": {},
-        "requisiteStageRefIds": [],
-        "type": "wait",
-        "waitTime": 12044
-    }`
-	return ret, nil
+	switch file {
+	case "mod1":
+		return `{
+			"foo": "bar",
+			"type": "deploy"
+		  }`, nil
+	case "mod2":
+		return `{
+			"type": "jenkins"
+		  }`, nil
+	case "wait.stage.module":
+		return `{
+				"name": "Wait",
+				"refId": {},
+				"requisiteStageRefIds": [],
+				"type": "wait",
+				"waitTime": 12044
+			}`, nil
+	}
+	return "", nil
 }
 
 // EncodeURL returns the git url for a given org, repo, path
@@ -60,7 +64,33 @@ func (f *FileService) DecodeURL(url string) (org, repo, path string) {
 
 func TestSimpleWaitStage(t *testing.T) {
 	buf := Render(cache.NewMemoryCache(), "simpleTempl", simpleTempl, "org", "repo", &FileService{})
+	const expected = `
+	{
+		"stages": [
+			{
+				"name": "Wait",
+				"refId": { "c": "d" },
+				"requisiteStageRefIds": ["1", "2", "3"],
+				"type": "wait",
+				"waitTime": 10
+			}
+		]
+	}`
+	// strip whitespace from both strings for assertion
+	exp := strings.Join(strings.Fields(expected), "")
+	actual := strings.Join(strings.Fields(buf.String()), "")
+	assert.Equal(t, exp, actual)
+}
 
+func TestSpillover(t *testing.T) {
+	buf := Render(cache.NewMemoryCacheStore(), "df", df, "org", "repo", &FileService{}, nil)
+	const expected = `
+	{
+		"stages": [
+			{"foo":"bar","type":"deploy"},
+			{"type":"jenkins"}
+		]
+	} `
 	// strip whitespace from both strings for assertion
 	exp := strings.Join(strings.Fields(expected), "")
 	actual := strings.Join(strings.Fields(buf.String()), "")
@@ -73,12 +103,12 @@ type MultilevelFileService struct{}
 func (f *MultilevelFileService) Download(org, repo, file string) (string, error) {
 	switch file {
 	case "dinghyfile":
-		return `{{ module "wait.stage.module" "foo" "baz" }}`, nil
+		return `{{ module "wait.stage.module" "foo" "baz" "waitTime" 100 }}`, nil
 
 	case "wait.stage.module":
 		return `{
 			"foo": "bar",
-			"nested": {{ module "wait.dep.module" "waitTime" 100 }}
+			"nested": {{ module "wait.dep.module" }}
 		}`, nil
 
 	case "wait.dep.module":
@@ -107,7 +137,7 @@ func TestModuleVariableSubstitution(t *testing.T) {
 	file, err := f.Download("org", "repo", "dinghyfile")
 	assert.Equal(t, nil, err)
 
-	ret := Render(cache.C, "dinghyfile", file, "org", "repo", &f)
+	ret := Render(cache.C, "dinghyfile", file, "org", "repo", &f, nil)
 
 	type testStruct struct {
 		Foo    string `json:"foo"`

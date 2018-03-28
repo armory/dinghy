@@ -13,21 +13,25 @@ import (
 )
 
 // Render renders the template
-func (b PipelineBuilder) Render(org, repo, path string) *bytes.Buffer {
+func (b PipelineBuilder) Render(org, repo, path string, v []interface{}) *bytes.Buffer {
 	deps := make(map[string]bool)
 
 	funcMap := template.FuncMap{
 		"module": func(mod string, vars ...interface{}) string {
 			var tmp map[string]interface{}
-			rendered := b.Render(settings.S.TemplateOrg, settings.S.TemplateRepo, mod)
-			json.Unmarshal(rendered.Bytes(), &tmp)
+			rendered := b.Render(settings.S.TemplateOrg, settings.S.TemplateRepo, mod, vars)
+			err := json.Unmarshal(rendered.Bytes(), &tmp)
+			if err != nil {
+				log.Fatal("could not unmarshal module after rendering: ", mod, " err: ", err)
+			}
+			allVars := append(vars, v...)
 
 			if len(vars)%2 != 0 {
 				log.Fatal(errors.New("invalid number of args to module: " + mod))
 			}
 
-			for i := 0; i < len(vars); i += 2 {
-				key, ok := vars[i].(string)
+			for i := 0; i < len(allVars); i += 2 {
+				key, ok := allVars[i].(string)
 				if !ok {
 					log.Fatal(errors.New("dict keys must be strings in module: " + mod))
 				}
