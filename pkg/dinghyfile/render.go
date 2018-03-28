@@ -16,20 +16,22 @@ import (
 
 // Render function renders the template
 func Render(c cache.Cache, fileName, file, gitOrg, gitRepo string, f git.Downloader) *bytes.Buffer {
-	// this is the temp struct we decode the module into for
-	// variable substitution
-	var tmp map[string]interface{}
-
 	funcMap := template.FuncMap{
 		"module": func(mod string, vars ...interface{}) string {
+			// this is the temp struct we decode the module into for
+			// variable substitution
+			var tmp map[string]interface{}
+
 			dat, err := f.Download(settings.S.TemplateOrg, settings.S.TemplateRepo, mod)
 			if err != nil {
-				log.Fatal("could not read module: ", mod, err)
+				log.Fatal("could not read module: ", mod, " err: ", err)
 			}
 
 			rendered := Render(c, mod, dat, settings.S.TemplateOrg, settings.S.TemplateRepo, f)
-			json.Unmarshal(rendered.Bytes(), &tmp)
-
+			err = json.Unmarshal(rendered.Bytes(), &tmp)
+			if err != nil {
+				log.Fatal("could not unmarshal module after rendering: ", mod, " err: ", err)
+			}
 			if len(vars)%2 != 0 {
 				log.Fatal(errors.New("invalid number of args to module: " + mod))
 			}

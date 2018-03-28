@@ -42,7 +42,8 @@ func DownloadAndUpdate(p git.Push, f git.Downloader) error {
 			p.SetCommitStatus(status.Failure)
 			return ErrMalformedJSON
 		}
-		log.Info("Unmarshalled: ", d)
+		//log.Info("Unmarshalled: ", d)
+		log.Info("####", buf.String())
 		// todo: rebuild template
 		// todo: validate
 		if p.IsMaster() == true {
