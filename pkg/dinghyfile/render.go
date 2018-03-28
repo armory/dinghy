@@ -15,7 +15,9 @@ import (
 )
 
 // Render function renders the template
-func Render(c cache.Cache, fileName, file, gitOrg, gitRepo string, f git.Downloader) *bytes.Buffer {
+func Render(c cache.CacheStore, fileName, file, gitOrg, gitRepo string, f git.Downloader) *bytes.Buffer {
+	deps := make([]string, 0)
+
 	funcMap := template.FuncMap{
 		"module": func(mod string, vars ...interface{}) string {
 			// this is the temp struct we decode the module into for
@@ -69,9 +71,19 @@ func Render(c cache.Cache, fileName, file, gitOrg, gitRepo string, f git.Downloa
 			if err != nil {
 				log.Fatal("could not marshal variable substituted json for module: ", mod, err)
 			}
-			parent := f.GitURL(gitOrg, gitRepo, fileName)
+
 			child := f.GitURL(gitOrg, settings.S.TemplateRepo, mod)
-			c.Add(parent, child)
+			found := false
+			for _, dep := range deps {
+				if dep == child {
+					found = true
+					break
+				}
+			}
+			if !found {
+				deps = append(deps, child)
+			}
+
 			return string(byt)
 		},
 	}
@@ -92,5 +104,6 @@ func Render(c cache.Cache, fileName, file, gitOrg, gitRepo string, f git.Downloa
 		log.Fatalf("template execution: %s", err)
 	}
 
+	c.SetDeps(f.GitURL(gitOrg, gitRepo, fileName), deps...)
 	return buf
 }

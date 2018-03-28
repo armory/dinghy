@@ -63,7 +63,7 @@ func (f *FileService) ParseGitURL(url string) (org, repo, path string) {
 }
 
 func TestSimpleWaitStage(t *testing.T) {
-	buf := Render(cache.NewCache(), "simpleTempl", simpleTempl, "org", "repo", &FileService{})
+	buf := Render(cache.NewMemoryCacheStore(), "simpleTempl", simpleTempl, "org", "repo", &FileService{})
 	const expected = `
 	{
 		"stages": [
@@ -82,8 +82,8 @@ func TestSimpleWaitStage(t *testing.T) {
 	assert.Equal(t, exp, actual)
 }
 
-func TestGrubhub(t *testing.T) {
-	buf := Render(cache.NewCache(), "df", df, "org", "repo", &FileService{})
+func TestSpillover(t *testing.T) {
+	buf := Render(cache.NewMemoryCacheStore(), "df", df, "org", "repo", &FileService{})
 	const expected = `
 	{
 		"stages": [
@@ -131,7 +131,7 @@ func (f *MultilevelFileService) ParseGitURL(url string) (org, repo, path string)
 }
 
 func TestModuleVariableSubstitution(t *testing.T) {
-	cache.C = cache.NewCache()
+	cache.C = cache.NewMemoryCacheStore()
 	f := MultilevelFileService{}
 
 	file, err := f.Download("org", "repo", "dinghyfile")

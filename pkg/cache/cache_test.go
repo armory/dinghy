@@ -7,30 +7,18 @@ import (
 )
 
 func TestIdempotency(t *testing.T) {
-	c := NewCache()
-	c.Add("foo")
+	c := NewMemoryCacheStore()
+
+	c.SetDeps("foo", "c1", "c2")
+	assert.ElementsMatchf(t, c["foo"].Children, []*Node{c["c1"], c["c2"]}, "foo should have c1 and c2 as children")
 	assert.ElementsMatchf(t, c["foo"].Parents, []*Node{}, "foo should not have any parents")
+
+	c.SetDeps("foo", "c2", "c3")
+	assert.ElementsMatchf(t, c["foo"].Children, []*Node{c["c2"], c["c3"]}, "foo should have c2 and c3 as children, and not c1")
+	assert.ElementsMatchf(t, c["foo"].Parents, []*Node{}, "foo should not have any parents")
+
+	c.SetDeps("foo")
 	assert.ElementsMatchf(t, c["foo"].Children, []*Node{}, "foo should not have any children")
-
-	// test idempotency
-	c.Add("foo")
-	assert.Equal(t, 1, len(c))
-
-	c.Add("c1")
-	assert.ElementsMatchf(t, c["c1"].Parents, []*Node{}, "c1 should not have any parents")
-	assert.ElementsMatchf(t, c["c1"].Children, []*Node{}, "c1 should not have any children")
-
-	c.Add("foo", "c1")
-	assert.ElementsMatchf(t, c["foo"].Children, []*Node{c["c1"]}, "foo should have c as the child")
-	assert.ElementsMatchf(t, c["foo"].Parents, []*Node{}, "foo should not have any parents")
-
-	assert.Equal(t, 2, len(c))
-	c.Add("c1")
-	assert.Equal(t, 2, len(c))
-
-	c.Add("foo", "c1")
-	assert.Equal(t, 2, len(c))
-	assert.ElementsMatchf(t, c["foo"].Children, []*Node{c["c1"]}, "foo should have c as the child")
 	assert.ElementsMatchf(t, c["foo"].Parents, []*Node{}, "foo should not have any parents")
 }
 
@@ -52,15 +40,32 @@ func TestCache(t *testing.T) {
 	assert.ElementsMatchf(t, c["mod6"].Children, []*Node{}, "mod6 should not have any parents")
 }
 
+func TestDeletingDependency(t *testing.T) {
+	c := NewMemoryCacheStore()
+
+	c.SetDeps("df1", "mod1", "mod2")
+	c.SetDeps("df2", "mod2", "mod3")
+
+	_, roots := c.UpstreamURLs("mod2")
+	assert.ElementsMatchf(t, roots, []string{"df1", "df2"}, "mod2 should have df1 and df2 as parents")
+
+	// remove mod2 as a dependency from df2
+	c.SetDeps("df2", "mod3", "mod4")
+
+	_, roots = c.UpstreamURLs("mod2")
+	assert.ElementsMatchf(t, roots, []string{"df1"}, "mod2 should only have one parent")
+	assert.ElementsMatchf(t, c["df2"].Children, []*Node{c["mod3"], c["mod4"]}, "df2's children list is wrong")
+}
+
 func TestUpstreamsAndRoots(t *testing.T) {
 	c := createCache()
-	up, roots := c.UpstreamNodes(c["mod3"])
-	assert.ElementsMatchf(t, up, []*Node{c["mod1"], c["mod2"], c["df1"], c["df2"]}, "mod3's upstream nodes aren't quite right!")
-	assert.ElementsMatchf(t, roots, []*Node{c["df1"], c["df2"]}, "mod3's root nodes aren't quite right!")
+	up, roots := c.UpstreamURLs("mod3")
+	assert.ElementsMatchf(t, up, []string{"mod1", "mod2", "df1", "df2"}, "mod3's upstream nodes aren't quite right!")
+	assert.ElementsMatchf(t, roots, []string{"df1", "df2"}, "mod3's root nodes aren't quite right!")
 
-	up, roots = c.UpstreamNodes(c["mod6"])
-	assert.ElementsMatchf(t, up, []*Node{c["mod1"], c["mod2"], c["mod3"], c["mod4"], c["df1"], c["df2"]}, "mod6's upstream nodes aren't quite right!")
-	assert.ElementsMatchf(t, roots, []*Node{c["df1"], c["df2"]}, "mod6's root nodes aren't quite right!")
+	up, roots = c.UpstreamURLs("mod6")
+	assert.ElementsMatchf(t, up, []string{"mod1", "mod2", "mod3", "mod4", "df1", "df2"}, "mod6's upstream nodes aren't quite right!")
+	assert.ElementsMatchf(t, roots, []string{"df1", "df2"}, "mod6's root nodes aren't quite right!")
 }
 
 /* The test dependency graph we are working with
@@ -79,7 +84,7 @@ mod1  mod2   \
             /  \
          mod5  mod6
 */
-func createCache() Cache {
+func createCache() MemoryCacheStore {
 	dinghyfiles := map[string][]string{
 		"df1": []string{"mod1", "mod2"},
 		"df2": []string{"mod2", "mod3"},
@@ -90,12 +95,12 @@ func createCache() Cache {
 		"mod3": []string{"mod4"},
 		"mod4": []string{"mod5", "mod6"},
 	}
-	c := NewCache()
+	c := NewMemoryCacheStore()
 	for dinghyfile, deps := range dinghyfiles {
-		c.Add(dinghyfile, deps...)
+		c.SetDeps(dinghyfile, deps...)
 	}
 	for module, deps := range modules {
-		c.Add(module, deps...)
+		c.SetDeps(module, deps...)
 	}
 	return c
 }
