@@ -48,18 +48,18 @@ func (f *FileService) Download(org, repo, file string) (string, error) {
 	return ret, nil
 }
 
-// GitURL returns the git url for a given org, repo, path
-func (f *FileService) GitURL(org, repo, path string) string {
-	return (&github.FileService{}).GitURL(org, repo, path)
+// EncodeURL returns the git url for a given org, repo, path
+func (f *FileService) EncodeURL(org, repo, path string) string {
+	return (&github.FileService{}).EncodeURL(org, repo, path)
 }
 
-// ParseGitURL takes a url and returns the org, repo, path
-func (f *FileService) ParseGitURL(url string) (org, repo, path string) {
-	return (&github.FileService{}).ParseGitURL(url)
+// DecodeURL takes a url and returns the org, repo, path
+func (f *FileService) DecodeURL(url string) (org, repo, path string) {
+	return (&github.FileService{}).DecodeURL(url)
 }
 
 func TestSimpleWaitStage(t *testing.T) {
-	buf := Render(cache.NewMemoryCacheStore(), "simpleTempl", simpleTempl, "org", "repo", &FileService{})
+	buf := Render(cache.NewMemoryCache(), "simpleTempl", simpleTempl, "org", "repo", &FileService{})
 
 	// strip whitespace from both strings for assertion
 	exp := strings.Join(strings.Fields(expected), "")
@@ -90,18 +90,18 @@ func (f *MultilevelFileService) Download(org, repo, file string) (string, error)
 	return "", nil
 }
 
-// GitURL returns the git url for a given org, repo, path
-func (f *MultilevelFileService) GitURL(org, repo, path string) string {
-	return (&github.FileService{}).GitURL(org, repo, path)
+// EncodeURL returns the git url for a given org, repo, path
+func (f *MultilevelFileService) EncodeURL(org, repo, path string) string {
+	return (&github.FileService{}).EncodeURL(org, repo, path)
 }
 
-// ParseGitURL takes a url and returns the org, repo, path
-func (f *MultilevelFileService) ParseGitURL(url string) (org, repo, path string) {
-	return (&github.FileService{}).ParseGitURL(url)
+// DecodeURL takes a url and returns the org, repo, path
+func (f *MultilevelFileService) DecodeURL(url string) (org, repo, path string) {
+	return (&github.FileService{}).DecodeURL(url)
 }
 
 func TestModuleVariableSubstitution(t *testing.T) {
-	cache.C = cache.NewMemoryCacheStore()
+	cache.C = cache.NewMemoryCache()
 	f := MultilevelFileService{}
 
 	file, err := f.Download("org", "repo", "dinghyfile")

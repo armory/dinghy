@@ -56,14 +56,14 @@ func (f *FileService) Download(org, repo, file string) (string, error) {
 	return mod, nil
 }
 
-// GitURL returns the git url for a given org, repo, path
-func (f *FileService) GitURL(org, repo, path string) string {
-	return (&github.FileService{}).GitURL(org, repo, path)
+// EncodeURL returns the git url for a given org, repo, path
+func (f *FileService) EncodeURL(org, repo, path string) string {
+	return (&github.FileService{}).EncodeURL(org, repo, path)
 }
 
-// ParseGitURL takes a url and returns the org, repo, path
-func (f *FileService) ParseGitURL(url string) (org, repo, path string) {
-	return (&github.FileService{}).ParseGitURL(url)
+// DecodeURL takes a url and returns the org, repo, path
+func (f *FileService) DecodeURL(url string) (org, repo, path string) {
+	return (&github.FileService{}).DecodeURL(url)
 }
 
 // Push is for a github push notification
@@ -102,7 +102,7 @@ func (p *Push) SetCommitStatus(s status.Status) {
 // even though it mocks out the github part, it talks to spinnaker
 // hence it is an integration test and not a unit-test
 func TestSpinnakerPipelineUpdate(t *testing.T) {
-	cache.C = cache.NewMemoryCacheStore()
+	cache.C = cache.NewMemoryCache()
 
 	err := dinghyfile.DownloadAndUpdate(&Push{}, &FileService{Empty: false})
 	assert.Equal(t, nil, err)

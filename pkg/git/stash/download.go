@@ -21,7 +21,7 @@ type FileContentsResponse struct {
 }
 
 func (f *FileService) downloadLines(org, repo, path string, start int) (lines []string, nextStart int, err error) {
-	url := f.GitURL(org, repo, path)
+	url := f.EncodeURL(org, repo, path)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return
@@ -67,13 +67,13 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 	return strings.Join(allLines, "\n"), nil
 }
 
-// GitURL returns the git url for a given org, repo, path
-func (f *FileService) GitURL(org, repo, path string) string {
+// EncodeURL returns the git url for a given org, repo, path
+func (f *FileService) EncodeURL(org, repo, path string) string {
 	return fmt.Sprintf(`%s/projects/%s/repos/%s/browse/%s?raw`, settings.S.StashEndpoint, org, repo, path)
 }
 
-// ParseGitURL takes a url and returns the org, repo, path
-func (f *FileService) ParseGitURL(url string) (org, repo, path string) {
+// DecodeURL takes a url and returns the org, repo, path
+func (f *FileService) DecodeURL(url string) (org, repo, path string) {
 	r, _ := regexp.Compile(`/projects/(.+)/repos/(.+)/browse/(.+)\?raw`)
 	match := r.FindStringSubmatch(url)
 	org = match[1]
