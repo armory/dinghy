@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func makeRedisOptions() *redis.Options {
+func newRedisOptions() *redis.Options {
 	host := util.GetenvOrDefault("REDIS_HOST", "redis")
 	port := util.GetenvOrDefault("REDIS_PORT", "6379")
 
@@ -34,6 +34,6 @@ func main() {
 	log.SetLevel(logLevel)
 	log.Info("Dinghy started.")
 
-	web.GlobalCache = cache.NewRedisCache(makeRedisOptions())
+	web.GlobalCache = cache.NewRedisCache(newRedisOptions())
 	log.Fatal(http.ListenAndServe(":8081", web.Router()))
 }
