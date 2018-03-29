@@ -8,36 +8,32 @@ import (
 	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/dinghyfile"
 	"github.com/armory-io/dinghy/pkg/git/dummy"
-	"github.com/armory-io/dinghy/pkg/git/github"
 	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/web"
 )
 
-const dinghfNew = `{
+const dinghyfileNew = `{
 	"application": "dinghyintegration",
-	"pipelines": [
-		{
-			"application": "dinghyintegration",
-			"keepWaitingPipelines": false,
-			"limitConcurrent": false,
-			"name": "This is new",
-			"stages": [
-				{{ module "mod1" }},
-				{{ module "mod2" }}
-			],
-			"triggers": []
-		}
-	]
+	"pipelines": [{
+		"application": "dinghyintegration",
+		"keepWaitingPipelines": false,
+		"limitConcurrent": false,
+		"name": "This is new",
+		"stages": [
+			{{ module "mod1" }},
+			{{ module "mod2" }}
+		],
+		"triggers": []
+	}]
 }`
 
-const dinghfEmpty = `{
+const dinghyfileEmpty = `{
 	"application": "dinghyintegration",
 	"pipelines": []
 }`
 
 const mod1 = `{
-	"clusters": [
-	  {
+	"clusters": [{
 		"account": "preprod",
 		"amiName": "${#stage( 'us-west-2 Build Launch Details' )['context']['IMAGE_ID']}",
 		"application": "${#stage( 'us-west-2 Build Launch Details' )['context']['SERVICE']}",
@@ -98,8 +94,7 @@ const mod1 = `{
 		],
 		"useAmiBlockDeviceMappings": false,
 		"useSourceCapacity": false
-	  }
-	],
+	}],
 	"comments": "Create AWS objects based on the properties file.",
 	"completeOtherBranchesThenFail": false,
 	"continuePipeline": true,
@@ -111,7 +106,7 @@ const mod1 = `{
 	"type": "deploy",
 	"refId": "deployuswest2",
 	"requisiteStageRefIds": ["buildlaunchconfiguswest2"]
-  }`
+}`
 
 const mod2 = `{
 	"comments": "Build properties file containing relevant information to building a launch config and autoscaling group. This info is used it the proceeding step to build the AWS objects.",
@@ -123,47 +118,23 @@ const mod2 = `{
 	"job": "write-lc-properties-file",
 	"master": "",
 	"name": "us-west-2 Build Launch Details",
-	"parameters":
-	{
+	"parameters": {
 	  "region": "us_west",
 	  "service_name": "${parameters.service}",
 	  "service_version": "${parameters.version}",
 	  "desired_instance_count": "3"
 	}, 
-		"stageEnabled": {
+	"stageEnabled": {
 	  "expression": "${ parameters.deploy_us_west_default == \"True\" || #stage('us-west-2 Deploy Judgement')['status'] == \"SUCCEEDED\" }",
 	  "type": "expression"
 	},
 	"propertyFile": "launchconfig.properties",
 	"type": "jenkins"
-  }`
+}`
 
-// FileService is for working with repositories
-type FileService struct {
-	Empty bool
-}
-
-// Download a file from github.
-func (f *FileService) Download(org, repo, file string) (string, error) {
-	if file == "dinghyfile" {
-		if f.Empty {
-			return dinghfEmpty, nil
-		}
-		return dinghfNew, nil
-	} else if file == "mod1" {
-		return mod1, nil
-	}
-	return mod2, nil
-}
-
-// EncodeURL returns the git url for a given org, repo, path
-func (f *FileService) EncodeURL(org, repo, path string) string {
-	return (&github.FileService{}).EncodeURL(org, repo, path)
-}
-
-// DecodeURL takes a url and returns the org, repo, path
-func (f *FileService) DecodeURL(url string) (org, repo, path string) {
-	return (&github.FileService{}).DecodeURL(url)
+var fileService = dummy.FileService{
+	"mod1": mod1,
+	"mod2": mod2,
 }
 
 // TestSpinnakerPipelineUpdate tests pipeline update in spinnaker
@@ -172,7 +143,7 @@ func (f *FileService) DecodeURL(url string) (org, repo, path string) {
 func TestSpinnakerPipelineUpdate(t *testing.T) {
 	builder := &dinghyfile.PipelineBuilder{
 		Depman:     cache.NewMemoryCache(),
-		Downloader: &FileService{Empty: false},
+		Downloader: fileService,
 	}
 
 	push := &dummy.Push{
@@ -181,10 +152,11 @@ func TestSpinnakerPipelineUpdate(t *testing.T) {
 		OrgName:   settings.S.TemplateOrg,
 	}
 
+	builder.Downloader.(dummy.FileService)["dinghyfile"] = dinghyfileNew
 	err := web.ProcessPush(push, builder)
 	assert.Equal(t, nil, err)
 
-	builder.Downloader.(*FileService).Empty = true
+	builder.Downloader.(dummy.FileService)["dinghyfile"] = dinghyfileEmpty
 	err = web.ProcessPush(push, builder)
 	assert.Equal(t, nil, err)
 }
