@@ -26,6 +26,9 @@ type Push interface {
 	SetCommitStatus(s git.Status)
 }
 
+// GlobalCache is a global dependency manager to be set on program start
+var GlobalCache dinghyfile.DependencyManager
+
 // Router defines the routes for the application.
 func Router() *mux.Router {
 	r := mux.NewRouter()
@@ -142,8 +145,10 @@ func ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 func buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
 	// Construct a pipeline builder using provided downloader
 	builder := &dinghyfile.PipelineBuilder{
-		Downloader: f,
-		Depman:     dinghyfile.C,
+		Downloader:   f,
+		Depman:       GlobalCache,
+		TemplateRepo: settings.S.TemplateRepo,
+		TemplateOrg:  settings.S.TemplateOrg,
 	}
 
 	// Process the push.

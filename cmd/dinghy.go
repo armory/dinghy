@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/armory-io/dinghy/pkg/cache"
-	"github.com/armory-io/dinghy/pkg/dinghyfile"
 	"github.com/armory-io/dinghy/pkg/util"
 	"github.com/armory-io/dinghy/pkg/web"
 	"github.com/go-redis/redis"
@@ -35,6 +34,6 @@ func main() {
 	log.SetLevel(logLevel)
 	log.Info("Dinghy started.")
 
-	dinghyfile.C = cache.NewRedisCache(makeRedisOptions())
+	web.GlobalCache = cache.NewRedisCache(makeRedisOptions())
 	log.Fatal(http.ListenAndServe(":8081", web.Router()))
 }

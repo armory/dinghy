@@ -31,7 +31,7 @@ func inSlice(arr []string, val string) bool {
 
 // ContainsFile checks to see if a given file is in the push.
 func (p *Push) ContainsFile(file string) bool {
-	if p.Commits != nil {
+	if p.Commits == nil {
 		return false
 	}
 	for _, c := range p.Commits {

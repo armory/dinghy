@@ -2,10 +2,11 @@ package github
 
 import (
 	"fmt"
-	"github.com/armory-io/dinghy/pkg/settings"
 	"io/ioutil"
 	"net/http"
 	"regexp"
+
+	"github.com/armory-io/dinghy/pkg/settings"
 )
 
 // FileService is for working with repositories
