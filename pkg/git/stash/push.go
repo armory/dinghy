@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/armory-io/dinghy/pkg/git"
 	"github.com/armory-io/dinghy/pkg/settings"
 	log "github.com/sirupsen/logrus"
 )
@@ -166,4 +167,8 @@ func (p *Push) IsMaster() bool {
 		}
 	}
 	return false
+}
+
+// SetCommitStatus sets a commit status
+func (p *Push) SetCommitStatus(s git.Status) {
 }

@@ -5,15 +5,29 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/armory-io/dinghy/pkg/modules"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/armory-io/dinghy/pkg/dinghyfile"
+	"github.com/armory-io/dinghy/pkg/git"
 	"github.com/armory-io/dinghy/pkg/git/github"
 	"github.com/armory-io/dinghy/pkg/git/stash"
+	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/util"
 )
+
+// Push represents a push notification from a git service.
+type Push interface {
+	ContainsFile(file string) bool
+	Files() []string
+	Repo() string
+	Org() string
+	IsMaster() bool
+	SetCommitStatus(s git.Status)
+}
+
+// GlobalCache is a global dependency manager to be set on program start
+var GlobalCache dinghyfile.DependencyManager
 
 // Router defines the routes for the application.
 func Router() *mux.Router {
@@ -27,20 +41,21 @@ func Router() *mux.Router {
 	return r
 }
 
+// ==============
+// route handlers
+// ==============
+
 func healthcheck(w http.ResponseWriter, r *http.Request) {
 	log.Info(r.RemoteAddr, " Requested ", r.RequestURI)
 	w.Write([]byte(`{"status":"ok"}`))
 }
 
 func githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := httputil.DumpRequest(r, true)
-	if err != nil {
+	p := github.Push{}
+	if err := readBody(r, &p); err != nil {
 		util.WriteHTTPError(w, err)
 		return
 	}
-	log.Info("Received payload: ", string(body))
-	p := github.Push{}
-	util.ReadJSON(r.Body, &p)
 
 	if p.Ref == "" {
 		// Unmarshal failed, might be a non-Push notification. Log event and return
@@ -48,34 +63,15 @@ func githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	downloader := &github.FileService{}
-	// todo: this hangs the connection until spinnaker has been updated. shouldn't do that.
-	err = dinghyfile.DownloadAndUpdate(&p, downloader)
-	if err == dinghyfile.ErrMalformedJSON {
-		w.Write([]byte(fmt.Sprintf(`{"error":"%v"}`, err)))
-		w.WriteHeader(422)
-		return
-	} else if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if err = modules.Rebuild(&p, downloader); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Write([]byte(`{"status":"accepted"}`))
+	buildPipelines(&p, &github.FileService{}, w)
 }
 
 func stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := httputil.DumpRequest(r, true)
-	if err != nil {
+	payload := stash.WebhookPayload{}
+	if err := readBody(r, &payload); err != nil {
 		util.WriteHTTPError(w, err)
 		return
 	}
-	log.Info("Received payload: ", string(body))
-
-	payload := stash.WebhookPayload{}
-	util.ReadJSON(r.Body, &payload)
 
 	payload.IsOldStash = true
 	p, err := stash.NewPush(payload)
@@ -84,31 +80,16 @@ func stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	downloader := &stash.FileService{}
-
-	if err = dinghyfile.DownloadAndUpdate(p, downloader); err != nil {
-		util.WriteHTTPError(w, err)
-		return
-	}
-
-	if err = modules.Rebuild(p, downloader); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.Write([]byte(`{"status":"accepted"}`))
+	buildPipelines(p, &stash.FileService{}, w)
 }
 
 func bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := httputil.DumpRequest(r, true)
-	if err != nil {
+	payload := stash.WebhookPayload{}
+	if err := readBody(r, &payload); err != nil {
 		util.WriteHTTPError(w, err)
 		return
 	}
-	log.Info("Received payload: ", string(body))
 
-	payload := stash.WebhookPayload{}
-	util.ReadJSON(r.Body, &payload)
 	if payload.EventKey != nil && *payload.EventKey != "repo:refs_changed" {
 		w.WriteHeader(200)
 		return
@@ -121,17 +102,92 @@ func bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	downloader := &stash.FileService{}
+	buildPipelines(p, &stash.FileService{}, w)
+}
 
-	if err = dinghyfile.DownloadAndUpdate(p, downloader); err != nil {
-		util.WriteHTTPError(w, err)
-		return
+// =========
+// utilities
+// =========
+
+// ProcessPush processes a push using a pipeline builder
+func ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
+	// Ensure dinghyfile was changed.
+	if !p.ContainsFile(settings.S.DinghyFilename) {
+		p.SetCommitStatus(git.StatusSuccess)
+		return nil
 	}
 
-	if err = modules.Rebuild(p, downloader); err != nil {
+	// Ensure we're on the master branch.
+	if !p.IsMaster() {
+		log.Info("Skipping Spinnaker pipeline update because this is not master")
+		p.SetCommitStatus(git.StatusSuccess)
+		return nil
+	}
+
+	// Set commit status to the pending yellow dot.
+	p.SetCommitStatus(git.StatusPending)
+
+	// Process the dinghyfile.
+	err := b.ProcessDinghyfile(p.Org(), p.Repo(), settings.S.DinghyFilename)
+
+	// Set commit status based on result of processing.
+	if err == nil {
+		p.SetCommitStatus(git.StatusSuccess)
+	} else if err == dinghyfile.ErrMalformedJSON {
+		p.SetCommitStatus(git.StatusFailure)
+	} else {
+		p.SetCommitStatus(git.StatusError)
+	}
+
+	return err
+}
+
+func buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
+	// Construct a pipeline builder using provided downloader
+	builder := &dinghyfile.PipelineBuilder{
+		Downloader:   f,
+		Depman:       GlobalCache,
+		TemplateRepo: settings.S.TemplateRepo,
+		TemplateOrg:  settings.S.TemplateOrg,
+	}
+
+	// Process the push.
+	err := ProcessPush(p, builder)
+	if err == dinghyfile.ErrMalformedJSON {
+		w.Write([]byte(fmt.Sprintf(`{"error":"%v"}`, err)))
+		w.WriteHeader(422)
+		return
+	} else if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	// Check if we're in a template repo
+	if p.Repo() == settings.S.TemplateRepo {
+		// Set status to pending while we process modules
+		p.SetCommitStatus(git.StatusPending)
+
+		// For each module pushed, rebuild dependent dinghyfiles
+		for _, file := range p.Files() {
+			if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				p.SetCommitStatus(git.StatusError)
+				return
+			}
+		}
+		p.SetCommitStatus(git.StatusSuccess)
+	}
+
 	w.Write([]byte(`{"status":"accepted"}`))
+}
+
+func readBody(r *http.Request, dest interface{}) error {
+	body, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		return err
+	}
+	log.Info("Received payload: ", string(body))
+
+	util.ReadJSON(r.Body, &dest)
+	return nil
 }

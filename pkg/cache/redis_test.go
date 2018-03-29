@@ -3,22 +3,34 @@ package cache
 import (
 	"testing"
 
+	"fmt"
+
+	"github.com/armory-io/dinghy/pkg/util"
+	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBlahBlah(t *testing.T) {
-	c := NewRedisCacheStore()
+func connectToRedis() *RedisCache {
+	host := util.GetenvOrDefault("REDIS_HOST", "redis")
+	port := util.GetenvOrDefault("REDIS_PORT", "6379")
+
+	c := NewRedisCache(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", host, port),
+		Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
+		DB:       0,
+	})
+
 	c.Clear()
+	return c
+}
 
-	c.SetDeps("df1", "mod1", "mod2")
-	c.SetDeps("mod1", "mod3", "mod4")
+func TestRedisCache(t *testing.T) {
+	c := connectToRedis()
 
-	upstreams, roots := c.UpstreamURLs("mod4")
-	assert.EqualValuesf(t, []string{"mod1", "df1"}, upstreams, "mod4 should have parents mod1, df1")
-	assert.EqualValuesf(t, []string{"df1"}, roots, "mod4 should have roots df1")
+	c.SetDeps("df1", []string{"mod1", "mod2"})
+	c.SetDeps("mod1", []string{"mod3", "mod4"})
+	assert.EqualValuesf(t, []string{"df1"}, c.GetRoots("mod4"), "mod4 should have roots df1")
 
-	c.SetDeps("mod1", "mod3")
-
-	_, roots = c.UpstreamURLs("mod4")
-	assert.EqualValuesf(t, []string{}, roots, "mod4 should have no roots")
+	c.SetDeps("mod1", []string{"mod3"})
+	assert.EqualValuesf(t, []string{}, c.GetRoots("mod4"), "mod4 should have no roots")
 }

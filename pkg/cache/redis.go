@@ -4,35 +4,25 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/armory-io/dinghy/pkg/util"
 	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
 )
 
-// RedisCacheStore maintains a dependency graph inside Redis
-type RedisCacheStore redis.Client
-
-var redisOptions redis.Options
-
-func init() {
-	redisHost := util.GetenvOrDefault("REDIS_HOST", "redis")
-	redisPort := util.GetenvOrDefault("REDIS_PORT", "6379")
-	redisOptions.Addr = fmt.Sprintf("%s:%s", redisHost, redisPort)
-	redisOptions.Password = util.GetenvOrDefault("REDIS_PASSWORD", "")
-	redisOptions.DB = 0
-}
+// RedisCache maintains a dependency graph inside Redis
+type RedisCache redis.Client
 
 func compileKey(keys ...string) string {
-	return fmt.Sprintf("Armory:%s", strings.Join(keys, ":"))
+	return fmt.Sprintf("Armory:dinghy:%s", strings.Join(keys, ":"))
 }
 
-// NewRedisCacheStore initializes a new cache
-func NewRedisCacheStore() *RedisCacheStore {
-	return (*RedisCacheStore)(redis.NewClient(&redisOptions))
+// NewRedisCache initializes a new cache
+func NewRedisCache(redisOptions *redis.Options) *RedisCache {
+	return (*RedisCache)(redis.NewClient(redisOptions))
 }
 
-func (c RedisCacheStore) SetDeps(parent string, deps ...string) {
-	key := compileKey("dinghy", "children", parent)
+// SetDeps sets dependencies for a parent
+func (c *RedisCache) SetDeps(parent string, deps []string) {
+	key := compileKey("children", parent)
 
 	currentDeps, err := c.SMembers(key).Result()
 	if err != nil {
@@ -68,47 +58,41 @@ func (c RedisCacheStore) SetDeps(parent string, deps ...string) {
 		depsToAdd = append(depsToAdd, key)
 	}
 
-	key = compileKey("dinghy", "children", parent)
+	key = compileKey("children", parent)
 	c.SRem(key, depsToDelete...)
 	c.SAdd(key, depsToAdd...)
 
 	for _, dep := range depsToDelete {
-		key = compileKey("dinghy", "parents", dep.(string))
+		key = compileKey("parents", dep.(string))
 		c.SRem(key, parent)
 	}
 
 	for _, dep := range depsToAdd {
-		key = compileKey("dinghy", "parents", dep.(string))
+		key = compileKey("parents", dep.(string))
 		c.SAdd(key, parent)
 	}
 }
 
-func (c RedisCacheStore) UpstreamURLs(url string) (upstreams, roots []string) {
-	upstreams = make([]string, 0)
-	roots = make([]string, 0)
-
+// GetRoots grabs roots
+func (c *RedisCache) GetRoots(url string) []string {
+	roots := make([]string, 0)
 	visited := map[string]bool{}
-	q := make([]string, 0)
-	q = append(q, url)
 
-	for len(q) > 0 {
+	for q := []string{url}; len(q) > 0; {
 		curr := q[0]
 		q = q[1:]
 
 		visited[curr] = true
 
-		key := compileKey("dinghy", "parents", curr)
+		key := compileKey("parents", curr)
 		parents, err := c.SMembers(key).Result()
 		if err != nil {
 			log.Error(err)
 			break
 		}
 
-		if curr != url {
-			upstreams = append(upstreams, curr)
-			if len(parents) == 0 {
-				roots = append(roots, curr)
-			}
+		if curr != url && len(parents) == 0 {
+			roots = append(roots, curr)
 		}
 
 		for _, parent := range parents {
@@ -119,19 +103,14 @@ func (c RedisCacheStore) UpstreamURLs(url string) (upstreams, roots []string) {
 		}
 	}
 
-	return
-}
-
-// Dump prints the cache, used for debugging
-func (c RedisCacheStore) Dump() {
-	// TODO
+	return roots
 }
 
 // Clear clears everything
-func (c RedisCacheStore) Clear() {
-	keys, _ := c.Keys("Armory:dinghy:children:*").Result()
+func (c *RedisCache) Clear() {
+	keys, _ := c.Keys(compileKey("children", "*")).Result()
 	c.Del(keys...)
 
-	keys, _ = c.Keys("Armory:dinghy:parents:*").Result()
+	keys, _ = c.Keys(compileKey("parents", "*")).Result()
 	c.Del(keys...)
 }

@@ -8,23 +8,17 @@ import (
 	"net/http/httputil"
 	"strings"
 
-	"github.com/armory-io/dinghy/pkg/git/status"
+	"github.com/armory-io/dinghy/pkg/git"
 	"github.com/armory-io/dinghy/pkg/settings"
 )
 
-/*
-Example:
-
-POST /repos/:owner/:repo/statuses/:sha
-
+/* Example: POST /repos/:owner/:repo/statuses/:sha
 {
   "state": "success",
   "target_url": "https://example.com/build/status",
   "description": "The build succeeded!",
   "context": "continuous-integration/jenkins"
-}
-
-*/
+} */
 
 // Status is a payload that we send to the Github API to set commit status
 type Status struct {
@@ -35,7 +29,7 @@ type Status struct {
 }
 
 // SetCommitStatus sets the commit status
-func (p *Push) SetCommitStatus(s status.Status) {
+func (p *Push) SetCommitStatus(s git.Status) {
 	update := newStatus(s)
 	for _, c := range p.Commits {
 		sha := c.ID // not sure if this is right.
@@ -61,20 +55,20 @@ func (p *Push) SetCommitStatus(s status.Status) {
 	}
 }
 
-func newStatus(s status.Status) Status {
+func newStatus(s git.Status) Status {
 	ret := Status{
 		State:     string(s),
 		TargetURL: settings.S.SpinnakerUIURL,
 		Context:   "continuous-deployment/dinghy",
 	}
 	switch s {
-	case status.Success:
+	case git.StatusSuccess:
 		ret.Description = "Pipeline definitions updated!"
-	case status.Error:
+	case git.StatusError:
 		ret.Description = "Error updating pipeline definitions!"
-	case status.Failure:
+	case git.StatusFailure:
 		ret.Description = "Failed to update pipeline definitions!"
-	case status.Pending:
+	case git.StatusPending:
 		ret.Description = "Updating pipeline definitions..."
 	}
 	return ret

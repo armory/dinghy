@@ -26,12 +26,12 @@ func NewNode(url string) *Node {
 	}
 }
 
-// MemoryCacheStore maintains a mapping of dinghyfiles and their dependencies
-type MemoryCacheStore map[string]*Node
+// MemoryCache maintains a mapping of dinghyfiles and their dependencies
+type MemoryCache map[string]*Node
 
-// NewMemoryCacheStore initializes a new cache
-func NewMemoryCacheStore() MemoryCacheStore {
-	return MemoryCacheStore{}
+// NewMemoryCache initializes a new cache
+func NewMemoryCache() MemoryCache {
+	return MemoryCache{}
 }
 
 func findInSlice(n *Node, slice []*Node) int {
@@ -43,7 +43,8 @@ func findInSlice(n *Node, slice []*Node) int {
 	return -1
 }
 
-func (c MemoryCacheStore) SetDeps(parent string, deps ...string) {
+// SetDeps sets the dependencies for a parent
+func (c MemoryCache) SetDeps(parent string, deps []string) {
 	if _, exists := c[parent]; !exists {
 		c[parent] = NewNode(parent)
 	}
@@ -92,7 +93,7 @@ func (c MemoryCacheStore) SetDeps(parent string, deps ...string) {
 // UpstreamURLs returns two arrays:
 // 1) Array of all upstream URLs from a URL
 // 2) Array of only the root URLs (dinghyfiles) for a given URL
-func (c MemoryCacheStore) UpstreamURLs(url string) ([]string, []string) {
+func (c MemoryCache) UpstreamURLs(url string) ([]string, []string) {
 	n, exists := c[url]
 	if !exists {
 		return nil, nil
@@ -104,6 +105,7 @@ func (c MemoryCacheStore) UpstreamURLs(url string) ([]string, []string) {
 	visited := map[*Node]bool{}
 	q := make(chan *Node, len(c))
 	q <- n
+
 	for len(q) > 0 {
 		curr := <-q
 		visited[curr] = true
@@ -138,8 +140,14 @@ func (c MemoryCacheStore) UpstreamURLs(url string) ([]string, []string) {
 	return upstreamURLs, rootURLs
 }
 
+// GetRoots returns all roots for a given leaf
+func (c MemoryCache) GetRoots(url string) []string {
+	_, roots := c.UpstreamURLs(url)
+	return roots
+}
+
 // Dump prints the cache, used for debugging
-func (c MemoryCacheStore) Dump() {
+func (c MemoryCache) Dump() {
 	for k, v := range c {
 		log.Debug("-----------")
 		log.Debug(k)
