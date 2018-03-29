@@ -152,6 +152,9 @@ func TestSpinnakerPipelineUpdate(t *testing.T) {
 		OrgName:   settings.S.TemplateOrg,
 	}
 
+	settings.S.Orca.BaseURL = "http://spinnaker.dev.armory.io:8083"
+	settings.S.Front50.BaseURL = "http://spinnaker.dev.armory.io:8080"
+
 	builder.Downloader.(dummy.FileService)["dinghyfile"] = dinghyfileNew
 	err := web.ProcessPush(push, builder)
 	assert.Equal(t, nil, err)

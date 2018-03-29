@@ -11,6 +11,8 @@ docker run --rm \
   -e "GOOS=linux" \
   -e "GOARCH=amd64" \
   -e "CGO_ENABLED=0" \
+  -e "ORCA_BASE_URL=http://spinnaker.dev.armory.io:8083" \
+  -e "FRONT50_BASE_URL=http://spinnaker.dev.armory.io:8080" \
   andrexus/golang-dep \
   make integration
 
@@ -18,7 +20,6 @@ docker run --rm \
   -v "$PWD:$WORKDIR" \
   -v "${HOME}/.armory/cache/:/creds/" \
   -w $WORKDIR \
-  -e "CLIENT_CERT_PATH=/creds/client.pem" \
   --entrypoint $WORKDIR/bin/test_runner_harness \
   "$DOCKER_IMAGE"
 

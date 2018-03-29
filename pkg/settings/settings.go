@@ -17,17 +17,17 @@ type Settings struct {
 	DinghyFilename    string `json:"dinghyFilename" yaml:"dinghyFilename"`
 	TemplateRepo      string `json:"templateRepo" yaml:"templateRepo"`
 	AutoLockPipelines string `json:"autoLockPipelines" yaml:"autoLockPipelines"`
-	SpinnakerAPIURL   string `json:"spinAPIUrl" yaml:"spinAPIUrl"`
 	SpinnakerUIURL    string `json:"spinUIUrl" yaml:"spinUIUrl"`
-	CertPath          string `json:"certPath" yaml:"certPath"`
 	GitHubCredsPath   string `json:"githubCredsPath" yaml:"githubCredsPath"`
 	GitHubToken       string
 	StashCredsPath    string `json:"stashCredsPath" yaml:"stashCredsPath"`
 	StashUsername     string
 	StashToken        string
-	StashEndpoint     string `json:"stashEndpoint" yaml:"stashEndpoint"`
-	RedisServer       string `json:"redisServer" yaml:"redisServer"`
-	RedisPassword     string `json:"redisPassword" yaml:"redisPassword"`
+	StashEndpoint     string           `json:"stashEndpoint" yaml:"stashEndpoint"`
+	RedisServer       string           `json:"redisServer" yaml:"redisServer"`
+	RedisPassword     string           `json:"redisPassword" yaml:"redisPassword"`
+	Orca              spinnakerService `json:"orca" yaml:"orca"`
+	Front50           spinnakerService `json:"front50" yaml:"front50"`
 }
 
 // S is the global settings structure
@@ -36,12 +36,23 @@ var S = Settings{
 	DinghyFilename:    "dinghyfile",
 	TemplateRepo:      "dinghy-templates",
 	AutoLockPipelines: "true",
-	SpinnakerAPIURL:   "https://spinnaker.armory.io:8085",
 	SpinnakerUIURL:    "https://spinnaker.armory.io",
-	CertPath:          util.GetenvOrDefault("CLIENT_CERT_PATH", os.Getenv("HOME")+"/.armory/cache/client.pem"),
 	GitHubCredsPath:   util.GetenvOrDefault("GITHUB_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/github-creds.txt"),
 	StashCredsPath:    util.GetenvOrDefault("STASH_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/stash-creds.txt"),
 	StashEndpoint:     "http://localhost:7990/rest/api/1.0",
+	Orca: spinnakerService{
+		Enabled: true,
+		BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://orca:8083"),
+	},
+	Front50: spinnakerService{
+		Enabled: true,
+		BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://front50:8080"),
+	},
+}
+
+type spinnakerService struct {
+	Enabled bool   `json:"enabled" yaml:"enabled"`
+	BaseURL string `json:"baseUrl" yaml:"baseUrl"`
 }
 
 // If we got a DINGHY_CONFIG file as part of env, parse what's there into settings

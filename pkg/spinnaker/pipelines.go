@@ -91,11 +91,11 @@ func updatePipeline(p Pipeline) error {
 
 	if id, exists := p["id"]; exists {
 		log.Info("Updating existing pipeline: ", string(b))
-		url := fmt.Sprintf(`%s/pipelines/%s`, settings.S.SpinnakerAPIURL, id)
+		url := fmt.Sprintf(`%s/pipelines/%s`, settings.S.Front50.BaseURL, id)
 		_, err = putWithRetry(url, b)
 	} else {
 		log.Info("Posting pipeline to Spinnaker: ", string(b))
-		url := fmt.Sprintf(`%s/pipelines`, settings.S.SpinnakerAPIURL)
+		url := fmt.Sprintf(`%s/pipelines`, settings.S.Front50.BaseURL)
 		_, err = postWithRetry(url, b)
 	}
 
@@ -107,7 +107,7 @@ func updatePipeline(p Pipeline) error {
 }
 
 func deletePipeline(app string, pipelineName string) error {
-	url := fmt.Sprintf("%s/pipelines/%s/%s", settings.S.SpinnakerAPIURL, app, pipelineName)
+	url := fmt.Sprintf("%s/pipelines/%s/%s", settings.S.Front50.BaseURL, app, pipelineName)
 	if _, err := deleteWithRetry(url); err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func deletePipeline(app string, pipelineName string) error {
 // PipelineIDs returns the pipeline IDs keyed by name for an application.
 func pipelineIDs(app string) (map[string]string, error) {
 	ids := map[string]string{}
-	url := fmt.Sprintf("%s/applications/%s/pipelineConfigs", settings.S.SpinnakerAPIURL, app)
+	url := fmt.Sprintf("%s/pipelines/%s", settings.S.Front50.BaseURL, app)
 	log.Info("Looking up existing pipelines")
 	resp, err := getWithRetry(url)
 	if err != nil {

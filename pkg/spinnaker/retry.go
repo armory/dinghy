@@ -44,7 +44,7 @@ func requestWithRetry(cb callback) (resp *http.Response, err error) {
 func postWithRetry(url string, body []byte) (resp *http.Response, err error) {
 	return requestWithRetry(func() (*http.Response, error) {
 		log.Debug("POST ", url)
-		return defaultClient.Post(url, "application/json", strings.NewReader(string(body)))
+		return defaultClient.Post(url, "application/context+json", strings.NewReader(string(body)))
 	})
 }
 

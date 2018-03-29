@@ -69,8 +69,9 @@ type exceptionVariable struct {
 }
 
 func submitTask(task Task) (*TaskRefResponse, error) {
-	path := fmt.Sprintf("%s/applications/%s/tasks", settings.S.SpinnakerAPIURL, task.Application)
+	path := fmt.Sprintf("%s/ops", settings.S.Orca.BaseURL)
 	b, err := json.Marshal(task)
+	log.Debug(string(b))
 	if err != nil {
 		log.Error("Could not marshal pipeline ", err)
 		return nil, err
@@ -107,7 +108,7 @@ func pollTaskStatus(refURL string, timeout time.Duration) (*ExecutionResponse, e
 }
 
 func getTask(refURL string) (*ExecutionResponse, error) {
-	resp, err := getWithRetry(fmt.Sprintf("%s/%s", settings.S.SpinnakerAPIURL, refURL))
+	resp, err := getWithRetry(fmt.Sprintf("%s/%s", settings.S.Orca.BaseURL, refURL))
 	if err != nil {
 		return nil, fmt.Errorf("error getting task status %v", err)
 	}
