@@ -78,13 +78,11 @@ func (b PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 	url := b.Downloader.EncodeURL(org, repo, path)
 	log.Info("Processing module: " + url)
 
-	// Fetch all dinghyfiles that depend on this module
+	// Process all dinghyfiles that depend on this module
 	for _, url := range b.Depman.GetRoots(url) {
 		org, repo, path := b.Downloader.DecodeURL(url)
-
-		// Process each Dinghyfile.
-		err := b.ProcessDinghyfile(org, repo, path)
-		if err != nil {
+		if err := b.ProcessDinghyfile(org, repo, path); err != nil {
+			log.Error(err)
 			return err
 		}
 	}

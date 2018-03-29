@@ -16,7 +16,7 @@ import (
 	"github.com/armory-io/dinghy/pkg/util"
 )
 
-// Push represented a push notification from a git service.
+// Push represents a push notification from a git service.
 type Push interface {
 	ContainsFile(file string) bool
 	Files() []string

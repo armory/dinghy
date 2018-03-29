@@ -7,7 +7,6 @@ import (
 
 	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/dinghyfile"
-	"github.com/armory-io/dinghy/pkg/git"
 	"github.com/armory-io/dinghy/pkg/git/dummy"
 	"github.com/armory-io/dinghy/pkg/git/github"
 	"github.com/armory-io/dinghy/pkg/settings"
