@@ -3,12 +3,12 @@ package spinnaker
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"strings"
 	"time"
-	"io"
-	"io/ioutil"
 )
 
 type callback func() (*http.Response, error)
