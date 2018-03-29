@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/armory-io/dinghy/pkg/settings"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/armory-io/dinghy/pkg/spinnaker"
@@ -13,8 +11,10 @@ import (
 
 // PipelineBuilder is responsible for downloading dinghyfiles/modules, compiling them, and sending them to Spinnaker
 type PipelineBuilder struct {
-	downloader Downloader
-	depman     DependencyManager
+	Downloader   Downloader
+	Depman       DependencyManager
+	TemplateRepo string
+	TemplateOrg  string
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -36,14 +36,6 @@ type Dinghyfile struct {
 	Pipelines   []spinnaker.Pipeline `json:"pipelines"`
 }
 
-// NewPipelineBuilder creates a new PipelineBuilder and injects dependencies `Downloader` and `DependencyManager`
-func NewPipelineBuilder(downloader Downloader, depman DependencyManager) *PipelineBuilder {
-	return &PipelineBuilder{
-		downloader: downloader,
-		depman:     depman,
-	}
-}
-
 var (
 	// ErrMalformedJSON is more specific than just returning 422.
 	ErrMalformedJSON = errors.New("malformed json")
@@ -54,7 +46,7 @@ func (b PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	log.Info("Dinghyfile found in commit for repo " + repo)
 
 	// Download the dinghyfile.
-	contents, err := b.downloader.Download(org, repo, settings.S.DinghyFilename)
+	contents, err := b.Downloader.Download(org, repo, path)
 	if err != nil {
 		log.Error("Could not download dinghy file ", err)
 		return err
@@ -62,7 +54,7 @@ func (b PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	log.Info("Downloaded: ", contents)
 
 	// Render the dinghyfile and decode it into a Dinghyfile object
-	buf := b.Render(org, repo, path)
+	buf := b.Render(org, repo, path, nil)
 	d := Dinghyfile{}
 	if err = json.Unmarshal(buf.Bytes(), &d); err != nil {
 		log.Error("Could not unmarshal file.", err)
@@ -83,12 +75,12 @@ func (b PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 
 // RebuildModuleRoots rebuilds all dinghyfiles which are roots of the specified file
 func (b PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
-	url := b.downloader.EncodeURL(org, repo, path)
+	url := b.Downloader.EncodeURL(org, repo, path)
 	log.Info("Processing module: " + url)
 
 	// Fetch all dinghyfiles that depend on this module
-	for _, url := range b.depman.GetRoots(url) {
-		org, repo, path := b.downloader.DecodeURL(url)
+	for _, url := range b.Depman.GetRoots(url) {
+		org, repo, path := b.Downloader.DecodeURL(url)
 
 		// Process each Dinghyfile.
 		err := b.ProcessDinghyfile(org, repo, path)

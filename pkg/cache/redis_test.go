@@ -4,21 +4,28 @@ import (
 	"testing"
 
 	"fmt"
+
 	"github.com/armory-io/dinghy/pkg/util"
 	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBlahBlah(t *testing.T) {
-	options := &redis.Options{}
-	redisHost := util.GetenvOrDefault("REDIS_HOST", "redis")
-	redisPort := util.GetenvOrDefault("REDIS_PORT", "6379")
-	options.Addr = fmt.Sprintf("%s:%s", redisHost, redisPort)
-	options.Password = util.GetenvOrDefault("REDIS_PASSWORD", "")
-	options.DB = 0
+func connectToRedis() *RedisCache {
+	host := util.GetenvOrDefault("REDIS_HOST", "redis")
+	port := util.GetenvOrDefault("REDIS_PORT", "6379")
 
-	c := NewRedisCache(options)
+	c := NewRedisCache(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", host, port),
+		Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
+		DB:       0,
+	})
+
 	c.Clear()
+	return c
+}
+
+func TestRedisCache(t *testing.T) {
+	c := connectToRedis()
 
 	c.SetDeps("df1", []string{"mod1", "mod2"})
 	c.SetDeps("mod1", []string{"mod3", "mod4"})

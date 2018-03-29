@@ -7,65 +7,47 @@ import (
 	"encoding/json"
 
 	"github.com/armory-io/dinghy/pkg/cache"
-	"github.com/armory-io/dinghy/pkg/git/github"
+	"github.com/armory-io/dinghy/pkg/git/dummy"
 	"github.com/stretchr/testify/assert"
 )
 
-const simpleTempl = `
-{
-    "stages": [
-		{{ module "wait.stage.module" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" ["1", "2", "3"] }}
-    ]
-}
-`
-const df = `{
-	"stages": [
-		{{ module "mod1" }},
-		{{ module "mod2" }}
-	]
-}`
-
-// FileService is for working with repositories
-type FileService struct{}
-
-// Download a file from github.
-func (f *FileService) Download(org, repo, file string) (string, error) {
-	switch file {
-	case "mod1":
-		return `{
-			"foo": "bar",
-			"type": "deploy"
-		  }`, nil
-	case "mod2":
-		return `{
-			"type": "jenkins"
-		  }`, nil
-	case "wait.stage.module":
-		return `{
-				"name": "Wait",
-				"refId": {},
-				"requisiteStageRefIds": [],
-				"type": "wait",
-				"waitTime": 12044
-			}`, nil
-	}
-	return "", nil
-}
-
-// EncodeURL returns the git url for a given org, repo, path
-func (f *FileService) EncodeURL(org, repo, path string) string {
-	return (&github.FileService{}).EncodeURL(org, repo, path)
-}
-
-// DecodeURL takes a url and returns the org, repo, path
-func (f *FileService) DecodeURL(url string) (org, repo, path string) {
-	return (&github.FileService{}).DecodeURL(url)
+var fileService = dummy.FileService{
+	"simpleTempl": `{
+		"stages": [
+			{{ module "wait.stage.module" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" ["1", "2", "3"] }}
+		]
+	}`,
+	"df": `{
+		"stages": [
+			{{ module "mod1" }},
+			{{ module "mod2" }}
+		]
+	}`,
+	"mod1": `{
+		"foo": "bar",
+		"type": "deploy"
+	}`,
+	"mod2": `{
+		"type": "jenkins"
+	}`,
+	"wait.stage.module": `{
+		"name": "Wait",
+		"refId": {},
+		"requisiteStageRefIds": [],
+		"type": "wait",
+		"waitTime": 12044
+	}`,
 }
 
 func TestSimpleWaitStage(t *testing.T) {
-	buf := Render(cache.NewMemoryCache(), "simpleTempl", simpleTempl, "org", "repo", &FileService{})
-	const expected = `
-	{
+	builder := &PipelineBuilder{
+		Downloader: fileService,
+		Depman:     cache.NewMemoryCache(),
+	}
+
+	buf := builder.Render("org", "repo", "simpleTempl", nil)
+
+	const expected = `{
 		"stages": [
 			{
 				"name": "Wait",
@@ -76,6 +58,7 @@ func TestSimpleWaitStage(t *testing.T) {
 			}
 		]
 	}`
+
 	// strip whitespace from both strings for assertion
 	exp := strings.Join(strings.Fields(expected), "")
 	actual := strings.Join(strings.Fields(buf.String()), "")
@@ -83,72 +66,57 @@ func TestSimpleWaitStage(t *testing.T) {
 }
 
 func TestSpillover(t *testing.T) {
-	buf := Render(cache.NewMemoryCacheStore(), "df", df, "org", "repo", &FileService{}, nil)
-	const expected = `
-	{
+	builder := &PipelineBuilder{
+		Downloader: fileService,
+		Depman:     cache.NewMemoryCache(),
+	}
+
+	buf := builder.Render("org", "repo", "df", nil)
+
+	const expected = `{
 		"stages": [
 			{"foo":"bar","type":"deploy"},
 			{"type":"jenkins"}
 		]
-	} `
+	}`
+
 	// strip whitespace from both strings for assertion
 	exp := strings.Join(strings.Fields(expected), "")
 	actual := strings.Join(strings.Fields(buf.String()), "")
 	assert.Equal(t, exp, actual)
 }
 
-type MultilevelFileService struct{}
+var multilevelFileService = dummy.FileService{
+	"dinghyfile": `{{ module "wait.stage.module" "foo" "baz" "waitTime" 100 }}`,
 
-// Download a file from github.
-func (f *MultilevelFileService) Download(org, repo, file string) (string, error) {
-	switch file {
-	case "dinghyfile":
-		return `{{ module "wait.stage.module" "foo" "baz" "waitTime" 100 }}`, nil
+	"wait.stage.module": `{
+		"foo": "bar",
+		"nested": {{ module "wait.dep.module" }}
+	}`,
 
-	case "wait.stage.module":
-		return `{
-			"foo": "bar",
-			"nested": {{ module "wait.dep.module" }}
-		}`, nil
-
-	case "wait.dep.module":
-		return `{
-			"waitTime": 4243
-		}`, nil
-	}
-
-	return "", nil
+	"wait.dep.module": `{
+		"waitTime": 4243
+	}`,
 }
 
-// EncodeURL returns the git url for a given org, repo, path
-func (f *MultilevelFileService) EncodeURL(org, repo, path string) string {
-	return (&github.FileService{}).EncodeURL(org, repo, path)
-}
-
-// DecodeURL takes a url and returns the org, repo, path
-func (f *MultilevelFileService) DecodeURL(url string) (org, repo, path string) {
-	return (&github.FileService{}).DecodeURL(url)
+type testStruct struct {
+	Foo    string `json:"foo"`
+	Nested struct {
+		WaitTime int `json:"waitTime"`
+	} `json:"nested"`
 }
 
 func TestModuleVariableSubstitution(t *testing.T) {
-	cache.C = cache.NewMemoryCache()
-	f := MultilevelFileService{}
-
-	file, err := f.Download("org", "repo", "dinghyfile")
-	assert.Equal(t, nil, err)
-
-	ret := Render(cache.C, "dinghyfile", file, "org", "repo", &f, nil)
-
-	type testStruct struct {
-		Foo    string `json:"foo"`
-		Nested struct {
-			WaitTime int `json:"waitTime"`
-		} `json:"nested"`
+	builder := &PipelineBuilder{
+		Depman:     cache.NewMemoryCache(),
+		Downloader: multilevelFileService,
 	}
 
-	var ts = testStruct{}
-	err = json.Unmarshal(ret.Bytes(), &ts)
+	ts := testStruct{}
+	ret := builder.Render("org", "repo", "dinghyfile", nil)
+	err := json.Unmarshal(ret.Bytes(), &ts)
 	assert.Equal(t, nil, err)
+
 	assert.Equal(t, "baz", ts.Foo)
 	assert.Equal(t, 100, ts.Nested.WaitTime)
 }

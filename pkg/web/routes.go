@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/dinghyfile"
 	"github.com/armory-io/dinghy/pkg/git"
 	"github.com/armory-io/dinghy/pkg/git/github"
@@ -107,7 +106,8 @@ func bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
 // utilities
 // =========
 
-func processPush(p Push, b *dinghyfile.PipelineBuilder) error {
+// ProcessPush processes a push using a pipeline builder
+func ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	// Ensure dinghyfile was changed.
 	if !p.ContainsFile(settings.S.DinghyFilename) {
 		p.SetCommitStatus(git.StatusSuccess)
@@ -141,10 +141,13 @@ func processPush(p Push, b *dinghyfile.PipelineBuilder) error {
 
 func buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
 	// Construct a pipeline builder using provided downloader
-	builder := dinghyfile.NewPipelineBuilder(f, cache.C)
+	builder := &dinghyfile.PipelineBuilder{
+		Downloader: f,
+		Depman:     dinghyfile.C,
+	}
 
 	// Process the push.
-	err := processPush(p, builder)
+	err := ProcessPush(p, builder)
 	if err == dinghyfile.ErrMalformedJSON {
 		w.Write([]byte(fmt.Sprintf(`{"error":"%v"}`, err)))
 		w.WriteHeader(422)

@@ -5,7 +5,9 @@ import (
 	"os"
 
 	"fmt"
+
 	"github.com/armory-io/dinghy/pkg/cache"
+	"github.com/armory-io/dinghy/pkg/dinghyfile"
 	"github.com/armory-io/dinghy/pkg/util"
 	"github.com/armory-io/dinghy/pkg/web"
 	"github.com/go-redis/redis"
@@ -13,15 +15,14 @@ import (
 )
 
 func makeRedisOptions() *redis.Options {
-	options := &redis.Options{}
+	host := util.GetenvOrDefault("REDIS_HOST", "redis")
+	port := util.GetenvOrDefault("REDIS_PORT", "6379")
 
-	redisHost := util.GetenvOrDefault("REDIS_HOST", "redis")
-	redisPort := util.GetenvOrDefault("REDIS_PORT", "6379")
-	options.Addr = fmt.Sprintf("%s:%s", redisHost, redisPort)
-	options.Password = util.GetenvOrDefault("REDIS_PASSWORD", "")
-	options.DB = 0
-
-	return options
+	return &redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", host, port),
+		Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
+		DB:       0,
+	}
 }
 
 func main() {
@@ -34,6 +35,6 @@ func main() {
 	log.SetLevel(logLevel)
 	log.Info("Dinghy started.")
 
-	cache.C = cache.NewRedisCache(makeRedisOptions())
+	dinghyfile.C = cache.NewRedisCache(makeRedisOptions())
 	log.Fatal(http.ListenAndServe(":8081", web.Router()))
 }

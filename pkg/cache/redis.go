@@ -21,7 +21,7 @@ func NewRedisCache(redisOptions *redis.Options) *RedisCache {
 }
 
 // SetDeps sets dependencies for a parent
-func (c RedisCache) SetDeps(parent string, deps []string) {
+func (c *RedisCache) SetDeps(parent string, deps []string) {
 	key := compileKey("children", parent)
 
 	currentDeps, err := c.SMembers(key).Result()
@@ -68,13 +68,13 @@ func (c RedisCache) SetDeps(parent string, deps []string) {
 	}
 
 	for _, dep := range depsToAdd {
-		key = compileKey("dinghy", "parents", dep.(string))
+		key = compileKey("parents", dep.(string))
 		c.SAdd(key, parent)
 	}
 }
 
 // GetRoots grabs roots
-func (c RedisCache) GetRoots(url string) []string {
+func (c *RedisCache) GetRoots(url string) []string {
 	roots := make([]string, 0)
 	visited := map[string]bool{}
 
@@ -91,7 +91,7 @@ func (c RedisCache) GetRoots(url string) []string {
 			break
 		}
 
-		if len(parents) == 0 {
+		if curr != url && len(parents) == 0 {
 			roots = append(roots, curr)
 		}
 
@@ -107,7 +107,7 @@ func (c RedisCache) GetRoots(url string) []string {
 }
 
 // Clear clears everything
-func (c RedisCache) Clear() {
+func (c *RedisCache) Clear() {
 	keys, _ := c.Keys(compileKey("children", "*")).Result()
 	c.Del(keys...)
 

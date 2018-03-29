@@ -20,21 +20,23 @@ type Repository struct {
 	Organization string `json:"organization"`
 }
 
+func inSlice(arr []string, val string) bool {
+	for _, x := range arr {
+		if x == val {
+			return true
+		}
+	}
+	return false
+}
+
 // ContainsFile checks to see if a given file is in the push.
 func (p *Push) ContainsFile(file string) bool {
-	if p.Commits == nil {
+	if p.Commits != nil {
 		return false
 	}
 	for _, c := range p.Commits {
-		for _, f := range c.Added {
-			if f == file {
-				return true
-			}
-		}
-		for _, f := range c.Modified {
-			if f == file {
-				return true
-			}
+		if inSlice(c.Added, file) || inSlice(c.Modified, file) {
+			return true
 		}
 	}
 	return false
