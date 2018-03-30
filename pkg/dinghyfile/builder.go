@@ -42,7 +42,7 @@ var (
 )
 
 // ProcessDinghyfile downloads a dinghyfile and uses it to update Spinnaker's pipelines.
-func (b PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
+func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	log.Info("Dinghyfile found in commit for repo " + repo)
 
 	// Download the dinghyfile.
@@ -74,7 +74,7 @@ func (b PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 }
 
 // RebuildModuleRoots rebuilds all dinghyfiles which are roots of the specified file
-func (b PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
+func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 	url := b.Downloader.EncodeURL(org, repo, path)
 	log.Info("Processing module: " + url)
 
