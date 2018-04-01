@@ -59,14 +59,14 @@ func getWithRetry(url string) (resp *http.Response, err error) {
 
 func request(method, url string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, body)
-	req.Header.Set("Content-Type", "application/context+json")
-	if settings.S.Fiat.Enabled && settings.S.Fiat.AuthUser != "" {
-		req.Header.Set("X-Spinnaker-User", settings.S.Fiat.AuthUser)
-	}
-
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/context+json")
+	if settings.S.Fiat.Enabled && settings.S.Fiat.AuthUser != "" {
+		req.Header.Set("X-Spinnaker-User", settings.S.Fiat.AuthUser)
 	}
 	return defaultClient.Do(req)
 }
