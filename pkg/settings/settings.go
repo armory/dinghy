@@ -28,6 +28,7 @@ type Settings struct {
 	RedisPassword     string           `json:"redisPassword" yaml:"redisPassword"`
 	Orca              spinnakerService `json:"orca" yaml:"orca"`
 	Front50           spinnakerService `json:"front50" yaml:"front50"`
+	Fiat              spinnakerService `json:"fiat" yaml:"fiat"`
 }
 
 // S is the global settings structure
@@ -48,11 +49,17 @@ var S = Settings{
 		Enabled: true,
 		BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://front50:8080"),
 	},
+	Fiat: spinnakerService{
+		Enabled:  false,
+		BaseURL:  util.GetenvOrDefault("FIAT_BASE_URL", "http://fiat:7003"),
+		AuthUser: "",
+	},
 }
 
 type spinnakerService struct {
-	Enabled bool   `json:"enabled" yaml:"enabled"`
-	BaseURL string `json:"baseUrl" yaml:"baseUrl"`
+	Enabled  bool   `json:"enabled" yaml:"enabled"`
+	BaseURL  string `json:"baseUrl" yaml:"baseUrl"`
+	AuthUser string `json:"authUser" yaml:"authUser"`
 }
 
 // If we got a DINGHY_CONFIG file as part of env, parse what's there into settings
