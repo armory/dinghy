@@ -9,6 +9,7 @@ import (
 
 	"github.com/armory-io/dinghy/pkg/preprocessor"
 	log "github.com/sirupsen/logrus"
+	"github.com/armory-io/dinghy/pkg/spinnaker"
 )
 
 func parseValue(val interface{}) interface{} {
@@ -78,11 +79,20 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, v []interf
 	}
 }
 
+func pipelineIDFunc(app, pipelineName string) string {
+	id, err := spinnaker.GetPipelineID(app, pipelineName)
+	if err != nil {
+		log.Fatalf("could not get pipeline id for app %s, pipeline %s, err = %v", app, pipelineName, err)
+	}
+	return id
+}
+
 // Render renders the template
 func (b *PipelineBuilder) Render(org, repo, path string, v []interface{}) *bytes.Buffer {
 	deps := make(map[string]bool)
 	funcMap := template.FuncMap{
 		"module": moduleFunc(b, org, deps, v),
+		"pipelineID": pipelineIDFunc,
 	}
 
 	// Download the template being rendered.

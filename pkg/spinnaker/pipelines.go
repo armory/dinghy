@@ -82,6 +82,19 @@ func UpdatePipelines(app string, p []Pipeline) (err error) {
 	return
 }
 
+// GetPipelineID gets a pipeline's ID.
+func GetPipelineID(app, pipelineName string) (string, error) {
+	ids, err := pipelineIDs(app)
+	if err != nil {
+		return "", err
+	}
+	id, exists := ids[pipelineName]
+	if !exists {
+		return "", fmt.Errorf("pipeline name not found")
+	}
+	return id, nil
+}
+
 func updatePipeline(p Pipeline) error {
 	b, err := json.Marshal(p)
 	if err != nil {

@@ -120,3 +120,10 @@ func TestModuleVariableSubstitution(t *testing.T) {
 	assert.Equal(t, "baz", ts.Foo)
 	assert.Equal(t, 100, ts.Nested.WaitTime)
 }
+
+/*
+func TestPipelineID(t *testing.T) {
+	id := pipelineIDFunc("armoryspinnaker", "fake-echo-test")
+	assert.Equal(t, "f9c05bd0-5a50-4540-9e15-b44740abfb10", id)
+}
+*/
