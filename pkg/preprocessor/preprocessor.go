@@ -2,47 +2,110 @@ package preprocessor
 
 import (
 	"strings"
+	"unicode"
+	"strconv"
 )
 
-// Preprocess makes a first pass at the dinghyfile and stringifies the JSON args to a module
-func Preprocess(rawText string) string {
-	for i := 0; i < len(rawText)-1 && len(rawText) >= 2; i++ {
-		if rawText[i:i+2] == "{{" {
-			start := i + 2
-			end := start
-			for j := start; j < len(rawText)-1; j++ {
-				if rawText[j:j+2] == "}}" {
-					end = j
-					i = j + 2
-					innerText := rawText[start:end]
-					replacementText := stringifyJSON(innerText, '[', ']')
-					replacementText = stringifyJSON(replacementText, '{', '}')
-					outputText := rawText[0:start] + replacementText + Preprocess(rawText[end:])
-					return outputText
-				}
-			}
-		}
+func parseWhitespace(it *iterator) string {
+	begin := it.pos
+	for !it.end() && unicode.IsSpace(it.get()) {
+		it.pos++
 	}
-	return rawText
+	return it.slice(begin)
 }
 
-func stringifyJSON(text string, lparen, rparen byte) string {
-	stack := ""
-	var start, end int
-	for i := 0; i < len(text); i++ {
-		if text[i] == lparen {
-			if len(stack) == 0 {
-				start = i
+func parseString(it *iterator) string {
+	begin := it.pos
+	it.pos++
+	for !it.end() && it.get() != '"' {
+		if it.get() == '\\' {
+			it.pos++
+		}
+		it.pos++
+	}
+	it.pos++
+	return it.slice(begin)
+}
+
+func parseToken(it *iterator) string {
+	begin := it.pos
+	for !it.end() && !unicode.IsSpace(it.get()) {
+		it.pos++
+	}
+	return it.slice(begin)
+}
+
+func parseJSONObject(it *iterator) string {
+	begin := it.pos
+	stack := []rune{it.get()}
+	it.pos++
+
+	for !it.end() && len(stack) > 0 {
+		switch it.get() {
+		case '"':
+			parseString(it)
+
+		case '[', '{':
+			stack = append(stack, it.get())
+			it.pos++
+
+		case ']':
+			if stack[len(stack)-1] == '[' {
+				stack = stack[:len(stack)-1]
 			}
-			stack += string(lparen) // push
-		} else if text[i] == rparen && len(stack) > 0 {
-			stack = stack[:len(stack)-1] // pop
-			if len(stack) == 0 {
-				end = i
-				stringified := `"` + strings.Replace(text[start:end+1], `"`, `\"`, -1) + `"`
-				return text[:start] + stringified + stringifyJSON(text[end+1:], lparen, rparen)
+			it.pos++
+
+		case '}':
+			if stack[len(stack)-1] == '{' {
+				stack = stack[:len(stack)-1]
 			}
+			it.pos++
+
+		default:
+			it.pos++
 		}
 	}
+	return strconv.Quote(it.slice(begin))
+}
+
+// Preprocess makes a first pass at the dinghyfile and stringifies the JSON args to a module
+func Preprocess(text string) string {
+	length := len(text)
+
+	for i := 0; i < length-1 && length >= 2; i++ {
+		if text[i:i+2] != "{{" {
+			continue
+		}
+
+		it := newIterator(text)
+		it.pos = i + 2
+		parts := []string{"{{"}
+
+		for !it.end() {
+			if it.text[it.pos:it.pos+2] == "}}" {
+				parts = append(parts, "}}")
+				it.pos += 2
+				break
+			}
+
+			ch := it.get()
+			var part string
+
+			if unicode.IsSpace(ch) {
+				part = parseWhitespace(it)
+			} else if ch == '"' {
+				part = parseString(it)
+			} else if ch == '{' || ch == '[' {
+				part = parseJSONObject(it)
+			} else {
+				part = parseToken(it)
+			}
+
+			parts = append(parts, part)
+		}
+
+		return text[:i] + strings.Join(parts, "") + Preprocess(text[it.pos:])
+	}
+
 	return text
 }
