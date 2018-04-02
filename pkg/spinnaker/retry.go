@@ -2,13 +2,15 @@ package spinnaker
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"strings"
 	"time"
+
+	"github.com/armory-io/dinghy/pkg/settings"
+	log "github.com/sirupsen/logrus"
 )
 
 type callback func() (*http.Response, error)
@@ -44,24 +46,27 @@ func requestWithRetry(cb callback) (resp *http.Response, err error) {
 func postWithRetry(url string, body []byte) (resp *http.Response, err error) {
 	return requestWithRetry(func() (*http.Response, error) {
 		log.Debug("POST ", url)
-		return defaultClient.Post(url, "application/context+json", strings.NewReader(string(body)))
+		return request("POST", url, strings.NewReader(string(body)))
 	})
 }
 
 func getWithRetry(url string) (resp *http.Response, err error) {
 	return requestWithRetry(func() (*http.Response, error) {
 		log.Debug("GET ", url)
-		return defaultClient.Get(url)
+		return request("GET", url, nil)
 	})
 }
 
 func request(method, url string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, body)
-	req.Header.Set("Content-Type", "application/json")
-
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/context+json")
+	if settings.S.Fiat.Enabled && settings.S.Fiat.AuthUser != "" {
+		req.Header.Set("X-Spinnaker-User", settings.S.Fiat.AuthUser)
 	}
 	return defaultClient.Do(req)
 }
