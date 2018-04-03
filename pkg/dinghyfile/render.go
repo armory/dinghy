@@ -27,15 +27,15 @@ func parseValue(val interface{}) interface{} {
 	return val
 }
 
-func replaceFields(obj map[string]interface{}, vars []interface{}, mod string) {
+func replaceFields(obj map[string]interface{}, vars []interface{}, mod string) error {
 	if len(vars)%2 != 0 {
-		log.Fatal(errors.New("invalid number of args to module: " + mod))
+		return errors.New("invalid number of args to module: " + mod)
 	}
 
 	for i := 0; i < len(vars); i += 2 {
 		key, ok := vars[i].(string)
 		if !ok {
-			log.Fatal(errors.New("dict keys must be strings in module: " + mod))
+			return errors.New("dict keys must be strings in module: " + mod)
 		}
 
 		val, exists := obj[key]
@@ -44,6 +44,7 @@ func replaceFields(obj map[string]interface{}, vars []interface{}, mod string) {
 			log.Info(" ** variable substitution in ", mod, " for key: ", key, ", value ", val, " --> ", obj[key])
 		}
 	}
+	return nil
 }
 
 type templateFunc func(mod string, vars ...interface{}) string
@@ -63,16 +64,22 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, v []interf
 		var decoded map[string]interface{}
 		err := json.Unmarshal(rendered.Bytes(), &decoded)
 		if err != nil {
-			log.Fatal("could not unmarshal module after rendering: ", mod, " err: ", err)
+			log.Error("could not unmarshal module after rendering: ", mod, " err: ", err)
+			return ""
 		}
 
 		// Replace fields inside map.
-		replaceFields(decoded, append(vars, v...), mod)
+		err = replaceFields(decoded, append(vars, v...), mod)
+		if err != nil {
+			log.Error(err)
+			return ""
+		}
 
 		// Encode back into JSON.
 		byt, err := json.Marshal(decoded)
 		if err != nil {
-			log.Fatal("could not marshal variable substituted json for module: ", mod, err)
+			log.Error("could not marshal variable substituted json for module: ", mod, err)
+			return ""
 		}
 
 		return string(byt)
@@ -82,7 +89,7 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, v []interf
 func pipelineIDFunc(app, pipelineName string) string {
 	id, err := spinnaker.GetPipelineID(app, pipelineName)
 	if err != nil {
-		log.Fatalf("could not get pipeline id for app %s, pipeline %s, err = %v", app, pipelineName, err)
+		log.Errorf("could not get pipeline id for app %s, pipeline %s, err = %v", app, pipelineName, err)
 	}
 	return id
 }
@@ -98,23 +105,26 @@ func (b *PipelineBuilder) Render(org, repo, path string, v []interface{}) *bytes
 	// Download the template being rendered.
 	contents, err := b.Downloader.Download(org, repo, path)
 	if err != nil {
-		log.Fatalf("could not download %s/%s/%s", org, repo, path)
+		log.Errorf("could not download %s/%s/%s", org, repo, path)
+		return nil
 	}
 
 	// Preprocess to stringify any json args in calls to modules.
 	contents = preprocessor.Preprocess(contents)
 
 	// Parse the downloaded template.
-	tmpl, err := template.New("moduleTest").Funcs(funcMap).Parse(contents)
+	tmpl, err := template.New("dinghy-render").Funcs(funcMap).Parse(contents)
 	if err != nil {
-		log.Fatalf("template parsing: %s", err)
+		log.Errorf("template parsing: %s", err)
+		return nil
 	}
 
 	// Run the template to verify the output.
 	buf := new(bytes.Buffer)
 	err = tmpl.Execute(buf, "")
 	if err != nil {
-		log.Fatalf("template execution: %s", err)
+		log.Errorf("template execution: %s", err)
+		return nil
 	}
 
 	// Record the dependencies we ran into.
