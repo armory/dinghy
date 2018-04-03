@@ -90,17 +90,19 @@ var multilevelFileService = dummy.FileService{
 	"dinghyfile": `{{ module "wait.stage.module" "foo" "baz" "waitTime" 100 }}`,
 
 	"wait.stage.module": `{
-		"foo": "bar",
+		"foo": "{{ var "foo" "baz" }}",
+		"a": "{{ var "nonexistent" "b" }}",
 		"nested": {{ module "wait.dep.module" }}
 	}`,
 
 	"wait.dep.module": `{
-		"waitTime": 4243
+		"waitTime": {{ var "waitTime" 1000 }}
 	}`,
 }
 
 type testStruct struct {
 	Foo    string `json:"foo"`
+	A      string `json:"a"`
 	Nested struct {
 		WaitTime int `json:"waitTime"`
 	} `json:"nested"`
@@ -114,10 +116,12 @@ func TestModuleVariableSubstitution(t *testing.T) {
 
 	ts := testStruct{}
 	ret := builder.Render("org", "repo", "dinghyfile", nil)
+
 	err := json.Unmarshal(ret.Bytes(), &ts)
 	assert.Equal(t, nil, err)
 
 	assert.Equal(t, "baz", ts.Foo)
+	assert.Equal(t, "b", ts.A)
 	assert.Equal(t, 100, ts.Nested.WaitTime)
 }
 

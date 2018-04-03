@@ -12,8 +12,6 @@ import (
 )
 
 func parseValue(val interface{}) interface{} {
-	log.Info("newval: ", val)
-
 	if jsonStr, ok := val.(string); ok {
 		if jsonStr[0] == '{' {
 			json.Unmarshal([]byte(jsonStr), &val)
@@ -66,11 +64,15 @@ func pipelineIDFunc(app, pipelineName string) string {
 }
 
 func varFunc(vars []varMap) interface{} {
-	return func(varName string) string {
+	return func(varName string, defaultVal ...interface{}) interface{} {
 		for _, vm := range vars {
 			if val, exists := vm[varName]; exists {
-				return val.(string)
+				return val
 			}
+		}
+
+		if len(defaultVal) > 0 {
+			return defaultVal[0]
 		}
 		return ""
 	}
