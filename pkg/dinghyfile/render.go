@@ -63,11 +63,36 @@ func pipelineIDFunc(app, pipelineName string) string {
 	return id
 }
 
+func renderValue(val interface{}) interface{} {
+	// If it's an unserialized JSON array, serialize it back to JSON.
+	if newval, ok := val.([]interface{}); ok {
+		buf, err := json.Marshal(newval)
+		if err != nil {
+			log.Errorf("unable to json.marshal value %v", val)
+			return ""
+		}
+		return string(buf)
+	}
+
+	// If it's an unserialized JSON object, serialize it back to JSON.
+	if newval, ok := val.(map[string]interface{}); ok {
+		buf, err := json.Marshal(newval)
+		if err != nil {
+			log.Errorf("unable to json.marshal value %v", val)
+			return ""
+		}
+		return string(buf)
+	}
+
+	// Return value as is.
+	return val
+}
+
 func varFunc(vars []varMap) interface{} {
 	return func(varName string, defaultVal ...interface{}) interface{} {
 		for _, vm := range vars {
 			if val, exists := vm[varName]; exists {
-				return val
+				return renderValue(val)
 			}
 		}
 

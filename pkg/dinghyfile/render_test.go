@@ -32,10 +32,10 @@ var fileService = dummy.FileService{
 	}`,
 	"wait.stage.module": `{
 		"name": "Wait",
-		"refId": {},
-		"requisiteStageRefIds": [],
+		"refId": {{ var "refId" {} }},
+		"requisiteStageRefIds": {{ var "requisiteStageRefIds" [] }},
 		"type": "wait",
-		"waitTime": 12044
+		"waitTime": {{ var "waitTime" 12044 }}
 	}`,
 }
 
@@ -116,7 +116,6 @@ func TestModuleVariableSubstitution(t *testing.T) {
 
 	ts := testStruct{}
 	ret := builder.Render("org", "repo", "dinghyfile", nil)
-
 	err := json.Unmarshal(ret.Bytes(), &ts)
 	assert.Equal(t, nil, err)
 
