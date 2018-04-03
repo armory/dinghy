@@ -124,7 +124,8 @@ func (e ExecutionResponse) ExtractRetrofitError() *RetrofitErrorResponse {
 		if v.Key == "exception" {
 			var exception exceptionVariable
 			if err := mapstructure.Decode(v.Value, &exception); err != nil {
-				log.WithError(err).Fatal("could not decode exception struct")
+				log.Error("could not decode exception struct: ", err)
+				return nil
 			}
 			return &exception.Details
 		}
