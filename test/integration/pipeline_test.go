@@ -9,6 +9,7 @@ import (
 	"github.com/armory-io/dinghy/pkg/dinghyfile"
 	"github.com/armory-io/dinghy/pkg/git/dummy"
 	"github.com/armory-io/dinghy/pkg/settings"
+	"github.com/armory-io/dinghy/pkg/spinnaker"
 	"github.com/armory-io/dinghy/pkg/web"
 )
 
@@ -155,11 +156,78 @@ func TestSpinnakerPipelineUpdate(t *testing.T) {
 	settings.S.Orca.BaseURL = "http://spinnaker.dev.armory.io:8083"
 	settings.S.Front50.BaseURL = "http://spinnaker.dev.armory.io:8080"
 
-	builder.Downloader.(dummy.FileService)["dinghyfile"] = dinghyfileNew
+	builder.Downloader.(dummy.FileService)[settings.S.DinghyFilename] = dinghyfileNew
 	err := web.ProcessPush(push, builder)
-	assert.Equal(t, nil, err)
+	assert.Nil(t, err)
 
-	builder.Downloader.(dummy.FileService)["dinghyfile"] = dinghyfileEmpty
+	builder.Downloader.(dummy.FileService)[settings.S.DinghyFilename] = dinghyfileEmpty
 	err = web.ProcessPush(push, builder)
-	assert.Equal(t, nil, err)
+	assert.Nil(t, err)
+}
+
+var pipelineIDFileService = dummy.FileService{
+	settings.S.DinghyFilename: `{
+		"application": "pipelineidtest",
+		"pipelines": [{
+			"keepWaitingPipelines": false,
+			"lastModifiedBy": "anonymous",
+			"limitConcurrent": true,
+			"name": "testpipelinename",
+			"stages": [
+			{
+				"name": "Wait",
+				"refId": "1",
+				"requisiteStageRefIds": [],
+				"type": "wait",
+				"waitTime": 30
+			}
+			],
+			"triggers": []
+		}, {
+			"keepWaitingPipelines": false,
+			"lastModifiedBy": "anonymous",
+			"limitConcurrent": true,
+			"name": "trigger",
+			"stages": [
+			{
+				"application": "pipelineidtest",
+				"failPipeline": true,
+				"name": "Pipeline",
+				"pipeline": "{{ pipelineID "pipelineidtest" "testpipelinename" }}",
+				"refId": "1",
+				"requisiteStageRefIds": [],
+				"type": "pipeline",
+				"waitForCompletion": true
+			}
+			],
+			"triggers": []
+		}]
+	}`,
+}
+
+func TestPipelineID(t *testing.T) {
+	builder := &dinghyfile.PipelineBuilder{
+		Depman:     cache.NewMemoryCache(),
+		Downloader: pipelineIDFileService,
+	}
+
+	push := &dummy.Push{
+		FileNames: []string{settings.S.DinghyFilename},
+		RepoName:  settings.S.TemplateRepo,
+		OrgName:   settings.S.TemplateOrg,
+	}
+
+	app := "pipelineidtest"
+	pipelineName := "testpipelinename"
+
+	ids, err := spinnaker.PipelineIDs(app)
+	assert.Nil(t, err)
+
+	if _, exists := ids[pipelineName]; exists {
+		err = spinnaker.DeletePipeline(app, pipelineName)
+		assert.Nil(t, err)
+	}
+
+	err = web.ProcessPush(push, builder)
+	assert.Nil(t, err)
 }

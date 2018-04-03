@@ -3,6 +3,7 @@ package spinnaker
 import (
 	"encoding/json"
 	"fmt"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/armory-io/dinghy/pkg/settings"
@@ -48,7 +49,7 @@ func UpdatePipelines(app string, p []Pipeline) (err error) {
 	if !applicationExists(app) {
 		NewApplication("unknown@unknown.com", app)
 	}
-	ids, _ := pipelineIDs(app)
+	ids, _ := PipelineIDs(app)
 	checklist := make(map[string]bool)
 	idToName := make(map[string]string)
 	for name, id := range ids {
@@ -76,22 +77,44 @@ func UpdatePipelines(app string, p []Pipeline) (err error) {
 	// clear existing pipelines that weren't updated
 	for id, updated := range checklist {
 		if !updated {
-			deletePipeline(app, idToName[id])
+			DeletePipeline(app, idToName[id])
 		}
 	}
 	return
 }
 
+func createEmptyPipeline(app, pipelineName string) error {
+	p := Pipeline{
+		"application": app,
+		"name":        pipelineName,
+	}
+
+	b, err := json.Marshal(p)
+	if err != nil {
+		return err
+	}
+
+	log.Info("Posting pipeline to Spinnaker: ", string(b))
+	url := fmt.Sprintf(`%s/pipelines`, settings.S.Front50.BaseURL)
+	_, err = postWithRetry(url, b)
+
+	return err
+}
+
 // GetPipelineID gets a pipeline's ID.
 func GetPipelineID(app, pipelineName string) (string, error) {
-	ids, err := pipelineIDs(app)
+	ids, err := PipelineIDs(app)
 	if err != nil {
 		return "", err
 	}
 	id, exists := ids[pipelineName]
 	if !exists {
-		return "", fmt.Errorf("pipeline name not found")
+		if err := createEmptyPipeline(app, pipelineName); err != nil {
+			return "", err
+		}
+		return GetPipelineID(app, pipelineName)
 	}
+
 	return id, nil
 }
 
@@ -119,7 +142,8 @@ func updatePipeline(p Pipeline) error {
 	return nil
 }
 
-func deletePipeline(app string, pipelineName string) error {
+// DeletePipeline deletes a pipeline
+func DeletePipeline(app string, pipelineName string) error {
 	url := fmt.Sprintf("%s/pipelines/%s/%s", settings.S.Front50.BaseURL, app, pipelineName)
 	if _, err := deleteWithRetry(url); err != nil {
 		return err
@@ -128,7 +152,7 @@ func deletePipeline(app string, pipelineName string) error {
 }
 
 // PipelineIDs returns the pipeline IDs keyed by name for an application.
-func pipelineIDs(app string) (map[string]string, error) {
+func PipelineIDs(app string) (map[string]string, error) {
 	ids := map[string]string{}
 	url := fmt.Sprintf("%s/pipelines/%s", settings.S.Front50.BaseURL, app)
 	log.Info("Looking up existing pipelines")
