@@ -1,9 +1,9 @@
 package preprocessor
 
 import (
+	"strconv"
 	"strings"
 	"unicode"
-	"strconv"
 )
 
 func parseWhitespace(it *iterator) string {
@@ -68,6 +68,27 @@ func parseJSONObject(it *iterator) string {
 	return strconv.Quote(it.slice(begin))
 }
 
+func isElvisOperator(it *iterator) bool {
+	if it.pos+2 < it.length {
+		if it.text[it.pos:it.pos+2] == "?:" {
+			if unicode.IsSpace(rune(it.text[it.pos+2])) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func parseElvisOperator(it *iterator) string {
+	it.pos += 2
+	for !it.end() && unicode.IsSpace(it.get()) {
+		it.pos++
+	}
+
+	// ignore the elvis operator -- it's just for improved readability
+	return ""
+}
+
 // Preprocess makes a first pass at the dinghyfile and stringifies the JSON args to a module
 func Preprocess(text string) string {
 	length := len(text)
@@ -97,6 +118,8 @@ func Preprocess(text string) string {
 				part = parseString(it)
 			} else if ch == '{' || ch == '[' {
 				part = parseJSONObject(it)
+			} else if isElvisOperator(it) {
+				part = parseElvisOperator(it)
 			} else {
 				part = parseToken(it)
 			}

@@ -3,18 +3,15 @@ package dinghyfile
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 
 	"text/template"
 
 	"github.com/armory-io/dinghy/pkg/preprocessor"
-	log "github.com/sirupsen/logrus"
 	"github.com/armory-io/dinghy/pkg/spinnaker"
+	log "github.com/sirupsen/logrus"
 )
 
 func parseValue(val interface{}) interface{} {
-	log.Info("newval: ", val)
-
 	if jsonStr, ok := val.(string); ok {
 		if jsonStr[0] == '{' {
 			json.Unmarshal([]byte(jsonStr), &val)
@@ -27,29 +24,9 @@ func parseValue(val interface{}) interface{} {
 	return val
 }
 
-func replaceFields(obj map[string]interface{}, vars []interface{}, mod string) error {
-	if len(vars)%2 != 0 {
-		return errors.New("invalid number of args to module: " + mod)
-	}
+type varMap map[string]interface{}
 
-	for i := 0; i < len(vars); i += 2 {
-		key, ok := vars[i].(string)
-		if !ok {
-			return errors.New("dict keys must be strings in module: " + mod)
-		}
-
-		val, exists := obj[key]
-		if exists {
-			obj[key] = parseValue(vars[i+1])
-			log.Info(" ** variable substitution in ", mod, " for key: ", key, ", value ", val, " --> ", obj[key])
-		}
-	}
-	return nil
-}
-
-type templateFunc func(mod string, vars ...interface{}) string
-
-func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, v []interface{}) templateFunc {
+func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []varMap) interface{} {
 	return func(mod string, vars ...interface{}) string {
 		// Record the dependency.
 		child := b.Downloader.EncodeURL(org, b.TemplateRepo, mod)
@@ -57,32 +34,24 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, v []interf
 			deps[child] = true
 		}
 
-		// Render the module recursively.
-		rendered := b.Render(b.TemplateOrg, b.TemplateRepo, mod, vars)
-
-		// Decode rendered JSON into a map.
-		var decoded map[string]interface{}
-		err := json.Unmarshal(rendered.Bytes(), &decoded)
-		if err != nil {
-			log.Error("could not unmarshal module after rendering: ", mod, " err: ", err)
-			return ""
+		length := len(vars)
+		if length%2 != 0 {
+			log.Warnf("odd number of parameters received to module %s", mod)
 		}
 
-		// Replace fields inside map.
-		err = replaceFields(decoded, append(vars, v...), mod)
-		if err != nil {
-			log.Error(err)
-			return ""
+		newVars := make(varMap)
+		for i := 0; i+1 < length; i += 2 {
+			key, ok := vars[i].(string)
+			if !ok {
+				log.Errorf("dict keys must be strings in module: %s", mod)
+				return ""
+			}
+
+			newVars[key] = parseValue(vars[i+1])
 		}
 
-		// Encode back into JSON.
-		byt, err := json.Marshal(decoded)
-		if err != nil {
-			log.Error("could not marshal variable substituted json for module: ", mod, err)
-			return ""
-		}
-
-		return string(byt)
+		result := b.Render(b.TemplateOrg, b.TemplateRepo, mod, append([]varMap{newVars}, allVars...))
+		return result.String()
 	}
 }
 
@@ -94,12 +63,54 @@ func pipelineIDFunc(app, pipelineName string) string {
 	return id
 }
 
+func renderValue(val interface{}) interface{} {
+	// If it's an unserialized JSON array, serialize it back to JSON.
+	if newval, ok := val.([]interface{}); ok {
+		buf, err := json.Marshal(newval)
+		if err != nil {
+			log.Errorf("unable to json.marshal value %v", val)
+			return ""
+		}
+		return string(buf)
+	}
+
+	// If it's an unserialized JSON object, serialize it back to JSON.
+	if newval, ok := val.(map[string]interface{}); ok {
+		buf, err := json.Marshal(newval)
+		if err != nil {
+			log.Errorf("unable to json.marshal value %v", val)
+			return ""
+		}
+		return string(buf)
+	}
+
+	// Return value as is.
+	return val
+}
+
+func varFunc(vars []varMap) interface{} {
+	return func(varName string, defaultVal ...interface{}) interface{} {
+		for _, vm := range vars {
+			if val, exists := vm[varName]; exists {
+				return renderValue(val)
+			}
+		}
+
+		if len(defaultVal) > 0 {
+			return defaultVal[0]
+		}
+		return ""
+	}
+}
+
 // Render renders the template
-func (b *PipelineBuilder) Render(org, repo, path string, v []interface{}) *bytes.Buffer {
+func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) *bytes.Buffer {
 	deps := make(map[string]bool)
+
 	funcMap := template.FuncMap{
-		"module": moduleFunc(b, org, deps, v),
+		"module":     moduleFunc(b, org, deps, vars),
 		"pipelineID": pipelineIDFunc,
+		"var":        varFunc(vars),
 	}
 
 	// Download the template being rendered.
