@@ -45,7 +45,7 @@ func (p Pipeline) Application() string {
 }
 
 // UpdatePipelines posts pipelines to Spinnaker.
-func UpdatePipelines(app string, p []Pipeline) (err error) {
+func UpdatePipelines(app string, p []Pipeline, delStale bool) (err error) {
 	if !applicationExists(app) {
 		NewApplication("unknown@unknown.com", app)
 	}
@@ -74,10 +74,12 @@ func UpdatePipelines(app string, p []Pipeline) (err error) {
 			log.Error("Could not post pipeline to Spinnaker ", err)
 		}
 	}
-	// clear existing pipelines that weren't updated
-	for id, updated := range checklist {
-		if !updated {
-			DeletePipeline(app, idToName[id])
+	if delStale {
+		// clear existing pipelines that weren't updated
+		for id, updated := range checklist {
+			if !updated {
+				DeletePipeline(app, idToName[id])
+			}
 		}
 	}
 	return
