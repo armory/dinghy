@@ -32,8 +32,9 @@ type Downloader interface {
 
 // Dinghyfile is the format of the pipeline template JSON
 type Dinghyfile struct {
-	Application string               `json:"application"`
-	Pipelines   []spinnaker.Pipeline `json:"pipelines"`
+	Application          string               `json:"application"`
+	DeleteStalePipelines bool                 `json:"deleteStalePipelines"`
+	Pipelines            []spinnaker.Pipeline `json:"pipelines"`
 }
 
 var (
@@ -65,7 +66,7 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	// TODO: validate dinghyfile
 
 	// Update Spinnaker pipelines using received dinghyfile.
-	if err = spinnaker.UpdatePipelines(d.Application, d.Pipelines); err != nil {
+	if err = spinnaker.UpdatePipelines(d.Application, d.Pipelines, d.DeleteStalePipelines); err != nil {
 		log.Error("Could not update all pipelines ", err)
 		return err
 	}

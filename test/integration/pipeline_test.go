@@ -30,6 +30,7 @@ const dinghyfileNew = `{
 
 const dinghyfileEmpty = `{
 	"application": "dinghyintegration",
+	"deleteStalePipelines": true,
 	"pipelines": []
 }`
 
