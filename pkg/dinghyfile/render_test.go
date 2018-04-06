@@ -130,3 +130,18 @@ func TestPipelineID(t *testing.T) {
 	assert.Equal(t, "f9c05bd0-5a50-4540-9e15-b44740abfb10", id)
 }
 */
+
+var emptyStringFileService = dummy.FileService{
+	"dinghyfile":        `{{ module "wait.stage.module" "foo" "" }}`,
+	"wait.stage.module": `{"foo": "{{ var "foo" ?: "baz" }}"}`,
+}
+
+func TestModuleEmptyString(t *testing.T) {
+	builder := &PipelineBuilder{
+		Depman:     cache.NewMemoryCache(),
+		Downloader: emptyStringFileService,
+	}
+
+	ret := builder.Render("org", "repo", "dinghyfile", nil)
+	assert.Equal(t, `{"foo": ""}`, ret.String())
+}

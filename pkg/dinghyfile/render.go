@@ -12,7 +12,7 @@ import (
 )
 
 func parseValue(val interface{}) interface{} {
-	if jsonStr, ok := val.(string); ok {
+	if jsonStr, ok := val.(string); ok && len(jsonStr) > 0 {
 		if jsonStr[0] == '{' {
 			json.Unmarshal([]byte(jsonStr), &val)
 		}
