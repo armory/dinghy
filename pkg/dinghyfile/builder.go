@@ -56,6 +56,8 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 
 	// Render the dinghyfile and decode it into a Dinghyfile object
 	buf := b.Render(org, repo, path, nil)
+	log.Debug("Rendered: ", buf.String())
+
 	d := Dinghyfile{}
 	if err = json.Unmarshal(buf.Bytes(), &d); err != nil {
 		log.Error("Could not unmarshal file.", err)
