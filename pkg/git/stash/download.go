@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/armory-io/dinghy/pkg/settings"
+	log "github.com/sirupsen/logrus"
 )
 
 // FileService is for working with repositories
@@ -43,7 +44,11 @@ func (f *FileService) downloadLines(org, repo, path string, start int) (lines []
 		return
 	}
 	if !body.IsLastPage {
-		nextStart = *body.NextPageStart
+		if body.NextPageStart == nil {
+			log.Errorf("IsLastPage is false but NextPageStart is nil for: %s/%s/%s", org, repo, path)
+		} else {
+			nextStart = *body.NextPageStart
+		}
 	}
 	for _, line := range body.Lines {
 		lines = append(lines, line["text"])

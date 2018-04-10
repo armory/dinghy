@@ -29,6 +29,7 @@ type Settings struct {
 	Orca              spinnakerService `json:"orca" yaml:"orca"`
 	Front50           spinnakerService `json:"front50" yaml:"front50"`
 	Fiat              spinnakerService `json:"fiat" yaml:"fiat"`
+	DebugLevel        string           `json:"debugLevel" yaml:"debugLevel"`
 }
 
 // S is the global settings structure
@@ -41,6 +42,7 @@ var S = Settings{
 	GitHubCredsPath:   util.GetenvOrDefault("GITHUB_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/github-creds.txt"),
 	StashCredsPath:    util.GetenvOrDefault("STASH_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/stash-creds.txt"),
 	StashEndpoint:     "http://localhost:7990/rest/api/1.0",
+	DebugLevel:        "info",
 	Orca: spinnakerService{
 		Enabled: true,
 		BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://orca:8083"),

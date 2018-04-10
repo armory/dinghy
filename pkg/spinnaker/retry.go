@@ -45,14 +45,15 @@ func requestWithRetry(cb callback) (resp *http.Response, err error) {
 
 func postWithRetry(url string, body []byte) (resp *http.Response, err error) {
 	return requestWithRetry(func() (*http.Response, error) {
-		log.Debug("POST ", url)
+		log.Info("POST ", url)
+		log.Debug("BODY ", string(body))
 		return request("POST", url, strings.NewReader(string(body)))
 	})
 }
 
 func getWithRetry(url string) (resp *http.Response, err error) {
 	return requestWithRetry(func() (*http.Response, error) {
-		log.Debug("GET ", url)
+		log.Info("GET ", url)
 		return request("GET", url, nil)
 	})
 }
@@ -76,14 +77,15 @@ func request(method, url string, body io.Reader) (*http.Response, error) {
 
 func deleteWithRetry(url string) (resp *http.Response, err error) {
 	return requestWithRetry(func() (*http.Response, error) {
-		log.Debug("DELETE ", url)
+		log.Info("DELETE ", url)
 		return request("DELETE", url, nil)
 	})
 }
 
 func putWithRetry(url string, body []byte) (resp *http.Response, err error) {
 	return requestWithRetry(func() (*http.Response, error) {
-		log.Debug("PUT ", url)
+		log.Info("PUT ", url)
+		log.Debug("BODY ", string(body))
 		return request("PUT", url, strings.NewReader(string(body)))
 	})
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/armory-io/dinghy/pkg/cache"
+	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/util"
 	"github.com/armory-io/dinghy/pkg/web"
 	"github.com/go-redis/redis"
@@ -27,6 +28,10 @@ func newRedisOptions() *redis.Options {
 func main() {
 	log.SetOutput(os.Stdout)
 	logLevelStr := util.GetenvOrDefault("DEBUG_LEVEL", "info")
+	if settings.S.DebugLevel != "" {
+		logLevelStr = settings.S.DebugLevel
+		log.Info("Debug level set to ", settings.S.DebugLevel, " from settings")
+	}
 	logLevel, err := log.ParseLevel(logLevelStr)
 	if err != nil {
 		log.Panic("Invalid log level : " + logLevelStr)
