@@ -190,19 +190,20 @@ var pipelineIDFileService = dummy.FileService{
 			"limitConcurrent": true,
 			"name": "trigger",
 			"stages": [
-			{
-				"application": "pipelineidtest",
-				"failPipeline": true,
-				"name": "Pipeline",
-				"pipeline": "{{ pipelineID "pipelineidtest" "testpipelinename" }}",
-				"refId": "1",
-				"requisiteStageRefIds": [],
-				"type": "pipeline",
-				"waitForCompletion": true
-			}
+			 {{ module "pip" "triggerApp" "pipelineidtest" "triggerPipeline" "testpipelinename" }}
 			],
 			"triggers": []
 		}]
+	}`,
+	"pip": `{
+		"application": "pipelineidtest",
+		"failPipeline": true,
+		"name": "Pipeline",
+		"pipeline": "{{ pipelineID "default-app" "default-pipeline" }}",
+		"refId": "1",
+		"requisiteStageRefIds": [],
+		"type": "pipeline",
+		"waitForCompletion": true
 	}`,
 }
 
@@ -220,6 +221,9 @@ func TestPipelineID(t *testing.T) {
 
 	app := "pipelineidtest"
 	pipelineName := "testpipelinename"
+
+	settings.S.Orca.BaseURL = "http://spinnaker.dev.armory.io:8083"
+	settings.S.Front50.BaseURL = "http://spinnaker.dev.armory.io:8080"
 
 	ids, err := spinnaker.PipelineIDs(app)
 	assert.Nil(t, err)
