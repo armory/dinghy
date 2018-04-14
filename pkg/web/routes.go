@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
@@ -8,8 +9,10 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/dinghyfile"
 	"github.com/armory-io/dinghy/pkg/git"
+	"github.com/armory-io/dinghy/pkg/git/dummy"
 	"github.com/armory-io/dinghy/pkg/git/github"
 	"github.com/armory-io/dinghy/pkg/git/stash"
 	"github.com/armory-io/dinghy/pkg/settings"
@@ -38,6 +41,7 @@ func Router() *mux.Router {
 	r.HandleFunc("/v1/webhooks/github", githubWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/stash", stashWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/bitbucket", bitbucketServerWebhookHandler).Methods("POST")
+	r.HandleFunc("/v1/updatePipeline", manualUpdateHandler).Methods("POST")
 	return r
 }
 
@@ -48,6 +52,23 @@ func Router() *mux.Router {
 func healthcheck(w http.ResponseWriter, r *http.Request) {
 	log.Info(r.RemoteAddr, " Requested ", r.RequestURI)
 	w.Write([]byte(`{"status":"ok"}`))
+}
+
+func manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	var fileService = dummy.FileService{}
+
+	builder := &dinghyfile.PipelineBuilder{
+		Depman:     cache.NewMemoryCache(),
+		Downloader: fileService,
+	}
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r.Body)
+	df := buf.String()
+	log.Info("Received payload: ", df)
+	fileService["dinghyfile"] = df
+
+	builder.ProcessDinghyfile("", "", "dinghyfile")
 }
 
 func githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -123,6 +144,8 @@ func ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 		p.SetCommitStatus(git.StatusSuccess)
 		return nil
 	}
+
+	log.Info("Dinghyfile found in commit for repo " + p.Repo())
 
 	// Set commit status to the pending yellow dot.
 	p.SetCommitStatus(git.StatusPending)

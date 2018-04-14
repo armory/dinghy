@@ -44,22 +44,13 @@ var (
 
 // ProcessDinghyfile downloads a dinghyfile and uses it to update Spinnaker's pipelines.
 func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
-	log.Info("Dinghyfile found in commit for repo " + repo)
-
-	// Download the dinghyfile.
-	contents, err := b.Downloader.Download(org, repo, path)
-	if err != nil {
-		log.Error("Could not download dinghy file ", err)
-		return err
-	}
-	log.Info("Downloaded: ", contents)
 
 	// Render the dinghyfile and decode it into a Dinghyfile object
 	buf := b.Render(org, repo, path, nil)
 	log.Debug("Rendered: ", buf.String())
 
 	d := Dinghyfile{}
-	if err = json.Unmarshal(buf.Bytes(), &d); err != nil {
+	if err := json.Unmarshal(buf.Bytes(), &d); err != nil {
 		log.Error("Could not unmarshal file.", err)
 		return ErrMalformedJSON
 	}
@@ -68,7 +59,7 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	// TODO: validate dinghyfile
 
 	// Update Spinnaker pipelines using received dinghyfile.
-	if err = spinnaker.UpdatePipelines(d.Application, d.Pipelines, d.DeleteStalePipelines); err != nil {
+	if err := spinnaker.UpdatePipelines(d.Application, d.Pipelines, d.DeleteStalePipelines); err != nil {
 		log.Error("Could not update all pipelines ", err)
 		return err
 	}
