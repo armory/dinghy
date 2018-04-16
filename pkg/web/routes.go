@@ -134,14 +134,12 @@ func bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
 func ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	// Ensure dinghyfile was changed.
 	if !p.ContainsFile(settings.S.DinghyFilename) {
-		p.SetCommitStatus(git.StatusSuccess)
 		return nil
 	}
 
 	// Ensure we're on the master branch.
 	if !p.IsMaster() {
 		log.Info("Skipping Spinnaker pipeline update because this is not master")
-		p.SetCommitStatus(git.StatusSuccess)
 		return nil
 	}
 
