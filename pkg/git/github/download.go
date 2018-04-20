@@ -1,12 +1,14 @@
 package github
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 
 	"github.com/armory-io/dinghy/pkg/settings"
+	log "github.com/sirupsen/logrus"
 )
 
 // FileService is for working with repositories
@@ -27,6 +29,11 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Errorf("Error downloading file from %s: Stauts: %d", url, resp.StatusCode)
+		return "", errors.New("Download error")
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)

@@ -50,7 +50,7 @@ func Router() *mux.Router {
 // ==============
 
 func healthcheck(w http.ResponseWriter, r *http.Request) {
-	log.Info(r.RemoteAddr, " Requested ", r.RequestURI)
+	log.Debug(r.RemoteAddr, " Requested ", r.RequestURI)
 	w.Write([]byte(`{"status":"ok"}`))
 }
 

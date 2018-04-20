@@ -2,6 +2,7 @@ package stash
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -38,6 +39,12 @@ func (f *FileService) downloadLines(org, repo, path string, start int) (lines []
 		return
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Errorf("Error downloading file from %s: Stauts: %d", url, resp.StatusCode)
+		err = errors.New("Download error")
+		return
+	}
+
 	var body FileContentsResponse
 	err = json.NewDecoder(resp.Body).Decode(&body)
 	if err != nil {
