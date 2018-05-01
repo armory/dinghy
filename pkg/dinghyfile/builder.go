@@ -32,9 +32,10 @@ type Downloader interface {
 
 // Dinghyfile is the format of the pipeline template JSON
 type Dinghyfile struct {
-	Application          string               `json:"application"`
-	DeleteStalePipelines bool                 `json:"deleteStalePipelines"`
-	Pipelines            []spinnaker.Pipeline `json:"pipelines"`
+	Application          string                 `json:"application"`
+	DeleteStalePipelines bool                   `json:"deleteStalePipelines"`
+	Globals              map[string]interface{} `json:"globals"`
+	Pipelines            []spinnaker.Pipeline   `json:"pipelines"`
 }
 
 var (

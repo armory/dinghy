@@ -8,6 +8,7 @@ import (
 
 	"github.com/armory-io/dinghy/pkg/preprocessor"
 	"github.com/armory-io/dinghy/pkg/spinnaker"
+	"github.com/armory-io/dinghy/pkg/settings"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -119,12 +120,6 @@ func varFunc(vars []varMap) interface{} {
 func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) *bytes.Buffer {
 	deps := make(map[string]bool)
 
-	funcMap := template.FuncMap{
-		"module":     moduleFunc(b, org, deps, vars),
-		"pipelineID": pipelineIDFunc(vars),
-		"var":        varFunc(vars),
-	}
-
 	// Download the template being rendered.
 	contents, err := b.Downloader.Download(org, repo, path)
 	if err != nil {
@@ -134,6 +129,25 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) *bytes.B
 
 	// Preprocess to stringify any json args in calls to modules.
 	contents = preprocessor.Preprocess(contents)
+
+	// Extract global vars if we're processing a dinghyfile (and not a module)
+	if path == settings.S.DinghyFilename {
+		gvs := preprocessor.ParseGlobalVars(contents)
+		gvMap, ok := gvs.(map[string]interface{})
+		if !ok {
+			log.Error("Could not extract global vars")
+		} else if len(gvMap) > 0 {
+			vars = append(vars, gvMap)
+		} else {
+			log.Info("No global vars found in dinghyfile")
+		}
+	}
+
+	funcMap := template.FuncMap{
+		"module":     moduleFunc(b, org, deps, vars),
+		"pipelineID": pipelineIDFunc(vars),
+		"var":        varFunc(vars),
+	}
 
 	// Parse the downloaded template.
 	tmpl, err := template.New("dinghy-render").Funcs(funcMap).Parse(contents)

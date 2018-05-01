@@ -26,3 +26,22 @@ func TestElvisOperator(t *testing.T) {
 
 	assert.Equal(t, expected, Preprocess(input))
 }
+
+func TestPreprocessingGlobalVars(t *testing.T) {
+	input := `{
+		"application": "search",
+		"globals": {
+			"system": "order_tracking"
+		},
+		"pipelines": [
+			{{ module "preprod_deploy.pipeline.module" "application" "search" "master" "preprod" }},
+			{{ module "prod_deploy.pipeline.module" "application" "search" "master" "prod" }}
+	    ]
+	  }`
+
+	out := ParseGlobalVars(input)
+	gvMap, ok := out.(map[string]interface{})
+	assert.True(t, ok, "Something went wrong while extracting global vars")
+	assert.Contains(t, gvMap, "system")
+	assert.Equal(t, gvMap["system"], "order_tracking")
+}

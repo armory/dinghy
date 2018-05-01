@@ -9,6 +9,7 @@ import (
 	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/git/dummy"
 	"github.com/stretchr/testify/assert"
+	"github.com/armory-io/dinghy/pkg/settings"
 )
 
 var fileService = dummy.FileService{
@@ -25,10 +26,10 @@ var fileService = dummy.FileService{
 	}`,
 	"mod1": `{
 		"foo": "bar",
-		"type": "deploy"
+		"type": "{{ var "type" ?: "deploy" }}"
 	}`,
 	"mod2": `{
-		"type": "jenkins"
+		"type": "{{ var "type" ?: "jenkins" }}"
 	}`,
 	"wait.stage.module": `{
 		"name": "Wait",
@@ -37,7 +38,50 @@ var fileService = dummy.FileService{
 		"type": "wait",
 		"waitTime": {{ var "waitTime" 12044 }}
 	}`,
+	"gv_dinghy": `{
+		"application": "search",
+		"globals": {
+			"type": "foo"
+		},
+		"pipelines": [
+			{{ module "mod1" }},
+			{{ module "mod2" "type" "foobar" }}
+	    ]
+	  }`,
 }
+
+
+func TestGlobalVars(t *testing.T) {
+	builder := &PipelineBuilder{
+		Downloader: fileService,
+		Depman:     cache.NewMemoryCache(),
+	}
+
+	settings.S.DinghyFilename = "gv_dinghy"
+	buf := builder.Render("org", "repo", "gv_dinghy", nil)
+
+	const expected = `{
+		"application": "search",
+		"globals": {
+			"type": "foo"
+		},
+		"pipelines": [
+			{
+				"foo": "bar",
+				"type": "foo"
+			},
+			{
+				"type": "foobar"
+			}
+	    ]
+	  }`
+
+	// strip whitespace from both strings for assertion
+	exp := strings.Join(strings.Fields(expected), "")
+	actual := strings.Join(strings.Fields(buf.String()), "")
+	assert.Equal(t, exp, actual)
+}
+
 
 func TestSimpleWaitStage(t *testing.T) {
 	builder := &PipelineBuilder{

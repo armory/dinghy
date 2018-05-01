@@ -15,11 +15,14 @@ import (
 
 const dinghyfileNew = `{
 	"application": "dinghyintegration",
+	"globals": {
+		"name": "yasss"
+	},
 	"pipelines": [{
 		"application": "dinghyintegration",
 		"keepWaitingPipelines": false,
 		"limitConcurrent": false,
-		"name": "This is new",
+		"name": "{{ var "name" ?: "This is new" }}",
 		"stages": [
 			{{ module "mod1" }},
 			{{ module "mod2" }}

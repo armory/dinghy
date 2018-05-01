@@ -1,9 +1,14 @@
 package preprocessor
 
 import (
+	"bytes"
+	"encoding/json"
 	"strconv"
 	"strings"
+	"text/template"
 	"unicode"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func parseWhitespace(it *iterator) string {
@@ -131,4 +136,55 @@ func Preprocess(text string) string {
 	}
 
 	return text
+}
+
+// ParseGlobalVars returns the map of global variables in the dinghyfile
+func ParseGlobalVars(input string) interface{} {
+
+	d := make(map[string]interface{})
+	input = removeModules(input)
+	err := json.Unmarshal([]byte(input), &d)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+	if val, ok := d["globals"]; ok {
+		return val
+	}
+	return make(map[string]interface{})
+}
+
+func dummySubstitute(args ...interface{}) string {
+	return `{ "a": "b" }`
+}
+
+// since {{ var ... }} can be a string or an int!
+func dummyVar(args ...interface{}) string {
+	return "1"
+}
+
+// removeModules replaces all template function calls ({{ ... }}) in the dinghyfile with
+// the JSON: { "a": "b" } so that we can extract the global vars using JSON.Unmarshal
+func removeModules(input string) string {
+
+	funcMap := template.FuncMap{
+		"module": dummySubstitute,
+		"var": dummyVar,
+		"pipelineID": dummySubstitute,
+	}
+
+	tmpl, err := template.New("blank-out").Funcs(funcMap).Parse(input)
+	if err != nil {
+		log.Errorf("Blank out modules parse error: %s", err)
+		return input
+	}
+
+	buf := new(bytes.Buffer)
+	err = tmpl.Execute(buf, "")
+	if err != nil {
+		log.Errorf("Blank out modules execute error: %s", err)
+		return input
+	}
+
+	return buf.String()
 }
