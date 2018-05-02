@@ -128,7 +128,11 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) *bytes.B
 	}
 
 	// Preprocess to stringify any json args in calls to modules.
-	contents = preprocessor.Preprocess(contents)
+	contents, err = preprocessor.Preprocess(contents)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
 
 	// Extract global vars if we're processing a dinghyfile (and not a module)
 	if path == settings.S.DinghyFilename {

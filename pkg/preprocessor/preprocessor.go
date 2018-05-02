@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"strconv"
+	"errors"
 	"strings"
 	"text/template"
 	"unicode"
@@ -95,7 +96,7 @@ func parseElvisOperator(it *iterator) string {
 }
 
 // Preprocess makes a first pass at the dinghyfile and stringifies the JSON args to a module
-func Preprocess(text string) string {
+func Preprocess(text string) (string, error) {
 	length := len(text)
 
 	for i := 0; i < length-1 && length >= 2; i++ {
@@ -108,6 +109,11 @@ func Preprocess(text string) string {
 		parts := []string{"{{"}
 
 		for !it.end() {
+			if it.pos + 2 >= length {
+				log.Errorf("Index out of bounds, possibly missing a '}}' in: %s", text)
+				return text, errors.New("Index out of bounds while pre-processing template action, possibly a missing '}}'")
+			}
+
 			if it.text[it.pos:it.pos+2] == "}}" {
 				parts = append(parts, "}}")
 				it.pos += 2
@@ -132,10 +138,14 @@ func Preprocess(text string) string {
 			parts = append(parts, part)
 		}
 
-		return text[:i] + strings.Join(parts, "") + Preprocess(text[it.pos:])
+		remaining, err := Preprocess(text[it.pos:])
+		if err != nil {
+			return text, err
+		}
+		return text[:i] + strings.Join(parts, "") + remaining, nil
 	}
 
-	return text
+	return text, nil
 }
 
 // ParseGlobalVars returns the map of global variables in the dinghyfile

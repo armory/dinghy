@@ -28,7 +28,7 @@ var fileService = dummy.FileService{
 	"df4":   `{{ module "mod3" "foo" "" }}`,
 	"df_bad": `{
 		"stages": [
-			{{ module "mod1" }}
+			{{ module "mod1" }
 		]
 	}`,
 	"df_global": `{
@@ -76,7 +76,8 @@ var builder = &PipelineBuilder{
 }
 
 func TestGracefulErrorHandling(t *testing.T) {
-
+	buf := builder.Render("org", "repo", "df_bad", nil)
+	assert.Nil(t, buf, "Got non-nil output for mal-formed template action in df_bad")
 }
 
 func TestGlobalVars(t *testing.T) {
