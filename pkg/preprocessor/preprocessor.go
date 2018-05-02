@@ -109,7 +109,7 @@ func Preprocess(text string) (string, error) {
 		parts := []string{"{{"}
 
 		for !it.end() {
-			if it.pos + 2 >= length {
+			if it.pos + 2 > length {
 				log.Errorf("Index out of bounds, possibly missing a '}}' in: %s", text)
 				return text, errors.New("Index out of bounds while pre-processing template action, possibly a missing '}}'")
 			}

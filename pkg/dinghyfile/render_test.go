@@ -31,12 +31,6 @@ var fileService = dummy.FileService{
 			{{ module "mod1" }
 		]
 	}`,
-	"df_missing_comma": `{
-		"pipelines": [
-			{"a": "b"}
-			{"c": "d"}
-		]
-	}`,
 	"df_global": `{
 		"application": "search",
 		"globals": {
@@ -84,11 +78,6 @@ var builder = &PipelineBuilder{
 func TestGracefulErrorHandling(t *testing.T) {
 	buf := builder.Render("org", "repo", "df_bad", nil)
 	assert.Nil(t, buf, "Got non-nil output for mal-formed template action in df_bad")
-}
-
-func TestMissingComma(t *testing.T) {
-	buf := builder.Render("org", "repo", "df_missing_comma", nil)
-	assert.Nil(t, buf.String(), "Got non-nil output for mal-formed template action in df_bad")
 }
 
 func TestGlobalVars(t *testing.T) {
