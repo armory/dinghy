@@ -1,7 +1,6 @@
 package dinghyfile
 
 import (
-	"encoding/json"
 	"errors"
 
 	log "github.com/sirupsen/logrus"
@@ -51,13 +50,11 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	log.Debug("Rendered: ", buf.String())
 
 	d := Dinghyfile{}
-	if err := json.Unmarshal(buf.Bytes(), &d); err != nil {
-		log.Error("Could not unmarshal file.", err)
+	if err := Unmarshal(buf.Bytes(), &d); err != nil {
+		log.Error("Could not unmarshal dinghyfile: ", err)
 		return ErrMalformedJSON
 	}
 	log.Info("Unmarshalled: ", d)
-
-	// TODO: validate dinghyfile
 
 	// Update Spinnaker pipelines using received dinghyfile.
 	if err := spinnaker.UpdatePipelines(d.Application, d.Pipelines, d.DeleteStalePipelines); err != nil {
