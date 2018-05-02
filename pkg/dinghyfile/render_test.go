@@ -13,32 +13,25 @@ import (
 )
 
 var fileService = dummy.FileService{
-	"simpleTempl": `{
-		"stages": [
-			{{ module "wait.stage.module" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" ["1", "2", "3"] }}
-		]
-	}`,
 	"df": `{
 		"stages": [
 			{{ module "mod1" }},
 			{{ module "mod2" }}
 		]
 	}`,
-	"mod1": `{
-		"foo": "bar",
-		"type": "{{ var "type" ?: "deploy" }}"
+	"df2": `{{ module "mod4" "foo" "baz" "waitTime" 100 }}`,
+	"df3": `{
+		"stages": [
+			{{ module "mod6" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" ["1", "2", "3"] }}
+		]
 	}`,
-	"mod2": `{
-		"type": "{{ var "type" ?: "jenkins" }}"
+	"df4":   `{{ module "mod3" "foo" "" }}`,
+	"df_bad": `{
+		"stages": [
+			{{ module "mod1" }}
+		]
 	}`,
-	"wait.stage.module": `{
-		"name": "Wait",
-		"refId": {{ var "refId" {} }},
-		"requisiteStageRefIds": {{ var "requisiteStageRefIds" [] }},
-		"type": "wait",
-		"waitTime": {{ var "waitTime" 12044 }}
-	}`,
-	"gv_dinghy": `{
+	"df_global": `{
 		"application": "search",
 		"globals": {
 			"type": "foo"
@@ -47,18 +40,51 @@ var fileService = dummy.FileService{
 			{{ module "mod1" }},
 			{{ module "mod2" "type" "foobar" }}
 	    ]
-	  }`,
+	}`,
+	"mod1": `{
+		"foo": "bar",
+		"type": "{{ var "type" ?: "deploy" }}"
+	}`,
+	"mod2": `{
+		"type": "{{ var "type" ?: "jenkins" }}"
+	}`,
+	"mod3": 	    `{"foo": "{{ var "foo" ?: "baz" }}"}`,
+
+
+	"mod4": `{
+		"foo": "{{ var "foo" "baz" }}",
+		"a": "{{ var "nonexistent" "b" }}",
+		"nested": {{ module "mod5" }}
+	}`,
+
+	"mod5": `{
+		"waitTime": {{ var "waitTime" 1000 }}
+	}`,
+
+	"mod6": `{
+		"name": "Wait",
+		"refId": {{ var "refId" {} }},
+		"requisiteStageRefIds": {{ var "requisiteStageRefIds" [] }},
+		"type": "wait",
+		"waitTime": {{ var "waitTime" 12044 }}
+	}`,
 }
 
+var builder = &PipelineBuilder{
+	Depman:     cache.NewMemoryCache(),
+	Downloader: fileService,
+}
+
+func TestGracefulErrorHandling(t *testing.T) {
+
+}
 
 func TestGlobalVars(t *testing.T) {
-	builder := &PipelineBuilder{
-		Downloader: fileService,
-		Depman:     cache.NewMemoryCache(),
-	}
 
-	settings.S.DinghyFilename = "gv_dinghy"
-	buf := builder.Render("org", "repo", "gv_dinghy", nil)
+	// this is because we only parse global vars when processing
+	// a "dinghyfile" (settings.S.DinghyFilename)
+	settings.S.DinghyFilename = "df_global"
+	buf := builder.Render("org", "repo", "df_global", nil)
 
 	const expected = `{
 		"application": "search",
@@ -82,14 +108,9 @@ func TestGlobalVars(t *testing.T) {
 	assert.Equal(t, exp, actual)
 }
 
-
 func TestSimpleWaitStage(t *testing.T) {
-	builder := &PipelineBuilder{
-		Downloader: fileService,
-		Depman:     cache.NewMemoryCache(),
-	}
 
-	buf := builder.Render("org", "repo", "simpleTempl", nil)
+	buf := builder.Render("org", "repo", "df3", nil)
 
 	const expected = `{
 		"stages": [
@@ -110,11 +131,6 @@ func TestSimpleWaitStage(t *testing.T) {
 }
 
 func TestSpillover(t *testing.T) {
-	builder := &PipelineBuilder{
-		Downloader: fileService,
-		Depman:     cache.NewMemoryCache(),
-	}
-
 	buf := builder.Render("org", "repo", "df", nil)
 
 	const expected = `{
@@ -130,20 +146,6 @@ func TestSpillover(t *testing.T) {
 	assert.Equal(t, exp, actual)
 }
 
-var multilevelFileService = dummy.FileService{
-	"dinghyfile": `{{ module "wait.stage.module" "foo" "baz" "waitTime" 100 }}`,
-
-	"wait.stage.module": `{
-		"foo": "{{ var "foo" "baz" }}",
-		"a": "{{ var "nonexistent" "b" }}",
-		"nested": {{ module "wait.dep.module" }}
-	}`,
-
-	"wait.dep.module": `{
-		"waitTime": {{ var "waitTime" 1000 }}
-	}`,
-}
-
 type testStruct struct {
 	Foo    string `json:"foo"`
 	A      string `json:"a"`
@@ -153,13 +155,8 @@ type testStruct struct {
 }
 
 func TestModuleVariableSubstitution(t *testing.T) {
-	builder := &PipelineBuilder{
-		Depman:     cache.NewMemoryCache(),
-		Downloader: multilevelFileService,
-	}
-
 	ts := testStruct{}
-	ret := builder.Render("org", "repo", "dinghyfile", nil)
+	ret := builder.Render("org", "repo", "df2", nil)
 	err := json.Unmarshal(ret.Bytes(), &ts)
 	assert.Equal(t, nil, err)
 
@@ -175,17 +172,7 @@ func TestPipelineID(t *testing.T) {
 }
 */
 
-var emptyStringFileService = dummy.FileService{
-	"dinghyfile":        `{{ module "wait.stage.module" "foo" "" }}`,
-	"wait.stage.module": `{"foo": "{{ var "foo" ?: "baz" }}"}`,
-}
-
 func TestModuleEmptyString(t *testing.T) {
-	builder := &PipelineBuilder{
-		Depman:     cache.NewMemoryCache(),
-		Downloader: emptyStringFileService,
-	}
-
-	ret := builder.Render("org", "repo", "dinghyfile", nil)
+	ret := builder.Render("org", "repo", "df4", nil)
 	assert.Equal(t, `{"foo": ""}`, ret.String())
 }
