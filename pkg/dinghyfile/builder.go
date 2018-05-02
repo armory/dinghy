@@ -70,6 +70,8 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 
 // RebuildModuleRoots rebuilds all dinghyfiles which are roots of the specified file
 func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
+	errEncountered := false
+	failedUpdates := []string{}
 	url := b.Downloader.EncodeURL(org, repo, path)
 	log.Info("Processing module: " + url)
 
@@ -77,10 +79,18 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 	for _, url := range b.Depman.GetRoots(url) {
 		org, repo, path := b.Downloader.DecodeURL(url)
 		if err := b.ProcessDinghyfile(org, repo, path); err != nil {
+			errEncountered = true
+			failedUpdates = append(failedUpdates, url)
 			log.Error(err)
-			return err
 		}
 	}
 
+	if errEncountered {
+		log.Error("The following dinghyfiles weren't updated successfully:")
+		for d := range failedUpdates {
+			log.Error(d)
+		}
+		return errors.New("Not all upstream dinghyfiles were updated successfully")
+	}
 	return nil
 }
