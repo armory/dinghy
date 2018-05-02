@@ -1,7 +1,6 @@
 package dinghyfile
 
 import (
-	"encoding/json"
 	"errors"
 
 	log "github.com/sirupsen/logrus"
