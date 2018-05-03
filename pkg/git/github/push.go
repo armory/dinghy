@@ -1,5 +1,7 @@
 package github
 
+import "strings"
+
 // Push is the payload received from a GitHub webhook.
 type Push struct {
 	Commits    []Commit   `json:"commits"`
@@ -21,8 +23,11 @@ type Repository struct {
 }
 
 func inSlice(arr []string, val string) bool {
-	for _, x := range arr {
-		if x == val {
+	for _, filePath := range arr {
+		// eg: filePath can be: "app/src/dinghyfile"
+		//     or just "dinghyfile"
+		components := strings.Split(filePath, "/")
+		if components[len(components)-1] == val {
 			return true
 		}
 	}

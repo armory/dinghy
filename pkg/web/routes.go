@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
+	"strings"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -132,6 +133,7 @@ func bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 // ProcessPush processes a push using a pipeline builder
 func ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
+	err := error(nil)
 	// Ensure dinghyfile was changed.
 	if !p.ContainsFile(settings.S.DinghyFilename) {
 		return nil
@@ -148,18 +150,22 @@ func ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	// Set commit status to the pending yellow dot.
 	p.SetCommitStatus(git.StatusPending)
 
-	// Process the dinghyfile.
-	err := b.ProcessDinghyfile(p.Org(), p.Repo(), settings.S.DinghyFilename)
+	for _, filePath := range p.Files() {
+		components := strings.Split(filePath, "/")
+		if components[len(components)-1] == settings.S.DinghyFilename {
+			// Process the dinghyfile.
+			err = b.ProcessDinghyfile(p.Org(), p.Repo(), filePath)
 
-	// Set commit status based on result of processing.
-	if err == nil {
-		p.SetCommitStatus(git.StatusSuccess)
-	} else if err == dinghyfile.ErrMalformedJSON {
-		p.SetCommitStatus(git.StatusFailure)
-	} else {
-		p.SetCommitStatus(git.StatusError)
+			// Set commit status based on result of processing.
+			if err == nil {
+				p.SetCommitStatus(git.StatusSuccess)
+			} else if err == dinghyfile.ErrMalformedJSON {
+				p.SetCommitStatus(git.StatusFailure)
+			} else {
+				p.SetCommitStatus(git.StatusError)
+			}
+		}
 	}
-
 	return err
 }
 
