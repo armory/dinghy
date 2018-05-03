@@ -13,11 +13,10 @@ import (
 )
 
 func parseWhitespace(it *iterator) string {
-	begin := it.pos
 	for !it.end() && unicode.IsSpace(it.get()) {
 		it.pos++
 	}
-	return it.slice(begin)
+	return " "
 }
 
 func parseString(it *iterator) string {

@@ -53,3 +53,26 @@ func TestMalformedAction(t *testing.T) {
 	_, err := Preprocess(input)
 	assert.Error(t, err, "Preprocessor didn't return error for malformed template action")
 }
+
+func TestMultiLineAction(t *testing.T) {
+	input := `{
+		"application": "maskednumbers",
+		"pipelines": [
+		  {{
+			module "integrate.pipeline.module"
+			  "application" "maskednumbers"
+			  "job" "platform/job/maskednumbers/job/maskednumbers_integrate"
+			  "triggerApp" "maskednumbers"
+			  "triggerPipeline" "deploy-preprod"
+		  }}
+		]
+	  }`
+	expected := `{
+		"application": "maskednumbers",
+		"pipelines": [
+		  {{ module "integrate.pipeline.module" "application" "maskednumbers" "job" "platform/job/maskednumbers/job/maskednumbers_integrate" "triggerApp" "maskednumbers" "triggerPipeline" "deploy-preprod" }}
+		]
+	  }`
+	actual, _ := Preprocess(input)
+	assert.Equal(t, expected, actual)
+}
