@@ -72,6 +72,7 @@ func UpdatePipelines(app string, p []Pipeline, delStale bool) (err error) {
 		err := updatePipeline(pipeline)
 		if err != nil {
 			log.Error("Could not post pipeline to Spinnaker ", err)
+			return err
 		}
 	}
 	if delStale {
@@ -82,7 +83,7 @@ func UpdatePipelines(app string, p []Pipeline, delStale bool) (err error) {
 			}
 		}
 	}
-	return
+	return err
 }
 
 func createEmptyPipeline(app, pipelineName string) error {

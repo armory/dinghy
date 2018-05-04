@@ -177,6 +177,7 @@ var pipelineIDFileService = dummy.FileService{
 			"lastModifiedBy": "anonymous",
 			"limitConcurrent": true,
 			"name": "testpipelinename",
+			"application": "pipelineidtest",
 			"stages": [
 			{
 				"name": "Wait",
@@ -192,6 +193,7 @@ var pipelineIDFileService = dummy.FileService{
 			"lastModifiedBy": "anonymous",
 			"limitConcurrent": true,
 			"name": "trigger",
+			"application": "pipelineidtest",
 			"stages": [
 			 {{ module "pip" "triggerApp" "pipelineidtest" "triggerPipeline" "testpipelinename" }}
 			],
