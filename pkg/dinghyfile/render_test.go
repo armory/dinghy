@@ -68,6 +68,26 @@ var fileService = dummy.FileService{
 		"type": "wait",
 		"waitTime": {{ var "waitTime" 12044 }}
 	}`,
+
+	"nested_var_df": `{
+		"application": "dinernotifications",
+		"globals": {
+		   "application": "dinernotifications"
+		 },
+		"pipelines": [
+			{{ module "preprod_teardown.pipeline.module" }}
+		]
+	}`,
+
+	"preprod_teardown.pipeline.module": `{
+		"parameterConfig": [
+			{
+				"default": "{{ var "discovery-service-name" ?: "@application" }}",
+				"description": "Service Name",
+				"name": "service",
+				"required": true
+			}
+	  }`,
 }
 
 var builder = &PipelineBuilder{
@@ -78,6 +98,38 @@ var builder = &PipelineBuilder{
 func TestGracefulErrorHandling(t *testing.T) {
 	buf := builder.Render("org", "repo", "df_bad", nil)
 	assert.Nil(t, buf, "Got non-nil output for mal-formed template action in df_bad")
+}
+
+
+func TestNestedVars(t *testing.T) {
+
+	// this is because we only parse global vars when processing
+	// a "dinghyfile" (settings.S.DinghyFilename)
+	settings.S.DinghyFilename = "nested_var_df"
+	buf := builder.Render("org", "repo", "nested_var_df", nil)
+
+	const expected = `{
+		"application": "dinernotifications",
+		"globals": {
+		   "application": "dinernotifications"
+		 },
+		"pipelines": [
+			{
+				"parameterConfig": [
+					{
+						"default": "dinernotifications",
+						"description": "Service Name",
+						"name": "service",
+						"required": true
+					}
+			}
+		]
+	}`
+
+	// strip whitespace from both strings for assertion
+	exp := strings.Join(strings.Fields(expected), "")
+	actual := strings.Join(strings.Fields(buf.String()), "")
+	assert.Equal(t, exp, actual)
 }
 
 func TestGlobalVars(t *testing.T) {

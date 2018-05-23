@@ -110,6 +110,22 @@ func varFunc(vars []varMap) interface{} {
 		}
 
 		if len(defaultVal) > 0 {
+			s, isStr := defaultVal[0].(string)
+			if isStr {
+				if s[0] == '@' {
+					// handle the case where the default value is another variable
+					// see ENG-1921 for use case. e.g.,:
+					// {{ var "servicename" ?: "@application" }}
+
+					nested := s[1:]
+					for _, vm := range vars {
+						if val, exists := vm[nested]; exists {
+							log.Info("Substituting nested variable: ", nested, ", val: ", val)
+							return renderValue(val)
+						}
+					}
+				}
+			}
 			return defaultVal[0]
 		}
 		return ""
