@@ -83,11 +83,13 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 	req.SetBasicAuth(settings.S.StashUsername, settings.S.StashToken)
 
 	resp, err := http.DefaultClient.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		log.Error(err)
 		return 0, err
 	}
-	defer resp.Body.Close()
 
 	var body APIResponse
 	err = json.NewDecoder(resp.Body).Decode(&body)

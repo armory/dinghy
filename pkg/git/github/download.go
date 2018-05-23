@@ -27,10 +27,13 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 	req.Header.Add("Accept", "application/vnd.github.v3.raw")
 
 	resp, err := http.DefaultClient.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		log.Errorf("Error downloading file from %s: Stauts: %d", url, resp.StatusCode)
 		return "", errors.New("Download error")

@@ -35,10 +35,13 @@ func (f *FileService) downloadLines(org, repo, path string, start int) (lines []
 	}
 	req.SetBasicAuth(settings.S.StashUsername, settings.S.StashToken)
 	resp, err := http.DefaultClient.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		log.Errorf("Error downloading file from %s: Stauts: %d", url, resp.StatusCode)
 		err = errors.New("Download error")

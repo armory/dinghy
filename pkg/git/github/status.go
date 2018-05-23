@@ -47,6 +47,9 @@ func (p *Push) SetCommitStatus(s git.Status) {
 		req, err := http.NewRequest("POST", url, strings.NewReader(string(body)))
 		req.Header.Add("Authorization", "token "+settings.S.GitHubToken)
 		resp, err := http.DefaultClient.Do(req)
+		if resp != nil {
+			defer resp.Body.Close()
+		}
 		httputil.DumpResponse(resp, true)
 		if err != nil {
 			log.Error(err)

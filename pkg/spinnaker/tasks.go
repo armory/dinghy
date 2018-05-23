@@ -109,10 +109,12 @@ func pollTaskStatus(refURL string, timeout time.Duration) (*ExecutionResponse, e
 
 func getTask(refURL string) (*ExecutionResponse, error) {
 	resp, err := getWithRetry(fmt.Sprintf("%s/%s", settings.S.Orca.BaseURL, refURL))
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return nil, fmt.Errorf("error getting task status %v", err)
 	}
-	defer resp.Body.Close()
 	var task ExecutionResponse
 	util.ReadJSON(resp.Body, &task)
 	return &task, nil
