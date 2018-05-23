@@ -34,6 +34,9 @@ func Applications() []string {
 	ret := make([]string, 0)
 	url := fmt.Sprintf("%s/v2/applications", settings.S.Front50.BaseURL)
 	resp, err := getWithRetry(url)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		log.Info("Failed to get application.")
 		return []string{}
@@ -43,7 +46,6 @@ func Applications() []string {
 	for _, app := range apps {
 		ret = append(ret, app.Name)
 	}
-	resp.Body.Close()
 	return ret
 }
 

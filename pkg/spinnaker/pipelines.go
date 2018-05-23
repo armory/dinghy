@@ -6,6 +6,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"net/http"
+
 	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/util"
 )
@@ -99,7 +101,10 @@ func createEmptyPipeline(app, pipelineName string) error {
 
 	log.Info("Posting pipeline to Spinnaker: ", string(b))
 	url := fmt.Sprintf(`%s/pipelines`, settings.S.Front50.BaseURL)
-	_, err = postWithRetry(url, b)
+	resp, err := postWithRetry(url, b)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
 	return err
 }
@@ -122,6 +127,7 @@ func GetPipelineID(app, pipelineName string) (string, error) {
 }
 
 func updatePipeline(p Pipeline) error {
+	var resp *http.Response
 	b, err := json.Marshal(p)
 	if err != nil {
 		log.Error("Could not marshal pipeline ", err)
@@ -131,13 +137,16 @@ func updatePipeline(p Pipeline) error {
 	if id, exists := p["id"]; exists {
 		log.Info("Updating existing pipeline: ", string(b))
 		url := fmt.Sprintf(`%s/pipelines/%s`, settings.S.Front50.BaseURL, id)
-		_, err = putWithRetry(url, b)
+		resp, err = putWithRetry(url, b)
 	} else {
 		log.Info("Posting pipeline to Spinnaker: ", string(b))
 		url := fmt.Sprintf(`%s/pipelines`, settings.S.Front50.BaseURL)
-		_, err = postWithRetry(url, b)
+		resp, err = postWithRetry(url, b)
 	}
 
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}
@@ -148,7 +157,10 @@ func updatePipeline(p Pipeline) error {
 // DeletePipeline deletes a pipeline
 func DeletePipeline(app string, pipelineName string) error {
 	url := fmt.Sprintf("%s/pipelines/%s/%s", settings.S.Front50.BaseURL, app, pipelineName)
-	if _, err := deleteWithRetry(url); err != nil {
+	if resp, err := deleteWithRetry(url); err != nil {
+		if resp != nil {
+			defer resp.Body.Close()
+		}
 		return err
 	}
 	return nil
@@ -160,6 +172,9 @@ func PipelineIDs(app string) (map[string]string, error) {
 	url := fmt.Sprintf("%s/pipelines/%s", settings.S.Front50.BaseURL, app)
 	log.Info("Looking up existing pipelines")
 	resp, err := getWithRetry(url)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return ids, err
 	}
