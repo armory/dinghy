@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
-
-	"fmt"
+	"strings"
 
 	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/settings"
@@ -26,11 +26,19 @@ func newRedisOptions() *redis.Options {
 }
 
 func main() {
-	log.SetOutput(os.Stdout)
+	if settings.S.Logging.File != "" {
+		f, err := os.OpenFile(settings.S.Logging.File, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0764)
+		if err != nil {
+			panic("Couldn't open log file")
+		}
+		log.SetOutput(f)
+	} else {
+		log.SetOutput(os.Stdout)
+	}
 	logLevelStr := util.GetenvOrDefault("DEBUG_LEVEL", "info")
-	if settings.S.DebugLevel != "" {
-		logLevelStr = settings.S.DebugLevel
-		log.Info("Debug level set to ", settings.S.DebugLevel, " from settings")
+	if settings.S.Logging.Level != "" {
+		logLevelStr = strings.ToLower(settings.S.Logging.Level)
+		log.Info("Debug level set to ", settings.S.Logging.Level, " from settings")
 	}
 	logLevel, err := log.ParseLevel(logLevelStr)
 	if err != nil {

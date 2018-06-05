@@ -29,7 +29,7 @@ type Settings struct {
 	Orca              spinnakerService `json:"orca" yaml:"orca"`
 	Front50           spinnakerService `json:"front50" yaml:"front50"`
 	Fiat              spinnakerService `json:"fiat" yaml:"fiat"`
-	DebugLevel        string           `json:"debugLevel" yaml:"debugLevel"`
+	Logging           logging          `json:"logging" yaml:"logging"`
 }
 
 // S is the global settings structure
@@ -42,7 +42,10 @@ var S = Settings{
 	GitHubCredsPath:   util.GetenvOrDefault("GITHUB_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/github-creds.txt"),
 	StashCredsPath:    util.GetenvOrDefault("STASH_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/stash-creds.txt"),
 	StashEndpoint:     "http://localhost:7990/rest/api/1.0",
-	DebugLevel:        "info",
+	Logging: logging{
+		File:  "",
+		Level: "INFO",
+	},
 	Orca: spinnakerService{
 		Enabled: true,
 		BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://orca:8083"),
@@ -62,6 +65,11 @@ type spinnakerService struct {
 	Enabled  bool   `json:"enabled" yaml:"enabled"`
 	BaseURL  string `json:"baseUrl" yaml:"baseUrl"`
 	AuthUser string `json:"authUser" yaml:"authUser"`
+}
+
+type logging struct {
+	File  string `json:"file" yaml:"file"`
+	Level string `json:"level" yaml:"level"`
 }
 
 // If we got a DINGHY_CONFIG file as part of env, parse what's there into settings
