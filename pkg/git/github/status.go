@@ -3,11 +3,10 @@ package github
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httputil"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/armory-io/dinghy/pkg/git"
 	"github.com/armory-io/dinghy/pkg/settings"
@@ -34,8 +33,7 @@ func (p *Push) SetCommitStatus(s git.Status) {
 	update := newStatus(s)
 	for _, c := range p.Commits {
 		sha := c.ID // not sure if this is right.
-		url := fmt.Sprintf("%s/repos/%s/%s/statuses/%s",
-			settings.S.GithubEndpoint,
+		url := fmt.Sprintf("https://api.github.com/repos/%s/%s/statuses/%s",
 			p.Org(),
 			p.Repo(),
 			sha)

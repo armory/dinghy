@@ -48,14 +48,12 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 
 // EncodeURL returns the git url for a given org, repo, path
 func (f *FileService) EncodeURL(org, repo, path string) string {
-	return fmt.Sprintf(`%s/repos/%s/%s/contents/%s`, settings.S.GithubEndpoint, org, repo, path)
+	return fmt.Sprintf(`https://api.github.com/repos/%s/%s/contents/%s`, org, repo, path)
 }
 
 // DecodeURL takes a url and returns the org, repo, path
 func (f *FileService) DecodeURL(url string) (org, repo, path string) {
-	// embed the user configured github base url into the expected expression
-	targetExpression := fmt.Sprintf("%s/repos/(.+)/(.+)/contents/(.+)", settings.S.GithubEndpoint)
-	r, _ := regexp.Compile(targetExpression)
+	r, _ := regexp.Compile("https://api.github.com/repos/(.+)/(.+)/contents/(.+)")
 	match := r.FindStringSubmatch(url)
 	org = match[1]
 	repo = match[2]
