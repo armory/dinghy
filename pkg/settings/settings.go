@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/armory-io/dinghy/pkg/util"
+	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -76,7 +77,9 @@ type logging struct {
 // else initialize with default (Armory) values
 func init() {
 	var s Settings
+
 	configFile := util.GetenvOrDefault("DINGHY_CONFIG", "/opt/spinnaker/config/dinghy-local.yml")
+
 	if _, err := os.Stat(configFile); err == nil {
 		bytes, err := ioutil.ReadFile(configFile)
 		if err != nil {
@@ -88,10 +91,16 @@ func init() {
 			log.Errorf("Unable to parse config file: %v", err)
 			return
 		}
-		log.Infof("Configured with settings from file: ", configFile)
-		S = s
+		log.Infof("Configured with settings from file: %s", configFile)
+
+		// mergo merges 2 like structs together
+		if err := mergo.Merge(&S, s, mergo.WithOverride); err != nil {
+			log.Errorf("failed to merge custom config with default: %s", err.Error())
+			return
+		}
+
 	} else {
-		log.Info("Config file ", configFile, " not present falling back to default settings")
+		log.Infof("Config file %s not present falling back to default settings", configFile)
 	}
 
 	// load github api token

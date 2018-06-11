@@ -28,3 +28,7 @@
 [[constraint]]
   name = "github.com/go-redis/redis"
   version = "6.10.2"
+
+[[constraint]]
+  name = "github.com/imdario/mergo"
+  version = "0.3.5"

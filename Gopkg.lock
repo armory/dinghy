@@ -35,6 +35,12 @@
   version = "v1.6.1"
 
 [[projects]]
+  name = "github.com/imdario/mergo"
+  packages = ["."]
+  revision = "9316a62528ac99aaecb4e47eadd6dc8aa6533d58"
+  version = "v0.3.5"
+
+[[projects]]
   branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
@@ -82,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9df372056c1aa03702b7139a4778d828c162e7c6790bfd2c1fce56013b3188b6"
+  inputs-digest = "e9091b6bb79cf53267d2f0a5543178d9f2948d9569da15d3a7f45b67cfdab761"
   solver-name = "gps-cdcl"
   solver-version = 1
