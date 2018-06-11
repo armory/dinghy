@@ -21,6 +21,7 @@ type Settings struct {
 	SpinnakerUIURL    string `json:"spinUIUrl" yaml:"spinUIUrl"`
 	GitHubCredsPath   string `json:"githubCredsPath" yaml:"githubCredsPath"`
 	GitHubToken       string
+	GithubEndpoint    string `json:"githubEndpoint" yaml:"githubEndpoint"`
 	StashCredsPath    string `json:"stashCredsPath" yaml:"stashCredsPath"`
 	StashUsername     string
 	StashToken        string
@@ -41,6 +42,7 @@ var S = Settings{
 	AutoLockPipelines: "true",
 	SpinnakerUIURL:    "https://spinnaker.armory.io",
 	GitHubCredsPath:   util.GetenvOrDefault("GITHUB_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/github-creds.txt"),
+	GithubEndpoint:    "https://api.github.com",
 	StashCredsPath:    util.GetenvOrDefault("STASH_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/stash-creds.txt"),
 	StashEndpoint:     "http://localhost:7990/rest/api/1.0",
 	Logging: logging{
