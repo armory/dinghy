@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/armory-io/dinghy/pkg/cache/local"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -14,7 +15,9 @@ import (
 )
 
 // FileService is for working with repositories
-type FileService struct{}
+type FileService struct {
+	cache local.Cache
+}
 
 // FileContentsResponse contains response from Stash when you fetch a file
 type FileContentsResponse struct {
@@ -22,8 +25,7 @@ type FileContentsResponse struct {
 	Lines []map[string]string `json:"lines"`
 }
 
-func (f *FileService) downloadLines(org, repo, path string, start int) (lines []string, nextStart int, err error) {
-	url := f.EncodeURL(org, repo, path)
+func (f *FileService) downloadLines(url string, start int) (lines []string, nextStart int, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return
@@ -55,7 +57,7 @@ func (f *FileService) downloadLines(org, repo, path string, start int) (lines []
 	}
 	if !body.IsLastPage {
 		if body.NextPageStart == nil {
-			log.Errorf("IsLastPage is false but NextPageStart is nil for: %s/%s/%s", org, repo, path)
+			log.Errorf("IsLastPage is false but NextPageStart is nil for: %s", url)
 		} else {
 			nextStart = *body.NextPageStart
 		}
@@ -69,17 +71,24 @@ func (f *FileService) downloadLines(org, repo, path string, start int) (lines []
 // Download downloads a file from Stash.
 // Stash's API returns the file's contents as a paginated list of lines
 func (f *FileService) Download(org, repo, path string) (string, error) {
+	url := f.EncodeURL(org, repo, path)
+	body := f.cache.Get(url)
+	if body != "" {
+		return body, nil
+	}
 	allLines := make([]string, 0)
 	start := -1
 	for start != 0 {
-		lines, nextStart, err := f.downloadLines(org, repo, path, start)
+		lines, nextStart, err := f.downloadLines(url, start)
 		if err != nil {
 			return "", err
 		}
 		allLines = append(allLines, lines...)
 		start = nextStart
 	}
-	return strings.Join(allLines, "\n"), nil
+	ret := strings.Join(allLines, "\n")
+	f.cache.Add(url, ret)
+	return ret, nil
 }
 
 // EncodeURL returns the git url for a given org, repo, path

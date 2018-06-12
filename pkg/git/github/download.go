@@ -3,6 +3,7 @@ package github
 import (
 	"errors"
 	"fmt"
+	"github.com/armory-io/dinghy/pkg/cache/local"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -12,13 +13,19 @@ import (
 )
 
 // FileService is for working with repositories
-type FileService struct{}
+type FileService struct {
+	cache local.Cache
+}
 
 // Download a file from github.
 // note that "path" is the full path relative to the repo root
 // eg: src/foo/bar/filename
 func (f *FileService) Download(org, repo, path string) (string, error) {
 	url := f.EncodeURL(org, repo, path)
+	body := f.cache.Get(url)
+	if body != "" {
+		return body, nil
+	}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
@@ -43,6 +50,7 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	f.cache.Add(url, string(b))
 	return string(b), nil
 }
 
