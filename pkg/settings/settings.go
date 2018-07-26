@@ -14,24 +14,24 @@ import (
 
 // Settings contains all information needed to startup and run the dinghy service
 type Settings struct {
-	TemplateOrg       string `json:"templateOrg" yaml:"templateOrg"`
-	DinghyFilename    string `json:"dinghyFilename" yaml:"dinghyFilename"`
-	TemplateRepo      string `json:"templateRepo" yaml:"templateRepo"`
-	AutoLockPipelines string `json:"autoLockPipelines" yaml:"autoLockPipelines"`
-	SpinnakerUIURL    string `json:"spinUIUrl" yaml:"spinUIUrl"`
-	GitHubCredsPath   string `json:"githubCredsPath" yaml:"githubCredsPath"`
+	TemplateOrg       string `json:"templateOrg,omitempty" yaml:"templateOrg"`
+	DinghyFilename    string `json:"dinghyFilename,omitempty" yaml:"dinghyFilename"`
+	TemplateRepo      string `json:"templateRepo,omitempty" yaml:"templateRepo"`
+	AutoLockPipelines string `json:"autoLockPipelines,omitempty" yaml:"autoLockPipelines"`
+	SpinnakerUIURL    string `json:"spinUIUrl,omitempty" yaml:"spinUIUrl"`
+	GitHubCredsPath   string `json:"githubCredsPath,omitempty" yaml:"githubCredsPath"`
 	GitHubToken       string
-	GithubEndpoint    string `json:"githubEndpoint" yaml:"githubEndpoint"`
-	StashCredsPath    string `json:"stashCredsPath" yaml:"stashCredsPath"`
+	GithubEndpoint    string `json:"githubEndpoint,omitempty" yaml:"githubEndpoint"`
+	StashCredsPath    string `json:"stashCredsPath,omitempty" yaml:"stashCredsPath"`
 	StashUsername     string
 	StashToken        string
-	StashEndpoint     string           `json:"stashEndpoint" yaml:"stashEndpoint"`
-	RedisServer       string           `json:"redisServer" yaml:"redisServer"`
-	RedisPassword     string           `json:"redisPassword" yaml:"redisPassword"`
-	Orca              spinnakerService `json:"orca" yaml:"orca"`
-	Front50           spinnakerService `json:"front50" yaml:"front50"`
-	Fiat              spinnakerService `json:"fiat" yaml:"fiat"`
-	Logging           logging          `json:"logging" yaml:"logging"`
+	StashEndpoint     string           `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
+	RedisServer       string           `json:"redisServer,omitempty" yaml:"redisServer"`
+	RedisPassword     string           `json:"redisPassword,omitempty" yaml:"redisPassword"`
+	Orca              spinnakerService `json:"orca,omitempty" yaml:"orca"`
+	Front50           spinnakerService `json:"front50,omitempty" yaml:"front50"`
+	Fiat              spinnakerService `json:"fiat,omitempty" yaml:"fiat"`
+	Logging           logging          `json:"logging,omitempty" yaml:"logging"`
 }
 
 // S is the global settings structure
@@ -65,14 +65,14 @@ var S = Settings{
 }
 
 type spinnakerService struct {
-	Enabled  bool   `json:"enabled" yaml:"enabled"`
-	BaseURL  string `json:"baseUrl" yaml:"baseUrl"`
-	AuthUser string `json:"authUser" yaml:"authUser"`
+	Enabled  bool   `json:"enabled,omitempty" yaml:"enabled"`
+	BaseURL  string `json:"baseUrl,omitempty" yaml:"baseUrl"`
+	AuthUser string `json:"authUser,omitempty" yaml:"authUser"`
 }
 
 type logging struct {
-	File  string `json:"file" yaml:"file"`
-	Level string `json:"level" yaml:"level"`
+	File  string `json:"file,omitempty" yaml:"file"`
+	Level string `json:"level,omitempty" yaml:"level"`
 }
 
 // If we got a DINGHY_CONFIG file as part of env, parse what's there into settings
