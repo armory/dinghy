@@ -14,17 +14,17 @@ import (
 
 // Settings contains all information needed to startup and run the dinghy service
 type Settings struct {
-	TemplateOrg       string `json:"templateOrg,omitempty" yaml:"templateOrg"`
-	DinghyFilename    string `json:"dinghyFilename,omitempty" yaml:"dinghyFilename"`
-	TemplateRepo      string `json:"templateRepo,omitempty" yaml:"templateRepo"`
-	AutoLockPipelines string `json:"autoLockPipelines,omitempty" yaml:"autoLockPipelines"`
-	SpinnakerUIURL    string `json:"spinUIUrl,omitempty" yaml:"spinUIUrl"`
-	GitHubCredsPath   string `json:"githubCredsPath,omitempty" yaml:"githubCredsPath"`
-	GitHubToken       string
-	GithubEndpoint    string `json:"githubEndpoint,omitempty" yaml:"githubEndpoint"`
-	StashCredsPath    string `json:"stashCredsPath,omitempty" yaml:"stashCredsPath"`
-	StashUsername     string
-	StashToken        string
+	TemplateOrg       string           `json:"templateOrg,omitempty" yaml:"templateOrg"`
+	DinghyFilename    string           `json:"dinghyFilename,omitempty" yaml:"dinghyFilename"`
+	TemplateRepo      string           `json:"templateRepo,omitempty" yaml:"templateRepo"`
+	AutoLockPipelines string           `json:"autoLockPipelines,omitempty" yaml:"autoLockPipelines"`
+	SpinnakerUIURL    string           `json:"spinUIUrl,omitempty" yaml:"spinUIUrl"`
+	GitHubCredsPath   string           `json:"githubCredsPath,omitempty" yaml:"githubCredsPath"`
+	GitHubToken       string           `json:"githubToken,omitempty" yaml:"githubToken"`
+	GithubEndpoint    string           `json:"githubEndpoint,omitempty" yaml:"githubEndpoint"`
+	StashCredsPath    string           `json:"stashCredsPath,omitempty" yaml:"stashCredsPath"`
+	StashUsername     string           `json:"stashUsername,omitempty" yaml:"stashUsername"`
+	StashToken        string           `json:"stashToken,omitempty" yaml:"stashToken"`
 	StashEndpoint     string           `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
 	RedisServer       string           `json:"redisServer,omitempty" yaml:"redisServer"`
 	RedisPassword     string           `json:"redisPassword,omitempty" yaml:"redisPassword"`
@@ -105,32 +105,38 @@ func init() {
 		log.Infof("Config file %s not present falling back to default settings", configFile)
 	}
 
-	// load github api token
-	if _, err := os.Stat(S.GitHubCredsPath); err == nil {
-		creds, err := ioutil.ReadFile(S.GitHubCredsPath)
-		if err != nil {
-			panic(err)
+	// If Github token not passed directly
+	if S.GitHubToken == "" {
+		// load github api token
+		if _, err := os.Stat(S.GitHubCredsPath); err == nil {
+			creds, err := ioutil.ReadFile(S.GitHubCredsPath)
+			if err != nil {
+				panic(err)
+			}
+			c := strings.Split(strings.TrimSpace(string(creds)), ":")
+			if len(c) < 2 {
+				panic("github creds file should have format 'username:token'")
+			}
+			S.GitHubToken = c[1]
+			log.Info("Successfully loaded github api creds")
 		}
-		c := strings.Split(strings.TrimSpace(string(creds)), ":")
-		if len(c) < 2 {
-			panic("github creds file should have format 'username:token'")
-		}
-		S.GitHubToken = c[1]
-		log.Info("Successfully loaded github api creds")
 	}
 
-	// load stash api creds
-	if _, err := os.Stat(S.StashCredsPath); err == nil {
-		creds, err := ioutil.ReadFile(S.StashCredsPath)
-		if err != nil {
-			panic(err)
+	// If Stash token not passed directly
+	if S.StashToken == "" || S.StashUsername == "" {
+		// load stash api creds
+		if _, err := os.Stat(S.StashCredsPath); err == nil {
+			creds, err := ioutil.ReadFile(S.StashCredsPath)
+			if err != nil {
+				panic(err)
+			}
+			c := strings.Split(strings.TrimSpace(string(creds)), ":")
+			if len(c) < 2 {
+				panic("stash creds file should have format 'username:token'")
+			}
+			S.StashUsername = c[0]
+			S.StashToken = c[1]
+			log.Info("Successfully loaded stash api creds")
 		}
-		c := strings.Split(strings.TrimSpace(string(creds)), ":")
-		if len(c) < 2 {
-			panic("stash creds file should have format 'username:token'")
-		}
-		S.StashUsername = c[0]
-		S.StashToken = c[1]
-		log.Info("Successfully loaded stash api creds")
 	}
 }
