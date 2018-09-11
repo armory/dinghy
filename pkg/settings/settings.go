@@ -32,6 +32,7 @@ type Settings struct {
 	Front50           spinnakerService `json:"front50,omitempty" yaml:"front50"`
 	Fiat              spinnakerService `json:"fiat,omitempty" yaml:"fiat"`
 	Logging           logging          `json:"logging,omitempty" yaml:"logging"`
+	FiatUser          string           `json:"fiatUser,omitempty" yaml:"fiatUser"`
 }
 
 // S is the global settings structure
@@ -138,5 +139,10 @@ func init() {
 			S.StashToken = c[1]
 			log.Info("Successfully loaded stash api creds")
 		}
+	}
+
+	// Take the FiatUser setting if fiat is enabled (coming from hal settings)
+	if S.Fiat.Enabled && S.FiatUser != "" {
+		S.Fiat.AuthUser = S.FiatUser
 	}
 }
