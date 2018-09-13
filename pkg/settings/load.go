@@ -2,6 +2,7 @@
 package settings
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -114,6 +115,9 @@ func init() {
 		S.Fiat.AuthUser = S.FiatUser
 	}
 
+	c, _ := json.Marshal(S)
+	log.Infof("The following settings have been loaded: %v", string(c))
+
 }
 
 func loadProfiles() (Settings, error) {
@@ -138,7 +142,5 @@ func loadProfiles() (Settings, error) {
 		log.Errorf("Could not Unmarshall yaml configs into Settings - %v", err)
 		return config, err
 	}
-	log.Infof("Using settings: %v", string(bytes))
-
 	return config, nil
 }
