@@ -15,12 +15,10 @@ import (
 )
 
 func newRedisOptions() *redis.Options {
-	host := util.GetenvOrDefault("REDIS_HOST", "redis")
-	port := util.GetenvOrDefault("REDIS_PORT", "6379")
-
+	r := settings.S.Redis
 	return &redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", host, port),
-		Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
+		Addr:     fmt.Sprintf("%s:%s", r.Host, r.Port),
+		Password: r.Password,
 		DB:       0,
 	}
 }
