@@ -2,15 +2,20 @@
 package settings
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/armory-io/dinghy/pkg/util"
+	"github.com/armory/go-yaml-tools/pkg/spring"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
+
+var YAMLConfig Settings
+var S Settings
 
 // Settings contains all information needed to startup and run the dinghy service
 type Settings struct {
@@ -35,38 +40,8 @@ type Settings struct {
 	FiatUser          string           `json:"fiatUser,omitempty" yaml:"fiatUser"`
 }
 
-// S is the global settings structure
-var S = Settings{
-	TemplateOrg:       "armory-io",
-	DinghyFilename:    "dinghyfile",
-	TemplateRepo:      "dinghy-templates",
-	AutoLockPipelines: "true",
-	SpinnakerUIURL:    "https://spinnaker.armory.io",
-	GitHubCredsPath:   util.GetenvOrDefault("GITHUB_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/github-creds.txt"),
-	GithubEndpoint:    "https://api.github.com",
-	StashCredsPath:    util.GetenvOrDefault("STASH_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/stash-creds.txt"),
-	StashEndpoint:     "http://localhost:7990/rest/api/1.0",
-	Logging: logging{
-		File:  "",
-		Level: "INFO",
-	},
-	Orca: spinnakerService{
-		Enabled: true,
-		BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://orca:8083"),
-	},
-	Front50: spinnakerService{
-		Enabled: true,
-		BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://front50:8080"),
-	},
-	Fiat: spinnakerService{
-		Enabled:  false,
-		BaseURL:  util.GetenvOrDefault("FIAT_BASE_URL", "http://fiat:7003"),
-		AuthUser: "",
-	},
-}
-
 type spinnakerService struct {
-	Enabled  bool   `json:"enabled,omitempty" yaml:"enabled"`
+	Enabled  *bool  `json:"enabled" yaml:"enabled"`
 	BaseURL  string `json:"baseUrl,omitempty" yaml:"baseUrl"`
 	AuthUser string `json:"authUser,omitempty" yaml:"authUser"`
 }
@@ -76,11 +51,20 @@ type logging struct {
 	Level string `json:"level,omitempty" yaml:"level"`
 }
 
+func init() {
+	springConfig, err := loadProfiles()
+	if err != nil {
+		return
+	}
+	s, _ := json.Marshal(springConfig)
+	log.Infof("SpringConfig: %s", string(s))
+
+}
+
 // If we got a DINGHY_CONFIG file as part of env, parse what's there into settings
 // else initialize with default (Armory) values
-func init() {
+func init_old() {
 	var s Settings
-
 	configFile := util.GetenvOrDefault("DINGHY_CONFIG", "/opt/spinnaker/config/dinghy-local.yml")
 
 	if _, err := os.Stat(configFile); err == nil {
@@ -142,7 +126,71 @@ func init() {
 	}
 
 	// Take the FiatUser setting if fiat is enabled (coming from hal settings)
-	if S.Fiat.Enabled && S.FiatUser != "" {
+	if *(S.Fiat.Enabled) && S.FiatUser != "" {
 		S.Fiat.AuthUser = S.FiatUser
+	}
+}
+
+func loadProfiles() (Settings, error) {
+	// var s Settings
+	var config Settings
+	propNames := []string{"spinnaker", "dinghy"}
+	c, err := spring.LoadDefault(propNames)
+	if err != nil {
+		log.Errorf("Could not load yaml conifgs - %v", err)
+		return config, err
+	}
+	// c is map[string]interface{} but we want it as Settings
+	// so marshall to []byte as intermediate step
+	bytes, err := json.Marshal(&c)
+	if err != nil {
+		log.Errorf("Could not marshall yaml configs - %v", err)
+		return config, err
+	}
+	// and now unmarshall as Settings
+	err = yaml.Unmarshal(bytes, &config)
+	if err != nil {
+		log.Errorf("Could not Unmarshall yaml configs into Settings - %v", err)
+	}
+	log.Infof("Using settings: %v", string(bytes))
+
+	return config, nil
+}
+
+func inititalizeSettings() {
+	// S is the legacy global settings structure
+	t := new(bool)
+	f := new(bool)
+
+	*t = true
+	*f = false
+
+	S = Settings{
+		TemplateOrg:       "armory-io",
+		DinghyFilename:    "dinghyfile",
+		TemplateRepo:      "dinghy-templates",
+		AutoLockPipelines: "true",
+		SpinnakerUIURL:    "https://spinnaker.armory.io",
+		GitHubCredsPath:   util.GetenvOrDefault("GITHUB_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/github-creds.txt"),
+		GithubEndpoint:    "https://api.github.com",
+		StashCredsPath:    util.GetenvOrDefault("STASH_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/stash-creds.txt"),
+		StashEndpoint:     "http://localhost:7990/rest/api/1.0",
+		Logging: logging{
+			File:  "",
+			Level: "INFO",
+		},
+		Orca: spinnakerService{
+			Enabled: t,
+			BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://orca:8083"),
+		},
+		Front50: spinnakerService{
+			Enabled: t,
+			BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://front50:8080"),
+		},
+		Fiat: spinnakerService{
+			Enabled:  f,
+			BaseURL:  util.GetenvOrDefault("FIAT_BASE_URL", "http://fiat:7003"),
+			AuthUser: "",
+		},
 	}
 }
