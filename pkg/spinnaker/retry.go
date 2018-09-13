@@ -66,7 +66,7 @@ func request(method, url string, body io.Reader) (*http.Response, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/context+json")
-	if *(settings.S.Fiat.Enabled) && settings.S.Fiat.AuthUser != "" {
+	if settings.S.Fiat.Enabled == "true" && settings.S.Fiat.AuthUser != "" {
 		req.Header.Set("X-Spinnaker-User", settings.S.Fiat.AuthUser)
 		log.Info("Setting X-Spinnaker-User header: ", settings.S.Fiat.AuthUser)
 	} else {

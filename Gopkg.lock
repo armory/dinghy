@@ -2,6 +2,15 @@
 
 
 [[projects]]
+  branch = "does-this-work"
+  name = "github.com/armory/go-yaml-tools"
+  packages = [
+    "pkg/spring",
+    "pkg/yaml"
+  ]
+  revision = "dabcd571efe6a4fc4f78c08f34cb2c12e6c25bd5"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -88,6 +97,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e9091b6bb79cf53267d2f0a5543178d9f2948d9569da15d3a7f45b67cfdab761"
+  inputs-digest = "fd7abcd4f3d09f687ceccec236380091e84bdc354c412ba6be4b657a0bd922a4"
   solver-name = "gps-cdcl"
   solver-version = 1

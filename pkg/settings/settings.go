@@ -14,8 +14,35 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-var YAMLConfig Settings
-var S Settings
+// S is the global settings structure
+var S = Settings{
+	TemplateOrg:       "armory-io",
+	DinghyFilename:    "dinghyfile",
+	TemplateRepo:      "dinghy-templates",
+	AutoLockPipelines: "true",
+	SpinnakerUIURL:    "https://spinnaker.armory.io",
+	GitHubCredsPath:   util.GetenvOrDefault("GITHUB_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/github-creds.txt"),
+	GithubEndpoint:    "https://api.github.com",
+	StashCredsPath:    util.GetenvOrDefault("STASH_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/stash-creds.txt"),
+	StashEndpoint:     "http://localhost:7990/rest/api/1.0",
+	Logging: logging{
+		File:  "",
+		Level: "INFO",
+	},
+	Orca: spinnakerService{
+		Enabled: "true",
+		BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://orca:8083"),
+	},
+	Front50: spinnakerService{
+		Enabled: "true",
+		BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://front50:8080"),
+	},
+	Fiat: spinnakerService{
+		Enabled:  "false",
+		BaseURL:  util.GetenvOrDefault("FIAT_BASE_URL", "http://fiat:7003"),
+		AuthUser: "",
+	},
+}
 
 // Settings contains all information needed to startup and run the dinghy service
 type Settings struct {
@@ -41,7 +68,7 @@ type Settings struct {
 }
 
 type spinnakerService struct {
-	Enabled  *bool  `json:"enabled" yaml:"enabled"`
+	Enabled  string `json:"enabled,omitempty" yaml:"enabled"`
 	BaseURL  string `json:"baseUrl,omitempty" yaml:"baseUrl"`
 	AuthUser string `json:"authUser,omitempty" yaml:"authUser"`
 }
@@ -126,7 +153,7 @@ func init_old() {
 	}
 
 	// Take the FiatUser setting if fiat is enabled (coming from hal settings)
-	if *(S.Fiat.Enabled) && S.FiatUser != "" {
+	if S.Fiat.Enabled == "true" && S.FiatUser != "" {
 		S.Fiat.AuthUser = S.FiatUser
 	}
 }
@@ -148,49 +175,11 @@ func loadProfiles() (Settings, error) {
 		return config, err
 	}
 	// and now unmarshall as Settings
-	err = yaml.Unmarshal(bytes, &config)
+	err = json.Unmarshal(bytes, &config)
 	if err != nil {
 		log.Errorf("Could not Unmarshall yaml configs into Settings - %v", err)
 	}
 	log.Infof("Using settings: %v", string(bytes))
 
 	return config, nil
-}
-
-func inititalizeSettings() {
-	// S is the legacy global settings structure
-	t := new(bool)
-	f := new(bool)
-
-	*t = true
-	*f = false
-
-	S = Settings{
-		TemplateOrg:       "armory-io",
-		DinghyFilename:    "dinghyfile",
-		TemplateRepo:      "dinghy-templates",
-		AutoLockPipelines: "true",
-		SpinnakerUIURL:    "https://spinnaker.armory.io",
-		GitHubCredsPath:   util.GetenvOrDefault("GITHUB_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/github-creds.txt"),
-		GithubEndpoint:    "https://api.github.com",
-		StashCredsPath:    util.GetenvOrDefault("STASH_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/stash-creds.txt"),
-		StashEndpoint:     "http://localhost:7990/rest/api/1.0",
-		Logging: logging{
-			File:  "",
-			Level: "INFO",
-		},
-		Orca: spinnakerService{
-			Enabled: t,
-			BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://orca:8083"),
-		},
-		Front50: spinnakerService{
-			Enabled: t,
-			BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://front50:8080"),
-		},
-		Fiat: spinnakerService{
-			Enabled:  f,
-			BaseURL:  util.GetenvOrDefault("FIAT_BASE_URL", "http://fiat:7003"),
-			AuthUser: "",
-		},
-	}
 }
