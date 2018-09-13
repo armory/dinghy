@@ -3,10 +3,11 @@ package github
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httputil"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/armory-io/dinghy/pkg/git"
 	"github.com/armory-io/dinghy/pkg/settings"
@@ -61,7 +62,7 @@ func (p *Push) SetCommitStatus(s git.Status) {
 func newStatus(s git.Status) Status {
 	ret := Status{
 		State:     string(s),
-		TargetURL: settings.S.SpinnakerUIURL,
+		TargetURL: settings.S.Deck.BaseURL,
 		Context:   "continuous-deployment/dinghy",
 	}
 	switch s {
