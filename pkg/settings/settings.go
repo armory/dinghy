@@ -90,7 +90,7 @@ func init() {
 
 // If we got a DINGHY_CONFIG file as part of env, parse what's there into settings
 // else initialize with default (Armory) values
-func init_old() {
+func initOld() {
 	var s Settings
 	configFile := util.GetenvOrDefault("DINGHY_CONFIG", "/opt/spinnaker/config/dinghy-local.yml")
 
