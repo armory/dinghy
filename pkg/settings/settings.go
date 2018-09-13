@@ -16,8 +16,6 @@ type Settings struct {
 	StashUsername     string  `json:"stashUsername,omitempty" yaml:"stashUsername"`
 	StashToken        string  `json:"stashToken,omitempty" yaml:"stashToken"`
 	StashEndpoint     string  `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
-	RedisServer       string  `json:"redisServer,omitempty" yaml:"redisServer"`
-	RedisPassword     string  `json:"redisPassword,omitempty" yaml:"redisPassword"`
 	FiatUser          string  `json:"fiatUser,omitempty" yaml:"fiatUser"`
 	Logging           logging `json:"logging,omitempty" yaml:"logging"`
 	spinnakerSupplied
