@@ -17,11 +17,9 @@ import (
 // In order to support legacy installs, S has only had additive changes made to it
 // TODO: Remove S when customers are all using dinghy with halyard
 var S = Settings{
-	TemplateOrg:       "armory-io",
 	DinghyFilename:    "dinghyfile",
 	TemplateRepo:      "dinghy-templates",
 	AutoLockPipelines: "true",
-	SpinnakerUIURL:    "https://spinnaker.armory.io",
 	GitHubCredsPath:   util.GetenvOrDefault("GITHUB_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/github-creds.txt"),
 	GithubEndpoint:    "https://api.github.com",
 	StashCredsPath:    util.GetenvOrDefault("STASH_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/stash-creds.txt"),

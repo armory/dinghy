@@ -3,7 +3,6 @@ package settings
 
 // Settings contains all information needed to startup and run the dinghy service
 type Settings struct {
-	Enabled           string  `json:"enabled,omitempty" yaml:"omitempty"`
 	TemplateOrg       string  `json:"templateOrg,omitempty" yaml:"templateOrg"`
 	TemplateRepo      string  `json:"templateRepo,omitempty" yaml:"templateRepo"`
 	DinghyFilename    string  `json:"dinghyFilename,omitempty" yaml:"dinghyFilename"`
