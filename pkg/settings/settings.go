@@ -5,8 +5,8 @@ package settings
 type Settings struct {
 	Enabled           string  `json:"enabled,omitempty" yaml:"omitempty"`
 	TemplateOrg       string  `json:"templateOrg,omitempty" yaml:"templateOrg"`
-	DinghyFilename    string  `json:"dinghyFilename,omitempty" yaml:"dinghyFilename"`
 	TemplateRepo      string  `json:"templateRepo,omitempty" yaml:"templateRepo"`
+	DinghyFilename    string  `json:"dinghyFilename,omitempty" yaml:"dinghyFilename"`
 	AutoLockPipelines string  `json:"autoLockPipelines,omitempty" yaml:"autoLockPipelines"`
 	SpinnakerUIURL    string  `json:"spinUIUrl,omitempty" yaml:"spinUIUrl"`
 	GitHubCredsPath   string  `json:"githubCredsPath,omitempty" yaml:"githubCredsPath"`
@@ -26,6 +26,7 @@ type Settings struct {
 type spinnakerSupplied struct {
 	Orca    spinnakerService `json:"orca,omitempty" yaml:"orca"`
 	Front50 spinnakerService `json:"front50,omitempty" yaml:"front50"`
+	Deck    spinnakerService `json:"deck,omitempty" yaml:"deck"`
 	Fiat    fiat             `json:"fiat,omitempty" yaml:"fiat"`
 	Redis   redis            `json:"redis,omitempty" yaml:"redis"`
 }

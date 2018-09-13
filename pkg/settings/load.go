@@ -2,7 +2,6 @@
 package settings
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -15,6 +14,8 @@ import (
 )
 
 // S is the global settings structure
+// In order to support legacy installs, S has only had additive changes made to it
+// TODO: Remove S when customers are all using dinghy with halyard
 var S = Settings{
 	TemplateOrg:       "armory-io",
 	DinghyFilename:    "dinghyfile",
@@ -53,26 +54,22 @@ var S = Settings{
 	},
 }
 
-// If we got a DINGHY_CONFIG file as part of env, parse what's there into settings
-// else initialize with default (Armory) values
 func init() {
+	// Read in settings for dinghy and spinnaker profiles
 	springConfig, err := loadProfiles()
 	if err != nil {
 		return
 	}
-	sc, _ := json.Marshal(springConfig)
-	log.Infof("SpringConfig: %s", string(sc))
 
-	// mergo merges 2 like structs together
+	// Overwrite S's initial values with those stored in springConfig
+	// TODO: Remove this code when customers are all using dinghy with halyard
 	if err := mergo.Merge(&S, springConfig, mergo.WithOverride); err != nil {
 		log.Errorf("failed to merge custom config with default: %s", err.Error())
 		return
 	}
 
-	sc, _ = json.Marshal(S)
-	log.Infof("SpringConfig after merge: %s", string(sc))
-
 	// If Github token not passed directly
+	// Required for backwards compatibility
 	if S.GitHubToken == "" {
 		// load github api token
 		if _, err := os.Stat(S.GitHubCredsPath); err == nil {
@@ -90,6 +87,7 @@ func init() {
 	}
 
 	// If Stash token not passed directly
+	// Required for backwards compatibility
 	if S.StashToken == "" || S.StashUsername == "" {
 		// load stash api creds
 		if _, err := os.Stat(S.StashCredsPath); err == nil {
@@ -107,10 +105,17 @@ func init() {
 		}
 	}
 
+	// Required for backwards compatibility
+	if S.Deck.BaseURL == "" && S.SpinnakerUIURL != "" {
+		log.Warn("Spinnaker UI URL should be set with ${services.deck.baseUrl}")
+		S.Deck.BaseURL = S.SpinnakerUIURL
+	}
+
 	// Take the FiatUser setting if fiat is enabled (coming from hal settings)
 	if S.Fiat.Enabled == "true" && S.FiatUser != "" {
 		S.Fiat.AuthUser = S.FiatUser
 	}
+
 }
 
 func loadProfiles() (Settings, error) {
@@ -133,6 +138,7 @@ func loadProfiles() (Settings, error) {
 	err = yaml.Unmarshal(bytes, &config)
 	if err != nil {
 		log.Errorf("Could not Unmarshall yaml configs into Settings - %v", err)
+		return config, err
 	}
 	log.Infof("Using settings: %v", string(bytes))
 
