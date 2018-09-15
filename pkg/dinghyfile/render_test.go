@@ -8,8 +8,8 @@ import (
 
 	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/git/dummy"
-	"github.com/stretchr/testify/assert"
 	"github.com/armory-io/dinghy/pkg/settings"
+	"github.com/stretchr/testify/assert"
 )
 
 var fileService = dummy.FileService{
@@ -25,7 +25,7 @@ var fileService = dummy.FileService{
 			{{ module "mod6" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" ["1", "2", "3"] }}
 		]
 	}`,
-	"df4":   `{{ module "mod3" "foo" "" }}`,
+	"df4": `{{ module "mod3" "foo" "" }}`,
 	"df_bad": `{
 		"stages": [
 			{{ module "mod1" }
@@ -48,8 +48,7 @@ var fileService = dummy.FileService{
 	"mod2": `{
 		"type": "{{ var "type" ?: "jenkins" }}"
 	}`,
-	"mod3": 	    `{"foo": "{{ var "foo" ?: "baz" }}"}`,
-
+	"mod3": `{"foo": "{{ var "foo" ?: "baz" }}"}`,
 
 	"mod4": `{
 		"foo": "{{ var "foo" "baz" }}",
@@ -96,17 +95,16 @@ var builder = &PipelineBuilder{
 }
 
 func TestGracefulErrorHandling(t *testing.T) {
-	buf := builder.Render("org", "repo", "df_bad", nil)
-	assert.Nil(t, buf, "Got non-nil output for mal-formed template action in df_bad")
+	_, err := builder.Render("org", "repo", "df_bad", nil)
+	assert.NotNil(t, err, "Got non-nil output for mal-formed template action in df_bad")
 }
-
 
 func TestNestedVars(t *testing.T) {
 
 	// this is because we only parse global vars when processing
 	// a "dinghyfile" (settings.S.DinghyFilename)
 	settings.S.DinghyFilename = "nested_var_df"
-	buf := builder.Render("org", "repo", "nested_var_df", nil)
+	buf, _ := builder.Render("org", "repo", "nested_var_df", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -137,7 +135,7 @@ func TestGlobalVars(t *testing.T) {
 	// this is because we only parse global vars when processing
 	// a "dinghyfile" (settings.S.DinghyFilename)
 	settings.S.DinghyFilename = "df_global"
-	buf := builder.Render("org", "repo", "df_global", nil)
+	buf, _ := builder.Render("org", "repo", "df_global", nil)
 
 	const expected = `{
 		"application": "search",
@@ -163,7 +161,7 @@ func TestGlobalVars(t *testing.T) {
 
 func TestSimpleWaitStage(t *testing.T) {
 
-	buf := builder.Render("org", "repo", "df3", nil)
+	buf, _ := builder.Render("org", "repo", "df3", nil)
 
 	const expected = `{
 		"stages": [
@@ -184,7 +182,7 @@ func TestSimpleWaitStage(t *testing.T) {
 }
 
 func TestSpillover(t *testing.T) {
-	buf := builder.Render("org", "repo", "df", nil)
+	buf, _ := builder.Render("org", "repo", "df", nil)
 
 	const expected = `{
 		"stages": [
@@ -209,8 +207,8 @@ type testStruct struct {
 
 func TestModuleVariableSubstitution(t *testing.T) {
 	ts := testStruct{}
-	ret := builder.Render("org", "repo", "df2", nil)
-	err := json.Unmarshal(ret.Bytes(), &ts)
+	ret, err := builder.Render("org", "repo", "df2", nil)
+	err = json.Unmarshal(ret.Bytes(), &ts)
 	assert.Equal(t, nil, err)
 
 	assert.Equal(t, "baz", ts.Foo)
@@ -226,6 +224,6 @@ func TestPipelineID(t *testing.T) {
 */
 
 func TestModuleEmptyString(t *testing.T) {
-	ret := builder.Render("org", "repo", "df4", nil)
+	ret, _ := builder.Render("org", "repo", "df4", nil)
 	assert.Equal(t, `{"foo": ""}`, ret.String())
 }
