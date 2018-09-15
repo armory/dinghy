@@ -32,16 +32,16 @@ var S = Settings{
 	spinnakerSupplied: spinnakerSupplied{
 		Orca: spinnakerService{
 			Enabled: "true",
-			BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://orca:8083"),
+			BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://spin-orca:8083"),
 		},
 		Front50: spinnakerService{
 			Enabled: "true",
-			BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://front50:8080"),
+			BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://spin-front50:8080"),
 		},
 		Fiat: fiat{
 			spinnakerService: spinnakerService{
 				Enabled: "false",
-				BaseURL: util.GetenvOrDefault("FIAT_BASE_URL", "http://fiat:7003"),
+				BaseURL: util.GetenvOrDefault("FIAT_BASE_URL", "http://spin-fiat:7003"),
 			},
 			AuthUser: "",
 		},
