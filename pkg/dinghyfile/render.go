@@ -51,7 +51,7 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []
 			newVars[key] = parseValue(vars[i+1])
 		}
 
-		result := b.Render(b.TemplateOrg, b.TemplateRepo, mod, append([]varMap{newVars}, allVars...))
+		result, _ := b.Render(b.TemplateOrg, b.TemplateRepo, mod, append([]varMap{newVars}, allVars...))
 		return result.String()
 	}
 }

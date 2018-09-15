@@ -95,7 +95,7 @@ var builder = &PipelineBuilder{
 }
 
 func TestGracefulErrorHandling(t *testing.T) {
-	buf, err := builder.Render("org", "repo", "df_bad", nil)
+	_, err := builder.Render("org", "repo", "df_bad", nil)
 	assert.NotNil(t, err, "Got non-nil output for mal-formed template action in df_bad")
 }
 
@@ -104,7 +104,7 @@ func TestNestedVars(t *testing.T) {
 	// this is because we only parse global vars when processing
 	// a "dinghyfile" (settings.S.DinghyFilename)
 	settings.S.DinghyFilename = "nested_var_df"
-	buf, err := builder.Render("org", "repo", "nested_var_df", nil)
+	buf, _ := builder.Render("org", "repo", "nested_var_df", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -135,7 +135,7 @@ func TestGlobalVars(t *testing.T) {
 	// this is because we only parse global vars when processing
 	// a "dinghyfile" (settings.S.DinghyFilename)
 	settings.S.DinghyFilename = "df_global"
-	buf, err := builder.Render("org", "repo", "df_global", nil)
+	buf, _ := builder.Render("org", "repo", "df_global", nil)
 
 	const expected = `{
 		"application": "search",
@@ -161,7 +161,7 @@ func TestGlobalVars(t *testing.T) {
 
 func TestSimpleWaitStage(t *testing.T) {
 
-	buf := builder.Render("org", "repo", "df3", nil)
+	buf, _ := builder.Render("org", "repo", "df3", nil)
 
 	const expected = `{
 		"stages": [
@@ -182,7 +182,7 @@ func TestSimpleWaitStage(t *testing.T) {
 }
 
 func TestSpillover(t *testing.T) {
-	buf, err := builder.Render("org", "repo", "df", nil)
+	buf, _ := builder.Render("org", "repo", "df", nil)
 
 	const expected = `{
 		"stages": [
@@ -224,6 +224,6 @@ func TestPipelineID(t *testing.T) {
 */
 
 func TestModuleEmptyString(t *testing.T) {
-	ret, err := builder.Render("org", "repo", "df4", nil)
+	ret, _ := builder.Render("org", "repo", "df4", nil)
 	assert.Equal(t, `{"foo": ""}`, ret.String())
 }
