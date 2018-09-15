@@ -60,6 +60,10 @@ func init() {
 		return
 	}
 
+	if c, err := json.Marshal(S); err == nil {
+		log.Info("Loaded from spring config %s", string(c))
+	}
+
 	// Overwrite S's initial values with those stored in springConfig
 	// TODO: Remove this code when customers are all using dinghy with halyard
 	if err := mergo.Merge(&S, springConfig, mergo.WithOverride); err != nil {
@@ -126,7 +130,7 @@ func loadProfiles() (Settings, error) {
 	propNames := []string{"spinnaker", "dinghy"}
 	c, err := spring.LoadDefault(propNames)
 	if err != nil {
-		log.Errorf("Could not load yaml conifgs - %v", err)
+		log.Errorf("Could not load yaml configs - %v", err)
 		return config, err
 	}
 	// c is map[string]interface{} but we want it as Settings
