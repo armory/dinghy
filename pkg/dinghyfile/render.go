@@ -7,8 +7,8 @@ import (
 	"text/template"
 
 	"github.com/armory-io/dinghy/pkg/preprocessor"
-	"github.com/armory-io/dinghy/pkg/spinnaker"
 	"github.com/armory-io/dinghy/pkg/settings"
+	"github.com/armory-io/dinghy/pkg/spinnaker"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -133,21 +133,21 @@ func varFunc(vars []varMap) interface{} {
 }
 
 // Render renders the template
-func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) *bytes.Buffer {
+func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
 	deps := make(map[string]bool)
 
 	// Download the template being rendered.
 	contents, err := b.Downloader.Download(org, repo, path)
 	if err != nil {
 		log.Errorf("could not download %s/%s/%s", org, repo, path)
-		return nil
+		return nil, err
 	}
 
 	// Preprocess to stringify any json args in calls to modules.
 	contents, err = preprocessor.Preprocess(contents)
 	if err != nil {
 		log.Error(err)
-		return nil
+		return nil, err
 	}
 
 	// Extract global vars if we're processing a dinghyfile (and not a module)
@@ -173,7 +173,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) *bytes.B
 	tmpl, err := template.New("dinghy-render").Funcs(funcMap).Parse(contents)
 	if err != nil {
 		log.Errorf("template parsing: %s", err)
-		return nil
+		return nil, err
 	}
 
 	// Run the template to verify the output.
@@ -181,7 +181,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) *bytes.B
 	err = tmpl.Execute(buf, "")
 	if err != nil {
 		log.Errorf("template execution: %s", err)
-		return nil
+		return nil, err
 	}
 
 	// Record the dependencies we ran into.
@@ -191,5 +191,5 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) *bytes.B
 	}
 	b.Depman.SetDeps(b.Downloader.EncodeURL(org, repo, path), depUrls)
 
-	return buf
+	return buf, nil
 }

@@ -44,9 +44,13 @@ var (
 
 // ProcessDinghyfile downloads a dinghyfile and uses it to update Spinnaker's pipelines.
 func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
-
 	// Render the dinghyfile and decode it into a Dinghyfile object
-	buf := b.Render(org, repo, path, nil)
+	buf, err := b.Render(org, repo, path, nil)
+	if err != nil {
+		log.Error("Could not download Dinghyfile", err)
+		return err
+	}
+
 	log.Debug("Rendered: ", buf.String())
 
 	d := Dinghyfile{}
