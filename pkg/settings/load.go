@@ -11,7 +11,6 @@ import (
 	"github.com/armory/go-yaml-tools/pkg/spring"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 )
 
 // S is the global settings structure
@@ -32,21 +31,21 @@ var S = Settings{
 	spinnakerSupplied: spinnakerSupplied{
 		Orca: spinnakerService{
 			Enabled: "true",
-			BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://spin-orca:8083"),
+			BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://orca:8083"),
 		},
 		Front50: spinnakerService{
 			Enabled: "true",
-			BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://spin-front50:8080"),
+			BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://front50:8080"),
 		},
 		Fiat: fiat{
 			spinnakerService: spinnakerService{
 				Enabled: "false",
-				BaseURL: util.GetenvOrDefault("FIAT_BASE_URL", "http://spin-fiat:7003"),
+				BaseURL: util.GetenvOrDefault("FIAT_BASE_URL", "http://fiat:7003"),
 			},
 			AuthUser: "",
 		},
 		Redis: redis{
-			Host:     util.GetenvOrDefault("REDIS_HOST", "spin-redis"),
+			Host:     util.GetenvOrDefault("REDIS_HOST", "redis"),
 			Port:     util.GetenvOrDefault("REDIS_PORT", "6379"),
 			Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
 		},
@@ -58,10 +57,6 @@ func init() {
 	springConfig, err := loadProfiles()
 	if err != nil {
 		return
-	}
-
-	if c, err := json.Marshal(S); err == nil {
-		log.Info("Loaded from spring config %s", string(c))
 	}
 
 	// Overwrite S's initial values with those stored in springConfig
@@ -135,13 +130,13 @@ func loadProfiles() (Settings, error) {
 	}
 	// c is map[string]interface{} but we want it as Settings
 	// so marshall to []byte as intermediate step
-	bytes, err := yaml.Marshal(&c)
+	bytes, err := json.Marshal(&c)
 	if err != nil {
 		log.Errorf("Could not marshall yaml configs - %v", err)
 		return config, err
 	}
 	// and now unmarshall as Settings
-	err = yaml.Unmarshal(bytes, &config)
+	err = json.Unmarshal(bytes, &config)
 	if err != nil {
 		log.Errorf("Could not Unmarshall yaml configs into Settings - %v", err)
 		return config, err
