@@ -157,10 +157,11 @@ func updatePipeline(p Pipeline) error {
 // DeletePipeline deletes a pipeline
 func DeletePipeline(app string, pipelineName string) error {
 	url := fmt.Sprintf("%s/pipelines/%s/%s", settings.S.Front50.BaseURL, app, pipelineName)
-	if resp, err := deleteWithRetry(url); err != nil {
-		if resp != nil {
-			defer resp.Body.Close()
-		}
+	resp, err := deleteWithRetry(url)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
 		return err
 	}
 	return nil
