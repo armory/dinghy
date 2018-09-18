@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/util"
 	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 // Task is the structure posted to the task endpoint in Spinnaker
@@ -76,10 +77,15 @@ func submitTask(task Task) (*TaskRefResponse, error) {
 		log.Error("Could not marshal pipeline ", err)
 		return nil, err
 	}
+
 	resp, err := postWithRetry(path, b)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return nil, err
 	}
+
 	var ref TaskRefResponse
 	util.ReadJSON(resp.Body, &ref)
 	return &ref, nil
