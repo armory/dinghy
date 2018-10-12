@@ -50,7 +50,7 @@ integration: dependencies
 GOLINT=$(GOPATH)/bin/golint
 
 $(GOLINT):
-	go get -v github.com/golang/lint/golint
+	go get -v golang.org/x/lint/golint
 
 lint: $(GOLINT)
 	@$(GOLINT) $(PKGS)
