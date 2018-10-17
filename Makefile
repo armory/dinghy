@@ -50,7 +50,7 @@ integration: dependencies
 GOLINT=$(GOPATH)/bin/golint
 
 $(GOLINT):
-	go get -v github.com/golang/lint/golint
+	go get -v golang.org/x/lint/golint
 
 lint: $(GOLINT)
 	@$(GOLINT) $(PKGS)
@@ -68,3 +68,4 @@ clean:
 	go clean
 
 .PHONY: lint linux darwin test vet fmt clean run
+
