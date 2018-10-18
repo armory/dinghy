@@ -1,0 +1,20 @@
+# halconfig
+
+redis:
+  host: ${services.default.host}
+  port: ${services.redis.port}
+
+orca:
+  enabled: ${services.orca.enabled}
+  baseUrl: ${services.orca.baseUrl}
+
+front50:
+  enabled: ${services.front50.enabled}
+  baseUrl: ${services.front50.baseUrl}
+
+fiat:
+  enabled: ${services.fiat.enabled}
+  baseUrl: ${services.fiat.baseUrl}
+
+deck:
+  baseUrl: ${services.deck.baseUrl}
