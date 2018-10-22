@@ -18,8 +18,13 @@ type Commit struct {
 
 // Repository is a repo received from Github webhook
 type Repository struct {
-	Name         string `json:"name"`
-	Organization string `json:"organization"`
+	Name         string          `json:"name"`
+	Organization string          `json:"organization"`
+	Owner        RepositoryOwner `json:"owner"`
+}
+
+type RepositoryOwner struct {
+	Login string `json:"login"`
 }
 
 func inSlice(arr []string, val string) bool {
@@ -67,7 +72,11 @@ func (p *Push) Repo() string {
 
 // Org returns the organization of the push
 func (p *Push) Org() string {
-	return p.Repository.Organization
+	if p.Repository.Organization != "" {
+		return p.Repository.Organization
+	}
+
+	return p.Repository.Owner.Login
 }
 
 // IsMaster detects if the branch is master.
