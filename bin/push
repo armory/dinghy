@@ -2,20 +2,25 @@
 set -x
 set -e
 cd "$(dirname "$0")"/..
+source bin/env
 
-export PUSHED_IMAGE=${DOCKER_REGISTRY}/${GIT_REPO}:${BRANCH_NAME}-${GIT_HASH}
 docker tag "${DOCKER_IMAGE}" "${PUSHED_IMAGE}"
 arm login
 docker push "${PUSHED_IMAGE}"
+docker push "${HALYARD_DOCKER_IMAGE}"
 
 # Also push to docker hub, where the image is public so we can install as part
 # of an armoryspinnaker instance
-export HUB_IMAGE=docker.io/armory/dinghy:${BRANCH_NAME}-${GIT_HASH}
+# export HUB_IMAGE=docker.io/armory/dinghy:${BRANCH_NAME}-${GIT_HASH}
 
-docker tag "${DOCKER_IMAGE}" "${HUB_IMAGE}"
-docker push "${HUB_IMAGE}"
+# docker tag "${DOCKER_IMAGE}" "${HUB_IMAGE}"
+# docker push "${HUB_IMAGE}"
 
 # Write out a build.properties with the current version
 cat <<EOF > build.properties
-DINGHY_VERSION=${BRANCH_NAME}-${GIT_HASH}
+DINGHY_VERSION=${CONTAINER_VERSION}
+SERVICE_VERSION=${DINGHY_VERSION}
+SERVICE_REPO=dinghy
+SERVICE_HASH=${GIT_HASH}
+SERVICE_BRANCH=${BRANCH_NAME}
 EOF

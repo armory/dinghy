@@ -1,7 +1,7 @@
 #!/bin/bash -x
 set -e
 cd "$(dirname "$0")/.."
-
+source bin/env
 echo "Building binary first..."
 WORKDIR=/go/src/github.com/armory-io/${GIT_REPO}
 
@@ -15,5 +15,6 @@ docker run --rm \
   andrexus/golang-dep \
   make
 
-echo "Building docker image $DOCKER_IMAGE..."
-docker build -t "$DOCKER_IMAGE" .
+echo "Building docker image ${DOCKER_IMAGE}..."
+docker build -t "${DOCKER_IMAGE}" .
+docker tag ${DOCKER_IMAGE} ${HALYARD_DOCKER_IMAGE}
