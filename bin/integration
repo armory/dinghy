@@ -16,6 +16,7 @@ docker run --rm \
   andrexus/golang-dep \
   make integration
 
+echo "Docker image is ${DOCKER_IMAGE}."
 docker run --rm \
   -v "$PWD:$WORKDIR" \
   -v "${HOME}/.armory/cache/:/creds/" \
