@@ -18,6 +18,7 @@ docker push "${HALYARD_DOCKER_IMAGE}"
 
 # Write out a build.properties with the current version
 cat <<EOF > build.properties
+TAGGED_IMAGE=${HALYARD_DOCKER_IMAGE}
 DINGHY_VERSION=${CONTAINER_VERSION}
 SERVICE_VERSION=${DINGHY_VERSION}
 SERVICE_REPO=dinghy
