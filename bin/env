@@ -1,6 +1,6 @@
 #!/bin/bash -xe
 
-export DOCKER_REGISTRY=${DOCKER_REGISTRY:-"armory"}
+export DOCKER_REGISTRY="armory"
 export GIT_REPO=${GIT_REPO:-"dinghy"}
 export GIT_HASH=${GIT_HASH:-$(git rev-parse --short HEAD)}
 export BUILD_NUMBER=${BUILD_NUMBER:-0}
