@@ -112,7 +112,7 @@ func bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if payload.EventKey != nil && *payload.EventKey != "repo:refs_changed" {
+	if payload.EventKey != "" && payload.EventKey != "repo:refs_changed" {
 		w.WriteHeader(200)
 		return
 	}
