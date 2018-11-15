@@ -1,16 +1,8 @@
 package integration
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-
-	"github.com/armory-io/dinghy/pkg/cache"
-	"github.com/armory-io/dinghy/pkg/dinghyfile"
 	"github.com/armory-io/dinghy/pkg/git/dummy"
 	"github.com/armory-io/dinghy/pkg/settings"
-	"github.com/armory-io/dinghy/pkg/spinnaker"
-	"github.com/armory-io/dinghy/pkg/web"
 )
 
 const dinghyfileNew = `{
@@ -145,29 +137,29 @@ var fileService = dummy.FileService{
 // TestSpinnakerPipelineUpdate tests pipeline update in spinnaker
 // even though it mocks out the github part, it talks to spinnaker
 // hence it is an integration test and not a unit-test
-func TestSpinnakerPipelineUpdate(t *testing.T) {
-	builder := &dinghyfile.PipelineBuilder{
-		Depman:     cache.NewMemoryCache(),
-		Downloader: fileService,
-	}
+// func TestSpinnakerPipelineUpdate(t *testing.T) {
+// 	builder := &dinghyfile.PipelineBuilder{
+// 		Depman:     cache.NewMemoryCache(),
+// 		Downloader: fileService,
+// 	}
 
-	push := &dummy.Push{
-		FileNames: []string{settings.S.DinghyFilename},
-		RepoName:  settings.S.TemplateRepo,
-		OrgName:   settings.S.TemplateOrg,
-	}
+// 	push := &dummy.Push{
+// 		FileNames: []string{settings.S.DinghyFilename},
+// 		RepoName:  settings.S.TemplateRepo,
+// 		OrgName:   settings.S.TemplateOrg,
+// 	}
 
-	settings.S.Orca.BaseURL = "http://spinnaker.dev.armory.io:8083"
-	settings.S.Front50.BaseURL = "http://spinnaker.dev.armory.io:8080"
+// 	settings.S.Orca.BaseURL = "http://spinnaker.dev.armory.io:8083"
+// 	settings.S.Front50.BaseURL = "http://spinnaker.dev.armory.io:8080"
 
-	builder.Downloader.(dummy.FileService)[settings.S.DinghyFilename] = dinghyfileNew
-	err := web.ProcessPush(push, builder)
-	assert.Nil(t, err)
+// 	builder.Downloader.(dummy.FileService)[settings.S.DinghyFilename] = dinghyfileNew
+// 	err := web.ProcessPush(push, builder)
+// 	assert.Nil(t, err)
 
-	builder.Downloader.(dummy.FileService)[settings.S.DinghyFilename] = dinghyfileEmpty
-	err = web.ProcessPush(push, builder)
-	assert.Nil(t, err)
-}
+// 	builder.Downloader.(dummy.FileService)[settings.S.DinghyFilename] = dinghyfileEmpty
+// 	err = web.ProcessPush(push, builder)
+// 	assert.Nil(t, err)
+// }
 
 var pipelineIDFileService = dummy.FileService{
 	settings.S.DinghyFilename: `{
@@ -212,32 +204,32 @@ var pipelineIDFileService = dummy.FileService{
 	}`,
 }
 
-func TestPipelineID(t *testing.T) {
-	builder := &dinghyfile.PipelineBuilder{
-		Depman:     cache.NewMemoryCache(),
-		Downloader: pipelineIDFileService,
-	}
+// func TestPipelineID(t *testing.T) {
+// 	builder := &dinghyfile.PipelineBuilder{
+// 		Depman:     cache.NewMemoryCache(),
+// 		Downloader: pipelineIDFileService,
+// 	}
 
-	push := &dummy.Push{
-		FileNames: []string{settings.S.DinghyFilename},
-		RepoName:  settings.S.TemplateRepo,
-		OrgName:   settings.S.TemplateOrg,
-	}
+// 	push := &dummy.Push{
+// 		FileNames: []string{settings.S.DinghyFilename},
+// 		RepoName:  settings.S.TemplateRepo,
+// 		OrgName:   settings.S.TemplateOrg,
+// 	}
 
-	app := "pipelineidtest"
-	pipelineName := "testpipelinename"
+// 	app := "pipelineidtest"
+// 	pipelineName := "testpipelinename"
 
-	settings.S.Orca.BaseURL = "http://spinnaker.dev.armory.io:8083"
-	settings.S.Front50.BaseURL = "http://spinnaker.dev.armory.io:8080"
+// 	settings.S.Orca.BaseURL = "http://spinnaker.dev.armory.io:8083"
+// 	settings.S.Front50.BaseURL = "http://spinnaker.dev.armory.io:8080"
 
-	ids, err := spinnaker.PipelineIDs(app)
-	assert.Nil(t, err)
+// 	ids, err := spinnaker.PipelineIDs(app)
+// 	assert.Nil(t, err)
 
-	if _, exists := ids[pipelineName]; exists {
-		err = spinnaker.DeletePipeline(app, pipelineName)
-		assert.Nil(t, err)
-	}
+// 	if _, exists := ids[pipelineName]; exists {
+// 		err = spinnaker.DeletePipeline(app, pipelineName)
+// 		assert.Nil(t, err)
+// 	}
 
-	err = web.ProcessPush(push, builder)
-	assert.Nil(t, err)
-}
+// 	err = web.ProcessPush(push, builder)
+// 	assert.Nil(t, err)
+// }
