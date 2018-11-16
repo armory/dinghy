@@ -23,6 +23,10 @@ func TestOrg(t *testing.T) {
 			payload:  `{"repository": { "organization": "org-armory", "owner": {"login": "login-armory"}}}}`,
 			expected: "org-armory",
 		},
+		{
+			payload:  `{"EventKey": ""}`,
+			expected: "",
+		},
 	}
 
 	for _, c := range cases {

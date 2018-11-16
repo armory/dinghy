@@ -94,7 +94,7 @@ func stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		util.WriteHTTPError(w, err)
 		return
 	}
-	log.Debugf("Payload: %+v", payload)
+	log.Debugf("Webhook payload: %+v", payload)
 
 	payload.IsOldStash = true
 	p, err := stash.NewPush(payload)

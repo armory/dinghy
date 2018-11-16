@@ -56,10 +56,10 @@ func (f *FileService) downloadLines(url string, start int) (lines []string, next
 		return
 	}
 	if !body.IsLastPage {
-		if body.NextPageStart == nil {
+		if body.NextPageStart == 0 {
 			log.Errorf("IsLastPage is false but NextPageStart is nil for: %s", url)
 		} else {
-			nextStart = *body.NextPageStart
+			nextStart = body.NextPageStart
 		}
 	}
 	for _, line := range body.Lines {

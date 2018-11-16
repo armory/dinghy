@@ -67,6 +67,7 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 		p.Payload.Repository.Slug,
 		toCommitHash,
 	)
+	log.Debug("ApiCall: ", url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -92,12 +93,13 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 	}
 
 	var body APIResponse
+	log.Debugf("APIResponse: %+v\n", body)
 	err = json.NewDecoder(resp.Body).Decode(&body)
 	if err != nil {
 		return 0, err
 	}
 	if !body.IsLastPage {
-		nextStart = *body.NextPageStart
+		nextStart = body.NextPageStart
 	}
 	for _, diff := range body.Diffs {
 		p.ChangedFiles = append(p.ChangedFiles, diff.Destination.Path)

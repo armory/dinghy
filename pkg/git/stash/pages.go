@@ -5,5 +5,5 @@ package stash
 type PagedAPIResponse struct {
 	IsLastPage    bool `json:"isLastPage"`
 	Start         int  `json:"start"`
-	NextPageStart *int `json:"nextPageStart"`
+	NextPageStart int  `json:"nextPageStart"`
 }
