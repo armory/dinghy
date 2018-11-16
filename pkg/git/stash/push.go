@@ -19,7 +19,7 @@ type Push struct {
 
 // WebhookPayload is the payload from the webhook
 type WebhookPayload struct {
-	EventKey   string `json:"eventKey"`
+	EventKey   string `json:"eventKey,omitempty"`
 	Repository struct {
 		Slug    string `json:"slug"`
 		Project struct {
