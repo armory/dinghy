@@ -37,7 +37,29 @@ build: ./cmd/${BINARY}.go
 	go build -i ${LDFLAGS} -o ${BUILD_DIR}/main ./cmd/${BINARY}.go ; \
 
 test: dependencies
-	go test -v $(PKGS)
+	# go test -cover -v $(PKGS)
+	PCT=29 bin/test_coverage.sh
+
+# The go test tool won't create a coverage profile if you give it multiple
+# packages. Recommendation is to run the coverage for each package and merge
+# the coverage profiles (which are just text files). So that's what we do,
+# first generating the header line in our target coverage profile, and then
+# grabbing just the guts of each individual coverage file and appending.
+#
+# After you generage the coverage report  you can use the go tooling to view
+# it in a browser:
+#   go tool cover -html build/coverage/coverage.out
+coverage: clean dependencies
+	cd ${PROJECT_DIR} ; \
+	mkdir -p ${BUILD_DIR}/coverage ; \
+	echo 'mode: set' > ${BUILD_DIR}/coverage/coverage.out ; \
+	for TESTPKG in $(PKGS); do \
+		go test --coverprofile=${BUILD_DIR}/coverage/coverage.tmp -v $$TESTPKG ; \
+		if [ -f ${BUILD_DIR}/coverage/coverage.tmp ]; then \
+			tail -n +2 ${BUILD_DIR}/coverage/coverage.tmp >> ${BUILD_DIR}/coverage/coverage.out ; \
+			rm ${BUILD_DIR}/coverage/coverage.tmp ; \
+		fi ; \
+	done
 
 integration: dependencies
 	cd ${PROJECT_DIR} ; \

@@ -27,6 +27,11 @@ func connectToRedis() *RedisCache {
 func TestRedisCache(t *testing.T) {
 	c := connectToRedis()
 
+	_, err := c.Ping().Result()
+	if err != nil {
+		t.Skip("Could not connect to Redis; skipping test")
+	}
+
 	c.SetDeps("df1", []string{"mod1", "mod2"})
 	c.SetDeps("mod1", []string{"mod3", "mod4"})
 	assert.EqualValuesf(t, []string{"df1"}, c.GetRoots("mod4"), "mod4 should have roots df1")

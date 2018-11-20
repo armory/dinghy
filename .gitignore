@@ -1,3 +1,10 @@
 vendor/
 build/
 secrets/
+
+# Coverage script SHOULD remove this, but just in case, ignore it.
+.cover/
+coveragereport.txt
+
+# Editor cruft
+*.swp

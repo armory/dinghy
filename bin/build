@@ -12,6 +12,7 @@ docker run --rm \
   -e "GOOS=linux" \
   -e "GOARCH=amd64" \
   -e "CGO_ENABLED=0" \
+  -e "NEEDS_BC=yes" \
   andrexus/golang-dep \
   make
 
