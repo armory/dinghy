@@ -2,7 +2,6 @@ package web
 
 import (
 	"bytes"
-	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -76,7 +75,7 @@ func manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 func githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p := github.Push{}
 	if err := readBody(r, &p); err != nil {
-		util.WriteHTTPError(w, err)
+		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -92,7 +91,7 @@ func githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 func stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload := stash.WebhookPayload{}
 	if err := readBody(r, &payload); err != nil {
-		util.WriteHTTPError(w, err)
+		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
 	log.Debugf("Webhook payload: %+v", payload)
@@ -100,7 +99,7 @@ func stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload.IsOldStash = true
 	p, err := stash.NewPush(payload)
 	if err != nil {
-		util.WriteHTTPError(w, err)
+		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -110,7 +109,7 @@ func stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 func bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload := stash.WebhookPayload{}
 	if err := readBody(r, &payload); err != nil {
-		util.WriteHTTPError(w, err)
+		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -122,7 +121,7 @@ func bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload.IsOldStash = false
 	p, err := stash.NewPush(payload)
 	if err != nil {
-		util.WriteHTTPError(w, err)
+		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -183,11 +182,10 @@ func buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
 	// Process the push.
 	err := ProcessPush(p, builder)
 	if err == dinghyfile.ErrMalformedJSON {
-		w.Write([]byte(fmt.Sprintf(`{"error":"%v"}`, err)))
-		w.WriteHeader(422)
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	} else if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -199,7 +197,7 @@ func buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
 			if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file); err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				util.WriteHTTPError(w, http.StatusInternalServerError, err)
 				p.SetCommitStatus(git.StatusError)
 				return
 			}
