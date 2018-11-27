@@ -43,6 +43,7 @@ func Router() *mux.Router {
 	r.HandleFunc("/v1/webhooks/stash", stashWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/bitbucket", bitbucketServerWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/updatePipeline", manualUpdateHandler).Methods("POST")
+	r.Use(RequestLoggingMiddleware)
 	return r
 }
 
