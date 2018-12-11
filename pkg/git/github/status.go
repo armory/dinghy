@@ -34,7 +34,8 @@ func (p *Push) SetCommitStatus(s git.Status) {
 	update := newStatus(s)
 	for _, c := range p.Commits {
 		sha := c.ID // not sure if this is right.
-		url := fmt.Sprintf("https://api.github.com/repos/%s/%s/statuses/%s",
+		url := fmt.Sprintf("%s/repos/%s/%s/statuses/%s",
+			settings.S.GithubEndpoint,
 			p.Org(),
 			p.Repo(),
 			sha)
@@ -50,8 +51,8 @@ func (p *Push) SetCommitStatus(s git.Status) {
 		resp, err := http.DefaultClient.Do(req)
 		if resp != nil {
 			defer resp.Body.Close()
+			httputil.DumpResponse(resp, true)
 		}
-		httputil.DumpResponse(resp, true)
 		if err != nil {
 			log.Error(err)
 			return

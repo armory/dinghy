@@ -38,7 +38,7 @@ build: ./cmd/${BINARY}.go
 
 test: dependencies
 	# go test -cover -v $(PKGS)
-	PCT=29 bin/test_coverage.sh
+	PCT=35 bin/test_coverage.sh
 
 # The go test tool won't create a coverage profile if you give it multiple
 # packages. Recommendation is to run the coverage for each package and merge
