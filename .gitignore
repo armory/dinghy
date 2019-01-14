@@ -1,6 +1,7 @@
 vendor/
 build/
 secrets/
+node_modules/
 
 # Coverage script SHOULD remove this, but just in case, ignore it.
 .cover/
