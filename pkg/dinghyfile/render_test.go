@@ -1,6 +1,7 @@
 package dinghyfile
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -32,6 +33,16 @@ var fileService = dummy.FileService{
 		]
 	}`,
 	"df_global": `{
+		"application": "search",
+		"globals": {
+			"type": "foo"
+		},
+		"pipelines": [
+			{{ module "mod1" }},
+			{{ module "mod2" "type" "foobar" }}
+	    ]
+	}`,
+	"df_global/nested": `{
 		"application": "search",
 		"globals": {
 			"type": "foo"
@@ -132,31 +143,57 @@ func TestNestedVars(t *testing.T) {
 
 func TestGlobalVars(t *testing.T) {
 
-	// this is because we only parse global vars when processing
-	// a "dinghyfile" (settings.S.DinghyFilename)
-	settings.S.DinghyFilename = "df_global"
-	buf, _ := builder.Render("org", "repo", "df_global", nil)
-
-	const expected = `{
-		"application": "search",
-		"globals": {
-			"type": "foo"
+	cases := map[string]struct {
+		filename string
+		expected string
+	}{
+		"df_global": {
+			filename: "df_global",
+			expected: `{
+				"application": "search",
+				"globals": {
+					"type": "foo"
+				},
+				"pipelines": [
+					{
+						"foo": "bar",
+						"type": "foo"
+					},
+					{
+						"type": "foobar"
+					}
+				]
+			  }`,
 		},
-		"pipelines": [
-			{
-				"foo": "bar",
-				"type": "foo"
-			},
-			{
-				"type": "foobar"
-			}
-	    ]
-	  }`
+		"df_global_nested": {
+			filename: "df_global/nested",
+			expected: `{
+				"application": "search",
+				"globals": {
+					"type": "foo"
+				},
+				"pipelines": [
+					{
+						"foo": "bar",
+						"type": "foo"
+					},
+					{
+						"type": "foobar"
+					}
+				]
+			  }`,
+		},
+	}
 
-	// strip whitespace from both strings for assertion
-	exp := strings.Join(strings.Fields(expected), "")
-	actual := strings.Join(strings.Fields(buf.String()), "")
-	assert.Equal(t, exp, actual)
+	for testName, c := range cases {
+		t.Run(testName, func(t *testing.T) {
+			settings.S.DinghyFilename = filepath.Base(c.filename)
+			buf, _ := builder.Render("org", "repo", c.filename, nil)
+			exp := strings.Join(strings.Fields(c.expected), "")
+			actual := strings.Join(strings.Fields(buf.String()), "")
+			assert.Equal(t, exp, actual)
+		})
+	}
 }
 
 func TestSimpleWaitStage(t *testing.T) {
