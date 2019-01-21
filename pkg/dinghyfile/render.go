@@ -3,6 +3,7 @@ package dinghyfile
 import (
 	"bytes"
 	"encoding/json"
+	"path/filepath"
 
 	"text/template"
 
@@ -151,7 +152,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	}
 
 	// Extract global vars if we're processing a dinghyfile (and not a module)
-	if path == settings.S.DinghyFilename {
+	if filepath.Base(path) == settings.S.DinghyFilename {
 		gvs := preprocessor.ParseGlobalVars(contents)
 		gvMap, ok := gvs.(map[string]interface{})
 		if !ok {
