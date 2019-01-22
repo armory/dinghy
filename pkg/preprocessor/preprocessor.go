@@ -167,6 +167,10 @@ func dummySubstitute(args ...interface{}) string {
 	return `{ "a": "b" }`
 }
 
+func dummyKV(args ...interface{}) string {
+	return `"a": "b"`
+}
+
 // since {{ var ... }} can be a string or an int!
 func dummyVar(args ...interface{}) string {
 	return "1"
@@ -178,6 +182,7 @@ func removeModules(input string) string {
 
 	funcMap := template.FuncMap{
 		"module": dummySubstitute,
+		"appModule": dummyKV,
 		"var": dummyVar,
 		"pipelineID": dummySubstitute,
 	}

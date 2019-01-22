@@ -166,6 +166,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 
 	funcMap := template.FuncMap{
 		"module":     moduleFunc(b, org, deps, vars),
+		"appModule":     moduleFunc(b, org, deps, vars),
 		"pipelineID": pipelineIDFunc(vars),
 		"var":        varFunc(vars),
 	}
