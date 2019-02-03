@@ -3,6 +3,7 @@ package settings
 
 import (
 	"encoding/json"
+	"github.com/mitchellh/mapstructure"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -56,6 +57,7 @@ func init() {
 	// Read in settings for dinghy and spinnaker profiles
 	springConfig, err := loadProfiles()
 	if err != nil {
+		log.Errorf("failed to load configuration, falling back to default: %s", err.Error())
 		return
 	}
 
@@ -128,18 +130,18 @@ func loadProfiles() (Settings, error) {
 		log.Errorf("Could not load yaml configs - %v", err)
 		return config, err
 	}
-	// c is map[string]interface{} but we want it as Settings
-	// so marshall to []byte as intermediate step
-	bytes, err := json.Marshal(&c)
+
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		Result:           &config,
+	})
 	if err != nil {
-		log.Errorf("Could not marshall yaml configs - %v", err)
 		return config, err
 	}
-	// and now unmarshall as Settings
-	err = json.Unmarshal(bytes, &config)
-	if err != nil {
-		log.Errorf("Could not Unmarshall yaml configs into Settings - %v", err)
+
+	if err := decoder.Decode(c); err != nil {
 		return config, err
 	}
+
 	return config, nil
 }
