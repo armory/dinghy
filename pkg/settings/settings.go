@@ -17,7 +17,7 @@ type Settings struct {
 	StashEndpoint     string  `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
 	FiatUser          string  `json:"fiatUser,omitempty" yaml:"fiatUser"`
 	Logging           logging `json:"logging,omitempty" yaml:"logging"`
-	spinnakerSupplied
+	spinnakerSupplied `mapstructure:",squash"`
 }
 
 type spinnakerSupplied struct {
@@ -36,8 +36,8 @@ type redis struct {
 }
 
 type fiat struct {
-	AuthUser string `json:"authUser,omitempty" yaml:"authUser"`
-	spinnakerService
+	AuthUser         string `json:"authUser,omitempty" yaml:"authUser"`
+	spinnakerService `mapstructure:",squash"`
 }
 
 type spinnakerService struct {
