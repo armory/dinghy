@@ -31,16 +31,39 @@ type Downloader interface {
 
 // Dinghyfile is the format of the pipeline template JSON
 type Dinghyfile struct {
-	Application          string                 `json:"application"`
-	DeleteStalePipelines bool                   `json:"deleteStalePipelines"`
-	Globals              map[string]interface{} `json:"globals"`
-	Pipelines            []spinnaker.Pipeline   `json:"pipelines"`
+	// Application name can be specified either in top-level "application" or as a key in "spec"
+	// We don't want arbitrary application properties in the top-level Dinghyfile so we put them in .spec
+	Application          string                    `json:"application"`
+	ApplicationSpec      spinnaker.ApplicationSpec `json:"spec"`
+	DeleteStalePipelines bool                      `json:"deleteStalePipelines"`
+	Globals              map[string]interface{}    `json:"globals"`
+	Pipelines            []spinnaker.Pipeline      `json:"pipelines"`
 }
 
 var (
 	// ErrMalformedJSON is more specific than just returning 422.
 	ErrMalformedJSON = errors.New("malformed json")
+	DefaultEmail     = "unknown@unknown.com"
 )
+
+func UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error) {
+	d := Dinghyfile{}
+	if err := Unmarshal(dinghyfile, &d); err != nil {
+		log.Error("Could not unmarshal dinghyfile: ", err)
+		return d, ErrMalformedJSON
+	}
+	log.Info("Unmarshalled: ", d)
+
+	// If "spec" is not provided, these will be initialized to ""; need to pull them in.
+	if d.ApplicationSpec.Name == "" {
+		d.ApplicationSpec.Name = d.Application
+	}
+	if d.ApplicationSpec.Email == "" {
+		d.ApplicationSpec.Email = DefaultEmail
+	}
+	
+	return d, nil
+}
 
 // ProcessDinghyfile downloads a dinghyfile and uses it to update Spinnaker's pipelines.
 func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
@@ -53,15 +76,16 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 
 	log.Debug("Rendered: ", buf.String())
 
-	d := Dinghyfile{}
-	if err := Unmarshal(buf.Bytes(), &d); err != nil {
-		log.Error("Could not unmarshal dinghyfile: ", err)
-		return ErrMalformedJSON
+	d, err := UpdateDinghyfile(buf.Bytes())
+
+	log.Debug("Updated: ", buf.String())
+
+	if err != nil {
+		return err
 	}
-	log.Info("Unmarshalled: ", d)
 
 	// Update Spinnaker pipelines using received dinghyfile.
-	if err := spinnaker.UpdatePipelines(d.Application, d.Pipelines, d.DeleteStalePipelines); err != nil {
+	if err := spinnaker.UpdatePipelines(d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines); err != nil {
 		log.Error("Could not update all pipelines ", err)
 		return err
 	}

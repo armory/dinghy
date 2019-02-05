@@ -3,7 +3,6 @@ package settings
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
-
 	// "github.com/armory-io/dinghy/pkg/settings"
 )
 

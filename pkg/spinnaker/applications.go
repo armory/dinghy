@@ -16,17 +16,27 @@ type Application struct {
 	Name string `json:"name"`
 }
 
-// CreateApplicationJob is the element to include in the Job array of a Task
+// createApplicationJob is the element to include in the Job array of a Task
 // request when creating a new app
 type createApplicationJob struct {
-	Application applicationTaskAttributes `json:"application"`
-	Type        string                    `json:"type"`
-	User        string                    `json:"user,omitempty"`
+	Application ApplicationSpec `json:"application"`
+	Type        string          `json:"type"`
+	User        string          `json:"user,omitempty"`
 }
 
-type applicationTaskAttributes struct {
-	Email string `json:"email,omitempty"`
-	Name  string `json:"name"`
+type DataSourcesSpec struct {
+	Enabled  []string `json:"enabled"`
+	Disabled []string `json:"disabled"`
+}
+
+// Must include `name` and `email`
+// DataSources must be a pointer otherwise we end up sending nil/empty dicts, which break the UI
+type ApplicationSpec struct {
+	Name        string           `json:"name"`
+	Email       string           `json:"email"`
+	Description string           `json:"description,omitempty"`
+	User        string           `json:"user,omitempty"`
+	DataSources *DataSourcesSpec `json:"dataSources,omitempty"`
 }
 
 // Applications returns a list of applications
@@ -62,17 +72,17 @@ func applicationExists(a string) bool {
 // NewApplication creates an app on Spinnaker, but that's an async
 // request made with the tasks interface. So we submit the task, and poll for
 // the task completion.
-func NewApplication(email string, name string) (err error) {
+func NewApplication(spec ApplicationSpec) (err error) {
+	name := spec.Name
+
 	createAppJob := createApplicationJob{
-		Application: applicationTaskAttributes{
-			Email: email,
-			Name:  name,
-		},
-		Type: "createApplication",
+		Application: spec,
+		Type:        "createApplication",
+		User:        "Dinghy", // TODO update this with an actual user
 	}
 	createApp := Task{
 		Application: name,
-		Description: "Create Application: " + name,
+		Description: "Create Application from Dinghy: " + name,
 		Job:         []interface{}{createAppJob},
 	}
 

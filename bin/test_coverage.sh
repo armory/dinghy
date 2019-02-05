@@ -12,7 +12,7 @@ if [[ "$NEEDS_BC" == "yes" ]]; then
 fi
 
 # Run coverage
-bin/coverage.sh > $TMPFILE
+bin/coverage.sh | tee $TMPFILE
 rc=$?
 
 if [[ $rc == 0 ]]; then

@@ -4,7 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 
-  "github.com/armory-io/dinghy/pkg/settings"
+	"github.com/armory-io/dinghy/pkg/settings"
 )
 
 func TestDecodeUrl(t *testing.T) {
@@ -29,9 +29,8 @@ func TestDecodeUrl(t *testing.T) {
 		c.setEndpoint()
 		org, repo, path := downloader.DecodeURL(c.url)
 
-    assert.Equal(t, c.owner, org)
-    assert.Equal(t, c.repo, repo)
-    assert.Equal(t, c.path, path)
+		assert.Equal(t, c.owner, org)
+		assert.Equal(t, c.repo, repo)
+		assert.Equal(t, c.path, path)
 	}
 }
-

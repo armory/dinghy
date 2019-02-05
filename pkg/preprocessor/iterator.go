@@ -2,15 +2,15 @@ package preprocessor
 
 type iterator struct {
 	length int
-	text string
-	pos int
+	text   string
+	pos    int
 }
 
 func newIterator(s string) *iterator {
 	return &iterator{
-		text: s,
+		text:   s,
 		length: len(s),
-		pos: 0,
+		pos:    0,
 	}
 }
 

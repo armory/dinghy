@@ -42,6 +42,34 @@ var fileService = dummy.FileService{
 			{{ module "mod2" "type" "foobar" }}
 	    ]
 	}`,
+	"df_spec": `{
+		"spec": {
+			"name": "search",
+			"email": "unknown@unknown.com",
+			"dataSources": {
+			  "disabled":[],
+			  "enabled":["canaryConfigs"]
+			}
+		},
+		"globals": {
+			"type": "foo"
+		},
+		"pipelines": [
+			{{ module "mod1" }},
+			{{ module "mod2" "type" "foobar" }}
+	    ]
+	}`,
+	"df_app_global": `{
+		"application": "search",
+		{{ appModule "appmod" }},
+		"globals": {
+			"type": "foo"
+		},
+		"pipelines": [
+			{{ module "mod1" }},
+			{{ module "mod2" "type" "foobar" }}
+	    ]
+	}`,
 	"df_global/nested": `{
 		"application": "search",
 		"globals": {
@@ -52,6 +80,7 @@ var fileService = dummy.FileService{
 			{{ module "mod2" "type" "foobar" }}
 	    ]
 	}`,
+	"appmod": `"description": "description"`,
 	"mod1": `{
 		"foo": "bar",
 		"type": "{{ var "type" ?: "deploy" }}"
@@ -169,6 +198,50 @@ func TestGlobalVars(t *testing.T) {
 			filename: "df_global/nested",
 			expected: `{
 				"application": "search",
+				"globals": {
+					"type": "foo"
+				},
+				"pipelines": [
+					{
+						"foo": "bar",
+						"type": "foo"
+					},
+					{
+						"type": "foobar"
+					}
+				]
+			  }`,
+		},
+		"df_global_appmodule": {
+			filename: "df_app_global",
+			expected: `{
+				"application": "search",
+				"description": "description",
+				"globals": {
+					"type": "foo"
+				},
+				"pipelines": [
+					{
+						"foo": "bar",
+						"type": "foo"
+					},
+					{
+						"type": "foobar"
+					}
+				]
+			  }`,
+		},
+		"df_spec": {
+			filename: "df_spec",
+			expected: `{
+				"spec": {
+					"name": "search",
+					"email": "unknown@unknown.com",
+					"dataSources": {
+					  "disabled":[],
+					  "enabled":["canaryConfigs"]
+					}
+				},
 				"globals": {
 					"type": "foo"
 				},

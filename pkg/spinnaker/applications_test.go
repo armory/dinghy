@@ -76,15 +76,16 @@ func mockOrca(t *testing.T, opts mockOrcaOpts) *httptest.Server {
 
 func TestNewApplication(t *testing.T) {
 	cases := []struct {
-		appName     string
-		ownerEmail  string
 		opts        mockOrcaOpts
 		err         error
 		front50Opts mockServerOpts
+		appSpec     ApplicationSpec
 	}{
 		{
-			appName:    "hello",
-			ownerEmail: "hello",
+			appSpec: ApplicationSpec{
+				Name:  "application",
+				Email: "email",
+			},
 			opts: mockOrcaOpts{
 				submitCode:   http.StatusOK,
 				submitResult: `{"ref": "ref/12345"}`,
@@ -102,15 +103,15 @@ func TestNewApplication(t *testing.T) {
 	for _, c := range cases {
 		fakeOrca := mockOrca(t, c.opts)
 		fakeFront50 := mockFront50(t, c.front50Opts)
-		err := newApplicationFetch(fakeOrca, fakeFront50, c.appName, c.ownerEmail)
+		err := newApplicationFetch(fakeOrca, fakeFront50, c.appSpec)
 		assert.Equal(t, err, c.err)
 	}
 }
 
-func newApplicationFetch(svr, svr2 *httptest.Server, name, email string) error {
+func newApplicationFetch(svr, svr2 *httptest.Server, appSpec ApplicationSpec) error {
 	defer svr.Close()
 	defer svr2.Close()
 	settings.S.Orca.BaseURL = svr.URL
 	settings.S.Front50.BaseURL = svr2.URL
-	return NewApplication(name, email)
+	return NewApplication(appSpec)
 }

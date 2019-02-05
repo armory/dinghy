@@ -47,9 +47,11 @@ func (p Pipeline) Application() string {
 }
 
 // UpdatePipelines posts pipelines to Spinnaker.
-func UpdatePipelines(app string, p []Pipeline, delStale bool) (err error) {
+func UpdatePipelines(spec ApplicationSpec, p []Pipeline, delStale bool) (err error) {
+	// We currently only use spec if the app is new: TODO update app if the spec changes?
+	app := spec.Name
 	if !applicationExists(app) {
-		NewApplication("unknown@unknown.com", app)
+		NewApplication(spec)
 	}
 	ids, _ := PipelineIDs(app)
 	checklist := make(map[string]bool)
