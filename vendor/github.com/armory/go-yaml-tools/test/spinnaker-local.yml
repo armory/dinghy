@@ -1,0 +1,72 @@
+
+global:
+  spinnaker:
+    timezone: 'America/Los_Angeles'
+
+providers:
+  # See http://www.spinnaker.io/v1.0/docs/target-deployment-setup
+  # for general information about configuring spinnaker platform providers.
+
+  # Each of the following providers can be enabled independent of all other
+  # providers unless otherwise noted.
+  #
+  # Each provider can be enabled by setting its 'enabled' attribute to true.
+  # As a rule of thumb, each provider defines a 'primaryCredentials' block
+  # that configures a default account for Spinnaker to use on that platform.
+  # If additional accounts are desired, then add those accounts to a
+  # custom clouddriver-local.yml file and consult clouddriver.yml for more
+  # information on what to add there.
+
+  aws:
+    # For more information on configuring Amazon Web Services (aws), see
+    # http://www.spinnaker.io/v1.0/docs/target-deployment-setup#section-amazon-web-services-setup
+
+    enabled: ${SPINNAKER_AWS_ENABLED:true}
+    defaultRegion: ${SPINNAKER_AWS_DEFAULT_REGION:us-east-1}
+    defaultIAMRole: SpinnakerInstanceProfile
+    primaryCredentials:
+      name: default-aws-account
+      # Store actual credentials in $HOME/.aws/credentials. See spinnaker.yml
+      # for more information, including alternatives.
+
+    # {{name}} will be interpolated with the aws account name (e.g. "my-aws-account-keypair").
+    defaultKeyPairTemplate: "armory-spinnaker-keypair"
+
+
+services:
+  default:
+    # These defaults can be modified to change all the spinnaker subsystems
+    # (clouddriver, gate, etc) at once, but not external systems (jenkins, etc).
+    # Individual systems can still be overridden using their own section entry
+    # directly under 'services'.
+    protocol: http    # Assume all spinnaker subsystems are using http
+    # host: localhost   # Assume all spinnaker subsystems are on localhost
+
+  redis:
+    # If you are using a remote redis server, you can set the host here.
+    # If the remote server is on a different port or url, you can add
+    # a "port" or "baseUrl" field here instead.
+    port: 6379
+    host: ${REDIS_HOST:localhost}
+
+  spectator:
+    webEndpoint:
+      enabled: false
+
+  stackdriver:
+    enabled: false
+
+  gate:
+    baseUrl: ${API_HOST}
+
+  deck:
+    # Frontend configuration.
+    # If you are proxying Spinnaker behind a single host, you may want to
+    # override these values. Remember to run `reconfigure_spinnaker.sh` after.
+    baseUrl: ${DECK_HOST}
+    gateUrl: ${API_HOST}
+    #bakeryUrl: ${services.deck.baseUrl}/rosco
+    auth:
+      enabled: true
+    canary:
+      enabled: false

@@ -24,10 +24,11 @@ PROJECT_DIR_LINK=$(shell readlink ${PROJECT_DIR})
 LDFLAGS = -ldflags "-X main.COMMIT=${COMMIT} -X main.BRANCH=${BRANCH}"
 
 # Build the project
-all: clean dependencies lint test vet build
+all: clean lint test vet build
 
 dependencies:
-	dep ensure
+	@echo "not running dep ensure because vendored deps"
+	# dep ensure
 
 run:
 	go run ./cmd/${BINARY}.go

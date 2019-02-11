@@ -18,3 +18,7 @@ fiat:
 
 deck:
   baseUrl: ${services.deck.baseUrl}
+
+logging:
+  remote:
+    enabled: false

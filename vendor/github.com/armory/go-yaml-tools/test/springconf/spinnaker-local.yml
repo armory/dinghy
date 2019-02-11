@@ -1,0 +1,3 @@
+spinnaker:
+  local: true
+  armory: false

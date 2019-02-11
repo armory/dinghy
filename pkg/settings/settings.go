@@ -46,6 +46,13 @@ type spinnakerService struct {
 }
 
 type logging struct {
-	File  string `json:"file,omitempty" yaml:"file"`
-	Level string `json:"level,omitempty" yaml:"level"`
+	File   string `json:"file,omitempty" yaml:"file"`
+	Level  string `json:"level,omitempty" yaml:"level"`
+	Remote struct {
+		Enabled    bool   `json:"enabled" yaml:"remote"`
+		Endpoint   string `json:"endpoint" yaml:"endpoint"`
+		CustomerID string `json:"customerId" yaml:"customerId"`
+		Version    string `json:"version" yaml:"version"`
+	} `json:"remote" yaml:"remote"`
 }
+

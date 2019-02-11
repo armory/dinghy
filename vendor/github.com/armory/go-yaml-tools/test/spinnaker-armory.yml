@@ -1,0 +1,47 @@
+
+services:
+  default:
+    host: ${DEFAULT_DNS_NAME:localhost}
+
+  clouddriver:
+    host: ${DEFAULT_DNS_NAME:clouddriver}
+
+  echo:
+    host: ${DEFAULT_DNS_NAME:echo}
+
+  deck:
+    gateUrl: ${API_HOST:service.default.host}
+    host: ${DEFAULT_DNS_NAME:deck}
+
+  front50:
+    host: ${DEFAULT_DNS_NAME:front50}
+    cassandra:
+      enabled: false
+    redis:
+      enabled: true
+    s3:
+      enabled: true
+    storage_bucket: ${ARMORYSPINNAKER_S3_BUCKET:}
+    rootFolder: ${ARMORYSPINNAKER_S3_PREFIX:front50}
+
+
+  rosco:
+    host: ${DEFAULT_DNS_NAME:rosco}
+    configDir: /opt/spinnaker/config/packer
+
+  bakery:
+    allowMissingPackageInstallation: true
+
+  redis:
+    # If you are using a remote redis server, you can set the host here.
+    # If the remote server is on a different port or url, you can add
+    # a "port" or "baseUrl" field here instead.
+    host: ${REDIS_HOST:redis}
+    port: 6379
+    connection: redis://${services.redis.host}:${services.redis.port}
+
+providers:
+  aws:
+    enabled: ${SPINNAKER_AWS_ENABLED:true}
+    defaultRegion: ${SPINNAKER_AWS_DEFAULT_REGION:us-west-2}
+  

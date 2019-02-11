@@ -1,0 +1,12 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: datadog-agent
+spec:
+  selector:
+    app: datadog-agent
+  ports:
+  - name: statsd
+    protocol: UDP
+    port: 8125
+    targetPort: 8125

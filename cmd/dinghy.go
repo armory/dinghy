@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/armory-io/monitoring/log/formatters"
+	"github.com/armory-io/monitoring/log/hooks"
 	"net/http"
 	"os"
 	"strings"
@@ -43,8 +45,45 @@ func main() {
 		log.Panic("Invalid log level : " + logLevelStr)
 	}
 	log.SetLevel(logLevel)
-	log.Info("Dinghy started.")
+	if settings.S.Logging.Remote.Enabled {
+		if err := setupRemoteLogging(log.StandardLogger()); err != nil {
+			log.Warnf("unable to setup remote log forwarding: %s", err.Error())
+		}
+	}
 
+	log.Info("Dinghy started.")
 	web.GlobalCache = cache.NewRedisCache(newRedisOptions())
 	log.Fatal(http.ListenAndServe(":8081", web.Router()))
+}
+
+func setupRemoteLogging(l *log.Logger) error {
+	var hostname string
+	hostname, err := os.Hostname()
+	if err != nil || hostname == "" {
+		hostname = os.Getenv("HOSTNAME")
+	}
+
+	if hostname == "" {
+		return fmt.Errorf("hostname could not be resolved.")
+	}
+
+	formatter, err := formatters.NewHttpLogFormatter(
+		hostname,
+		settings.S.Logging.Remote.CustomerID,
+		settings.S.Logging.Remote.Version,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to instantiate remote log forwarding: %s", err.Error())
+	}
+
+	if settings.S.Logging.Remote.Endpoint == "" {
+		return fmt.Errorf("remote log forwarding is enabled but not loging.remote.endpoint is not set.")
+	}
+
+	l.AddHook(&hooks.HttpDebugHook{
+		Endpoint:  settings.S.Logging.Remote.Endpoint,
+		LogLevels: log.AllLevels,
+		Formatter: formatter,
+	})
+	return nil
 }
