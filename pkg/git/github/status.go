@@ -48,6 +48,7 @@ func (p *Push) SetCommitStatus(s git.Status) {
 		log.Debug("POST ", url, " - ", string(body))
 		req, err := http.NewRequest("POST", url, strings.NewReader(string(body)))
 		req.Header.Add("Authorization", "token "+settings.S.GitHubToken)
+		// TODO: handle a bad status code for this POST
 		resp, err := http.DefaultClient.Do(req)
 		if resp != nil {
 			defer resp.Body.Close()
@@ -57,6 +58,13 @@ func (p *Push) SetCommitStatus(s git.Status) {
 			log.Error(err)
 			return
 		}
+
+		// log the current rate limit
+		rateLimit, err := getRateLimit(resp.Header)
+		if err != nil {
+			log.Debugf("Error retrieving rate limit header: %s", err)
+		}
+		log.Debugf("Current Rate Limit: %s", rateLimit)
 	}
 }
 

@@ -3,10 +3,11 @@ package github
 import (
 	"errors"
 	"fmt"
-	"github.com/armory-io/dinghy/pkg/cache/local"
 	"io/ioutil"
 	"net/http"
 	"regexp"
+
+	"github.com/armory-io/dinghy/pkg/cache/local"
 
 	"github.com/armory-io/dinghy/pkg/settings"
 	log "github.com/sirupsen/logrus"
@@ -42,7 +43,7 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		log.Errorf("Error downloading file from %s: Stauts: %d", url, resp.StatusCode)
+		log.Errorf("Error downloading file from %s: Status: %d", url, resp.StatusCode)
 		return "", errors.New("Download error")
 	}
 
@@ -51,6 +52,14 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 		return "", err
 	}
 	f.cache.Add(url, string(b))
+
+	// log the current rate limit
+	rateLimit, err := getRateLimit(resp.Header)
+	if err != nil {
+		log.Debugf("Error retrieving rate limit header: %s", err)
+	}
+	log.Debugf("Current rate limit: %s", rateLimit)
+
 	return string(b), nil
 }
 

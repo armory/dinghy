@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/armory-io/dinghy/pkg/cache/local"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/armory-io/dinghy/pkg/cache/local"
 
 	"github.com/armory-io/dinghy/pkg/settings"
 	log "github.com/sirupsen/logrus"
@@ -45,7 +46,7 @@ func (f *FileService) downloadLines(url string, start int) (lines []string, next
 	}
 
 	if resp.StatusCode != 200 {
-		log.Errorf("Error downloading file from %s: Stauts: %d", url, resp.StatusCode)
+		log.Errorf("Error downloading file from %s: Status: %d", url, resp.StatusCode)
 		err = errors.New("Download error")
 		return
 	}
