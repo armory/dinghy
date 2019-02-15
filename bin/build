@@ -1,9 +1,18 @@
-#!/bin/bash -x
-set -e
+#!/bin/bash -xe
+#     :::     :::::::::  ::::    ::::   ::::::::  :::::::::  :::   :::
+#   :+: :+:   :+:    :+: +:+:+: :+:+:+ :+:    :+: :+:    :+: :+:   :+:
+#  +:+   +:+  +:+    +:+ +:+ +:+:+ +:+ +:+    +:+ +:+    +:+  +:+ +:+
+# +#++:++#++: +#++:++#:  +#+  +:+  +#+ +#+    +:+ +#++:++#:    +#++:
+# +#+     +#+ +#+    +#+ +#+       +#+ +#+    +#+ +#+    +#+    +#+
+# #+#     #+# #+#    #+# #+#       #+# #+#    #+# #+#    #+#    #+#
+# ###     ### ###    ### ###       ###  ########  ###    ###    ##
+
 cd "$(dirname "$0")/.."
-source bin/env
+
+source bin/dinghyVersion.sh
+
 echo "Building binary first..."
-WORKDIR=/go/src/github.com/armory-io/${GIT_REPO}
+WORKDIR=/go/src/github.com/armory-io/dinghy
 
 #this just builds the binary in a container first
 docker run --rm \
@@ -17,5 +26,4 @@ docker run --rm \
   make
 
 echo "Building docker image ${DOCKER_IMAGE}..."
-docker build -t "${DOCKER_IMAGE}" .
-docker tag ${DOCKER_IMAGE} ${HALYARD_DOCKER_IMAGE}
+docker build -f ./Dockerfile -t ${DOCKER_IMAGE} .

@@ -2,6 +2,9 @@ build/
 secrets/
 node_modules/
 
+# Build
+.dinghy-dependencies
+
 # Coverage script SHOULD remove this, but just in case, ignore it.
 .cover/
 coveragereport.txt
