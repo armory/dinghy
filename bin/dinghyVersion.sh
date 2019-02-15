@@ -23,6 +23,6 @@ if [[ -z "$DINGHY_VERSION" ]]; then
     if [[ -z "$DINGHY_VERSION" ]]; then
         DINGHY_VERSION=`date +%Y-%m-%d`
     fi
-    DINGHY_VERSION="${DINGHY_VERSION}-${GIT_HASH}-${PREFIX}-0000"
+    DINGHY_VERSION="${DINGHY_VERSION}-${GIT_HASH}-${PREFIX}0000"
 fi
 export DOCKER_IMAGE="docker.io/armory/dinghy:${DINGHY_VERSION}"
