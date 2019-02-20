@@ -2,5 +2,5 @@
 set -e
 cd "$(dirname "$0")/.."
 
-source ./bin/dinghyVersion.sh
+source ./bin/ENV
 docker push ${DOCKER_IMAGE}

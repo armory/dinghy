@@ -19,8 +19,6 @@ node {
 
   for (def buildDef : builds) {
     try {
-      // Write current dependencies on disk which arm build/unit/push will use
-      writeFile file: '.dinghy-dependencies', text: groovy.json.JsonOutput.toJson(buildDef);
       def commit = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
       def branch = sh(returnStdout: true, script: "git rev-parse --abbrev-ref HEAD").trim()
       def dependencies = buildDef.dependencies
@@ -39,23 +37,23 @@ node {
           "${prefix}_SERVICE_FULL_VERSION": fullVersion
           ]
           sh """
-export DINGHY_VERSION=${fullVersion}
-arm build
-"""
+            export DINGHY_VERSION=${fullVersion}
+            arm build
+          """
       }
       stage("Testing ${buildDef.build.name} (${buildDef.build.buildPrefix})") {
           sh """
-export DINGHY_VERSION=${fullVersion}
-arm integration
-"""
+            export DINGHY_VERSION=${fullVersion}
+            arm integration
+          """
       }
 
       if (buildDef.details.publish) {
         stage("Publishing ${buildDef.build.name} (${buildDef.build.buildPrefix})") {
           sh """
-export DINGHY_VERSION=${fullVersion}
-arm push
-"""
+            export DINGHY_VERSION=${fullVersion}
+            arm push
+          """
           props << [
             "${prefix}_DOCKER_IMAGE_REG" : "docker.io",
             "${prefix}_DOCKER_IMAGE_ORG" : "armory",

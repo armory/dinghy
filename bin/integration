@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-source bin/dinghyVersion.sh
+source bin/ENV
 
 WORKDIR=/go/src/github.com/armory-io/dinghy
 

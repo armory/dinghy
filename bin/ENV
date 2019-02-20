@@ -1,0 +1,15 @@
+#!/bin/bash -e
+
+if [[ -z "$DINGHY_VERSION" ]]; then
+    GIT_HASH=`git rev-parse --short HEAD`
+    DINGHY_VERSION=$(cat ./dinghy_version)
+    PREFIX=dev # provides prefix for local builds -- set in Jenkinsfile otherwise
+    if [[ -z "$DINGHY_VERSION" ]]; then
+        DINGHY_VERSION=`date +%Y-%m-%d`
+    fi
+    DINGHY_VERSION="${DINGHY_VERSION}-${GIT_HASH}-${PREFIX}0000"
+fi
+
+export DINGHY_VERSION=$DINGHY_VERSION
+export DOCKER_REGISTRY=docker.io/armory
+export DOCKER_IMAGE="docker.io/armory/dinghy:${DINGHY_VERSION}"
