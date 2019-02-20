@@ -28,7 +28,6 @@ all: clean lint test vet build
 
 dependencies:
 	@echo "not running dep ensure because vendored deps"
-	# dep ensure
 
 run:
 	go run ./cmd/${BINARY}.go

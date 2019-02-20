@@ -9,7 +9,7 @@
 
 cd "$(dirname "$0")/.."
 
-source bin/dinghyVersion.sh
+source bin/ENV
 
 echo "Building binary first..."
 WORKDIR=/go/src/github.com/armory-io/dinghy
