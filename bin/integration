@@ -15,7 +15,7 @@ docker run --rm \
   -e "CGO_ENABLED=0" \
   -e "ORCA_BASE_URL=http://spinnaker.dev.armory.io:8083" \
   -e "FRONT50_BASE_URL=http://spinnaker.dev.armory.io:8080" \
-  andrexus/golang-dep \
+  armory/golang-dep \
   make integration
 
 echo "Docker image is ${DOCKER_IMAGE}."

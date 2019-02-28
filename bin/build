@@ -22,7 +22,7 @@ docker run --rm \
   -e "GOARCH=amd64" \
   -e "CGO_ENABLED=0" \
   -e "NEEDS_BC=yes" \
-  andrexus/golang-dep \
+  armory/golang-dep \
   make
 
 echo "Building docker image ${DOCKER_IMAGE}..."
