@@ -19,7 +19,7 @@ node {
 
   for (def buildDef : builds) {
     try {
-      def commit = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+      def commit = sh(returnStdout: true, script: "git rev-parse --short=7 HEAD").trim()
       def branch = sh(returnStdout: true, script: "git rev-parse --abbrev-ref HEAD").trim()
       def dependencies = buildDef.dependencies
 
