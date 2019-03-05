@@ -25,7 +25,7 @@ var S = Settings{
 	GithubEndpoint:    "https://api.github.com",
 	StashCredsPath:    util.GetenvOrDefault("STASH_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/stash-creds.txt"),
 	StashEndpoint:     "http://localhost:7990/rest/api/1.0",
-	Logging: logging{
+	Logging: Logging{
 		File:  "",
 		Level: "INFO",
 	},
@@ -45,7 +45,7 @@ var S = Settings{
 			},
 			AuthUser: "",
 		},
-		Redis: redis{
+		Redis: Redis{
 			Host:     util.GetenvOrDefault("REDIS_HOST", "redis"),
 			Port:     util.GetenvOrDefault("REDIS_PORT", "6379"),
 			Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
@@ -53,27 +53,79 @@ var S = Settings{
 	},
 }
 
-func init() {
-	// Read in settings for dinghy and spinnaker profiles
+func NewDefaultSettings() Settings {
+	return Settings{
+		DinghyFilename:    "dinghyfile",
+		TemplateRepo:      "dinghy-templates",
+		AutoLockPipelines: "true",
+		GitHubCredsPath:   util.GetenvOrDefault("GITHUB_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/github-creds.txt"),
+		GithubEndpoint:    "https://api.github.com",
+		StashCredsPath:    util.GetenvOrDefault("STASH_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/stash-creds.txt"),
+		StashEndpoint:     "http://localhost:7990/rest/api/1.0",
+		Logging: Logging{
+			File:  "",
+			Level: "INFO",
+		},
+		spinnakerSupplied: spinnakerSupplied{
+			Orca: spinnakerService{
+				Enabled: "true",
+				BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://orca:8083"),
+			},
+			Front50: spinnakerService{
+				Enabled: "true",
+				BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://front50:8080"),
+			},
+			Fiat: fiat{
+				spinnakerService: spinnakerService{
+					Enabled: "false",
+					BaseURL: util.GetenvOrDefault("FIAT_BASE_URL", "http://fiat:7003"),
+				},
+				AuthUser: "",
+			},
+			Redis: Redis{
+				Host:     util.GetenvOrDefault("REDIS_HOST", "redis"),
+				Port:     util.GetenvOrDefault("REDIS_PORT", "6379"),
+				Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
+			},
+		},
+	}
+}
+
+// LoadSettings loads the Spring config from the default Spinnaker paths
+// and merges default settings with the loaded settings
+func LoadSettings() (*Settings, error) {
 	springConfig, err := loadProfiles()
 	if err != nil {
-		log.Errorf("failed to load configuration, falling back to default: %s", err.Error())
-		return
+		log.Error(err.Error())
+		return nil, err
 	}
+	settings, err := ConfigureSettings(NewDefaultSettings(), springConfig)
+	if err != nil {
+		log.Error(err.Error())
+		return nil, err
+	}
+	return settings, nil
+}
 
-	// Overwrite S's initial values with those stored in springConfig
-	// TODO: Remove this code when customers are all using dinghy with halyard
-	if err := mergo.Merge(&S, springConfig, mergo.WithOverride); err != nil {
+// ReplaceGlobals replaces the global settings object
+// this is only temporary
+func ReplaceGlobals(s Settings) {
+	S = s
+}
+
+func ConfigureSettings(defaultSettings, overrides Settings) (*Settings, error) {
+
+	if err := mergo.Merge(&defaultSettings, overrides, mergo.WithOverride); err != nil {
 		log.Errorf("failed to merge custom config with default: %s", err.Error())
-		return
+		return nil, err
 	}
 
 	// If Github token not passed directly
 	// Required for backwards compatibility
-	if S.GitHubToken == "" {
+	if defaultSettings.GitHubToken == "" {
 		// load github api token
-		if _, err := os.Stat(S.GitHubCredsPath); err == nil {
-			creds, err := ioutil.ReadFile(S.GitHubCredsPath)
+		if _, err := os.Stat(defaultSettings.GitHubCredsPath); err == nil {
+			creds, err := ioutil.ReadFile(defaultSettings.GitHubCredsPath)
 			if err != nil {
 				panic(err)
 			}
@@ -88,10 +140,10 @@ func init() {
 
 	// If Stash token not passed directly
 	// Required for backwards compatibility
-	if S.StashToken == "" || S.StashUsername == "" {
+	if defaultSettings.StashToken == "" || defaultSettings.StashUsername == "" {
 		// load stash api creds
-		if _, err := os.Stat(S.StashCredsPath); err == nil {
-			creds, err := ioutil.ReadFile(S.StashCredsPath)
+		if _, err := os.Stat(defaultSettings.StashCredsPath); err == nil {
+			creds, err := ioutil.ReadFile(defaultSettings.StashCredsPath)
 			if err != nil {
 				panic(err)
 			}
@@ -106,19 +158,31 @@ func init() {
 	}
 
 	// Required for backwards compatibility
-	if S.Deck.BaseURL == "" && S.SpinnakerUIURL != "" {
+	if defaultSettings.Deck.BaseURL == "" && defaultSettings.SpinnakerUIURL != "" {
 		log.Warn("Spinnaker UI URL should be set with ${services.deck.baseUrl}")
-		S.Deck.BaseURL = S.SpinnakerUIURL
+		defaultSettings.Deck.BaseURL = defaultSettings.SpinnakerUIURL
 	}
 
 	// Take the FiatUser setting if fiat is enabled (coming from hal settings)
-	if S.Fiat.Enabled == "true" && S.FiatUser != "" {
-		S.Fiat.AuthUser = S.FiatUser
+	if defaultSettings.Fiat.Enabled == "true" && defaultSettings.FiatUser != "" {
+		defaultSettings.Fiat.AuthUser = defaultSettings.FiatUser
 	}
 
-	c, _ := json.Marshal(S)
+	c, _ := json.Marshal(defaultSettings)
 	log.Infof("The following settings have been loaded: %v", string(c))
 
+	return &defaultSettings, nil
+}
+
+func decodeProfilesToSettings(profiles map[string]interface{}, s *Settings) error {
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		Result:           s,
+	})
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(profiles)
 }
 
 func loadProfiles() (Settings, error) {
@@ -131,15 +195,7 @@ func loadProfiles() (Settings, error) {
 		return config, err
 	}
 
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		Result:           &config,
-	})
-	if err != nil {
-		return config, err
-	}
-
-	if err := decoder.Decode(c); err != nil {
+	if err := decodeProfilesToSettings(c, &config); err != nil {
 		return config, err
 	}
 

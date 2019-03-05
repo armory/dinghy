@@ -16,7 +16,7 @@ type Settings struct {
 	StashToken        string  `json:"stashToken,omitempty" yaml:"stashToken"`
 	StashEndpoint     string  `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
 	FiatUser          string  `json:"fiatUser,omitempty" yaml:"fiatUser"`
-	Logging           logging `json:"logging,omitempty" yaml:"logging"`
+	Logging           Logging `json:"logging,omitempty" yaml:"logging"`
 	spinnakerSupplied `mapstructure:",squash"`
 }
 
@@ -25,10 +25,10 @@ type spinnakerSupplied struct {
 	Front50 spinnakerService `json:"front50,omitempty" yaml:"front50"`
 	Deck    spinnakerService `json:"deck,omitempty" yaml:"deck"`
 	Fiat    fiat             `json:"fiat,omitempty" yaml:"fiat"`
-	Redis   redis            `json:"redis,omitempty" yaml:"redis"`
+	Redis   Redis            `json:"redis,omitempty" yaml:"redis"`
 }
 
-type redis struct {
+type Redis struct {
 	Host       string `json:"host,omitempty" yaml:"host"`
 	Port       string `json:"port,omitempty" yaml:"port"`
 	Password   string `json:"password,omitempty" yaml:"password"`
@@ -45,7 +45,7 @@ type spinnakerService struct {
 	BaseURL string `json:"baseUrl,omitempty" yaml:"baseUrl"`
 }
 
-type logging struct {
+type Logging struct {
 	File   string `json:"file,omitempty" yaml:"file"`
 	Level  string `json:"level,omitempty" yaml:"level"`
 	Remote struct {
@@ -55,4 +55,3 @@ type logging struct {
 		Version    string `json:"version" yaml:"version"`
 	} `json:"remote" yaml:"remote"`
 }
-
