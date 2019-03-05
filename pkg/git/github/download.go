@@ -9,13 +9,14 @@ import (
 
 	"github.com/armory-io/dinghy/pkg/cache/local"
 
-	"github.com/armory-io/dinghy/pkg/settings"
 	log "github.com/sirupsen/logrus"
 )
 
 // FileService is for working with repositories
 type FileService struct {
-	cache local.Cache
+	cache          local.Cache
+	GitHubToken    string
+	GitHubEndpoint string
 }
 
 // Download a file from github.
@@ -31,7 +32,7 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Add("Authorization", "token "+settings.S.GitHubToken)
+	req.Header.Add("Authorization", "token "+f.GitHubToken)
 	req.Header.Add("Accept", "application/vnd.github.v3.raw")
 
 	resp, err := http.DefaultClient.Do(req)
@@ -65,12 +66,12 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 
 // EncodeURL returns the git url for a given org, repo, path
 func (f *FileService) EncodeURL(org, repo, path string) string {
-	return fmt.Sprintf(`%s/repos/%s/%s/contents/%s`, settings.S.GithubEndpoint, org, repo, path)
+	return fmt.Sprintf(`%s/repos/%s/%s/contents/%s`, f.GitHubEndpoint, org, repo, path)
 }
 
 // DecodeURL takes a url and returns the org, repo, path
 func (f *FileService) DecodeURL(url string) (org, repo, path string) {
-	targetExpression := fmt.Sprintf("%s/repos/(.+)/(.+)/contents/(.+)", settings.S.GithubEndpoint)
+	targetExpression := fmt.Sprintf("%s/repos/(.+)/(.+)/contents/(.+)", f.GitHubEndpoint)
 	r, _ := regexp.Compile(targetExpression)
 	match := r.FindStringSubmatch(url)
 	org = match[1]

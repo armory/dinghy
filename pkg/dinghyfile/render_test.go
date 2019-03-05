@@ -9,7 +9,6 @@ import (
 
 	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/git/dummy"
-	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -129,21 +128,23 @@ var fileService = dummy.FileService{
 	  }`,
 }
 
-var builder = &PipelineBuilder{
-	Depman:     cache.NewMemoryCache(),
-	Downloader: fileService,
-}
-
 func TestGracefulErrorHandling(t *testing.T) {
+	builder := &PipelineBuilder{
+		Depman:     cache.NewMemoryCache(),
+		Downloader: fileService,
+	}
 	_, err := builder.Render("org", "repo", "df_bad", nil)
 	assert.NotNil(t, err, "Got non-nil output for mal-formed template action in df_bad")
 }
 
 func TestNestedVars(t *testing.T) {
-
-	// this is because we only parse global vars when processing
-	// a "dinghyfile" (settings.S.DinghyFilename)
-	settings.S.DinghyFilename = "nested_var_df"
+	builder := &PipelineBuilder{
+		Depman:         cache.NewMemoryCache(),
+		Downloader:     fileService,
+		DinghyfileName: "nested_var_df",
+		TemplateOrg:    "org",
+		TemplateRepo:   "repo",
+	}
 	buf, _ := builder.Render("org", "repo", "nested_var_df", nil)
 
 	const expected = `{
@@ -260,7 +261,12 @@ func TestGlobalVars(t *testing.T) {
 
 	for testName, c := range cases {
 		t.Run(testName, func(t *testing.T) {
-			settings.S.DinghyFilename = filepath.Base(c.filename)
+			builder := &PipelineBuilder{
+				Depman:         cache.NewMemoryCache(),
+				Downloader:     fileService,
+				DinghyfileName: filepath.Base(c.filename),
+			}
+
 			buf, _ := builder.Render("org", "repo", c.filename, nil)
 			exp := strings.Join(strings.Fields(c.expected), "")
 			actual := strings.Join(strings.Fields(buf.String()), "")
@@ -270,7 +276,10 @@ func TestGlobalVars(t *testing.T) {
 }
 
 func TestSimpleWaitStage(t *testing.T) {
-
+	builder := &PipelineBuilder{
+		Depman:     cache.NewMemoryCache(),
+		Downloader: fileService,
+	}
 	buf, _ := builder.Render("org", "repo", "df3", nil)
 
 	const expected = `{
@@ -292,6 +301,10 @@ func TestSimpleWaitStage(t *testing.T) {
 }
 
 func TestSpillover(t *testing.T) {
+	builder := &PipelineBuilder{
+		Depman:     cache.NewMemoryCache(),
+		Downloader: fileService,
+	}
 	buf, _ := builder.Render("org", "repo", "df", nil)
 
 	const expected = `{
@@ -316,6 +329,10 @@ type testStruct struct {
 }
 
 func TestModuleVariableSubstitution(t *testing.T) {
+	builder := &PipelineBuilder{
+		Depman:     cache.NewMemoryCache(),
+		Downloader: fileService,
+	}
 	ts := testStruct{}
 	ret, err := builder.Render("org", "repo", "df2", nil)
 	err = json.Unmarshal(ret.Bytes(), &ts)
@@ -334,6 +351,10 @@ func TestPipelineID(t *testing.T) {
 */
 
 func TestModuleEmptyString(t *testing.T) {
+	builder := &PipelineBuilder{
+		Depman:     cache.NewMemoryCache(),
+		Downloader: fileService,
+	}
 	ret, _ := builder.Render("org", "repo", "df4", nil)
 	assert.Equal(t, `{"foo": ""}`, ret.String())
 }

@@ -94,7 +94,7 @@ func TestNewApplication(t *testing.T) {
 			},
 			front50Opts: mockServerOpts{
 				code:    http.StatusOK,
-				payload: `[{"name": "hello"}]`,
+				payload: `[{"name": "application"}]`,
 			},
 			err: nil,
 		},

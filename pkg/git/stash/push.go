@@ -7,14 +7,16 @@ import (
 	"strconv"
 
 	"github.com/armory-io/dinghy/pkg/git"
-	"github.com/armory-io/dinghy/pkg/settings"
 	log "github.com/sirupsen/logrus"
 )
 
 // Push contains data about a push full of commits
 type Push struct {
-	Payload      WebhookPayload
-	ChangedFiles []string
+	Payload       WebhookPayload
+	ChangedFiles  []string
+	StashEndpoint string
+	StashUsername string
+	StashToken    string
 }
 
 // WebhookPayload is the payload from the webhook
@@ -62,7 +64,7 @@ type APIDiff struct {
 func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (nextStart int, err error) {
 	url := fmt.Sprintf(
 		`%s/projects/%s/repos/%s/commits/%s/changes`,
-		settings.S.StashEndpoint,
+		p.StashEndpoint,
 		p.Payload.Repository.Project.Key,
 		p.Payload.Repository.Slug,
 		toCommitHash,
@@ -81,7 +83,7 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 		query.Add("start", strconv.Itoa(start))
 	}
 	req.URL.RawQuery = query.Encode()
-	req.SetBasicAuth(settings.S.StashUsername, settings.S.StashToken)
+	req.SetBasicAuth(p.StashUsername, p.StashToken)
 
 	resp, err := http.DefaultClient.Do(req)
 	if resp != nil {
@@ -108,11 +110,20 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 	return
 }
 
+type StashConfig struct {
+	Username string
+	Token    string
+	Endpoint string
+}
+
 // NewPush creates a new Push
-func NewPush(payload WebhookPayload) (*Push, error) {
+func NewPush(payload WebhookPayload, cfg StashConfig) (*Push, error) {
 	p := &Push{
-		Payload:      payload,
-		ChangedFiles: make([]string, 0),
+		Payload:       payload,
+		ChangedFiles:  make([]string, 0),
+		StashEndpoint: cfg.Endpoint,
+		StashToken:    cfg.Token,
+		StashUsername: cfg.Username,
 	}
 
 	for _, change := range p.changes() {

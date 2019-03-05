@@ -8,7 +8,6 @@ import (
 	"text/template"
 
 	"github.com/armory-io/dinghy/pkg/preprocessor"
-	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/spinnaker"
 	log "github.com/sirupsen/logrus"
 )
@@ -152,7 +151,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	}
 
 	// Extract global vars if we're processing a dinghyfile (and not a module)
-	if filepath.Base(path) == settings.S.DinghyFilename {
+	if filepath.Base(path) == b.DinghyfileName {
 		gvs := preprocessor.ParseGlobalVars(contents)
 		gvMap, ok := gvs.(map[string]interface{})
 		if !ok {

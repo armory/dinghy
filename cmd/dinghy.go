@@ -58,7 +58,12 @@ func main() {
 
 	log.Info("Dinghy started.")
 	web.GlobalCache = cache.NewRedisCache(newRedisOptions(config.Redis))
-	log.Fatal(http.ListenAndServe(":8081", web.Router()))
+
+	api := web.WebAPI{
+		Config: *config,
+	}
+
+	log.Fatal(http.ListenAndServe(":8081", api.Router()))
 }
 
 func setupRemoteLogging(l *log.Logger, loggingConfig settings.Logging) error {

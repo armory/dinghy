@@ -32,11 +32,11 @@ type DataSourcesSpec struct {
 // Must include `name` and `email`
 // DataSources must be a pointer otherwise we end up sending nil/empty dicts, which break the UI
 type ApplicationSpec struct {
-	Name        string           `json:"name"`
-	Email       string           `json:"email"`
-	Description string           `json:"description,omitempty"`
-	User        string           `json:"user,omitempty"`
-	DataSources *DataSourcesSpec `json:"dataSources,omitempty"`
+	Name        string          `json:"name"`
+	Email       string          `json:"email"`
+	Description string          `json:"description,omitempty"`
+	User        string          `json:"user,omitempty"`
+	DataSources DataSourcesSpec `json:"dataSources,omitempty"`
 }
 
 // Applications returns a list of applications

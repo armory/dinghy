@@ -32,16 +32,20 @@ type Push interface {
 // GlobalCache is a global dependency manager to be set on program start
 var GlobalCache dinghyfile.DependencyManager
 
+type WebAPI struct {
+	Config settings.Settings
+}
+
 // Router defines the routes for the application.
-func Router() *mux.Router {
+func (wa *WebAPI) Router() *mux.Router {
 	r := mux.NewRouter()
-	r.HandleFunc("/", healthcheck)
-	r.HandleFunc("/health", healthcheck)
-	r.HandleFunc("/healthcheck", healthcheck)
-	r.HandleFunc("/v1/webhooks/github", githubWebhookHandler).Methods("POST")
-	r.HandleFunc("/v1/webhooks/stash", stashWebhookHandler).Methods("POST")
-	r.HandleFunc("/v1/webhooks/bitbucket", bitbucketServerWebhookHandler).Methods("POST")
-	r.HandleFunc("/v1/updatePipeline", manualUpdateHandler).Methods("POST")
+	r.HandleFunc("/", wa.healthcheck)
+	r.HandleFunc("/health", wa.healthcheck)
+	r.HandleFunc("/healthcheck", wa.healthcheck)
+	r.HandleFunc("/v1/webhooks/github", wa.githubWebhookHandler).Methods("POST")
+	r.HandleFunc("/v1/webhooks/stash", wa.stashWebhookHandler).Methods("POST")
+	r.HandleFunc("/v1/webhooks/bitbucket", wa.bitbucketServerWebhookHandler).Methods("POST")
+	r.HandleFunc("/v1/updatePipeline", wa.manualUpdateHandler).Methods("POST")
 	r.Use(RequestLoggingMiddleware)
 	return r
 }
@@ -50,12 +54,12 @@ func Router() *mux.Router {
 // route handlers
 // ==============
 
-func healthcheck(w http.ResponseWriter, r *http.Request) {
+func (wa *WebAPI) healthcheck(w http.ResponseWriter, r *http.Request) {
 	log.Debug(r.RemoteAddr, " Requested ", r.RequestURI)
 	w.Write([]byte(`{"status":"ok"}`))
 }
 
-func manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
+func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	var fileService = dummy.FileService{}
 
 	builder := &dinghyfile.PipelineBuilder{
@@ -72,7 +76,7 @@ func manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	builder.ProcessDinghyfile("", "", "dinghyfile")
 }
 
-func githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
+func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p := github.Push{}
 	if err := readBody(r, &p); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
@@ -84,11 +88,13 @@ func githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debug("Possibly a non-Push notification received")
 		return
 	}
-
-	buildPipelines(&p, &github.FileService{}, w)
+	p.GitHubToken = wa.Config.GitHubToken
+	p.GitHubEndpoint = wa.Config.GithubEndpoint
+	p.DeckBaseURL = wa.Config.Deck.BaseURL
+	wa.buildPipelines(&p, &github.FileService{}, w)
 }
 
-func stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
+func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload := stash.WebhookPayload{}
 	if err := readBody(r, &payload); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
@@ -97,16 +103,21 @@ func stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("Webhook payload: %+v", payload)
 
 	payload.IsOldStash = true
-	p, err := stash.NewPush(payload)
+	stashConfig := stash.StashConfig{
+		Endpoint: wa.Config.StashEndpoint,
+		Username: wa.Config.StashUsername,
+		Token:    wa.Config.StashToken,
+	}
+	p, err := stash.NewPush(payload, stashConfig)
 	if err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	buildPipelines(p, &stash.FileService{}, w)
+	wa.buildPipelines(p, &stash.FileService{}, w)
 }
 
-func bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
+func (wa *WebAPI) bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload := stash.WebhookPayload{}
 	if err := readBody(r, &payload); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
@@ -119,13 +130,18 @@ func bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload.IsOldStash = false
-	p, err := stash.NewPush(payload)
+	stashConfig := stash.StashConfig{
+		Endpoint: wa.Config.StashEndpoint,
+		Username: wa.Config.StashUsername,
+		Token:    wa.Config.StashToken,
+	}
+	p, err := stash.NewPush(payload, stashConfig)
 	if err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	buildPipelines(p, &stash.FileService{}, w)
+	wa.buildPipelines(p, &stash.FileService{}, w)
 }
 
 // =========
@@ -133,10 +149,10 @@ func bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
 // =========
 
 // ProcessPush processes a push using a pipeline builder
-func ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
+func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	err := error(nil)
 	// Ensure dinghyfile was changed.
-	if !p.ContainsFile(settings.S.DinghyFilename) {
+	if !p.ContainsFile(wa.Config.DinghyFilename) {
 		return nil
 	}
 
@@ -153,7 +169,7 @@ func ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 
 	for _, filePath := range p.Files() {
 		components := strings.Split(filePath, "/")
-		if components[len(components)-1] == settings.S.DinghyFilename {
+		if components[len(components)-1] == wa.Config.DinghyFilename {
 			// Process the dinghyfile.
 			err = b.ProcessDinghyfile(p.Org(), p.Repo(), filePath)
 
@@ -170,17 +186,18 @@ func ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	return err
 }
 
-func buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
+func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
 	// Construct a pipeline builder using provided downloader
 	builder := &dinghyfile.PipelineBuilder{
-		Downloader:   f,
-		Depman:       GlobalCache,
-		TemplateRepo: settings.S.TemplateRepo,
-		TemplateOrg:  settings.S.TemplateOrg,
+		Downloader:     f,
+		Depman:         GlobalCache,
+		TemplateRepo:   wa.Config.TemplateRepo,
+		TemplateOrg:    wa.Config.TemplateOrg,
+		DinghyfileName: wa.Config.DinghyFilename,
 	}
 
 	// Process the push.
-	err := ProcessPush(p, builder)
+	err := wa.ProcessPush(p, builder)
 	if err == dinghyfile.ErrMalformedJSON {
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -190,7 +207,7 @@ func buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
 	}
 
 	// Check if we're in a template repo
-	if p.Repo() == settings.S.TemplateRepo {
+	if p.Repo() == wa.Config.TemplateRepo {
 		// Set status to pending while we process modules
 		p.SetCommitStatus(git.StatusPending)
 

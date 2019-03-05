@@ -11,13 +11,15 @@ import (
 
 	"github.com/armory-io/dinghy/pkg/cache/local"
 
-	"github.com/armory-io/dinghy/pkg/settings"
 	log "github.com/sirupsen/logrus"
 )
 
 // FileService is for working with repositories
 type FileService struct {
-	cache local.Cache
+	cache         local.Cache
+	StashEndpoint string
+	StashToken    string
+	StashUsername string
 }
 
 // FileContentsResponse contains response from Stash when you fetch a file
@@ -36,7 +38,7 @@ func (f *FileService) downloadLines(url string, start int) (lines []string, next
 		query.Add("start", strconv.Itoa(start))
 		req.URL.RawQuery = query.Encode()
 	}
-	req.SetBasicAuth(settings.S.StashUsername, settings.S.StashToken)
+	req.SetBasicAuth(f.StashUsername, f.StashToken)
 	resp, err := http.DefaultClient.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
@@ -94,7 +96,7 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 
 // EncodeURL returns the git url for a given org, repo, path
 func (f *FileService) EncodeURL(org, repo, path string) string {
-	return fmt.Sprintf(`%s/projects/%s/repos/%s/browse/%s?raw`, settings.S.StashEndpoint, org, repo, path)
+	return fmt.Sprintf(`%s/projects/%s/repos/%s/browse/%s?raw`, f.StashEndpoint, org, repo, path)
 }
 
 // DecodeURL takes a url and returns the org, repo, path

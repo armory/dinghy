@@ -10,7 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/armory-io/dinghy/pkg/git"
-	"github.com/armory-io/dinghy/pkg/settings"
 )
 
 /* Example: POST /repos/:owner/:repo/statuses/:sha
@@ -31,11 +30,11 @@ type Status struct {
 
 // SetCommitStatus sets the commit status
 func (p *Push) SetCommitStatus(s git.Status) {
-	update := newStatus(s)
+	update := newStatus(s, p.DeckBaseURL)
 	for _, c := range p.Commits {
 		sha := c.ID // not sure if this is right.
 		url := fmt.Sprintf("%s/repos/%s/%s/statuses/%s",
-			settings.S.GithubEndpoint,
+			p.GitHubEndpoint,
 			p.Org(),
 			p.Repo(),
 			sha)
@@ -47,7 +46,7 @@ func (p *Push) SetCommitStatus(s git.Status) {
 		log.Info(fmt.Sprintf("Updating commit %s for %s/%s to %s.", sha, p.Org(), p.Repo(), string(s)))
 		log.Debug("POST ", url, " - ", string(body))
 		req, err := http.NewRequest("POST", url, strings.NewReader(string(body)))
-		req.Header.Add("Authorization", "token "+settings.S.GitHubToken)
+		req.Header.Add("Authorization", "token "+p.GitHubToken)
 		// TODO: handle a bad status code for this POST
 		resp, err := http.DefaultClient.Do(req)
 		if resp != nil {
@@ -68,10 +67,10 @@ func (p *Push) SetCommitStatus(s git.Status) {
 	}
 }
 
-func newStatus(s git.Status) Status {
+func newStatus(s git.Status, deckURL string) Status {
 	ret := Status{
 		State:     string(s),
-		TargetURL: settings.S.Deck.BaseURL,
+		TargetURL: deckURL,
 		Context:   "continuous-deployment/dinghy",
 	}
 	switch s {

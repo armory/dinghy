@@ -10,10 +10,11 @@ import (
 
 // PipelineBuilder is responsible for downloading dinghyfiles/modules, compiling them, and sending them to Spinnaker
 type PipelineBuilder struct {
-	Downloader   Downloader
-	Depman       DependencyManager
-	TemplateRepo string
-	TemplateOrg  string
+	Downloader     Downloader
+	Depman         DependencyManager
+	TemplateRepo   string
+	TemplateOrg    string
+	DinghyfileName string
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -40,6 +41,20 @@ type Dinghyfile struct {
 	Pipelines            []spinnaker.Pipeline      `json:"pipelines"`
 }
 
+func NewDinghyfile() Dinghyfile {
+	return Dinghyfile{
+		// initialize the application spec so that the default
+		// enabled/disabled are initilzed slices
+		// https://danott.co/posts/json-marshalling-empty-slices-to-empty-arrays-in-go.html
+		ApplicationSpec: spinnaker.ApplicationSpec{
+			DataSources: spinnaker.DataSourcesSpec{
+				Enabled:  []string{},
+				Disabled: []string{},
+			},
+		},
+	}
+}
+
 var (
 	// ErrMalformedJSON is more specific than just returning 422.
 	ErrMalformedJSON = errors.New("malformed json")
@@ -47,7 +62,7 @@ var (
 )
 
 func UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error) {
-	d := Dinghyfile{}
+	d := NewDinghyfile()
 	if err := Unmarshal(dinghyfile, &d); err != nil {
 		log.Error("Could not unmarshal dinghyfile: ", err)
 		return d, ErrMalformedJSON
@@ -61,7 +76,7 @@ func UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error) {
 	if d.ApplicationSpec.Email == "" {
 		d.ApplicationSpec.Email = DefaultEmail
 	}
-	
+
 	return d, nil
 }
 

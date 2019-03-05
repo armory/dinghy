@@ -4,9 +4,12 @@ import "strings"
 
 // Push is the payload received from a GitHub webhook.
 type Push struct {
-	Commits    []Commit   `json:"commits"`
-	Repository Repository `json:"repository"`
-	Ref        string     `json:"ref"`
+	Commits        []Commit   `json:"commits"`
+	Repository     Repository `json:"repository"`
+	Ref            string     `json:"ref"`
+	GitHubToken    string
+	DeckBaseURL    string
+	GitHubEndpoint string
 }
 
 // Commit is a commit received from Github webhook
