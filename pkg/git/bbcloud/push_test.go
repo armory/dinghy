@@ -3,7 +3,7 @@ package bbcloud
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/magiconair/properties/assert"
+	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
