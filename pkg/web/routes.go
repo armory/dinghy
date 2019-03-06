@@ -2,10 +2,12 @@ package web
 
 import (
 	"bytes"
-	"github.com/armory-io/dinghy/pkg/git/bbcloud"
 	"net/http"
 	"net/http/httputil"
 	"strings"
+
+	"github.com/armory-io/dinghy/pkg/git/bbcloud"
+	"github.com/armory-io/dinghy/pkg/spinnaker"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -30,11 +32,16 @@ type Push interface {
 	SetCommitStatus(s git.Status)
 }
 
-// GlobalCache is a global dependency manager to be set on program start
-var GlobalCache dinghyfile.DependencyManager
+type SpinnakerServices struct {
+	Front50API  spinnaker.Front50API
+	PipelineAPI spinnaker.PipelineAPI
+	OrcaAPI     spinnaker.OrcaAPI
+}
 
 type WebAPI struct {
-	Config settings.Settings
+	Config            settings.Settings
+	SpinnakerServices SpinnakerServices
+	Cache             dinghyfile.DependencyManager
 }
 
 // Router defines the routes for the application.
@@ -65,8 +72,11 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	var fileService = dummy.FileService{}
 
 	builder := &dinghyfile.PipelineBuilder{
-		Depman:     cache.NewMemoryCache(),
-		Downloader: fileService,
+		Depman:               cache.NewMemoryCache(),
+		Downloader:           fileService,
+		PipelineAPI:          wa.SpinnakerServices.PipelineAPI,
+		DeleteStalePipelines: false,
+		AutolockPipelines:    wa.Config.AutoLockPipelines,
 	}
 
 	buf := new(bytes.Buffer)
@@ -217,11 +227,13 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
 	// Construct a pipeline builder using provided downloader
 	builder := &dinghyfile.PipelineBuilder{
-		Downloader:     f,
-		Depman:         GlobalCache,
-		TemplateRepo:   wa.Config.TemplateRepo,
-		TemplateOrg:    wa.Config.TemplateOrg,
-		DinghyfileName: wa.Config.DinghyFilename,
+		Downloader:           f,
+		Depman:               wa.Cache,
+		TemplateRepo:         wa.Config.TemplateRepo,
+		TemplateOrg:          wa.Config.TemplateOrg,
+		DinghyfileName:       wa.Config.DinghyFilename,
+		DeleteStalePipelines: false,
+		AutolockPipelines:    wa.Config.AutoLockPipelines,
 	}
 
 	// Process the push.

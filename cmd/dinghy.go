@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/armory-io/dinghy/pkg/spinnaker"
 	"github.com/armory-io/monitoring/log/formatters"
 	"github.com/armory-io/monitoring/log/hooks"
 	"net/http"
@@ -29,7 +30,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load configuration: %s", err.Error())
 	}
-	settings.ReplaceGlobals(*config)
 
 	if config.Logging.File != "" {
 		f, err := os.OpenFile(config.Logging.File, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0764)
@@ -56,13 +56,40 @@ func main() {
 		}
 	}
 
-	log.Info("Dinghy started.")
-	web.GlobalCache = cache.NewRedisCache(newRedisOptions(config.Redis))
+	// if Fiat is enabled, use the Fiat service account when making API requests
+	apiClientHeaders := map[string]string{}
+	if config.Fiat.Enabled == "true" && config.Fiat.AuthUser != "" {
+		log.Infof("Fiat is enabled. Setting up auth headers for API client.")
+		apiClientHeaders["X-Spinnaker-User"] = config.Fiat.AuthUser
+	}
+
+	// orcaAPI for calls to Orca
+	orcaAPI := &spinnaker.DefaultOrcaAPI{
+		BaseURL:   config.Orca.BaseURL,
+		APIClient: &spinnaker.DefaultAPIClient{Headers: apiClientHeaders},
+	}
+
+	// front50API for calls to Front50
+	front50API := &spinnaker.DefaultFront50API{
+		BaseURL:   config.Front50.BaseURL,
+		OrcaAPI:   orcaAPI,
+		APIClient: &spinnaker.DefaultAPIClient{Headers: apiClientHeaders},
+	}
+
+	// pipelineAPI for working with pipelines
+	pipelineAPI := &spinnaker.DefaultPipelineAPI{
+		Front50API: front50API,
+	}
 
 	api := web.WebAPI{
 		Config: *config,
+		Cache:  cache.NewRedisCache(newRedisOptions(config.Redis)),
+		SpinnakerServices: web.SpinnakerServices{
+			PipelineAPI: pipelineAPI,
+		},
 	}
 
+	log.Info("Dinghy started.")
 	log.Fatal(http.ListenAndServe(":8081", api.Router()))
 }
 

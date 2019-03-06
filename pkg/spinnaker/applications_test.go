@@ -1,12 +1,11 @@
 package spinnaker
 
 import (
-	"github.com/armory-io/dinghy/pkg/settings"
-	"github.com/gorilla/mux"
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 type mockServerOpts struct {
@@ -24,94 +23,89 @@ func mockFront50(t *testing.T, opts mockServerOpts) *httptest.Server {
 	return httptest.NewServer(r)
 }
 
-func getTestApps(t *testing.T, svr *httptest.Server) []string {
-	defer svr.Close()
-	settings.S.Front50.BaseURL = svr.URL
-	return Applications()
-}
-
-func TestApplications(t *testing.T) {
-	cases := []struct {
+func TestDefaultFront50API_Applications(t *testing.T) {
+	cases := map[string]struct {
 		opts     mockServerOpts
 		expected []string
 	}{
-		{
+		"happy path": {
 			opts:     mockServerOpts{code: http.StatusOK, payload: `[{"name": "test"}, {"name": "test2"}]`},
 			expected: []string{"test", "test2"},
 		},
-		{
+		"no applications": {
 			opts:     mockServerOpts{code: http.StatusBadRequest, payload: `[]`},
 			expected: []string{},
 		},
 	}
 
-	for _, c := range cases {
-		svr := mockFront50(t, c.opts)
-		apps := getTestApps(t, svr)
-		assert.Equal(t, apps, c.expected)
+	for testName, c := range cases {
+		t.Run(testName, func(t *testing.T) {
+			svr := mockFront50(t, c.opts)
+			defer svr.Close()
+			front50 := DefaultFront50API{
+				BaseURL:   svr.URL,
+				APIClient: &DefaultAPIClient{},
+			}
+			apps := front50.Applications()
+			assert.Equal(t, apps, c.expected)
+		})
+
 	}
 }
 
-type mockOrcaOpts struct {
-	submitCode   int
-	submitResult string
-	pollCode     int
-	pollResult   string
+type fakeOrca struct {
+	OrcaAPI
+	submitResponse TaskRefResponse
+	submitError    error
+	pollResopnse   ExecutionResponse
+	pollError      error
 }
 
-func mockOrca(t *testing.T, opts mockOrcaOpts) *httptest.Server {
-	r := mux.NewRouter()
-	r.HandleFunc("/ops", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(opts.submitCode)
-		w.Write([]byte(opts.submitResult))
-	}).Methods(http.MethodPost)
-
-	r.HandleFunc("/ref/{refId}", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(opts.pollCode)
-		w.Write([]byte(opts.pollResult))
-	}).Methods(http.MethodGet)
-
-	return httptest.NewServer(r)
+func (fo *fakeOrca) SubmitTask(task Task) (*TaskRefResponse, error) {
+	return &fo.submitResponse, fo.submitError
 }
 
-func TestNewApplication(t *testing.T) {
-	cases := []struct {
-		opts        mockOrcaOpts
+func (fo *fakeOrca) PollTaskStatus(refUrl string, timeout time.Duration) (*ExecutionResponse, error) {
+	return &fo.pollResopnse, fo.pollError
+}
+
+func TestDefaultFront50API_NewApplication(t *testing.T) {
+	cases := map[string]struct {
 		err         error
 		front50Opts mockServerOpts
 		appSpec     ApplicationSpec
+		orcaMock    *fakeOrca
 	}{
-		{
+		"happy path": {
 			appSpec: ApplicationSpec{
 				Name:  "application",
 				Email: "email",
-			},
-			opts: mockOrcaOpts{
-				submitCode:   http.StatusOK,
-				submitResult: `{"ref": "ref/12345"}`,
-				pollCode:     http.StatusOK,
-				pollResult:   `{"status": "COMPLETED", "endTime": 1}`,
 			},
 			front50Opts: mockServerOpts{
 				code:    http.StatusOK,
 				payload: `[{"name": "application"}]`,
 			},
 			err: nil,
+			orcaMock: &fakeOrca{
+				submitResponse: TaskRefResponse{Ref: "ref/12345"},
+				submitError:    nil,
+				pollResopnse:   ExecutionResponse{Status: "COMPLETED", EndTime: 1},
+				pollError:      nil,
+			},
 		},
 	}
 
-	for _, c := range cases {
-		fakeOrca := mockOrca(t, c.opts)
-		fakeFront50 := mockFront50(t, c.front50Opts)
-		err := newApplicationFetch(fakeOrca, fakeFront50, c.appSpec)
-		assert.Equal(t, err, c.err)
-	}
-}
+	for testName, c := range cases {
+		t.Run(testName, func(t *testing.T) {
+			fakeFront50 := mockFront50(t, c.front50Opts)
+			front50 := DefaultFront50API{
+				BaseURL:   fakeFront50.URL,
+				OrcaAPI:   c.orcaMock,
+				APIClient: &DefaultAPIClient{},
+			}
+			err := front50.NewApplication(c.appSpec)
+			assert.Nil(t, err)
+		})
 
-func newApplicationFetch(svr, svr2 *httptest.Server, appSpec ApplicationSpec) error {
-	defer svr.Close()
-	defer svr2.Close()
-	settings.S.Orca.BaseURL = svr.URL
-	settings.S.Front50.BaseURL = svr2.URL
-	return NewApplication(appSpec)
+	}
 }

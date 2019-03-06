@@ -56,7 +56,7 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []
 	}
 }
 
-func pipelineIDFunc(vars []varMap) interface{} {
+func pipelineIDFunc(vars []varMap, pipelines spinnaker.PipelineAPI) interface{} {
 	return func(app, pipelineName string, defaultVal ...interface{}) string {
 		for _, vm := range vars {
 			if val, exists := vm["triggerApp"]; exists {
@@ -68,7 +68,7 @@ func pipelineIDFunc(vars []varMap) interface{} {
 				log.Info("Substituting pipeline trigger appname: ", app)
 			}
 		}
-		id, err := spinnaker.GetPipelineID(app, pipelineName)
+		id, err := pipelines.GetPipelineID(app, pipelineName)
 		if err != nil {
 			log.Errorf("could not get pipeline id for app %s, pipeline %s, err = %v", app, pipelineName, err)
 		}
@@ -166,7 +166,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	funcMap := template.FuncMap{
 		"module":     moduleFunc(b, org, deps, vars),
 		"appModule":  moduleFunc(b, org, deps, vars),
-		"pipelineID": pipelineIDFunc(vars),
+		"pipelineID": pipelineIDFunc(vars, b.PipelineAPI),
 		"var":        varFunc(vars),
 	}
 
