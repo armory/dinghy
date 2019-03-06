@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"github.com/armory-io/dinghy/pkg/git/bbcloud"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -45,6 +46,7 @@ func (wa *WebAPI) Router() *mux.Router {
 	r.HandleFunc("/v1/webhooks/github", wa.githubWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/stash", wa.stashWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/bitbucket", wa.bitbucketServerWebhookHandler).Methods("POST")
+	r.HandleFunc("/v1/webhooks/bitbucket-cloud", wa.bitbucketCloudWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/updatePipeline", wa.manualUpdateHandler).Methods("POST")
 	r.Use(RequestLoggingMiddleware)
 	return r
@@ -142,6 +144,32 @@ func (wa *WebAPI) bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.R
 	}
 
 	wa.buildPipelines(p, &stash.FileService{}, w)
+}
+
+func (wa *WebAPI) bitbucketCloudWebhookHandler(w http.ResponseWriter, r *http.Request) {
+	payload := bbcloud.WebhookPayload{}
+	if err := readBody(r, &payload); err != nil {
+		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	bbcloudConfig := bbcloud.BbCloudConfig{
+		Endpoint: wa.Config.StashEndpoint,
+		Username: wa.Config.StashUsername,
+		Token:    wa.Config.StashToken,
+	}
+	p, err := bbcloud.NewPush(payload, bbcloudConfig)
+	if err != nil {
+		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	fileService := bbcloud.FileService{
+		BbcloudEndpoint: wa.Config.StashEndpoint,
+		BbcloudUsername: wa.Config.StashUsername,
+		BbcloudToken:    wa.Config.StashToken,
+	}
+	wa.buildPipelines(p, &fileService, w)
 }
 
 // =========
