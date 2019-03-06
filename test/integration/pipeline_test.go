@@ -2,7 +2,6 @@ package integration
 
 import (
 	"github.com/armory-io/dinghy/pkg/git/dummy"
-	"github.com/armory-io/dinghy/pkg/settings"
 )
 
 const dinghyfileNew = `{
@@ -161,48 +160,48 @@ var fileService = dummy.FileService{
 // 	assert.Nil(t, err)
 // }
 
-var pipelineIDFileService = dummy.FileService{
-	settings.S.DinghyFilename: `{
-		"application": "pipelineidtest",
-		"pipelines": [{
-			"keepWaitingPipelines": false,
-			"lastModifiedBy": "anonymous",
-			"limitConcurrent": true,
-			"name": "testpipelinename",
-			"application": "pipelineidtest",
-			"stages": [
-			{
-				"name": "Wait",
-				"refId": "1",
-				"requisiteStageRefIds": [],
-				"type": "wait",
-				"waitTime": 30
-			}
-			],
-			"triggers": []
-		}, {
-			"keepWaitingPipelines": false,
-			"lastModifiedBy": "anonymous",
-			"limitConcurrent": true,
-			"name": "trigger",
-			"application": "pipelineidtest",
-			"stages": [
-			 {{ module "pip" "triggerApp" "pipelineidtest" "triggerPipeline" "testpipelinename" }}
-			],
-			"triggers": []
-		}]
-	}`,
-	"pip": `{
-		"application": "pipelineidtest",
-		"failPipeline": true,
-		"name": "Pipeline",
-		"pipeline": "{{ pipelineID "default-app" "default-pipeline" }}",
-		"refId": "1",
-		"requisiteStageRefIds": [],
-		"type": "pipeline",
-		"waitForCompletion": true
-	}`,
-}
+//var pipelineIDFileService = dummy.FileService{
+//	settings.S.DinghyFilename: `{
+//		"application": "pipelineidtest",
+//		"pipelines": [{
+//			"keepWaitingPipelines": false,
+//			"lastModifiedBy": "anonymous",
+//			"limitConcurrent": true,
+//			"name": "testpipelinename",
+//			"application": "pipelineidtest",
+//			"stages": [
+//			{
+//				"name": "Wait",
+//				"refId": "1",
+//				"requisiteStageRefIds": [],
+//				"type": "wait",
+//				"waitTime": 30
+//			}
+//			],
+//			"triggers": []
+//		}, {
+//			"keepWaitingPipelines": false,
+//			"lastModifiedBy": "anonymous",
+//			"limitConcurrent": true,
+//			"name": "trigger",
+//			"application": "pipelineidtest",
+//			"stages": [
+//			 {{ module "pip" "triggerApp" "pipelineidtest" "triggerPipeline" "testpipelinename" }}
+//			],
+//			"triggers": []
+//		}]
+//	}`,
+//	"pip": `{
+//		"application": "pipelineidtest",
+//		"failPipeline": true,
+//		"name": "Pipeline",
+//		"pipeline": "{{ pipelineID "default-app" "default-pipeline" }}",
+//		"refId": "1",
+//		"requisiteStageRefIds": [],
+//		"type": "pipeline",
+//		"waitForCompletion": true
+//	}`,
+//}
 
 // func TestPipelineID(t *testing.T) {
 // 	builder := &dinghyfile.PipelineBuilder{

@@ -10,11 +10,14 @@ import (
 
 // PipelineBuilder is responsible for downloading dinghyfiles/modules, compiling them, and sending them to Spinnaker
 type PipelineBuilder struct {
-	Downloader     Downloader
-	Depman         DependencyManager
-	TemplateRepo   string
-	TemplateOrg    string
-	DinghyfileName string
+	Downloader           Downloader
+	Depman               DependencyManager
+	TemplateRepo         string
+	TemplateOrg          string
+	DinghyfileName       string
+	PipelineAPI          spinnaker.PipelineAPI
+	DeleteStalePipelines bool
+	AutolockPipelines    string
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -100,7 +103,11 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	}
 
 	// Update Spinnaker pipelines using received dinghyfile.
-	if err := spinnaker.UpdatePipelines(d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines); err != nil {
+	updateOptions := spinnaker.UpdatePipelineConfig{
+		DeleteStale:       b.DeleteStalePipelines,
+		AutolockPipelines: b.AutolockPipelines,
+	}
+	if err := b.PipelineAPI.UpdatePipelines(d.ApplicationSpec, d.Pipelines, updateOptions); err != nil {
 		log.Error("Could not update all pipelines ", err)
 		return err
 	}

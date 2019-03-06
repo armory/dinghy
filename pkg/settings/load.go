@@ -14,45 +14,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// S is the global settings structure
-// In order to support legacy installs, S has only had additive changes made to it
-// TODO: Remove S when customers are all using dinghy with halyard
-var S = Settings{
-	DinghyFilename:    "dinghyfile",
-	TemplateRepo:      "dinghy-templates",
-	AutoLockPipelines: "true",
-	GitHubCredsPath:   util.GetenvOrDefault("GITHUB_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/github-creds.txt"),
-	GithubEndpoint:    "https://api.github.com",
-	StashCredsPath:    util.GetenvOrDefault("STASH_TOKEN_PATH", os.Getenv("HOME")+"/.armory/cache/stash-creds.txt"),
-	StashEndpoint:     "http://localhost:7990/rest/api/1.0",
-	Logging: Logging{
-		File:  "",
-		Level: "INFO",
-	},
-	spinnakerSupplied: spinnakerSupplied{
-		Orca: spinnakerService{
-			Enabled: "true",
-			BaseURL: util.GetenvOrDefault("ORCA_BASE_URL", "http://orca:8083"),
-		},
-		Front50: spinnakerService{
-			Enabled: "true",
-			BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://front50:8080"),
-		},
-		Fiat: fiat{
-			spinnakerService: spinnakerService{
-				Enabled: "false",
-				BaseURL: util.GetenvOrDefault("FIAT_BASE_URL", "http://fiat:7003"),
-			},
-			AuthUser: "",
-		},
-		Redis: Redis{
-			Host:     util.GetenvOrDefault("REDIS_HOST", "redis"),
-			Port:     util.GetenvOrDefault("REDIS_PORT", "6379"),
-			Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
-		},
-	},
-}
-
 func NewDefaultSettings() Settings {
 	return Settings{
 		DinghyFilename:    "dinghyfile",
@@ -107,12 +68,6 @@ func LoadSettings() (*Settings, error) {
 	return settings, nil
 }
 
-// ReplaceGlobals replaces the global settings object
-// this is only temporary
-func ReplaceGlobals(s Settings) {
-	S = s
-}
-
 func ConfigureSettings(defaultSettings, overrides Settings) (*Settings, error) {
 
 	if err := mergo.Merge(&defaultSettings, overrides, mergo.WithOverride); err != nil {
@@ -133,7 +88,7 @@ func ConfigureSettings(defaultSettings, overrides Settings) (*Settings, error) {
 			if len(c) < 2 {
 				panic("github creds file should have format 'username:token'")
 			}
-			S.GitHubToken = c[1]
+			defaultSettings.GitHubToken = c[1]
 			log.Info("Successfully loaded github api creds")
 		}
 	}
@@ -151,8 +106,8 @@ func ConfigureSettings(defaultSettings, overrides Settings) (*Settings, error) {
 			if len(c) < 2 {
 				panic("stash creds file should have format 'username:token'")
 			}
-			S.StashUsername = c[0]
-			S.StashToken = c[1]
+			defaultSettings.StashUsername = c[0]
+			defaultSettings.StashToken = c[1]
 			log.Info("Successfully loaded stash api creds")
 		}
 	}

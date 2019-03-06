@@ -1,14 +1,10 @@
 package spinnaker
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
-
 	log "github.com/sirupsen/logrus"
 
-	"net/http"
-
-	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/util"
 )
 
@@ -47,13 +43,27 @@ func (p Pipeline) Application() string {
 }
 
 // UpdatePipelines posts pipelines to Spinnaker.
-func UpdatePipelines(spec ApplicationSpec, p []Pipeline, delStale bool) (err error) {
+type UpdatePipelineConfig struct {
+	DeleteStale       bool
+	AutolockPipelines string
+}
+
+type PipelineAPI interface {
+	GetPipelineID(app, pipelineName string) (string, error)
+	UpdatePipelines(spec ApplicationSpec, p []Pipeline, config UpdatePipelineConfig) error
+}
+
+type DefaultPipelineAPI struct {
+	Front50API Front50API
+}
+
+func (api *DefaultPipelineAPI) UpdatePipelines(spec ApplicationSpec, p []Pipeline, config UpdatePipelineConfig) (err error) {
 	// We currently only use spec if the app is new: TODO update app if the spec changes?
 	app := spec.Name
-	if !applicationExists(app) {
-		NewApplication(spec)
+	if !api.Front50API.ApplicationExists(app) {
+		api.Front50API.NewApplication(spec)
 	}
-	ids, _ := PipelineIDs(app)
+	ids, _ := api.PipelineIDs(app)
 	checklist := make(map[string]bool)
 	idToName := make(map[string]string)
 	for name, id := range ids {
@@ -69,67 +79,73 @@ func UpdatePipelines(spec ApplicationSpec, p []Pipeline, delStale bool) (err err
 			checklist[id] = true
 		}
 		log.Info("Updating pipeline: " + pipeline.Name())
-		if settings.S.AutoLockPipelines == "true" {
+		if config.AutolockPipelines == "true" {
 			log.Debug("Locking pipeline ", pipeline.Name())
 			pipeline.Lock()
 		}
-		err := updatePipeline(pipeline)
+		err := api.updatePipeline(pipeline)
 		if err != nil {
 			log.Error("Could not post pipeline to Spinnaker ", err)
 			return err
 		}
 	}
-	if delStale {
+	if config.DeleteStale {
 		// clear existing pipelines that weren't updated
 		for id, updated := range checklist {
 			if !updated {
-				DeletePipeline(app, idToName[id])
+				api.Front50API.DeletePipeline(app, idToName[id])
 			}
 		}
 	}
 	return err
 }
 
-func createEmptyPipeline(app, pipelineName string) error {
+func (api *DefaultPipelineAPI) createEmptyPipeline(app, pipelineName string) error {
 	p := Pipeline{
 		"application": app,
 		"name":        pipelineName,
 	}
-
-	b, err := json.Marshal(p)
-	if err != nil {
-		return err
-	}
-
-	log.Info("Posting pipeline to Spinnaker: ", string(b))
-	url := fmt.Sprintf(`%s/pipelines`, settings.S.Front50.BaseURL)
-	resp, err := postWithRetry(url, b)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-
-	return err
+	return api.Front50API.CreatePipeline(p)
 }
 
 // GetPipelineID gets a pipeline's ID.
-func GetPipelineID(app, pipelineName string) (string, error) {
-	ids, err := PipelineIDs(app)
+func (api *DefaultPipelineAPI) GetPipelineID(app, pipelineName string) (string, error) {
+	ids, err := api.PipelineIDs(app)
 	if err != nil {
 		return "", err
 	}
 	id, exists := ids[pipelineName]
 	if !exists {
-		if err := createEmptyPipeline(app, pipelineName); err != nil {
+		if err := api.createEmptyPipeline(app, pipelineName); err != nil {
 			return "", err
 		}
-		return GetPipelineID(app, pipelineName)
+		return api.GetPipelineID(app, pipelineName)
 	}
 
 	return id, nil
 }
 
-func updatePipeline(p Pipeline) error {
-	var resp *http.Response
+// PipelineIDs returns the pipeline IDs keyed by name for an application.
+func (api *DefaultPipelineAPI) PipelineIDs(app string) (map[string]string, error) {
+	ids := map[string]string{}
+	log.Info("Looking up existing pipelines")
+	resp, err := api.Front50API.GetPipelinesForApplication(app)
+	if err != nil {
+		return nil, err
+	}
+	type pipeline struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+	var pipelines []pipeline
+	util.ReadJSON(bytes.NewReader(resp), &pipelines)
+	for _, p := range pipelines {
+		ids[p.Name] = p.ID
+	}
+	return ids, nil
+}
+
+func (api *DefaultPipelineAPI) updatePipeline(p Pipeline) error {
 	b, err := json.Marshal(p)
 	if err != nil {
 		log.Error("Could not marshal pipeline ", err)
@@ -138,57 +154,16 @@ func updatePipeline(p Pipeline) error {
 
 	if id, exists := p["id"]; exists {
 		log.Info("Updating existing pipeline: ", string(b))
-		url := fmt.Sprintf(`%s/pipelines/%s`, settings.S.Front50.BaseURL, id)
-		resp, err = putWithRetry(url, b)
+		err = api.Front50API.UpdatePipeline(id.(string), p)
 	} else {
 		log.Info("Posting pipeline to Spinnaker: ", string(b))
-		url := fmt.Sprintf(`%s/pipelines`, settings.S.Front50.BaseURL)
-		resp, err = postWithRetry(url, b)
+		err = api.Front50API.CreatePipeline(p)
 	}
 
-	if resp != nil {
-		defer resp.Body.Close()
-	}
 	if err != nil {
 		return err
 	}
+
 	log.Info("Successfully posted pipeline to Spinnaker.")
 	return nil
-}
-
-// DeletePipeline deletes a pipeline
-func DeletePipeline(app string, pipelineName string) error {
-	url := fmt.Sprintf("%s/pipelines/%s/%s", settings.S.Front50.BaseURL, app, pipelineName)
-	resp, err := deleteWithRetry(url)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// PipelineIDs returns the pipeline IDs keyed by name for an application.
-func PipelineIDs(app string) (map[string]string, error) {
-	ids := map[string]string{}
-	url := fmt.Sprintf("%s/pipelines/%s", settings.S.Front50.BaseURL, app)
-	log.Info("Looking up existing pipelines")
-	resp, err := getWithRetry(url)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-	if err != nil {
-		return ids, err
-	}
-	type pipeline struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	}
-	var pipelines []pipeline
-	util.ReadJSON(resp.Body, &pipelines)
-	for _, p := range pipelines {
-		ids[p.Name] = p.ID
-	}
-	return ids, nil
 }

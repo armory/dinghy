@@ -1,13 +1,14 @@
 package spinnaker
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"strings"
 	"time"
 
-	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/util"
 )
 
@@ -39,11 +40,27 @@ type ApplicationSpec struct {
 	DataSources DataSourcesSpec `json:"dataSources,omitempty"`
 }
 
+type Front50API interface {
+	Applications() []string
+	NewApplication(spec ApplicationSpec) error
+	ApplicationExists(appName string) bool
+	CreatePipeline(p Pipeline) error
+	DeletePipeline(appName, pipelineName string) error
+	UpdatePipeline(id string, pipeline Pipeline) error
+	GetPipelinesForApplication(appName string) ([]byte, error)
+}
+
+type DefaultFront50API struct {
+	BaseURL   string
+	OrcaAPI   OrcaAPI
+	APIClient APIClient
+}
+
 // Applications returns a list of applications
-func Applications() []string {
+func (df50a *DefaultFront50API) Applications() []string {
 	ret := make([]string, 0)
-	url := fmt.Sprintf("%s/v2/applications", settings.S.Front50.BaseURL)
-	resp, err := getWithRetry(url)
+	url := fmt.Sprintf("%s/v2/applications", df50a.BaseURL)
+	resp, err := df50a.APIClient.GetWithRetry(url)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -59,20 +76,10 @@ func Applications() []string {
 	return ret
 }
 
-func applicationExists(a string) bool {
-	apps := Applications()
-	for _, app := range apps {
-		if strings.ToLower(app) == strings.ToLower(a) {
-			return true
-		}
-	}
-	return false
-}
-
 // NewApplication creates an app on Spinnaker, but that's an async
 // request made with the tasks interface. So we submit the task, and poll for
 // the task completion.
-func NewApplication(spec ApplicationSpec) (err error) {
+func (df50a *DefaultFront50API) NewApplication(spec ApplicationSpec) (err error) {
 	name := spec.Name
 
 	createAppJob := createApplicationJob{
@@ -87,13 +94,13 @@ func NewApplication(spec ApplicationSpec) (err error) {
 	}
 
 	log.Info("Creating application " + name)
-	ref, err := submitTask(createApp)
+	ref, err := df50a.OrcaAPI.SubmitTask(createApp)
 	if err != nil {
 		return err
 	}
 
 	log.Info("Polling for app create complete at " + ref.Ref)
-	resp, err := pollTaskStatus(ref.Ref, 4*time.Minute)
+	resp, err := df50a.OrcaAPI.PollTaskStatus(ref.Ref, 4*time.Minute)
 	if err != nil {
 		return fmt.Errorf("Error polling app create %s: %v", name, err)
 	}
@@ -112,20 +119,80 @@ func NewApplication(spec ApplicationSpec) (err error) {
 	// after doing the create, and getting back a completion, we still need
 	// to poll till we find the app in order to make sure future operations will
 	// succeed.
-	err = pollAppConfig(name, 7*time.Minute)
+	err = df50a.pollAppConfig(name, 7*time.Minute)
 	if err != nil {
 		return fmt.Errorf("Couldn't find app after creation: %v", err)
 	}
 	return nil
 }
 
-func pollAppConfig(app string, timeout time.Duration) error {
+func (df50a *DefaultFront50API) ApplicationExists(a string) bool {
+	apps := df50a.Applications()
+	for _, app := range apps {
+		if strings.ToLower(app) == strings.ToLower(a) {
+			return true
+		}
+	}
+	return false
+}
+
+func (df50a *DefaultFront50API) CreatePipeline(p Pipeline) error {
+	b, err := json.Marshal(p)
+	if err != nil {
+		return err
+	}
+	url := fmt.Sprintf(`%s/pipelines`, df50a.BaseURL)
+	resp, err := df50a.APIClient.PostWithRetry(url, b)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	return err
+}
+
+func (df50a *DefaultFront50API) DeletePipeline(appName, pipelineName string) error {
+	url := fmt.Sprintf("%s/pipelines/%s/%s", df50a.BaseURL, appName, pipelineName)
+	resp, err := df50a.APIClient.DeleteWithRetry(url)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (df50a *DefaultFront50API) UpdatePipeline(id string, pipeline Pipeline) error {
+	b, err := json.Marshal(pipeline)
+	if err != nil {
+		return err
+	}
+	url := fmt.Sprintf(`%s/pipelines`, df50a.BaseURL)
+	resp, err := df50a.APIClient.PostWithRetry(url, b)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	return err
+}
+
+func (df50a *DefaultFront50API) GetPipelinesForApplication(appName string) ([]byte, error) {
+	url := fmt.Sprintf("%s/pipelines/%s", df50a.BaseURL, appName)
+	resp, err := df50a.APIClient.GetWithRetry(url)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		return nil, err
+	}
+	return ioutil.ReadAll(resp.Body)
+}
+
+func (df50a *DefaultFront50API) pollAppConfig(app string, timeout time.Duration) error {
 	timer := time.NewTimer(timeout)
 	t := time.NewTicker(5 * time.Second)
 	defer t.Stop()
 
 	for range t.C {
-		if applicationExists(app) {
+		if df50a.ApplicationExists(app) {
 			return nil
 		}
 

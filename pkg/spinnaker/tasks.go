@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/util"
 	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
@@ -69,8 +68,18 @@ type exceptionVariable struct {
 	Details RetrofitErrorResponse `mapstructure:"details"`
 }
 
-func submitTask(task Task) (*TaskRefResponse, error) {
-	path := fmt.Sprintf("%s/ops", settings.S.Orca.BaseURL)
+type OrcaAPI interface {
+	SubmitTask(task Task) (*TaskRefResponse, error)
+	PollTaskStatus(refUrl string, timeout time.Duration) (*ExecutionResponse, error)
+}
+
+type DefaultOrcaAPI struct {
+	BaseURL   string
+	APIClient APIClient
+}
+
+func (doa *DefaultOrcaAPI) SubmitTask(task Task) (*TaskRefResponse, error) {
+	path := fmt.Sprintf("%s/ops", doa.BaseURL)
 	b, err := json.Marshal(task)
 	log.Debug(string(b))
 	if err != nil {
@@ -78,7 +87,7 @@ func submitTask(task Task) (*TaskRefResponse, error) {
 		return nil, err
 	}
 
-	resp, err := postWithRetry(path, b)
+	resp, err := doa.APIClient.PostWithRetry(path, b)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -91,12 +100,12 @@ func submitTask(task Task) (*TaskRefResponse, error) {
 	return &ref, nil
 }
 
-func pollTaskStatus(refURL string, timeout time.Duration) (*ExecutionResponse, error) {
+func (doa *DefaultOrcaAPI) PollTaskStatus(refURL string, timeout time.Duration) (*ExecutionResponse, error) {
 	timer := time.NewTimer(timeout)
 	t := time.NewTicker(1 * time.Second)
 	defer t.Stop()
 	for range t.C {
-		resp, err := getTask(refURL)
+		resp, err := doa.getTask(refURL)
 		if err != nil {
 			return nil, err
 		}
@@ -113,8 +122,8 @@ func pollTaskStatus(refURL string, timeout time.Duration) (*ExecutionResponse, e
 	return nil, errors.New("exited poll loop before completion")
 }
 
-func getTask(refURL string) (*ExecutionResponse, error) {
-	resp, err := getWithRetry(fmt.Sprintf("%s/%s", settings.S.Orca.BaseURL, refURL))
+func (doa *DefaultOrcaAPI) getTask(refURL string) (*ExecutionResponse, error) {
+	resp, err := doa.APIClient.GetWithRetry(fmt.Sprintf("%s/%s", doa.BaseURL, refURL))
 	if resp != nil {
 		defer resp.Body.Close()
 	}

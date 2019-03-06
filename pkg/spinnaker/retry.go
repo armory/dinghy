@@ -9,13 +9,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/armory-io/dinghy/pkg/settings"
 	log "github.com/sirupsen/logrus"
 )
 
+type APIClient interface {
+	RequestWithRetry(cb callback) (*http.Response, error)
+	PostWithRetry(url string, body []byte) (*http.Response, error)
+	GetWithRetry(url string) (*http.Response, error)
+	DeleteWithRetry(url string) (*http.Response, error)
+	Request(method, url string, body io.Reader) (*http.Response, error)
+}
+
+type DefaultAPIClient struct {
+	Headers map[string]string
+}
+
 type callback func() (*http.Response, error)
 
-func requestWithRetry(cb callback) (resp *http.Response, err error) {
+func (client *DefaultAPIClient) RequestWithRetry(cb callback) (resp *http.Response, err error) {
 	for retry := 0; retry < 10; retry++ {
 		resp, err = cb()
 		timeout := time.Duration(retry*200) * time.Millisecond
@@ -43,22 +54,22 @@ func requestWithRetry(cb callback) (resp *http.Response, err error) {
 	return resp, err
 }
 
-func postWithRetry(url string, body []byte) (resp *http.Response, err error) {
-	return requestWithRetry(func() (*http.Response, error) {
+func (client *DefaultAPIClient) PostWithRetry(url string, body []byte) (resp *http.Response, err error) {
+	return client.RequestWithRetry(func() (*http.Response, error) {
 		log.Info("POST ", url)
 		log.Debug("BODY ", string(body))
-		return request("POST", url, strings.NewReader(string(body)))
+		return client.Request("POST", url, strings.NewReader(string(body)))
 	})
 }
 
-func getWithRetry(url string) (resp *http.Response, err error) {
-	return requestWithRetry(func() (*http.Response, error) {
+func (client *DefaultAPIClient) GetWithRetry(url string) (resp *http.Response, err error) {
+	return client.RequestWithRetry(func() (*http.Response, error) {
 		log.Info("GET ", url)
-		return request("GET", url, nil)
+		return client.Request("GET", url, nil)
 	})
 }
 
-func request(method, url string, body io.Reader) (*http.Response, error) {
+func (client *DefaultAPIClient) Request(method, url string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		fmt.Println(err)
@@ -66,26 +77,16 @@ func request(method, url string, body io.Reader) (*http.Response, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/context+json")
-	if settings.S.Fiat.Enabled == "true" && settings.S.Fiat.AuthUser != "" {
-		req.Header.Set("X-Spinnaker-User", settings.S.Fiat.AuthUser)
-		log.Info("Setting X-Spinnaker-User header: ", settings.S.Fiat.AuthUser)
-	} else {
-		log.Info("Fiat not enabled or authUser not SET")
+	for key, value := range client.Headers {
+		req.Header.Set(key, value)
 	}
+
 	return defaultClient.Do(req)
 }
 
-func deleteWithRetry(url string) (resp *http.Response, err error) {
-	return requestWithRetry(func() (*http.Response, error) {
+func (client *DefaultAPIClient) DeleteWithRetry(url string) (resp *http.Response, err error) {
+	return client.RequestWithRetry(func() (*http.Response, error) {
 		log.Info("DELETE ", url)
-		return request("DELETE", url, nil)
-	})
-}
-
-func putWithRetry(url string, body []byte) (resp *http.Response, err error) {
-	return requestWithRetry(func() (*http.Response, error) {
-		log.Info("PUT ", url)
-		log.Debug("BODY ", string(body))
-		return request("PUT", url, strings.NewReader(string(body)))
+		return client.Request("DELETE", url, nil)
 	})
 }
