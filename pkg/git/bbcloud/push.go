@@ -107,6 +107,7 @@ func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
 			if err != nil {
 				return nil, err
 			}
+			// trick for removing duplicates from a list (keys are unique)
 			for _, file := range changedFiles {
 				changedFilesMap[file] = true
 			}
