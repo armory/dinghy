@@ -163,7 +163,7 @@ func (wa *WebAPI) bitbucketCloudWebhookHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	bbcloudConfig := bbcloud.BbCloudConfig{
+	bbcloudConfig := bbcloud.Config{
 		Endpoint: wa.Config.StashEndpoint,
 		Username: wa.Config.StashUsername,
 		Token:    wa.Config.StashToken,

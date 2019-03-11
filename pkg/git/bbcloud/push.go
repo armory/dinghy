@@ -12,145 +12,104 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Push contains data about a push full of commits
-type Push struct {
-	Payload         WebhookPayload
-	ChangedFiles    []string
-	BbcloudEndpoint string
-	BBcloudUsername string
-	BbcloudToken    string
-}
+// -----------------------------------------------------------------------------
+// Bitbucket Cloud data types
+// -----------------------------------------------------------------------------
 
-// WebhookPayload is the payload from the webhook
+// Payload received in a "push" type webhook
 type WebhookPayload struct {
-	Repository struct {
-		Name     string `json:"name"`
-		FullName string `json:"full_name"`
-		Project  struct {
-			Key string `json:"key"`
-		} `json:"project"`
-	} `json:"repository"`
-
-	Push struct {
-		Changes []WebhookChange `json:"changes"`
-	}
+	Repository WebhookRepository `json:"repository"`
+	Push       WebhookPush       `json:"push"`
 }
 
-// WebhookChange is a change object from the webhook
+type WebhookProject struct {
+	Key string `json:"key"`
+}
+
+type WebhookRepository struct {
+	Name     string         `json:"name"`
+	FullName string         `json:"full_name"`
+	Project  WebhookProject `json:"project"`
+}
+
+type WebhookPush struct {
+	Changes []WebhookChange `json:"changes"`
+}
+
+// Change details in a webhook payload
 type WebhookChange struct {
-	New struct {
-		Name   string `json:"name"`
-		Target struct {
-			Hash string `json:"hash"`
-		}
-	}
-	Old struct {
-		Target struct {
-			Hash string `json:"hash"`
-		}
-	}
+	New WebhookChangeComparison `json:"new"`
+	Old WebhookChangeComparison `json:"old"`
 }
 
-// IsMaster detects if a change was on master
-func (c *WebhookChange) IsMaster() bool {
-	return c.New.Name == "master"
+type WebhookChangeComparison struct {
+	Name   string              `json:"name"`
+	Target WebhookChangeTarget `json:"target"`
 }
 
-// APIResponse is the response from Stash API
-type APIResponse struct {
+type WebhookChangeTarget struct {
+	Hash string `json:"hash"`
+}
+
+// Response of getting diff details of a commit. Documentation:
+// https://developer.atlassian.com/bitbucket/api/2/reference/resource/repositories/%7Busername%7D/%7Brepo_slug%7D/diffstat/%7Bspec%7D
+type DiffStatResponse struct {
 	PagedAPIResponse
 	Diffs []APIDiff `json:"values"`
 }
 
-// APIDiff is a diff returned by the Stash API
+// Details of a single file changed
 type APIDiff struct {
 	New struct {
 		Path string `json:"path"`
 	} `json:"new"`
 }
 
-func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, page int) (nextPage int, err error) {
-	url := fmt.Sprintf(
-		`%s/repositories/%s/diffstat/%s`,
-		p.BbcloudEndpoint,
-		p.Payload.Repository.FullName,
-		toCommitHash,
-	)
-	log.Debug("ApiCall: ", url)
+// -----------------------------------------------------------------------------
+// Dinghy data types
+// -----------------------------------------------------------------------------
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return page, err
-	}
-
-	query := req.URL.Query()
-	query.Add("since", fromCommitHash)
-	query.Add("withComments", "false")
-	if page != 1 {
-		query.Add("page", strconv.Itoa(page))
-	}
-	req.URL.RawQuery = query.Encode()
-	log.Debugf("Raw query: %s\n", req.URL.RawQuery)
-	req.SetBasicAuth(p.BBcloudUsername, p.BbcloudToken)
-
-	resp, err := http.DefaultClient.Do(req)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-	if err != nil {
-		log.Error(err)
-		return page, err
-	}
-
-	var body APIResponse
-	respRaw, err := ioutil.ReadAll(resp.Body)
-	respString := string(respRaw)
-	log.Debugf("APIResponse: %s\n", respString)
-
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		log.Errorf("Error response from server: status code: %d\n", resp.StatusCode)
-		return page, err
-	}
-
-	err = json.Unmarshal(respRaw, &body)
-	log.Debugf("APIResponse decoded: %v\n", body)
-	if err != nil {
-		return page, err
-	}
-	if body.CurrentPage < body.NumberOfPages {
-		nextPage = body.CurrentPage + 1
-	}
-	for _, diff := range body.Diffs {
-		p.ChangedFiles = append(p.ChangedFiles, diff.New.Path)
-	}
-
-	return page, nil
-}
-
-type BbCloudConfig struct {
+// Connection details for talking with bitbucket cloud
+type Config struct {
 	Username string
 	Token    string
 	Endpoint string
 }
 
-// NewPush creates a new Push
-func NewPush(payload WebhookPayload, cfg BbCloudConfig) (*Push, error) {
+// Information about what files changed in a push
+type Push struct {
+	Payload      WebhookPayload
+	ChangedFiles []string
+}
+
+// -----------------------------------------------------------------------------
+// Functions implementation
+// -----------------------------------------------------------------------------
+
+// Converts the raw webhook payload sent by Bitbucket Cloud, to an internal Push structure
+// with the list of files changed.
+func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
 	p := &Push{
-		Payload:         payload,
-		ChangedFiles:    make([]string, 0),
-		BbcloudEndpoint: cfg.Endpoint,
-		BbcloudToken:    cfg.Token,
-		BBcloudUsername: cfg.Username,
+		Payload:      payload,
+		ChangedFiles: make([]string, 0),
 	}
 
+	changedFilesMap := map[string]bool{}
+
 	for _, change := range p.changes() {
+		// Only process changes in "master" branch
 		if !change.IsMaster() {
 			continue
 		}
 		for page := 1; true; {
-			nextPage, err := p.getFilesChanged(change.Old.Target.Hash, change.New.Target.Hash, page)
+			changedFiles, nextPage, err := getFilesChanged(change.Old.Target.Hash, change.New.Target.Hash, page, cfg,
+				payload.Repository.FullName)
 			if err != nil {
 				return nil, err
+			}
+			// trick for removing duplicates from a list (keys are unique)
+			for _, file := range changedFiles {
+				changedFilesMap[file] = true
 			}
 			if page == nextPage {
 				break
@@ -158,7 +117,90 @@ func NewPush(payload WebhookPayload, cfg BbCloudConfig) (*Push, error) {
 		}
 	}
 
+	for file := range changedFilesMap {
+		p.ChangedFiles = append(p.ChangedFiles, file)
+	}
+
 	return p, nil
+}
+
+// Find in the webook payload if the change was done in "master" branch
+func (c *WebhookChange) IsMaster() bool {
+	return c.New.Name == "master"
+}
+
+func getFilesChanged(fromCommitHash, toCommitHash string, page int, cfg Config,
+	repoName string) (changedFiles []string, nextPage int, err error) {
+
+	url := fmt.Sprintf(
+		`%s/repositories/%s/diffstat/%s`,
+		cfg.Endpoint,
+		repoName,
+		toCommitHash,
+	)
+
+	nextPage = page
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return []string{}, page, err
+	}
+
+	query := req.URL.Query()
+	query.Add("since", fromCommitHash)
+	query.Add("withComments", "false")
+	if page > 1 {
+		query.Add("page", strconv.Itoa(page))
+	}
+	req.URL.RawQuery = query.Encode()
+	log.Infof("Diffstat request: GET %s?%s\n", url, req.URL.RawQuery)
+	req.SetBasicAuth(cfg.Username, cfg.Token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	changedFiles, hasNext, err := handleDiffstatResponse(resp, err)
+	if hasNext {
+		nextPage = page + 1
+	}
+
+	return
+}
+
+func handleDiffstatResponse(resp *http.Response, err error) (changedFiles []string, hasNext bool, outErr error) {
+	if err != nil {
+		log.Errorf("Diffstat error: %v", err)
+		return []string{}, false, err
+	}
+
+	var apiResponse DiffStatResponse
+	respRaw, err := ioutil.ReadAll(resp.Body)
+	respString := string(respRaw)
+	log.Debugf("DiffStatResponse: %s\n", respString)
+
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		log.Errorf("Diffstat error: response status code %d\n", resp.StatusCode)
+		return []string{}, false, err
+	}
+
+	err = json.Unmarshal(respRaw, &apiResponse)
+	if err != nil {
+		return []string{}, false, err
+	}
+
+	if apiResponse.CurrentPage < apiResponse.NumberOfPages {
+		hasNext = true
+	} else {
+		hasNext = false
+	}
+
+	for _, diff := range apiResponse.Diffs {
+		changedFiles = append(changedFiles, diff.New.Path)
+	}
+
+	return changedFiles, hasNext, nil
 }
 
 // ContainsFile checks to see if a given file is in the push.
