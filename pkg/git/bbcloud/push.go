@@ -101,7 +101,7 @@ func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
 		if !change.IsMaster() {
 			continue
 		}
-		for page := 1; true; {
+		for page := 1; true; page++ {
 			changedFiles, nextPage, err := getFilesChanged(change.Old.Target.Hash, change.New.Target.Hash, page, cfg,
 				payload.Repository.FullName)
 			if err != nil {

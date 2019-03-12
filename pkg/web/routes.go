@@ -234,6 +234,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 		DinghyfileName:       wa.Config.DinghyFilename,
 		DeleteStalePipelines: false,
 		AutolockPipelines:    wa.Config.AutoLockPipelines,
+		PipelineAPI:          wa.SpinnakerServices.PipelineAPI,
 	}
 
 	// Process the push.
