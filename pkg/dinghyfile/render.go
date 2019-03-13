@@ -47,7 +47,19 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []
 				log.Errorf("dict keys must be strings in module: %s", mod)
 				return ""
 			}
-
+			
+			// checks for deepvariables, passes all the way down values from dinghyFile to module inside module
+			deepVariable, ok := vars[i+1].(string)
+			if ok && len(deepVariable) > 6 {
+				if deepVariable[0:5] == "{{var" {
+					for _, vm := range allVars {
+						if val, exists := vm[ deepVariable[6:len(deepVariable)-2] ]; exists {
+							log.Info("Substituting deepvariable ", vars[i], " : old value : ", deepVariable, " for new value: ", renderValue(val).(string))
+							vars[i+1] = parseValue(val)
+						}
+					}
+				}
+			}
 			newVars[key] = parseValue(vars[i+1])
 		}
 

@@ -126,6 +126,41 @@ var fileService = dummy.FileService{
 				"required": true
 			}
 	  }`,
+
+	"deep_var_df": `{
+		"application": "dinernotifications",
+		"globals": {
+		   "application": "dinernotifications"
+		 },
+		"pipelines": [
+			{{ module "deep.pipeline.module" 
+				"artifact" "artifact11"
+				"artifact2" "artifact22"
+			}}
+		]
+	}`,
+
+	"deep.pipeline.module": `{
+		"parameterConfig": [
+			{
+				"description": "Service Name",
+				"name": "service",
+				"required": true,
+				{{ module "deep.stage.module" 
+					"artifact" {{var artifact}}
+				}}",
+				{{ module "deep.stage.module" 
+					"artifact" {{var artifact2}}
+				}}",
+			}
+	  }`,
+
+	"deep.stage.module": `{
+		"parameterConfig": [
+			{
+				"artifact": {{ var "artifact" }},
+			}
+	  }`,
 }
 
 func TestGracefulErrorHandling(t *testing.T) {
@@ -357,4 +392,51 @@ func TestModuleEmptyString(t *testing.T) {
 	}
 	ret, _ := builder.Render("org", "repo", "df4", nil)
 	assert.Equal(t, `{"foo": ""}`, ret.String())
+}
+
+
+func TestDeepVars(t *testing.T) {
+	builder := &PipelineBuilder{
+		Depman:         cache.NewMemoryCache(),
+		Downloader:     fileService,
+		DinghyfileName: "deep_var_df",
+		TemplateOrg:    "org",
+		TemplateRepo:   "repo",
+	}
+	buf, _ := builder.Render("org", "repo", "deep_var_df", nil)
+
+	const expected = `{
+		"application": "dinernotifications",
+		"globals": {
+		   "application": "dinernotifications"
+		 },
+		"pipelines": [
+			{
+		"parameterConfig": [
+			{
+				"description": "Service Name",
+				"name": "service",
+				"required": true,
+				{
+		"parameterConfig": [
+			{
+				"artifact": artifact11,
+			}
+	  }",
+				{
+		"parameterConfig": [
+			{
+				"artifact": artifact22,
+			}
+	  }",
+			}
+	  }
+		]
+	}`
+
+
+	// strip whitespace from both strings for assertion
+	exp := expected
+	actual := buf.String()
+	assert.Equal(t, exp, actual)
 }
