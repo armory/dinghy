@@ -103,7 +103,11 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p.GitHubToken = wa.Config.GitHubToken
 	p.GitHubEndpoint = wa.Config.GithubEndpoint
 	p.DeckBaseURL = wa.Config.Deck.BaseURL
-	wa.buildPipelines(&p, &github.FileService{}, w)
+	fileService := github.FileService{
+		GitHubEndpoint: wa.Config.GithubEndpoint,
+		GitHubToken:    wa.Config.GitHubToken,
+	}
+	wa.buildPipelines(&p, &fileService, w)
 }
 
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -126,7 +130,12 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wa.buildPipelines(p, &stash.FileService{}, w)
+	fileService := stash.FileService{
+		StashToken:    wa.Config.StashToken,
+		StashUsername: wa.Config.StashUsername,
+		StashEndpoint: wa.Config.StashEndpoint,
+	}
+	wa.buildPipelines(p, &fileService, w)
 }
 
 func (wa *WebAPI) bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -153,7 +162,12 @@ func (wa *WebAPI) bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	wa.buildPipelines(p, &stash.FileService{}, w)
+	fileService := stash.FileService{
+		StashToken:    wa.Config.StashToken,
+		StashUsername: wa.Config.StashUsername,
+		StashEndpoint: wa.Config.StashEndpoint,
+	}
+	wa.buildPipelines(p, &fileService, w)
 }
 
 func (wa *WebAPI) bitbucketCloudWebhookHandler(w http.ResponseWriter, r *http.Request) {
