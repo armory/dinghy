@@ -405,37 +405,38 @@ func TestDeepVars(t *testing.T) {
 	}
 	buf, _ := builder.Render("org", "repo", "deep_var_df", nil)
 
-	const expected = `{"application": "dinernotifications", 
-					"globals": {
-						"application":"dinernotifications"
-					},
-					"pipelines": [
-						{
-							"parameterConfig": [
-								{
-									"description": "ServiceName",
-									"name": "service",
-									"required": true,
-									{
-										"parameterConfig": [
-											{
-												"artifact": artifact11,
-											}
-									}",
-									{
-										"parameterConfig": [
-											{
-												"artifact": artifact22,
-											}
-									}",
-								}
-							}
-						]
-					}`
+	const expected = `{
+		"application": "dinernotifications",
+		"globals": {
+		   "application": "dinernotifications"
+		 },
+		"pipelines": [
+			{
+		"parameterConfig": [
+			{
+				"description": "Service Name",
+				"name": "service",
+				"required": true,
+				{
+		"parameterConfig": [
+			{
+				"artifact": artifact11,
+			}
+	  }",
+				{
+		"parameterConfig": [
+			{
+				"artifact": artifact22,
+			}
+	  }",
+			}
+	  }
+		]
+	}`
 
 
 	// strip whitespace from both strings for assertion
-	exp := strings.Join(strings.Fields(expected), "")
-	actual := strings.Join(strings.Fields(buf.String()), "")
+	exp := expected
+	actual := buf.String()
 	assert.Equal(t, exp, actual)
 }
