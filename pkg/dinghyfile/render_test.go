@@ -113,25 +113,17 @@ var fileService = dummy.FileService{
 		   "application": "dinernotifications"
 		 },
 		"pipelines": [
-			{{ module "preprod_teardown.pipeline.module" 
-				"artifact" "artifact11"
-				"artifact2" "artifact22"
-			}}
+			{{ module "preprod_teardown.pipeline.module" }}
 		]
 	}`,
 
 	"preprod_teardown.pipeline.module": `{
 		"parameterConfig": [
 			{
+				"default": "{{ var "discovery-service-name" ?: "@application" }}",
 				"description": "Service Name",
 				"name": "service",
-				"required": true,
-				{{ module "deepdown.pipeline.module" 
-					"artifact" {{var artifact}}
-				}}",
-				{{ module "deepdown.pipeline.module" 
-					"artifact" {{var artifact2}}
-				}}",
+				"required": true
 			}
 	  }`,
 

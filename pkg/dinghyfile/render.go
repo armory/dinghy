@@ -47,7 +47,7 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []
 				log.Errorf("dict keys must be strings in module: %s", mod)
 				return ""
 			}
-			
+
 			// checks for deepvariables, passes all the way down values from dinghyFile to module inside module
 			if jsonStr, ok := vars[i+1].(string); ok && len(jsonStr) > 6 {
 				if vars[i+1].(string)[0:5] == "{{var" {
