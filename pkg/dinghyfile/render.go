@@ -49,11 +49,12 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []
 			}
 
 			// checks for deepvariables, passes all the way down values from dinghyFile to module inside module
-			if jsonStr, ok := vars[i+1].(string); ok && len(jsonStr) > 6 {
-				if vars[i+1].(string)[0:5] == "{{var" {
+			deepVariable := vars[i+1]
+			if jsonStr, ok := deepVariable.(string); ok && len(jsonStr) > 6 {
+				if deepVariable.(string)[0:5] == "{{var" {
 					for _, vm := range allVars {
-						if val, exists := vm[ vars[i+1].(string)[6:len(vars[i+1].(string))-2] ]; exists {
-							log.Info("Substituting deepvariable ", vars[i], " : old value : ", vars[i+1], " for new value: ", renderValue(val).(string))
+						if val, exists := vm[ deepVariable.(string)[6:len(deepVariable.(string))-2] ]; exists {
+							log.Info("Substituting deepvariable ", vars[i], " : old value : ", deepVariable, " for new value: ", renderValue(val).(string))
 							vars[i+1] = parseValue(val)
 						}
 					}
