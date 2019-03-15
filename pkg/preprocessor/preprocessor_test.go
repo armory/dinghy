@@ -79,9 +79,10 @@ func TestPreprocessingGlobalVars(t *testing.T) {
 	    ]
 	  }`
 
-	out := ParseGlobalVars(input)
+	out, err := ParseGlobalVars(input)
 	gvMap, ok := out.(map[string]interface{})
 	assert.True(t, ok, "Something went wrong while extracting global vars")
 	assert.Contains(t, gvMap, "system")
 	assert.Equal(t, gvMap["system"], "order_tracking")
+	assert.Nil(t, err)
 }

@@ -3,6 +3,7 @@ package dinghyfile
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"path/filepath"
 
 	"text/template"
@@ -48,13 +49,13 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []
 				log.Errorf("dict keys must be strings in module: %s", mod)
 				return ""
 			}
-			
+
 			// checks for deepvariables, passes all the way down values from dinghyFile to module inside module
 			deepVariable, ok := vars[i+1].(string)
 			if ok && len(deepVariable) > 6 {
 				if deepVariable[0:5] == "{{var" {
 					for _, vm := range allVars {
-						if val, exists := vm[ deepVariable[6:len(deepVariable)-2] ]; exists {
+						if val, exists := vm[deepVariable[6:len(deepVariable)-2]]; exists {
 							log.Info("Substituting deepvariable ", vars[i], " : old value : ", deepVariable, " for new value: ", renderValue(val).(string))
 							vars[i+1] = parseValue(val)
 						}
@@ -165,11 +166,14 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 
 	// Extract global vars if we're processing a dinghyfile (and not a module)
 	if filepath.Base(path) == b.DinghyfileName {
-		gvs := preprocessor.ParseGlobalVars(contents)
+		gvs, err := preprocessor.ParseGlobalVars(contents)
+		if err != nil {
+			return nil, err
+		}
+
 		gvMap, ok := gvs.(map[string]interface{})
 		if !ok {
-			// TODO: return an error from ParseGlobalVars and halt execution
-			log.Error("Could not extract global vars")
+			return nil, errors.New("Could not extract global vars")
 		} else if len(gvMap) > 0 {
 			vars = append(vars, gvMap)
 		} else {
