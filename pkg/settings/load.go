@@ -3,10 +3,12 @@ package settings
 
 import (
 	"encoding/json"
-	"github.com/mitchellh/mapstructure"
+	"errors"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/armory-io/dinghy/pkg/util"
 	"github.com/armory/go-yaml-tools/pkg/spring"
@@ -57,21 +59,17 @@ func NewDefaultSettings() Settings {
 func LoadSettings() (*Settings, error) {
 	springConfig, err := loadProfiles()
 	if err != nil {
-		log.Error(err.Error())
 		return nil, err
 	}
-	settings, err := ConfigureSettings(NewDefaultSettings(), springConfig)
+	settings, err := configureSettings(NewDefaultSettings(), springConfig)
 	if err != nil {
-		log.Error(err.Error())
 		return nil, err
 	}
 	return settings, nil
 }
 
-func ConfigureSettings(defaultSettings, overrides Settings) (*Settings, error) {
-
+func configureSettings(defaultSettings, overrides Settings) (*Settings, error) {
 	if err := mergo.Merge(&defaultSettings, overrides, mergo.WithOverride); err != nil {
-		log.Errorf("failed to merge custom config with default: %s", err.Error())
 		return nil, err
 	}
 
@@ -82,11 +80,11 @@ func ConfigureSettings(defaultSettings, overrides Settings) (*Settings, error) {
 		if _, err := os.Stat(defaultSettings.GitHubCredsPath); err == nil {
 			creds, err := ioutil.ReadFile(defaultSettings.GitHubCredsPath)
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			c := strings.Split(strings.TrimSpace(string(creds)), ":")
 			if len(c) < 2 {
-				panic("github creds file should have format 'username:token'")
+				return nil, errors.New("github creds file should have format 'username:token'")
 			}
 			defaultSettings.GitHubToken = c[1]
 			log.Info("Successfully loaded github api creds")
@@ -100,11 +98,11 @@ func ConfigureSettings(defaultSettings, overrides Settings) (*Settings, error) {
 		if _, err := os.Stat(defaultSettings.StashCredsPath); err == nil {
 			creds, err := ioutil.ReadFile(defaultSettings.StashCredsPath)
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			c := strings.Split(strings.TrimSpace(string(creds)), ":")
 			if len(c) < 2 {
-				panic("stash creds file should have format 'username:token'")
+				return nil, errors.New("stash creds file should have format 'username:token'")
 			}
 			defaultSettings.StashUsername = c[0]
 			defaultSettings.StashToken = c[1]
@@ -146,7 +144,6 @@ func loadProfiles() (Settings, error) {
 	propNames := []string{"spinnaker", "dinghy"}
 	c, err := spring.LoadDefault(propNames)
 	if err != nil {
-		log.Errorf("Could not load yaml configs - %v", err)
 		return config, err
 	}
 

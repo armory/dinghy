@@ -1,7 +1,6 @@
 package github
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -44,8 +43,7 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		log.Errorf("Error downloading file from %s: Status: %d", url, resp.StatusCode)
-		return "", errors.New("Download error")
+		return "", fmt.Errorf("Error downloading file from %s: Status: %d", url, resp.StatusCode)
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)

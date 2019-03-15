@@ -27,6 +27,7 @@ func parseValue(val interface{}) interface{} {
 
 type varMap map[string]interface{}
 
+// TODO: this function errors, it should be returning the error to the caller to be handled
 func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []varMap) interface{} {
 	return func(mod string, vars ...interface{}) string {
 		// Record the dependency.
@@ -68,6 +69,7 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []
 	}
 }
 
+// TODO: this function errors, it should be returning the error to the caller to be handled
 func pipelineIDFunc(vars []varMap, pipelines spinnaker.PipelineAPI) interface{} {
 	return func(app, pipelineName string, defaultVal ...interface{}) string {
 		for _, vm := range vars {
@@ -88,6 +90,7 @@ func pipelineIDFunc(vars []varMap, pipelines spinnaker.PipelineAPI) interface{} 
 	}
 }
 
+// TODO: this function errors, it should be returning the error to the caller to be handled
 func renderValue(val interface{}) interface{} {
 	// If it's an unserialized JSON array, serialize it back to JSON.
 	if newval, ok := val.([]interface{}); ok {
@@ -151,14 +154,12 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	// Download the template being rendered.
 	contents, err := b.Downloader.Download(org, repo, path)
 	if err != nil {
-		log.Errorf("could not download %s/%s/%s", org, repo, path)
 		return nil, err
 	}
 
 	// Preprocess to stringify any json args in calls to modules.
 	contents, err = preprocessor.Preprocess(contents)
 	if err != nil {
-		log.Error(err)
 		return nil, err
 	}
 
@@ -167,6 +168,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 		gvs := preprocessor.ParseGlobalVars(contents)
 		gvMap, ok := gvs.(map[string]interface{})
 		if !ok {
+			// TODO: return an error from ParseGlobalVars and halt execution
 			log.Error("Could not extract global vars")
 		} else if len(gvMap) > 0 {
 			vars = append(vars, gvMap)
@@ -185,7 +187,6 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	// Parse the downloaded template.
 	tmpl, err := template.New("dinghy-render").Funcs(funcMap).Parse(contents)
 	if err != nil {
-		log.Errorf("template parsing: %s", err)
 		return nil, err
 	}
 
@@ -193,7 +194,6 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	buf := new(bytes.Buffer)
 	err = tmpl.Execute(buf, "")
 	if err != nil {
-		log.Errorf("template execution: %s", err)
 		return nil, err
 	}
 

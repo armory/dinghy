@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/armory-io/dinghy/pkg/util"
 )
@@ -56,6 +57,7 @@ type DefaultFront50API struct {
 	APIClient APIClient
 }
 
+// TODO: this function has errors, should return them and let the caller handle
 // Applications returns a list of applications
 func (df50a *DefaultFront50API) Applications() []string {
 	ret := make([]string, 0)
@@ -65,6 +67,7 @@ func (df50a *DefaultFront50API) Applications() []string {
 		defer resp.Body.Close()
 	}
 	if err != nil {
+		// TODO: return this error
 		log.Info("Failed to get application.")
 		return []string{}
 	}

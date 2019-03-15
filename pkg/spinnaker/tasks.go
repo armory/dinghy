@@ -81,9 +81,7 @@ type DefaultOrcaAPI struct {
 func (doa *DefaultOrcaAPI) SubmitTask(task Task) (*TaskRefResponse, error) {
 	path := fmt.Sprintf("%s/ops", doa.BaseURL)
 	b, err := json.Marshal(task)
-	log.Debug(string(b))
 	if err != nil {
-		log.Error("Could not marshal pipeline ", err)
 		return nil, err
 	}
 
@@ -128,7 +126,7 @@ func (doa *DefaultOrcaAPI) getTask(refURL string) (*ExecutionResponse, error) {
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		return nil, fmt.Errorf("error getting task status %v", err)
+		return nil, err
 	}
 	var task ExecutionResponse
 	util.ReadJSON(resp.Body, &task)
@@ -141,6 +139,7 @@ func (e ExecutionResponse) ExtractRetrofitError() *RetrofitErrorResponse {
 		if v.Key == "exception" {
 			var exception exceptionVariable
 			if err := mapstructure.Decode(v.Value, &exception); err != nil {
+				// TODO: return this error rather than log it
 				log.Error("could not decode exception struct: ", err)
 				return nil
 			}

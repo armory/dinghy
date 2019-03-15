@@ -2,7 +2,6 @@ package stash
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -48,8 +47,7 @@ func (f *FileService) downloadLines(url string, start int) (lines []string, next
 	}
 
 	if resp.StatusCode != 200 {
-		log.Errorf("Error downloading file from %s: Status: %d", url, resp.StatusCode)
-		err = errors.New("Download error")
+		err = fmt.Errorf("Error downloading file from %s: Status: %d", url, resp.StatusCode)
 		return
 	}
 

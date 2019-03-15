@@ -3,7 +3,6 @@ package spinnaker
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -31,17 +30,15 @@ func (client *DefaultAPIClient) RequestWithRetry(cb callback) (resp *http.Respon
 		resp, err = cb()
 		timeout := time.Duration(retry*200) * time.Millisecond
 		if err != nil {
-			log.Error(err)
 			if resp != nil {
+				// TODO: we shouldn't be using DumpResponse here
 				httputil.DumpResponse(resp, true)
 			}
 			time.Sleep(timeout)
 			continue
 		}
 		if resp.StatusCode > 399 {
-			log.Error("Spinnaker returned ", resp.StatusCode)
-			body, _ := ioutil.ReadAll(resp.Body)
-			log.Print(string(body))
+			// TODO: we shouldnt be using DumpResponse here
 			httputil.DumpResponse(resp, true)
 			time.Sleep(timeout)
 			continue
@@ -49,7 +46,7 @@ func (client *DefaultAPIClient) RequestWithRetry(cb callback) (resp *http.Respon
 		break
 	}
 	if resp != nil && resp.StatusCode > 399 {
-		err = fmt.Errorf("spinnaker returned %d", resp.StatusCode)
+		return nil, fmt.Errorf("spinnaker returned %d: %s", resp.StatusCode, resp.Body)
 	}
 	return resp, err
 }

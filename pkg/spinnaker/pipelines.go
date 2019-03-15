@@ -3,6 +3,7 @@ package spinnaker
 import (
 	"bytes"
 	"encoding/json"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/armory-io/dinghy/pkg/util"
@@ -85,7 +86,6 @@ func (api *DefaultPipelineAPI) UpdatePipelines(spec ApplicationSpec, p []Pipelin
 		}
 		err := api.updatePipeline(pipeline)
 		if err != nil {
-			log.Error("Could not post pipeline to Spinnaker ", err)
 			return err
 		}
 	}
@@ -146,17 +146,14 @@ func (api *DefaultPipelineAPI) PipelineIDs(app string) (map[string]string, error
 }
 
 func (api *DefaultPipelineAPI) updatePipeline(p Pipeline) error {
-	b, err := json.Marshal(p)
+	_, err := json.Marshal(p)
 	if err != nil {
-		log.Error("Could not marshal pipeline ", err)
 		return err
 	}
 
 	if id, exists := p["id"]; exists {
-		log.Info("Updating existing pipeline: ", string(b))
 		err = api.Front50API.UpdatePipeline(id.(string), p)
 	} else {
-		log.Info("Posting pipeline to Spinnaker: ", string(b))
 		err = api.Front50API.CreatePipeline(p)
 	}
 

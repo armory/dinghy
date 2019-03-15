@@ -1,13 +1,12 @@
 package bbcloud
 
 import (
-	"errors"
 	"fmt"
-	"github.com/armory-io/dinghy/pkg/cache/local"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"regexp"
+
+	"github.com/armory-io/dinghy/pkg/cache/local"
 )
 
 // FileService is for working with repositories
@@ -41,9 +40,7 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		log.Errorf("Error downloading file from %s: Status: %d", url, resp.StatusCode)
-		err = errors.New("Download error")
-		return "", err
+		return "", fmt.Errorf("Error downloading file from %s: Status: %d", url, resp.StatusCode)
 	}
 
 	ret, err := ioutil.ReadAll(resp.Body)

@@ -1,8 +1,9 @@
 package settings
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConfigureSettings(t *testing.T) {
@@ -49,7 +50,7 @@ func TestConfigureSettings(t *testing.T) {
 
 	for testName, c := range cases {
 		t.Run(testName, func(t *testing.T) {
-			s, err := ConfigureSettings(c.defaults, c.overrides)
+			s, err := configureSettings(c.defaults, c.overrides)
 			if c.expectsError {
 				assert.NotNil(t, err)
 				return

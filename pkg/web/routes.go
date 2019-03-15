@@ -85,11 +85,16 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	log.Info("Received payload: ", df)
 	fileService["dinghyfile"] = df
 
-	builder.ProcessDinghyfile("", "", "dinghyfile")
+	err := builder.ProcessDinghyfile("", "", "dinghyfile")
+	if err != nil {
+		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+		return
+	}
 }
 
 func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p := github.Push{}
+	// TODO: stop using readbody, then we can return proper 422 status codes
 	if err := readBody(r, &p); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
@@ -100,6 +105,10 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debug("Possibly a non-Push notification received")
 		return
 	}
+
+	// TODO: WebAPI already has the fields that are being assigned here and it's
+	// the receiver on the buildPipelines. We don't need to reassign the values to
+	// fileService here.
 	p.GitHubToken = wa.Config.GitHubToken
 	p.GitHubEndpoint = wa.Config.GithubEndpoint
 	p.DeckBaseURL = wa.Config.Deck.BaseURL
@@ -107,16 +116,17 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		GitHubEndpoint: wa.Config.GithubEndpoint,
 		GitHubToken:    wa.Config.GitHubToken,
 	}
+
 	wa.buildPipelines(&p, &fileService, w)
 }
 
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload := stash.WebhookPayload{}
+	// TODO: stop using readbody, then we can return proper status codes here
 	if err := readBody(r, &payload); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
-	log.Debugf("Webhook payload: %+v", payload)
 
 	payload.IsOldStash = true
 	stashConfig := stash.StashConfig{
@@ -130,6 +140,9 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: WebAPI already has the fields that are being assigned here and it's
+	// the receiver on the buildPipelines. We don't need to reassign the values to
+	// fileService here.
 	fileService := stash.FileService{
 		StashToken:    wa.Config.StashToken,
 		StashUsername: wa.Config.StashUsername,
@@ -162,6 +175,9 @@ func (wa *WebAPI) bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// TODO: WebAPI already has the fields that are being assigned here and it's
+	// the receiver on the buildPipelines. We don't need to reassign the values to
+	// fileService here.
 	fileService := stash.FileService{
 		StashToken:    wa.Config.StashToken,
 		StashUsername: wa.Config.StashUsername,
@@ -188,6 +204,9 @@ func (wa *WebAPI) bitbucketCloudWebhookHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// TODO: WebAPI already has the fields that are being assigned here and it's
+	// the receiver on the buildPipelines. We don't need to reassign the values to
+	// fileService here.
 	fileService := bbcloud.FileService{
 		BbcloudEndpoint: wa.Config.StashEndpoint,
 		BbcloudUsername: wa.Config.StashUsername,
@@ -202,7 +221,6 @@ func (wa *WebAPI) bitbucketCloudWebhookHandler(w http.ResponseWriter, r *http.Re
 
 // ProcessPush processes a push using a pipeline builder
 func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
-	err := error(nil)
 	// Ensure dinghyfile was changed.
 	if !p.ContainsFile(wa.Config.DinghyFilename) {
 		return nil
@@ -223,21 +241,24 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 		components := strings.Split(filePath, "/")
 		if components[len(components)-1] == wa.Config.DinghyFilename {
 			// Process the dinghyfile.
-			err = b.ProcessDinghyfile(p.Org(), p.Repo(), filePath)
-
+			err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath)
 			// Set commit status based on result of processing.
-			if err == nil {
-				p.SetCommitStatus(git.StatusSuccess)
-			} else if err == dinghyfile.ErrMalformedJSON {
-				p.SetCommitStatus(git.StatusFailure)
-			} else {
-				p.SetCommitStatus(git.StatusError)
+			if err != nil {
+				if err == dinghyfile.ErrMalformedJSON {
+					p.SetCommitStatus(git.StatusFailure)
+				} else {
+					p.SetCommitStatus(git.StatusError)
+				}
+				return err
 			}
+			p.SetCommitStatus(git.StatusSuccess)
 		}
 	}
-	return err
+	return nil
 }
 
+// TODO: this func should return an error and allow the handlers to return the http response. Additionally,
+// it probably doesn't belong in this file once refactored.
 func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
 	// Construct a pipeline builder using provided downloader
 	builder := &dinghyfile.PipelineBuilder{
@@ -280,6 +301,8 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 	w.Write([]byte(`{"status":"accepted"}`))
 }
 
+// TODO: get rid of this function and unmarshal JSON in the handlers so that we can
+// return proper status codes
 func readBody(r *http.Request, dest interface{}) error {
 	body, err := httputil.DumpRequest(r, true)
 	if err != nil {

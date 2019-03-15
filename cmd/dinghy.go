@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/armory-io/dinghy/pkg/spinnaker"
-	"github.com/armory-io/monitoring/log/formatters"
-	"github.com/armory-io/monitoring/log/hooks"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/armory-io/dinghy/pkg/spinnaker"
+	"github.com/armory-io/monitoring/log/formatters"
+	"github.com/armory-io/monitoring/log/hooks"
 
 	"github.com/armory-io/dinghy/pkg/cache"
 	"github.com/armory-io/dinghy/pkg/settings"
@@ -34,7 +35,7 @@ func main() {
 	if config.Logging.File != "" {
 		f, err := os.OpenFile(config.Logging.File, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0764)
 		if err != nil {
-			panic("Couldn't open log file")
+			log.Fatalf("Couldn't open log file")
 		}
 		log.SetOutput(f)
 	} else {
@@ -47,7 +48,7 @@ func main() {
 	}
 	logLevel, err := log.ParseLevel("DEBUG")
 	if err != nil {
-		log.Panic("Invalid log level : " + logLevelStr)
+		log.Fatalf("Invalid log level: " + logLevelStr)
 	}
 	log.SetLevel(logLevel)
 	if config.Logging.Remote.Enabled {
@@ -90,7 +91,7 @@ func main() {
 	}
 
 	log.Info("Dinghy started.")
-	log.Fatal(http.ListenAndServe(":8081", api.Router()))
+	log.Info(http.ListenAndServe(":8081", api.Router()))
 }
 
 func setupRemoteLogging(l *log.Logger, loggingConfig settings.Logging) error {
@@ -112,7 +113,6 @@ func setupRemoteLogging(l *log.Logger, loggingConfig settings.Logging) error {
 	if err != nil {
 		return fmt.Errorf("failed to instantiate remote log forwarding: %s", err.Error())
 	}
-
 	if loggingConfig.Remote.Endpoint == "" {
 		return fmt.Errorf("remote log forwarding is enabled but not loging.remote.endpoint is not set.")
 	}

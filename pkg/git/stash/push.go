@@ -90,7 +90,6 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		log.Error(err)
 		return 0, err
 	}
 

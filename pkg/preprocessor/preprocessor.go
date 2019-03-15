@@ -109,7 +109,6 @@ func Preprocess(text string) (string, error) {
 
 		for !it.end() {
 			if it.pos+2 > length {
-				log.Errorf("Index out of bounds, possibly missing a '}}' in: %s", text)
 				return text, errors.New("Index out of bounds while pre-processing template action, possibly a missing '}}'")
 			}
 
@@ -147,6 +146,7 @@ func Preprocess(text string) (string, error) {
 	return text, nil
 }
 
+// TODO: this function should return an error and allow the caller to handle
 // ParseGlobalVars returns the map of global variables in the dinghyfile
 func ParseGlobalVars(input string) interface{} {
 
@@ -189,14 +189,12 @@ func removeModules(input string) string {
 
 	tmpl, err := template.New("blank-out").Funcs(funcMap).Parse(input)
 	if err != nil {
-		log.Errorf("Blank out modules parse error: %s", err)
 		return input
 	}
 
 	buf := new(bytes.Buffer)
 	err = tmpl.Execute(buf, "")
 	if err != nil {
-		log.Errorf("Blank out modules execute error: %s", err)
 		return input
 	}
 

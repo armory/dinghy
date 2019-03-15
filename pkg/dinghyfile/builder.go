@@ -67,7 +67,6 @@ var (
 func UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error) {
 	d := NewDinghyfile()
 	if err := Unmarshal(dinghyfile, &d); err != nil {
-		log.Error("Could not unmarshal dinghyfile: ", err)
 		return d, ErrMalformedJSON
 	}
 	log.Info("Unmarshalled: ", d)
@@ -88,19 +87,14 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	// Render the dinghyfile and decode it into a Dinghyfile object
 	buf, err := b.Render(org, repo, path, nil)
 	if err != nil {
-		log.Error("Could not download Dinghyfile", err)
 		return err
 	}
-
 	log.Debug("Rendered: ", buf.String())
-
 	d, err := UpdateDinghyfile(buf.Bytes())
-
-	log.Debug("Updated: ", buf.String())
-
 	if err != nil {
 		return err
 	}
+	log.Debug("Updated: ", buf.String())
 
 	// Update Spinnaker pipelines using received dinghyfile.
 	updateOptions := spinnaker.UpdatePipelineConfig{
@@ -108,7 +102,6 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 		AutolockPipelines: b.AutolockPipelines,
 	}
 	if err := b.PipelineAPI.UpdatePipelines(d.ApplicationSpec, d.Pipelines, updateOptions); err != nil {
-		log.Error("Could not update all pipelines ", err)
 		return err
 	}
 
@@ -122,13 +115,14 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 	url := b.Downloader.EncodeURL(org, repo, path)
 	log.Info("Processing module: " + url)
 
+	// TODO: could handle logging and errors for file processing more elegantly rather
+	// than making two passes.
 	// Process all dinghyfiles that depend on this module
 	for _, url := range b.Depman.GetRoots(url) {
 		org, repo, path := b.Downloader.DecodeURL(url)
 		if err := b.ProcessDinghyfile(org, repo, path); err != nil {
 			errEncountered = true
 			failedUpdates = append(failedUpdates, url)
-			log.Error(err)
 		}
 	}
 
