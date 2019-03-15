@@ -8,8 +8,6 @@ import (
 	"strings"
 	"text/template"
 	"unicode"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func parseWhitespace(it *iterator) string {
@@ -146,21 +144,19 @@ func Preprocess(text string) (string, error) {
 	return text, nil
 }
 
-// TODO: this function should return an error and allow the caller to handle
 // ParseGlobalVars returns the map of global variables in the dinghyfile
-func ParseGlobalVars(input string) interface{} {
+func ParseGlobalVars(input string) (interface{}, error) {
 
 	d := make(map[string]interface{})
 	input = removeModules(input)
 	err := json.Unmarshal([]byte(input), &d)
 	if err != nil {
-		log.Error(err)
-		return nil
+		return nil, err
 	}
 	if val, ok := d["globals"]; ok {
-		return val
+		return val, nil
 	}
-	return make(map[string]interface{})
+	return make(map[string]interface{}), nil
 }
 
 func dummySubstitute(args ...interface{}) string {
