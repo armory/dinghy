@@ -206,7 +206,7 @@ func handleDiffstatResponse(resp *http.Response, err error) (changedFiles []stri
 // ContainsFile checks to see if a given file is in the push.
 func (p *Push) ContainsFile(file string) bool {
 	for _, name := range p.ChangedFiles {
-		if name == file {
+		if strings.Contains(name, file){
 			return true
 		}
 	}
