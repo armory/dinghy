@@ -98,7 +98,7 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 
 	// Update Spinnaker pipelines using received dinghyfile.
 	updateOptions := spinnaker.UpdatePipelineConfig{
-		DeleteStale:       b.DeleteStalePipelines,
+		DeleteStale:       d.DeleteStalePipelines,
 		AutolockPipelines: b.AutolockPipelines,
 	}
 	if err := b.PipelineAPI.UpdatePipelines(d.ApplicationSpec, d.Pipelines, updateOptions); err != nil {
