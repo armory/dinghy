@@ -1,14 +1,15 @@
 package github
 
 import (
-	"context"
-
-	"github.com/google/go-github/github"
-
-	"github.com/armory-io/dinghy/pkg/git"
-	"github.com/armory-io/dinghy/pkg/util"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httputil"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/armory-io/dinghy/pkg/git"
 )
 
 /* Example: POST /repos/:owner/:repo/statuses/:sha
@@ -28,52 +29,59 @@ type Status struct {
 }
 
 // SetCommitStatus sets the commit status
-// TODO: this function needs to return an error but it's currently attached to an interface that does not
-// and changes will affect other types
-func (p *Push) SetCommitStatus(status git.Status) {
-	ctx := context.Background()
-	client, err := newGitHubClient(ctx, p.GitHubEndpoint, p.GitHubToken)
-	if err != nil {
-		log.Errorf("unable to create github client for push SetCommitStatus request: %s", err)
-	}
-
-	repoStatus := newStatus(status, p.DeckBaseURL)
+func (p *Push) SetCommitStatus(s git.Status) {
+	update := newStatus(s, p.DeckBaseURL)
 	for _, c := range p.Commits {
-		_, _, err := client.Repositories.CreateStatus(ctx, p.Org(), p.Repo(), c.ID, repoStatus)
+		sha := c.ID // not sure if this is right.
+		url := fmt.Sprintf("%s/repos/%s/%s/statuses/%s",
+			p.GitHubEndpoint,
+			p.Org(),
+			p.Repo(),
+			sha)
+		body, err := json.Marshal(update)
 		if err != nil {
-			if e, ok := err.(*github.RateLimitError); ok {
-				rlErr := util.GithubRateLimitErr{RateLimit: e.Rate.Limit, RateReset: e.Rate.Reset.String()}
-				log.Errorf(rlErr.Error())
-				return
-			}
+			log.Debug("Could not unmarshall ", update, ": ", err)
+			return
+		}
+		log.Info(fmt.Sprintf("Updating commit %s for %s/%s to %s.", sha, p.Org(), p.Repo(), string(s)))
+		log.Debug("POST ", url, " - ", string(body))
+		req, err := http.NewRequest("POST", url, strings.NewReader(string(body)))
+		req.Header.Add("Authorization", "token "+p.GitHubToken)
+		// TODO: handle a bad status code for this POST
+		resp, err := http.DefaultClient.Do(req)
+		if resp != nil {
+			defer resp.Body.Close()
+			httputil.DumpResponse(resp, true)
+		}
+		if err != nil {
 			log.Error(err)
 			return
-			//return err
 		}
-	}
 
-	//return nil
+		// log the current rate limit
+		rateLimit, err := getRateLimit(resp.Header)
+		if err != nil {
+			log.Debugf("Error retrieving rate limit header: %s", err)
+		}
+		log.Debugf("Current Rate Limit: %s", rateLimit)
+	}
 }
 
-func newStatus(s git.Status, deckURL string) *github.RepoStatus {
-	state := string(s)
-	context := "continuous-deployment/dinghy"
-	description := ""
+func newStatus(s git.Status, deckURL string) Status {
+	ret := Status{
+		State:     string(s),
+		TargetURL: deckURL,
+		Context:   "continuous-deployment/dinghy",
+	}
 	switch s {
 	case git.StatusSuccess:
-		description = "Pipeline definitions updated!"
+		ret.Description = "Pipeline definitions updated!"
 	case git.StatusError:
-		description = "Error updating pipeline definitions!"
+		ret.Description = "Error updating pipeline definitions!"
 	case git.StatusFailure:
-		description = "Failed to update pipeline definitions!"
+		ret.Description = "Failed to update pipeline definitions!"
 	case git.StatusPending:
-		description = "Updating pipeline definitions..."
+		ret.Description = "Updating pipeline definitions..."
 	}
-
-	return &github.RepoStatus{
-		State:       &state,
-		TargetURL:   &deckURL,
-		Context:     &context,
-		Description: &description,
-	}
+	return ret
 }
