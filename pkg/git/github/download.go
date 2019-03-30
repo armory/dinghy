@@ -1,15 +1,12 @@
 package github
 
 import (
-	"bytes"
-	"context"
-	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"regexp"
 
 	"github.com/armory-io/dinghy/pkg/cache/local"
-	"github.com/armory-io/dinghy/pkg/util"
-
-	"github.com/google/go-github/github"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -21,7 +18,7 @@ type FileService struct {
 	GitHubEndpoint string
 }
 
-// Download a file from github
+// Download a file from github.
 // note that "path" is the full path relative to the repo root
 // eg: src/foo/bar/filename
 func (f *FileService) Download(org, repo, path string) (string, error) {
@@ -30,39 +27,53 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 	if body != "" {
 		return body, nil
 	}
-
-	ctx := context.Background()
-	client, err := newGitHubClient(ctx, f.GitHubEndpoint, f.GitHubToken)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Errorf("unable to create Github client for Download request: %s", err)
-		return "", errors.New("unable to create Github client for Download request")
+		return "", err
 	}
+	req.Header.Add("Authorization", "token "+f.GitHubToken)
+	req.Header.Add("Accept", "application/vnd.github.v3.raw")
 
-	r, err := client.Repositories.DownloadContents(ctx, org, repo, path, nil)
-	b := new(bytes.Buffer)
-	b.ReadFrom(r)
-	r.Close()
-
-	f.cache.Add(url, b.String())
-
+	resp, err := http.DefaultClient.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
-		if e, ok := err.(*github.RateLimitError); ok {
-			return "", &util.GithubRateLimitErr{RateLimit: e.Rate.Limit, RateReset: e.Rate.Reset.String()}
-		}
 		return "", err
 	}
 
-	return b.String(), nil
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("Error downloading file from %s: Status: %d", url, resp.StatusCode)
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	f.cache.Add(url, string(b))
+
+	// log the current rate limit
+	rateLimit, err := getRateLimit(resp.Header)
+	if err != nil {
+		log.Debugf("Error retrieving rate limit header: %s", err)
+	}
+	log.Debugf("Current rate limit: %s", rateLimit)
+
+	return string(b), nil
 }
 
 // EncodeURL returns the git url for a given org, repo, path
 func (f *FileService) EncodeURL(org, repo, path string) string {
-	// this is only used for caching purposes
 	return fmt.Sprintf(`%s/repos/%s/%s/contents/%s`, f.GitHubEndpoint, org, repo, path)
 }
 
 // DecodeURL takes a url and returns the org, repo, path
 func (f *FileService) DecodeURL(url string) (org, repo, path string) {
-	// not implemented for Github
-	return "", "", ""
+	targetExpression := fmt.Sprintf("%s/repos/(.+)/(.+)/contents/(.+)", f.GitHubEndpoint)
+	r, _ := regexp.Compile(targetExpression)
+	match := r.FindStringSubmatch(url)
+	org = match[1]
+	repo = match[2]
+	path = match[3]
+	return
 }
