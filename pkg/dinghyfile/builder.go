@@ -119,6 +119,7 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 	// than making two passes.
 	// Process all dinghyfiles that depend on this module
 	for _, url := range b.Depman.GetRoots(url) {
+		// TODO: we don't need to decode here because these values come in as parameters
 		org, repo, path := b.Downloader.DecodeURL(url)
 		if err := b.ProcessDinghyfile(org, repo, path); err != nil {
 			errEncountered = true

@@ -1,10 +1,6 @@
 package github
 
 import (
-	"fmt"
-	"github.com/stretchr/testify/assert"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
@@ -84,22 +80,4 @@ func TestDecodeUrl(t *testing.T) {
 			t.Errorf("%s did not match expected path %s", path, c.path)
 		}
 	}
-}
-
-func TestDownload(t *testing.T) {
-	expected := "File data"
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, expected)
-	}))
-	defer ts.Close()
-	fs := FileService{
-		GitHubEndpoint: ts.URL,
-	}
-	data, err := fs.Download("org", "repo", "path")
-	assert.Nil(t, err)
-	assert.Equal(t, expected, data)
-	// Verify cache usage:
-	assert.Equal(t, 1, fs.cache.Len())
-	v := fs.cache.Get(fs.EncodeURL("org", "repo", "path"))
-	assert.Equal(t, expected, v)
 }
