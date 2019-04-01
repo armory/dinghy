@@ -8,3 +8,6 @@ coveragereport.txt
 
 # Editor cruft
 *.swp
+
+# Build cruft
+dinghy

@@ -9,7 +9,6 @@ import (
 	"text/template"
 
 	"github.com/armory-io/dinghy/pkg/preprocessor"
-	"github.com/armory-io/dinghy/pkg/spinnaker"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -71,7 +70,7 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func pipelineIDFunc(vars []varMap, pipelines spinnaker.PipelineAPI) interface{} {
+func pipelineIDFunc(b *PipelineBuilder, vars []varMap) interface{} {
 	return func(app, pipelineName string, defaultVal ...interface{}) string {
 		for _, vm := range vars {
 			if val, exists := vm["triggerApp"]; exists {
@@ -83,11 +82,11 @@ func pipelineIDFunc(vars []varMap, pipelines spinnaker.PipelineAPI) interface{} 
 				log.Info("Substituting pipeline trigger appname: ", app)
 			}
 		}
-		id, err := pipelines.GetPipelineID(app, pipelineName)
+		pipeline, err := b.Client.GetPipeline(app, pipelineName)
 		if err != nil {
 			log.Errorf("could not get pipeline id for app %s, pipeline %s, err = %v", app, pipelineName, err)
 		}
-		return id
+		return pipeline.ID
 	}
 }
 
@@ -184,7 +183,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	funcMap := template.FuncMap{
 		"module":     moduleFunc(b, org, deps, vars),
 		"appModule":  moduleFunc(b, org, deps, vars),
-		"pipelineID": pipelineIDFunc(vars, b.PipelineAPI),
+		"pipelineID": pipelineIDFunc(b, vars),
 		"var":        varFunc(vars),
 	}
 

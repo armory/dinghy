@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/armory-io/dinghy/pkg/git/bbcloud"
-	"github.com/armory-io/dinghy/pkg/spinnaker"
+	"github.com/armory/plank"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -32,16 +32,18 @@ type Push interface {
 	SetCommitStatus(s git.Status)
 }
 
-type SpinnakerServices struct {
-	Front50API  spinnaker.Front50API
-	PipelineAPI spinnaker.PipelineAPI
-	OrcaAPI     spinnaker.OrcaAPI
+type WebAPI struct {
+	Config *settings.Settings
+	Client *plank.Client
+	Cache  dinghyfile.DependencyManager
 }
 
-type WebAPI struct {
-	Config            settings.Settings
-	SpinnakerServices SpinnakerServices
-	Cache             dinghyfile.DependencyManager
+func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c *plank.Client) *WebAPI {
+	return &WebAPI{
+		Config: s,
+		Client: c,
+		Cache:  r,
+	}
 }
 
 // Router defines the routes for the application.
@@ -74,21 +76,18 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	builder := &dinghyfile.PipelineBuilder{
 		Depman:               cache.NewMemoryCache(),
 		Downloader:           fileService,
-		PipelineAPI:          wa.SpinnakerServices.PipelineAPI,
+		Client:               wa.Client,
 		DeleteStalePipelines: false,
 		AutolockPipelines:    wa.Config.AutoLockPipelines,
 	}
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
-	df := buf.String()
-	log.Info("Received payload: ", df)
-	fileService["dinghyfile"] = df
+	fileService["dinghyfile"] = buf.String()
+	log.Info("Received payload: ", fileService["dinghyfile"])
 
-	err := builder.ProcessDinghyfile("", "", "dinghyfile")
-	if err != nil {
+	if err := builder.ProcessDinghyfile("", "", "dinghyfile"); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
-		return
 	}
 }
 
@@ -269,7 +268,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 		DinghyfileName:       wa.Config.DinghyFilename,
 		DeleteStalePipelines: false,
 		AutolockPipelines:    wa.Config.AutoLockPipelines,
-		PipelineAPI:          wa.SpinnakerServices.PipelineAPI,
+		Client:               wa.Client,
 	}
 
 	// Process the push.

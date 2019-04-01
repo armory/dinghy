@@ -5,23 +5,23 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/armory-io/dinghy/pkg/spinnaker"
+	"github.com/armory/plank"
 )
 
 func TestUpdateDinghyfile(t *testing.T) {
 
 	cases := map[string]struct {
 		dinghyfile []byte
-		spec       spinnaker.ApplicationSpec
+		spec       plank.Application
 	}{
 		"no_spec": {
 			dinghyfile: []byte(`{
 				"application": "application"
 			}`),
-			spec: spinnaker.ApplicationSpec{
+			spec: plank.Application{
 				Name:  "application",
 				Email: DefaultEmail,
-				DataSources: spinnaker.DataSourcesSpec{
+				DataSources: plank.DataSourcesType{
 					Enabled:  []string{},
 					Disabled: []string{},
 				},
@@ -34,10 +34,10 @@ func TestUpdateDinghyfile(t *testing.T) {
 					"name": "specname"
 				}
 			}`),
-			spec: spinnaker.ApplicationSpec{
+			spec: plank.Application{
 				Name:  "specname",
 				Email: DefaultEmail,
-				DataSources: spinnaker.DataSourcesSpec{
+				DataSources: plank.DataSourcesType{
 					Enabled:  []string{},
 					Disabled: []string{},
 				},
@@ -51,10 +51,10 @@ func TestUpdateDinghyfile(t *testing.T) {
 					"email": "somebody@email.com"
 				}
 			}`),
-			spec: spinnaker.ApplicationSpec{
+			spec: plank.Application{
 				Name:  "specname",
 				Email: "somebody@email.com",
-				DataSources: spinnaker.DataSourcesSpec{
+				DataSources: plank.DataSourcesType{
 					Enabled:  []string{},
 					Disabled: []string{},
 				},
@@ -72,10 +72,10 @@ func TestUpdateDinghyfile(t *testing.T) {
 					}
 				}
 			}`),
-			spec: spinnaker.ApplicationSpec{
+			spec: plank.Application{
 				Name:  "specname",
 				Email: "somebody@email.com",
-				DataSources: spinnaker.DataSourcesSpec{
+				DataSources: plank.DataSourcesType{
 					Enabled:  []string{"canaryConfigs"},
 					Disabled: []string{},
 				},

@@ -5,7 +5,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/armory-io/dinghy/pkg/spinnaker"
+	"github.com/armory/plank"
 )
 
 // PipelineBuilder is responsible for downloading dinghyfiles/modules, compiling them, and sending them to Spinnaker
@@ -15,7 +15,7 @@ type PipelineBuilder struct {
 	TemplateRepo         string
 	TemplateOrg          string
 	DinghyfileName       string
-	PipelineAPI          spinnaker.PipelineAPI
+	Client               *plank.Client
 	DeleteStalePipelines bool
 	AutolockPipelines    string
 }
@@ -37,11 +37,11 @@ type Downloader interface {
 type Dinghyfile struct {
 	// Application name can be specified either in top-level "application" or as a key in "spec"
 	// We don't want arbitrary application properties in the top-level Dinghyfile so we put them in .spec
-	Application          string                    `json:"application"`
-	ApplicationSpec      spinnaker.ApplicationSpec `json:"spec"`
-	DeleteStalePipelines bool                      `json:"deleteStalePipelines"`
-	Globals              map[string]interface{}    `json:"globals"`
-	Pipelines            []spinnaker.Pipeline      `json:"pipelines"`
+	Application          string                 `json:"application"`
+	ApplicationSpec      plank.Application      `json:"spec"`
+	DeleteStalePipelines bool                   `json:"deleteStalePipelines"`
+	Globals              map[string]interface{} `json:"globals"`
+	Pipelines            []plank.Pipeline       `json:"pipelines"`
 }
 
 func NewDinghyfile() Dinghyfile {
@@ -49,8 +49,8 @@ func NewDinghyfile() Dinghyfile {
 		// initialize the application spec so that the default
 		// enabled/disabled are initilzed slices
 		// https://danott.co/posts/json-marshalling-empty-slices-to-empty-arrays-in-go.html
-		ApplicationSpec: spinnaker.ApplicationSpec{
-			DataSources: spinnaker.DataSourcesSpec{
+		ApplicationSpec: plank.Application{
+			DataSources: plank.DataSourcesType{
 				Enabled:  []string{},
 				Disabled: []string{},
 			},
@@ -96,12 +96,7 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	}
 	log.Debug("Updated: ", buf.String())
 
-	// Update Spinnaker pipelines using received dinghyfile.
-	updateOptions := spinnaker.UpdatePipelineConfig{
-		DeleteStale:       d.DeleteStalePipelines,
-		AutolockPipelines: b.AutolockPipelines,
-	}
-	if err := b.PipelineAPI.UpdatePipelines(d.ApplicationSpec, d.Pipelines, updateOptions); err != nil {
+	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 		return err
 	}
 
@@ -135,4 +130,64 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 		return errors.New("Not all upstream dinghyfiles were updated successfully")
 	}
 	return nil
+}
+
+func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []plank.Pipeline, deleteStale bool, autoLock string) error {
+	_, err := b.Client.GetApplication(app.Name)
+	if err != nil {
+		// Likely just not there...
+		if err := b.Client.CreateApplication(app); err != nil {
+			return err
+		}
+	}
+
+	ids, _ := b.PipelineIDs(app.Name)
+	checklist := make(map[string]bool)
+	idToName := make(map[string]string)
+	for name, id := range ids {
+		checklist[id] = false
+		idToName[id] = name
+	}
+	log.Info("Found pipelines for ", app, ": ", ids)
+	for _, p := range pipelines {
+		// Add ids to existing pipelines
+		if id, exists := ids[p.Name]; exists {
+			log.Debug("Added id ", id, " to pipeline ", p.Name)
+			checklist[id] = true
+		}
+		log.Info("Updating pipeline: " + p.Name)
+		if autoLock == "true" {
+			log.Debug("Locking pipeline ", p.Name)
+			p.Lock()
+		}
+		if err := b.Client.UpsertPipeline(p); err != nil {
+			return err
+		}
+	}
+	if deleteStale {
+		// clear existing pipelines that weren't updated
+		for _, p := range pipelines {
+			if !checklist[p.ID] {
+				if err := b.Client.DeletePipeline(p); err != nil {
+					// Not worrying about handling errors here because it just means it
+					// didn't get deleted *this time*.
+					log.Warnf("Could not delete Pipeline %s (Application %s)", p.Name, p.Application)
+				}
+			}
+		}
+	}
+	return err
+}
+
+func (b *PipelineBuilder) PipelineIDs(app string) (map[string]string, error) {
+	ids := map[string]string{}
+	log.Info("Looking up existing pipelines")
+	pipelines, err := b.Client.GetPipelines(app)
+	if err != nil {
+		return ids, err
+	}
+	for _, p := range pipelines {
+		ids[p.Name] = p.ID
+	}
+	return ids, nil
 }

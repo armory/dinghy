@@ -30,15 +30,15 @@ dependencies:
 	@echo "not running dep ensure because vendored deps"
 
 run:
-	go run ./cmd/${BINARY}.go
+	go run ./${BINARY}.go
 
-build: ./cmd/${BINARY}.go
+build: ./${BINARY}.go
 	cd ${PROJECT_DIR}; \
-	go build -i ${LDFLAGS} -o ${BUILD_DIR}/main ./cmd/${BINARY}.go ; \
+	go build -i ${LDFLAGS} -o ${BUILD_DIR}/main ./${BINARY}.go ; \
 
 test: dependencies
 	# go test -cover -v $(PKGS)
-	PCT=35 bin/test_coverage.sh
+	PCT=39 bin/test_coverage.sh
 
 # The go test tool won't create a coverage profile if you give it multiple
 # packages. Recommendation is to run the coverage for each package and merge
