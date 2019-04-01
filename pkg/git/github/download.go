@@ -44,6 +44,9 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 		if e, ok := err.(*github.RateLimitError); ok {
 			return "", &util.GithubRateLimitErr{RateLimit: e.Rate.Limit, RateReset: e.Rate.Reset.String()}
 		}
+		if util.IsGitHubFileNotFoundErr(err.Error()) {
+			return "", &util.GitHubFileNotFoundErr{Org: org, Repo: repo, Path: path}
+		}
 		return "", err
 	}
 

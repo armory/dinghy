@@ -290,7 +290,12 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
 			if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file); err != nil {
-				util.WriteHTTPError(w, http.StatusInternalServerError, err)
+				switch err.(type) {
+				case *util.GitHubFileNotFoundErr:
+					util.WriteHTTPError(w, http.StatusNotFound, err)
+				default:
+					util.WriteHTTPError(w, http.StatusInternalServerError, err)
+				}
 				p.SetCommitStatus(git.StatusError)
 				return
 			}

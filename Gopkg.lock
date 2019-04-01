@@ -113,6 +113,14 @@
   version = "v0.3.6"
 
 [[projects]]
+  branch = "master"
+  digest = "1:397a40f9f138f43d799b28d7993fc62ec9418db87e0fed41acd66ac4b7727f49"
+  name = "github.com/minio/minio"
+  packages = ["pkg/wildcard"]
+  pruneopts = ""
+  revision = "619611933a6c5d634a08eac8d06e344ab46452c6"
+
+[[projects]]
   digest = "1:5219b4506253ccc598f9340677162a42d6a78f340a4cc6df2d62db4d0593c4e9"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
@@ -246,6 +254,7 @@
     "github.com/google/go-github/github",
     "github.com/gorilla/mux",
     "github.com/imdario/mergo",
+    "github.com/minio/minio/pkg/wildcard",
     "github.com/mitchellh/mapstructure",
     "github.com/sirupsen/logrus",
     "github.com/stretchr/testify/assert",

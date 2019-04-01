@@ -1,0 +1,18 @@
+# Generate CONTRIBUTORS.md: contributors.sh
+
+# Tip for finding duplicates (besides scanning the output of CONTRIBUTORS.md for name
+# duplicates that aren't also email duplicates): scan the output of:
+#   git log --format='%aE - %aN' | sort -uf
+#
+# For explanation on this file format: man git-shortlog
+
+Anand Babu (AB) Periasamy <ab@minio.io> Anand Babu (AB) Periasamy <abperiasamy@users.noreply.github.com>
+Anand Babu (AB) Periasamy <ab@minio.io> <ab@unlocksmith.org>
+Anis Elleuch <vadmeste@gmail.com>
+Frederick F. Kautz IV <fkautz@minio.io> <fkautz@alumni.cmu.edu>
+Harshavardhana <harsha@minio.io> <harsha@harshavardhana.net>
+Harshavardhana <harsha@minio.io> <badger@gitter.im>
+Harshavardhana <harsha@minio.io>
+Krishna Srinivas <krishna@minio.io> <krishna.srinivas@gmail.com>
+Matthew Farrellee <matt@cs.wisc.edu>
+Nate Rosenblum <flander@gmail.com>
