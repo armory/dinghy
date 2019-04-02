@@ -1,11 +1,13 @@
 #!/bin/bash -e
 
+if [[ ! -f ./${GIT_REPO}_version ]]; then
+    STORED_VERSION=$(date +%Y-%m-%d)
+else
+    STORED_VERSION=$(cat "./${GIT_REPO}_version")
+fi
+
 if [[ -z "$DOCKER_TAG" ]]; then
     GIT_HASH=`git rev-parse --short HEAD`
-    STORED_VERSION=$(cat "./${GIT_REPO}_version")
-    if [[ -z "$STORED_VERSION" ]]; then
-        STORED_VERSION=`date +%Y-%m-%d`
-    fi
     PREFIX=dev
     DOCKER_TAG="${STORED_VERSION}-${GIT_HASH}-${PREFIX}0000"
 fi

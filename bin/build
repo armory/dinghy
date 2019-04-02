@@ -13,17 +13,5 @@ source bin/ENV
 
 echo "Building binary first..."
 WORKDIR=/go/src/github.com/armory-io/dinghy
-
-#this just builds the binary in a container first
-docker run --rm \
-  -v "$PWD:$WORKDIR" \
-  -w $WORKDIR \
-  -e "GOOS=linux" \
-  -e "GOARCH=amd64" \
-  -e "CGO_ENABLED=0" \
-  -e "NEEDS_BC=yes" \
-  armory/golang-dep \
-  make
-
 echo "Building docker image ${DOCKER_IMAGE}..."
 docker build -f ./Dockerfile -t ${DOCKER_IMAGE} .
