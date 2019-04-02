@@ -161,6 +161,23 @@ var fileService = dummy.FileService{
 				"artifact": {{ var "artifact" }},
 			}
 	  }`,
+
+	"empty_default_variables": `{
+		"application": "dinernotifications",
+		"pipelines": [
+			{{ module "empty_default_variables.pipeline.module" }}
+		]
+	}`,
+
+	"empty_default_variables.pipeline.module": `{
+		"parameterConfig": [
+			{
+				"default": "{{ var "discovery-service-name" ?: "" }}",
+				"description": "Service Name",
+				"name": "service",
+				"required": true
+			}
+	  }`,
 }
 
 func TestGracefulErrorHandling(t *testing.T) {
@@ -436,6 +453,36 @@ func TestDeepVars(t *testing.T) {
 
 
 	// strip whitespace from both strings for assertion
+	exp := expected
+	actual := buf.String()
+	assert.Equal(t, exp, actual)
+}
+
+func TestEmptyDefaultVar(t *testing.T) {
+	builder := &PipelineBuilder{
+		Depman:         cache.NewMemoryCache(),
+		Downloader:     fileService,
+		DinghyfileName: "deep_var_df",
+		TemplateOrg:    "org",
+		TemplateRepo:   "repo",
+	}
+	buf, _ := builder.Render("org", "repo", "empty_default_variables", nil)
+
+	const expected = `{
+		"application": "dinernotifications",
+		"pipelines": [
+			{
+		"parameterConfig": [
+			{
+				"default": "",
+				"description": "Service Name",
+				"name": "service",
+				"required": true
+			}
+	  }
+		]
+	}`
+
 	exp := expected
 	actual := buf.String()
 	assert.Equal(t, exp, actual)
