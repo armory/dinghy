@@ -126,7 +126,8 @@ func varFunc(vars []varMap) interface{} {
 
 		if len(defaultVal) > 0 {
 			s, isStr := defaultVal[0].(string)
-			if isStr {
+
+			if (isStr && len(s) > 0 ){
 				if s[0] == '@' {
 					// handle the case where the default value is another variable
 					// see ENG-1921 for use case. e.g.,:
