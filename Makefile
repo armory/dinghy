@@ -9,19 +9,23 @@ GOARCH = amd64
 
 COMMIT=$(shell git rev-parse HEAD)
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
-#REPO=$(shell basename $(shell pwd))
 REPO=$(shell basename $(shell git rev-parse --show-toplevel))
 #select all packages except a few folders because it's an integration test
 PKGS := $(shell go list ./... | grep -v -e /integration -e /vendor)
 INTEGRATION_PKGS := $(shell go list ./... | grep /integration)
 ORG=armory-io
 PROJECT_DIR=${GOPATH}/src/github.com/${ORG}/${REPO}
-BUILD_DIR=${GOPATH}/src/github.com/${ORG}/${REPO}/build
+BUILD_DIR=$(shell pwd)/build
 CURRENT_DIR=$(shell pwd)
 PROJECT_DIR_LINK=$(shell readlink ${PROJECT_DIR})
 
 # Setup the -ldflags option for go build here, interpolate the variable values
 LDFLAGS = -ldflags "-X main.COMMIT=${COMMIT} -X main.BRANCH=${BRANCH}"
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	LDFLAGS = -ldflags "-X main.COMMIT=${COMMIT} -X main.BRANCH=${BRANCH} -linkmode external -extldflags -static -s -w"
+endif
+
 
 # Build the project
 all: clean lint test vet build
@@ -33,8 +37,7 @@ run:
 	go run ./${BINARY}.go
 
 build: ./${BINARY}.go
-	cd ${PROJECT_DIR}; \
-	go build -i ${LDFLAGS} -o ${BUILD_DIR}/main ./${BINARY}.go ; \
+	go build -i ${LDFLAGS} -o ${BUILD_DIR}/${BINARY} ./${BINARY}.go
 
 test: dependencies
 	# go test -cover -v $(PKGS)
