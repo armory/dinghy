@@ -2,10 +2,11 @@ package github
 
 import (
 	"fmt"
-	"github.com/armory-io/dinghy/pkg/git"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/armory-io/dinghy/pkg/git"
 )
 
 func TestSetCommitStatusSuccessfully(t *testing.T) {
@@ -15,8 +16,10 @@ func TestSetCommitStatusSuccessfully(t *testing.T) {
 	defer ts.Close()
 	// TODO: Do not use global variable. This will lead to side-effects.
 	p := Push{
-		GitHubEndpoint: ts.URL,
-		Repository:     Repository{Organization: "armory-io", Name: "dinghy"},
+		GitHub: GitHub{
+			Endpoint: ts.URL,
+		},
+		Repository: Repository{Organization: "armory-io", Name: "dinghy"},
 		Commits: []Commit{
 			{
 				ID: "ABC",
@@ -31,8 +34,10 @@ func TestSetCommitStatusSuccessfully(t *testing.T) {
 func TestSetCommitStatusFails(t *testing.T) {
 	// TODO: Do not use global variable. This will lead to side-effects.
 	p := Push{
-		GitHubEndpoint: "invalid-url",
-		Repository:     Repository{Organization: "armory-io", Name: "dinghy"},
+		GitHub: GitHub{
+			Endpoint: "invalid-url",
+		},
+		Repository: Repository{Organization: "armory-io", Name: "dinghy"},
 		Commits: []Commit{
 			{
 				ID: "ABC",
@@ -40,6 +45,7 @@ func TestSetCommitStatusFails(t *testing.T) {
 		},
 	}
 
+	// TODO: this doesn't actually test anything
 	// This shouldn't throw exceptions/panics
 	p.SetCommitStatus(git.StatusPending)
 }

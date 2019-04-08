@@ -105,16 +105,13 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: WebAPI already has the fields that are being assigned here and it's
-	// the receiver on the buildPipelines. We don't need to reassign the values to
-	// fileService here.
-	p.GitHubToken = wa.Config.GitHubToken
-	p.GitHubEndpoint = wa.Config.GithubEndpoint
+	// TODO: we're assigning config in two places here, we should refactor build pipelines so that
+	// it takes file contents as a parameter and then we can create the github client, do the push
+	// and download from here
+	gh := github.GitHub{Endpoint: wa.Config.GithubEndpoint, Token: wa.Config.GitHubToken}
+	p.GitHub = gh
 	p.DeckBaseURL = wa.Config.Deck.BaseURL
-	fileService := github.FileService{
-		GitHubEndpoint: wa.Config.GithubEndpoint,
-		GitHubToken:    wa.Config.GitHubToken,
-	}
+	fileService := github.FileService{GitHub: &gh}
 
 	wa.buildPipelines(&p, &fileService, w)
 }

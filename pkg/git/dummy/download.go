@@ -1,6 +1,10 @@
 package dummy
 
-import "github.com/armory-io/dinghy/pkg/git/github"
+import (
+	"fmt"
+
+	"github.com/armory-io/dinghy/pkg/git/github"
+)
 
 // FileService serves a map[string]string of files -> file contents
 type FileService map[string]string
@@ -15,7 +19,7 @@ func (f FileService) Download(org, repo, file string) (string, error) {
 
 // EncodeURL encodes a URL
 func (f FileService) EncodeURL(org, repo, path string) string {
-	return (&github.FileService{}).EncodeURL(org, repo, path)
+	return fmt.Sprintf(`%s/repos/%s/%s/contents/%s`, "https://github.com", org, repo, path)
 }
 
 // DecodeURL decodes a URL
