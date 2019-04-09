@@ -20,5 +20,6 @@ RUN apk update                        \
 	&& adduser -D spinnaker           \
 	&& addgroup spinnaker spinnaker
 COPY --from=builder /opt/armory/build/build/dinghy /opt/armory/bin/dinghy
+RUN adduser -D -S dinghy
 USER dinghy
 CMD ["/opt/armory/bin/dinghy"]
