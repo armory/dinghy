@@ -8,8 +8,7 @@ import (
 
 func TestConfigureSettings(t *testing.T) {
 	defaultsWithOverridesExpected := NewDefaultSettings()
-	defaultsWithOverridesExpected.Redis.Host = "12345"
-	defaultsWithOverridesExpected.Redis.Port = "6789"
+	defaultsWithOverridesExpected.Redis.BaseURL = "12345:6789"
 
 	cases := map[string]struct {
 		defaults     Settings
@@ -38,8 +37,7 @@ func TestConfigureSettings(t *testing.T) {
 			overrides: Settings{
 				spinnakerSupplied: spinnakerSupplied{
 					Redis: Redis{
-						Host:     "12345",
-						Port:     "6789",
+						BaseURL:  "12345:6789",
 						Password: "",
 					},
 				},
@@ -69,13 +67,13 @@ func TestDecodeProfilesToSettings(t *testing.T) {
 		"happy path": {
 			input: map[string]interface{}{
 				"redis": map[string]interface{}{
-					"host": "12345",
+					"baseUrl": "12345",
 				},
 			},
 			expected: Settings{
 				spinnakerSupplied: spinnakerSupplied{
 					Redis: Redis{
-						Host: "12345",
+						BaseURL: "12345",
 					},
 				},
 			},

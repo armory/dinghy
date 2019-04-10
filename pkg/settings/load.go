@@ -46,8 +46,7 @@ func NewDefaultSettings() Settings {
 				AuthUser: "",
 			},
 			Redis: Redis{
-				Host:     util.GetenvOrDefault("REDIS_HOST", "redis"),
-				Port:     util.GetenvOrDefault("REDIS_PORT", "6379"),
+				BaseURL:  util.GetenvOrDefault("REDIS_HOST", "redis:6379"),
 				Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
 			},
 		},

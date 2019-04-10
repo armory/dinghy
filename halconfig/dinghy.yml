@@ -1,8 +1,7 @@
 # halconfig
 
 redis:
-  host: ${services.redis.address}
-  port: ${services.redis.port}
+  baseUrl: ${services.redis.baseUrl}
 
 orca:
   enabled: ${services.orca.enabled}

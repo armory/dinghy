@@ -29,8 +29,7 @@ type spinnakerSupplied struct {
 }
 
 type Redis struct {
-	Host       string `json:"host,omitempty" yaml:"host"`
-	Port       string `json:"port,omitempty" yaml:"port"`
+	BaseURL    string `json:"baseUrl,omitempty" yaml:"baseUrl"`
 	Password   string `json:"password,omitempty" yaml:"password"`
 	Connection string `json:"connection,omitempty" yaml:"connection"`
 }

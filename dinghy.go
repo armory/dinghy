@@ -19,8 +19,9 @@ import (
 )
 
 func newRedisOptions(redisOptions settings.Redis) *redis.Options {
+	url := strings.TrimPrefix(redisOptions.BaseURL, "redis://")
 	return &redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", redisOptions.Host, redisOptions.Port),
+		Addr:     url,
 		Password: redisOptions.Password,
 		DB:       0,
 	}
