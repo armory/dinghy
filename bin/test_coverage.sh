@@ -3,7 +3,7 @@
 set +e
 
 TMPFILE=coveragereport.txt
-PCT=${PCT:-"50"}
+PCT=${PCT:-"39"}
 
 # This is here because the build/test container we use doesn't have bc in it.
 if [[ "$NEEDS_BC" == "yes" ]]; then
@@ -12,6 +12,7 @@ if [[ "$NEEDS_BC" == "yes" ]]; then
 fi
 
 # Run coverage
+set -o pipefail
 bin/coverage.sh | tee $TMPFILE
 rc=$?
 
@@ -28,6 +29,7 @@ if [[ $rc == 0 ]]; then
   rm $TMPFILE
 else
   echo "FAIL -- test failure, see ${TMPFILE}"
+  exit 1
 fi
 exit $rc
 
