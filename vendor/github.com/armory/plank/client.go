@@ -131,6 +131,49 @@ func (c *Client) PostWithRetry(url string, contentType ContentType, body interfa
 	})
 }
 
+// Post a JSON payload from the URL then decode it into the 'dest' arguement.
+func (c *Client) Put(url string, contentType ContentType, body interface{}, dest interface{}) error {
+	var err error
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("could not put - body could not be marshaled to json - %v", err)
+	}
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", string(contentType))
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 400 {
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		// Only unmarshalling if we actually have a response body (as opposed
+		// to, for example, a simple "201 Created" response)
+		if len(b) > 0 {
+			err := json.Unmarshal(b, &dest)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+	return errors.New(fmt.Sprintf("Unsupported status code: %d", resp.StatusCode))
+}
+
+func (c *Client) PutWithRetry(url string, contentType ContentType, body interface{}, dest interface{}) error {
+	return c.RequestWithRetry(func() error {
+		return c.Put(url, contentType, body, dest)
+	})
+}
+
 func (c *Client) Delete(url string) error {
 	request, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {

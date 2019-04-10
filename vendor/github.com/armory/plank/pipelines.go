@@ -64,8 +64,14 @@ func (c *Client) GetPipelines(app string) ([]Pipeline, error) {
 // UpsertPipeline creates/updates a pipeline defined in the struct argument.
 func (c *Client) UpsertPipeline(p Pipeline) error {
 	var unused interface{}
-	if err := c.PostWithRetry(c.pipelinesURL(), ApplicationJson, p, &unused); err != nil {
-		return fmt.Errorf("could not create pipeline - %v", err)
+	if p.ID == "" {
+		if err := c.PostWithRetry(c.pipelinesURL(), ApplicationJson, p, &unused); err != nil {
+			return fmt.Errorf("could not create pipeline - %v", err)
+		}
+	} else {
+		if err := c.PutWithRetry(c.pipelinesURL(), ApplicationJson, p, &unused); err != nil {
+			return fmt.Errorf("could not update pipeline - %v", err)
+		}
 	}
 	return nil
 }
