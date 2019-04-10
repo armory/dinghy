@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 
 	"github.com/armory-io/dinghy/pkg/cache"
+	"github.com/armory-io/dinghy/pkg/events"
 	"github.com/armory-io/dinghy/pkg/git/dummy"
+	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -196,6 +198,11 @@ func TestNestedVars(t *testing.T) {
 		DinghyfileName: "nested_var_df",
 		TemplateOrg:    "org",
 		TemplateRepo:   "repo",
+		EventClient: &events.Client{
+			LogSettings: &settings.RemoteLogging{
+				Enabled: false,
+			},
+		},
 	}
 	buf, _ := builder.Render("org", "repo", "nested_var_df", nil)
 
@@ -317,6 +324,11 @@ func TestGlobalVars(t *testing.T) {
 				Depman:         cache.NewMemoryCache(),
 				Downloader:     fileService,
 				DinghyfileName: filepath.Base(c.filename),
+				EventClient: &events.Client{
+					LogSettings: &settings.RemoteLogging{
+						Enabled: false,
+					},
+				},
 			}
 
 			buf, _ := builder.Render("org", "repo", c.filename, nil)
@@ -331,6 +343,11 @@ func TestSimpleWaitStage(t *testing.T) {
 	builder := &PipelineBuilder{
 		Depman:     cache.NewMemoryCache(),
 		Downloader: fileService,
+		EventClient: &events.Client{
+			LogSettings: &settings.RemoteLogging{
+				Enabled: false,
+			},
+		},
 	}
 	buf, _ := builder.Render("org", "repo", "df3", nil)
 
@@ -356,6 +373,11 @@ func TestSpillover(t *testing.T) {
 	builder := &PipelineBuilder{
 		Depman:     cache.NewMemoryCache(),
 		Downloader: fileService,
+		EventClient: &events.Client{
+			LogSettings: &settings.RemoteLogging{
+				Enabled: false,
+			},
+		},
 	}
 	buf, _ := builder.Render("org", "repo", "df", nil)
 
@@ -384,6 +406,11 @@ func TestModuleVariableSubstitution(t *testing.T) {
 	builder := &PipelineBuilder{
 		Depman:     cache.NewMemoryCache(),
 		Downloader: fileService,
+		EventClient: &events.Client{
+			LogSettings: &settings.RemoteLogging{
+				Enabled: false,
+			},
+		},
 	}
 	ts := testStruct{}
 	ret, err := builder.Render("org", "repo", "df2", nil)
@@ -406,11 +433,15 @@ func TestModuleEmptyString(t *testing.T) {
 	builder := &PipelineBuilder{
 		Depman:     cache.NewMemoryCache(),
 		Downloader: fileService,
+		EventClient: &events.Client{
+			LogSettings: &settings.RemoteLogging{
+				Enabled: false,
+			},
+		},
 	}
 	ret, _ := builder.Render("org", "repo", "df4", nil)
 	assert.Equal(t, `{"foo": ""}`, ret.String())
 }
-
 
 func TestDeepVars(t *testing.T) {
 	builder := &PipelineBuilder{
@@ -419,6 +450,11 @@ func TestDeepVars(t *testing.T) {
 		DinghyfileName: "deep_var_df",
 		TemplateOrg:    "org",
 		TemplateRepo:   "repo",
+		EventClient: &events.Client{
+			LogSettings: &settings.RemoteLogging{
+				Enabled: false,
+			},
+		},
 	}
 	buf, _ := builder.Render("org", "repo", "deep_var_df", nil)
 
@@ -451,7 +487,6 @@ func TestDeepVars(t *testing.T) {
 		]
 	}`
 
-
 	// strip whitespace from both strings for assertion
 	exp := expected
 	actual := buf.String()
@@ -465,6 +500,11 @@ func TestEmptyDefaultVar(t *testing.T) {
 		DinghyfileName: "deep_var_df",
 		TemplateOrg:    "org",
 		TemplateRepo:   "repo",
+		EventClient: &events.Client{
+			LogSettings: &settings.RemoteLogging{
+				Enabled: false,
+			},
+		},
 	}
 	buf, _ := builder.Render("org", "repo", "empty_default_variables", nil)
 

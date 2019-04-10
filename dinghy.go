@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/armory/plank"
 
 	"github.com/armory-io/dinghy/pkg/cache"
+	"github.com/armory-io/dinghy/pkg/events"
 	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/pkg/util"
 	"github.com/armory-io/dinghy/pkg/web"
@@ -72,8 +74,12 @@ func main() {
 	client.URLs["orca"] = config.Orca.BaseURL
 	client.URLs["front50"] = config.Front50.BaseURL
 
+	// Create the EventClient
+	ctx := context.Background()
+	ec := events.NewEventClient(ctx, &config.Logging)
+
 	redis := cache.NewRedisCache(newRedisOptions(config.Redis))
-	api := web.NewWebAPI(config, redis, client)
+	api := web.NewWebAPI(config, redis, client, ec)
 
 	log.Info("Dinghy started.")
 	log.Info(http.ListenAndServe(":8081", api.Router()))

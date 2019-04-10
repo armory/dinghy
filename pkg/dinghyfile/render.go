@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"path/filepath"
+	"time"
 
 	"text/template"
 
+	"github.com/armory-io/dinghy/pkg/events"
 	"github.com/armory-io/dinghy/pkg/preprocessor"
 	log "github.com/sirupsen/logrus"
 )
@@ -127,7 +129,7 @@ func varFunc(vars []varMap) interface{} {
 		if len(defaultVal) > 0 {
 			s, isStr := defaultVal[0].(string)
 
-			if (isStr && len(s) > 0 ){
+			if isStr && len(s) > 0 {
 				if s[0] == '@' {
 					// handle the case where the default value is another variable
 					// see ENG-1921 for use case. e.g.,:
@@ -150,6 +152,13 @@ func varFunc(vars []varMap) interface{} {
 
 // Render renders the template
 func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
+	event := &events.Event{
+		Start: time.Now().UTC().Unix(),
+		Org:   org,
+		Repo:  repo,
+		Path:  path,
+	}
+
 	deps := make(map[string]bool)
 
 	// Download the template being rendered.
@@ -207,6 +216,10 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 		depUrls = append(depUrls, dep)
 	}
 	b.Depman.SetDeps(b.Downloader.EncodeURL(org, repo, path), depUrls)
+
+	event.End = time.Now().UTC().Unix()
+	eventType := "render"
+	b.EventClient.SendEvent(eventType, event)
 
 	return buf, nil
 }

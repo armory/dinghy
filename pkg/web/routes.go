@@ -6,6 +6,7 @@ import (
 	"net/http/httputil"
 	"strings"
 
+	"github.com/armory-io/dinghy/pkg/events"
 	"github.com/armory-io/dinghy/pkg/git/bbcloud"
 	"github.com/armory/plank"
 
@@ -33,16 +34,18 @@ type Push interface {
 }
 
 type WebAPI struct {
-	Config *settings.Settings
-	Client *plank.Client
-	Cache  dinghyfile.DependencyManager
+	Config      *settings.Settings
+	Client      *plank.Client
+	Cache       dinghyfile.DependencyManager
+	EventClient *events.Client
 }
 
-func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c *plank.Client) *WebAPI {
+func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c *plank.Client, e *events.Client) *WebAPI {
 	return &WebAPI{
-		Config: s,
-		Client: c,
-		Cache:  r,
+		Config:      s,
+		Client:      c,
+		Cache:       r,
+		EventClient: e,
 	}
 }
 
@@ -266,6 +269,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 		DeleteStalePipelines: false,
 		AutolockPipelines:    wa.Config.AutoLockPipelines,
 		Client:               wa.Client,
+		EventClient:          wa.EventClient,
 	}
 
 	// Process the push.

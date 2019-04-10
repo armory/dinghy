@@ -3,6 +3,7 @@ package dinghyfile
 import (
 	"errors"
 
+	"github.com/armory-io/dinghy/pkg/events"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/armory/plank"
@@ -18,6 +19,7 @@ type PipelineBuilder struct {
 	Client               *plank.Client
 	DeleteStalePipelines bool
 	AutolockPipelines    string
+	EventClient          *events.Client
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
