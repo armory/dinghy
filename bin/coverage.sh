@@ -15,6 +15,7 @@ set -e
 workdir=.cover
 profile="$workdir/cover.out"
 mode=count
+failingTests=false
 
 generate_cover_data() {
     rm -rf "$workdir"
@@ -22,11 +23,15 @@ generate_cover_data() {
 
     for pkg in "$@"; do
         f="$workdir/$(echo $pkg | tr / -).cover"
-        go test -covermode="$mode" -coverprofile="$f" "$pkg"
+        go test -covermode="$mode" -coverprofile="$f" "$pkg" || failingTests=true
     done
 
     echo "mode: $mode" >"$profile"
     grep -h -v "^mode:" "$workdir"/*.cover >>"$profile"
+
+    if [[ $failingTests == true ]]; then
+        exit 1
+    fi
 }
 
 show_cover_report() {
