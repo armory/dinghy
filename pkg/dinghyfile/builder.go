@@ -153,6 +153,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		// Add ids to existing pipelines
 		if id, exists := ids[p.Name]; exists {
 			log.Debug("Added id ", id, " to pipeline ", p.Name)
+			p.ID = id
 			checklist[id] = true
 		}
 		log.Info("Updating pipeline: " + p.Name)
