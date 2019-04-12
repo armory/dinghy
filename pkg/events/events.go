@@ -77,7 +77,8 @@ func (c *Client) postEvent(event payload) error {
 	if err != nil {
 		return err
 	}
-	// we need to set Authorization header to talk to debug
+
+	req.Header.Set("Content-Type", "application/json")
 	req = req.WithContext(c.Ctx)
 	res, err := c.Client.Do(req)
 	if err != nil {
