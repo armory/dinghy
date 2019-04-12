@@ -38,6 +38,10 @@ func NewDefaultSettings() Settings {
 				Enabled: "true",
 				BaseURL: util.GetenvOrDefault("FRONT50_BASE_URL", "http://front50:8080"),
 			},
+			Echo: spinnakerService{
+				Enabled: "true",
+				BaseURL: util.GetenvOrDefault("ECHO_BASE_URL", "http://echo:8089"),
+			},
 			Fiat: fiat{
 				spinnakerService: spinnakerService{
 					Enabled: "false",

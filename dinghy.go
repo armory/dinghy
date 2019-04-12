@@ -76,7 +76,7 @@ func main() {
 
 	// Create the EventClient
 	ctx := context.Background()
-	ec := events.NewEventClient(ctx, &config.Logging)
+	ec := events.NewEventClient(ctx, config)
 
 	redis := cache.NewRedisCache(newRedisOptions(config.Redis))
 	api := web.NewWebAPI(config, redis, client, ec)

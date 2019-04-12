@@ -199,8 +199,12 @@ func TestNestedVars(t *testing.T) {
 		TemplateOrg:    "org",
 		TemplateRepo:   "repo",
 		EventClient: &events.Client{
-			LogSettings: &settings.RemoteLogging{
-				Enabled: false,
+			Settings: &settings.Settings{
+				Logging: settings.Logging{
+					Remote: settings.RemoteLogging{
+						Enabled: false,
+					},
+				},
 			},
 		},
 	}
@@ -325,8 +329,12 @@ func TestGlobalVars(t *testing.T) {
 				Downloader:     fileService,
 				DinghyfileName: filepath.Base(c.filename),
 				EventClient: &events.Client{
-					LogSettings: &settings.RemoteLogging{
-						Enabled: false,
+					Settings: &settings.Settings{
+						Logging: settings.Logging{
+							Remote: settings.RemoteLogging{
+								Enabled: false,
+							},
+						},
 					},
 				},
 			}
@@ -344,8 +352,12 @@ func TestSimpleWaitStage(t *testing.T) {
 		Depman:     cache.NewMemoryCache(),
 		Downloader: fileService,
 		EventClient: &events.Client{
-			LogSettings: &settings.RemoteLogging{
-				Enabled: false,
+			Settings: &settings.Settings{
+				Logging: settings.Logging{
+					Remote: settings.RemoteLogging{
+						Enabled: false,
+					},
+				},
 			},
 		},
 	}
@@ -374,8 +386,12 @@ func TestSpillover(t *testing.T) {
 		Depman:     cache.NewMemoryCache(),
 		Downloader: fileService,
 		EventClient: &events.Client{
-			LogSettings: &settings.RemoteLogging{
-				Enabled: false,
+			Settings: &settings.Settings{
+				Logging: settings.Logging{
+					Remote: settings.RemoteLogging{
+						Enabled: false,
+					},
+				},
 			},
 		},
 	}
@@ -407,8 +423,12 @@ func TestModuleVariableSubstitution(t *testing.T) {
 		Depman:     cache.NewMemoryCache(),
 		Downloader: fileService,
 		EventClient: &events.Client{
-			LogSettings: &settings.RemoteLogging{
-				Enabled: false,
+			Settings: &settings.Settings{
+				Logging: settings.Logging{
+					Remote: settings.RemoteLogging{
+						Enabled: false,
+					},
+				},
 			},
 		},
 	}
@@ -434,8 +454,12 @@ func TestModuleEmptyString(t *testing.T) {
 		Depman:     cache.NewMemoryCache(),
 		Downloader: fileService,
 		EventClient: &events.Client{
-			LogSettings: &settings.RemoteLogging{
-				Enabled: false,
+			Settings: &settings.Settings{
+				Logging: settings.Logging{
+					Remote: settings.RemoteLogging{
+						Enabled: false,
+					},
+				},
 			},
 		},
 	}
@@ -451,8 +475,12 @@ func TestDeepVars(t *testing.T) {
 		TemplateOrg:    "org",
 		TemplateRepo:   "repo",
 		EventClient: &events.Client{
-			LogSettings: &settings.RemoteLogging{
-				Enabled: false,
+			Settings: &settings.Settings{
+				Logging: settings.Logging{
+					Remote: settings.RemoteLogging{
+						Enabled: false,
+					},
+				},
 			},
 		},
 	}
@@ -501,8 +529,12 @@ func TestEmptyDefaultVar(t *testing.T) {
 		TemplateOrg:    "org",
 		TemplateRepo:   "repo",
 		EventClient: &events.Client{
-			LogSettings: &settings.RemoteLogging{
-				Enabled: false,
+			Settings: &settings.Settings{
+				Logging: settings.Logging{
+					Remote: settings.RemoteLogging{
+						Enabled: false,
+					},
+				},
 			},
 		},
 	}

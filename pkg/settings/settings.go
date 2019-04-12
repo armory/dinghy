@@ -24,6 +24,7 @@ type spinnakerSupplied struct {
 	Orca    spinnakerService `json:"orca,omitempty" yaml:"orca"`
 	Front50 spinnakerService `json:"front50,omitempty" yaml:"front50"`
 	Deck    spinnakerService `json:"deck,omitempty" yaml:"deck"`
+	Echo    spinnakerService `json:"echo,omitempty" yaml:"echo"`
 	Fiat    fiat             `json:"fiat,omitempty" yaml:"fiat"`
 	Redis   Redis            `json:"redis,omitempty" yaml:"redis"`
 }

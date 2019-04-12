@@ -14,9 +14,9 @@ import (
 )
 
 type Client struct {
-	Client      *retryablehttp.Client
-	LogSettings *settings.RemoteLogging
-	Ctx         context.Context
+	Client   *retryablehttp.Client
+	Settings *settings.Settings
+	Ctx      context.Context
 }
 
 type Event struct {
@@ -34,31 +34,29 @@ type details struct {
 }
 
 type payload struct {
-	CustomerID string  `json:"customer_id"`
-	Details    details `json:"details"`
-	Event      *Event  `json:"dinghy"`
+	Details details `json:"details"`
+	Event   *Event  `json:"content"`
 }
 
-func NewEventClient(ctx context.Context, logSettings *settings.Logging) *Client {
+func NewEventClient(ctx context.Context, settings *settings.Settings) *Client {
 	c := retryablehttp.NewClient()
 	c.HTTPClient.Transport = cleanhttp.DefaultPooledTransport() // reuse the client so we can pipeline stuff
 	return &Client{
-		Client:      c,
-		LogSettings: &logSettings.Remote,
-		Ctx:         ctx,
+		Client:   c,
+		Settings: settings,
+		Ctx:      ctx,
 	}
 }
 
 func (c *Client) SendEvent(eventType string, event *Event) {
-	if !c.LogSettings.Enabled {
+	if !c.Settings.Logging.Remote.Enabled {
 		return
 	}
 
 	payload := payload{
-		CustomerID: c.LogSettings.CustomerID,
 		Details: details{
 			Source:  "dinghy",
-			Version: c.LogSettings.Version,
+			Version: c.Settings.Logging.Remote.Version,
 			Type:    eventType,
 		},
 		Event: event,
@@ -75,19 +73,18 @@ func (c *Client) postEvent(event payload) error {
 	if err != nil {
 		return err
 	}
-	req, err := retryablehttp.NewRequest(http.MethodPost, c.LogSettings.Endpoint, postData)
+	req, err := retryablehttp.NewRequest(http.MethodPost, c.Settings.Echo.BaseURL, postData)
 	if err != nil {
 		return err
 	}
 	// we need to set Authorization header to talk to debug
-	req.Header.Set("Authorization", fmt.Sprintf("Armory %s", c.LogSettings.CustomerID))
 	req = req.WithContext(c.Ctx)
 	res, err := c.Client.Do(req)
 	if err != nil {
 		return err
 	}
 	if res.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("debug at %s returned %d", c.LogSettings.Endpoint, res.StatusCode))
+		return errors.New(fmt.Sprintf("debug at %s returned %d", c.Settings.Echo.BaseURL, res.StatusCode))
 	}
 	return nil
 }
