@@ -19,4 +19,4 @@ deck:
   baseUrl: ${services.deck.baseUrl}
 
 echo:
-  baseURL: ${services.echo.baseURL}
+  baseURL: ${services.echo.baseUrl}
