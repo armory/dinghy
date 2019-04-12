@@ -19,5 +19,4 @@ deck:
   baseUrl: ${services.deck.baseUrl}
 
 echo:
-  enabled: ${services.echo.enabled}
   baseURL: ${services.echo.baseURL}
