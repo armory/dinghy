@@ -13,6 +13,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type EventClient interface {
+	SendEvent(string, *Event)
+}
+
 type Client struct {
 	Client   *retryablehttp.Client
 	Settings *settings.Settings
@@ -49,10 +53,6 @@ func NewEventClient(ctx context.Context, settings *settings.Settings) *Client {
 }
 
 func (c *Client) SendEvent(eventType string, event *Event) {
-	if !c.Settings.Logging.Remote.Enabled {
-		return
-	}
-
 	payload := payload{
 		Details: details{
 			Source:  "dinghy",

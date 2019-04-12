@@ -19,7 +19,7 @@ type PipelineBuilder struct {
 	Client               *plank.Client
 	DeleteStalePipelines bool
 	AutolockPipelines    string
-	EventClient          *events.Client
+	EventClient          events.EventClient
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
