@@ -1,0 +1,22 @@
+# halconfig
+
+redis:
+  baseUrl: ${services.redis.baseUrl}
+
+orca:
+  enabled: ${services.orca.enabled}
+  baseUrl: ${services.orca.baseUrl}
+
+front50:
+  enabled: ${services.front50.enabled}
+  baseUrl: ${services.front50.baseUrl}
+
+fiat:
+  enabled: ${services.fiat.enabled}
+  baseUrl: ${services.fiat.baseUrl}
+
+deck:
+  baseUrl: ${services.deck.baseUrl}
+
+echo:
+  baseURL: ${services.echo.baseUrl}
