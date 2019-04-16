@@ -1,0 +1,10 @@
+language: go
+sudo: false
+go:
+  - 1.12.x
+  - master
+env:
+  - GO111MODULE=on
+  - GO111MODULE=auto
+script:
+  - go test -v ./...
