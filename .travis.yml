@@ -5,6 +5,8 @@ go:
   - master
 env:
   - GO111MODULE=on
-  - GO111MODULE=auto
+  - GOFLAGS='-mod=vendor'
+  - GOOS=linux 
+  - GOARCH=amd64
 script:
   - go test -v ./...
