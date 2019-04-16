@@ -1,0 +1,37 @@
+{
+  "application": "dinghy",
+  "variables": {
+    "WaitTime1": 60,
+    "WaitTime2": 60,
+    "limit": 1
+  },
+  "pipelines": [
+    {
+      "application": "dinghy",
+      "keepWaitingPipelines": false,
+      "limitConcurrent": {{ variable limit }},
+      "name": "Simple",
+      "stages": [
+        {{ module "./wait.stage.module"  {Name: "waitTime", Value: 10}  }}
+      ],
+      "triggers": []
+    },
+    {{ module "./simple.pipeline.module" }}
+  ]
+}
+
+
+type Variable struct {
+    Name string
+    Value interface{}
+}
+
+func module(name string, vars ...Variable) {
+
+}
+
+/*
+
+
+
+*/
