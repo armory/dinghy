@@ -65,7 +65,7 @@ func main() {
 		logLevelStr = strings.ToLower(config.Logging.Level)
 		log.Info("Debug level set to ", config.Logging.Level, " from settings")
 	}
-	logLevel, err := log.ParseLevel("DEBUG")
+	logLevel, err := log.ParseLevel(logLevelStr)
 	if err != nil {
 		log.Fatalf("Invalid log level: " + logLevelStr)
 	}
