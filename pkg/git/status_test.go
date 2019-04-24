@@ -12,14 +12,14 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package git
 
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
-	// "github.com/armory-io/dinghy/pkg/settings"
+	// "github.com/armory/dinghy/pkg/settings"
 )
 
 func TestTrue(t *testing.T) {

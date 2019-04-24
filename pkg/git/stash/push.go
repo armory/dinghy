@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package stash
 
@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/armory-io/dinghy/pkg/git"
+	"github.com/armory/dinghy/pkg/git"
 	log "github.com/sirupsen/logrus"
 )
 

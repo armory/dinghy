@@ -12,14 +12,14 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package dinghyfile
 
 import (
 	"errors"
 
-	"github.com/armory-io/dinghy/pkg/events"
+	"github.com/armory/dinghy/pkg/events"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/armory/plank"
