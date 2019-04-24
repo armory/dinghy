@@ -1,12 +1,9 @@
 language: go
 sudo: false
 go:
-  - 1.12.x
-  - master
+  - tip
 env:
   - GO111MODULE=on
-  - GOFLAGS='-mod=vendor'
-  - GOOS=linux 
-  - GOARCH=amd64
+  - GO111MODULE=auto
 script:
   - go test -v ./...
