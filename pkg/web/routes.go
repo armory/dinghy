@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package web
 
@@ -22,21 +22,21 @@ import (
 	"net/http/httputil"
 	"strings"
 
-	"github.com/armory-io/dinghy/pkg/events"
-	"github.com/armory-io/dinghy/pkg/git/bbcloud"
+	"github.com/armory/dinghy/pkg/events"
+	"github.com/armory/dinghy/pkg/git/bbcloud"
 	"github.com/armory/plank"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/armory-io/dinghy/pkg/cache"
-	"github.com/armory-io/dinghy/pkg/dinghyfile"
-	"github.com/armory-io/dinghy/pkg/git"
-	"github.com/armory-io/dinghy/pkg/git/dummy"
-	"github.com/armory-io/dinghy/pkg/git/github"
-	"github.com/armory-io/dinghy/pkg/git/stash"
-	"github.com/armory-io/dinghy/pkg/settings"
-	"github.com/armory-io/dinghy/pkg/util"
+	"github.com/armory/dinghy/pkg/cache"
+	"github.com/armory/dinghy/pkg/dinghyfile"
+	"github.com/armory/dinghy/pkg/git"
+	"github.com/armory/dinghy/pkg/git/dummy"
+	"github.com/armory/dinghy/pkg/git/github"
+	"github.com/armory/dinghy/pkg/git/stash"
+	"github.com/armory/dinghy/pkg/settings"
+	"github.com/armory/dinghy/pkg/util"
 )
 
 // Push represents a push notification from a git service.

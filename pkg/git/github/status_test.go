@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package github
 
@@ -22,7 +22,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/armory-io/dinghy/pkg/git"
+	"github.com/armory/dinghy/pkg/git"
 )
 
 func TestSetCommitStatusSuccessfully(t *testing.T) {
@@ -35,7 +35,7 @@ func TestSetCommitStatusSuccessfully(t *testing.T) {
 		GitHub: GitHub{
 			Endpoint: ts.URL,
 		},
-		Repository: Repository{Organization: "armory-io", Name: "dinghy"},
+		Repository: Repository{Organization: "armory", Name: "dinghy"},
 		Commits: []Commit{
 			{
 				ID: "ABC",
@@ -53,7 +53,7 @@ func TestSetCommitStatusFails(t *testing.T) {
 		GitHub: GitHub{
 			Endpoint: "invalid-url",
 		},
-		Repository: Repository{Organization: "armory-io", Name: "dinghy"},
+		Repository: Repository{Organization: "armory", Name: "dinghy"},
 		Commits: []Commit{
 			{
 				ID: "ABC",

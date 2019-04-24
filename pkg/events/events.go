@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package events
 
@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/armory-io/dinghy/pkg/settings"
+	"github.com/armory/dinghy/pkg/settings"
 	cleanhttp "github.com/hashicorp/go-cleanhttp"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	log "github.com/sirupsen/logrus"
