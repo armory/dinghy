@@ -1,4 +1,4 @@
-module github.com/armory-io/dinghy
+module github.com/armory/dinghy
 
 require (
 	github.com/armory-io/monitoring v0.0.4
