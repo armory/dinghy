@@ -4,6 +4,8 @@ go:
   - tip
 env:
   - GO111MODULE=on
-  - GO111MODULE=auto
-script:
-  - go test -v ./...
+install: 
+  - true
+script: 
+  - go test -v -mod=vendor ./...
+
