@@ -32,6 +32,7 @@ type Client struct {
 	retryIncrement time.Duration
 	maxRetry       int
 	URLs           map[string]string
+	FiatUser       string
 }
 
 type ContentType string
@@ -69,6 +70,12 @@ func New(httpClient *http.Client) *Client {
 	return c
 }
 
+func NewAuthenticated(user string, httpClient *http.Client) *Client {
+	c := New(httpClient)
+	c.FiatUser = user
+	return c
+}
+
 type RequestFunction func() error
 
 func (c *Client) RequestWithRetry(f RequestFunction) error {
@@ -88,7 +95,15 @@ func (c *Client) RequestWithRetry(f RequestFunction) error {
 
 // Get a JSON payload from the URL then decode it into the 'dest' arguement.
 func (c *Client) Get(url string, dest interface{}) error {
-	resp, err := c.http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	if c.FiatUser != "" {
+		req.Header.Set("X-Spinnaker-User", c.FiatUser)
+	}
+
+	resp, err := c.http.Do(req)
 	if err != nil {
 		return err
 	}
@@ -115,7 +130,17 @@ func (c *Client) Post(url string, contentType ContentType, body interface{}, des
 	if err != nil {
 		return fmt.Errorf("could not post - body could not be marshaled to json - %v", err)
 	}
-	resp, err := c.http.Post(url, string(contentType), bytes.NewBuffer(jsonBody))
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return err
+	}
+	if c.FiatUser != "" {
+		req.Header.Set("X-Spinnaker-User", c.FiatUser)
+	}
+	req.Header.Set("Content-Type", string(contentType))
+
+	resp, err := c.http.Do(req)
 	if err != nil {
 		return err
 	}
@@ -156,6 +181,9 @@ func (c *Client) Put(url string, contentType ContentType, body interface{}, dest
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return err
+	}
+	if c.FiatUser != "" {
+		req.Header.Set("X-Spinnaker-User", c.FiatUser)
 	}
 	req.Header.Set("Content-Type", string(contentType))
 	resp, err := c.http.Do(req)
