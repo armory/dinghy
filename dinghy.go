@@ -27,11 +27,11 @@ import (
 	"github.com/armory-io/monitoring/log/hooks"
 	"github.com/armory/plank"
 
-	"github.com/armory-io/dinghy/pkg/cache"
-	"github.com/armory-io/dinghy/pkg/events"
-	"github.com/armory-io/dinghy/pkg/settings"
-	"github.com/armory-io/dinghy/pkg/util"
-	"github.com/armory-io/dinghy/pkg/web"
+	"github.com/armory/dinghy/pkg/cache"
+	"github.com/armory/dinghy/pkg/events"
+	"github.com/armory/dinghy/pkg/settings"
+	"github.com/armory/dinghy/pkg/util"
+	"github.com/armory/dinghy/pkg/web"
 	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
 )
