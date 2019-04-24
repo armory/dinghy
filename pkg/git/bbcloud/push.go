@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package bbcloud
 
@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/armory-io/dinghy/pkg/git"
+	"github.com/armory/dinghy/pkg/git"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -222,7 +222,7 @@ func handleDiffstatResponse(resp *http.Response, err error) (changedFiles []stri
 // ContainsFile checks to see if a given file is in the push.
 func (p *Push) ContainsFile(file string) bool {
 	for _, name := range p.ChangedFiles {
-		if strings.Contains(name, file){
+		if strings.Contains(name, file) {
 			return true
 		}
 	}

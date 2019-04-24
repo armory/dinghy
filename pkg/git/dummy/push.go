@@ -12,11 +12,11 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package dummy
 
-import "github.com/armory-io/dinghy/pkg/git"
+import "github.com/armory/dinghy/pkg/git"
 
 // Push contains data about a push full of commits
 type Push struct {

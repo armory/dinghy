@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package dinghyfile
 
@@ -25,8 +25,8 @@ import (
 
 	"text/template"
 
-	"github.com/armory-io/dinghy/pkg/events"
-	"github.com/armory-io/dinghy/pkg/preprocessor"
+	"github.com/armory/dinghy/pkg/events"
+	"github.com/armory/dinghy/pkg/preprocessor"
 	log "github.com/sirupsen/logrus"
 )
 

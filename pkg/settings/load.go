@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 // Package settings is a single place to put all of the application settings.
 package settings
@@ -26,7 +26,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 
-	"github.com/armory-io/dinghy/pkg/util"
+	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/go-yaml-tools/pkg/spring"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
