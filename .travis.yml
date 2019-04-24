@@ -1,11 +1,7 @@
 language: go
 sudo: false
-go:
-  - tip
-env:
-  - GO111MODULE=on
-install: 
-  - true
-script: 
-  - go test -v -mod=vendor ./...
+go: tip
+env: GO111MODULE=on
+install: true
+script: go test -v -mod=vendor ./...
 
