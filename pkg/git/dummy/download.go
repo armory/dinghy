@@ -12,14 +12,14 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package dummy
 
 import (
 	"fmt"
 
-	"github.com/armory-io/dinghy/pkg/git/github"
+	"github.com/armory/dinghy/pkg/git/github"
 )
 
 // FileService serves a map[string]string of files -> file contents

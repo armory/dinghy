@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package main
 
@@ -27,11 +27,11 @@ import (
 	"github.com/armory-io/monitoring/log/hooks"
 	"github.com/armory/plank"
 
-	"github.com/armory-io/dinghy/pkg/cache"
-	"github.com/armory-io/dinghy/pkg/events"
-	"github.com/armory-io/dinghy/pkg/settings"
-	"github.com/armory-io/dinghy/pkg/util"
-	"github.com/armory-io/dinghy/pkg/web"
+	"github.com/armory/dinghy/pkg/cache"
+	"github.com/armory/dinghy/pkg/events"
+	"github.com/armory/dinghy/pkg/settings"
+	"github.com/armory/dinghy/pkg/util"
+	"github.com/armory/dinghy/pkg/web"
 	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
 )
@@ -76,15 +76,8 @@ func main() {
 		}
 	}
 
-	// if Fiat is enabled, use the Fiat service account when making API requests
-	apiClientHeaders := map[string]string{}
-	if config.Fiat.Enabled == "true" && config.Fiat.AuthUser != "" {
-		log.Infof("Fiat is enabled. Setting up auth headers for API client.")
-		apiClientHeaders["X-Spinnaker-User"] = config.Fiat.AuthUser
-	}
-
 	// New API client; nil arg uses default HTTP client.
-	client := plank.New(nil)
+	client := plank.NewAuthenticated(config.Fiat.AuthUser, nil)
 
 	// Update the base URLs based on config
 	client.URLs["orca"] = config.Orca.BaseURL
