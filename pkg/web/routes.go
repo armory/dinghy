@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package web
 
@@ -120,7 +120,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 	if p.Ref == "" {
 		// Unmarshal failed, might be a non-Push notification. Log event and return
-		log.Debug("Possibly a non-Push notification received")
+		log.Info("Possibly a non-Push notification received")
 		return
 	}
 

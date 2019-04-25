@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package dinghyfile
 
@@ -154,7 +154,9 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 	_, err := b.Client.GetApplication(app.Name)
 	if err != nil {
 		// Likely just not there...
+		log.Infof("Creating application '%s'...", app.Name)
 		if err := b.Client.CreateApplication(app); err != nil {
+			log.Errorf("Failed to create application (%s)", err.Error())
 			return err
 		}
 	}
@@ -180,6 +182,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			p.Lock()
 		}
 		if err := b.Client.UpsertPipeline(p); err != nil {
+			log.Errorf("Upsert failed: %s", err.Error())
 			return err
 		}
 	}
