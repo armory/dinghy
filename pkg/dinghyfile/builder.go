@@ -178,8 +178,10 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			log.Debug("Added id ", id, " to pipeline ", p.Name)
 			p.ID = id
 			checklist[id] = true
+			log.Info("Updating pipeline: " + p.Name)
+		} else {
+			log.Info("Creating pipeline: " + p.Name)
 		}
-		log.Info("Updating pipeline: " + p.Name)
 		if autoLock == "true" {
 			log.Debug("Locking pipeline ", p.Name)
 			p.Lock()
@@ -188,11 +190,13 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			log.Errorf("Upsert failed: %s", err.Error())
 			return err
 		}
+		log.Info("Upsert succeeded.")
 	}
 	if deleteStale {
 		// clear existing pipelines that weren't updated
 		for _, p := range pipelines {
 			if !checklist[p.ID] {
+				log.Infof("Deleting stale pipeline %s", p.Name)
 				if err := b.Client.DeletePipeline(p); err != nil {
 					// Not worrying about handling errors here because it just means it
 					// didn't get deleted *this time*.
