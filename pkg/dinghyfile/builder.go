@@ -105,16 +105,19 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	// Render the dinghyfile and decode it into a Dinghyfile object
 	buf, err := b.Render(org, repo, path, nil)
 	if err != nil {
+		log.Errorf("Failed to render dinghyfile %s: %s", path, err.Error())
 		return err
 	}
 	log.Debug("Rendered: ", buf.String())
 	d, err := UpdateDinghyfile(buf.Bytes())
 	if err != nil {
+		log.Errorf("Failed to update dinghyfile %s: %s", path, err.Error())
 		return err
 	}
 	log.Debug("Updated: ", buf.String())
 
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
+		log.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
 		return err
 	}
 
