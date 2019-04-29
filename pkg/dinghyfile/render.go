@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package dinghyfile
 
@@ -59,6 +59,7 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []
 			log.Warnf("odd number of parameters received to module %s", mod)
 		}
 
+		// Convert module argument pairs to key/value map
 		newVars := make(varMap)
 		for i := 0; i+1 < length; i += 2 {
 			key, ok := vars[i].(string)
@@ -180,12 +181,14 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	// Download the template being rendered.
 	contents, err := b.Downloader.Download(org, repo, path)
 	if err != nil {
+		log.Error("Failed to download")
 		return nil, err
 	}
 
 	// Preprocess to stringify any json args in calls to modules.
 	contents, err = preprocessor.Preprocess(contents)
 	if err != nil {
+		log.Error("Failed to preprocess")
 		return nil, err
 	}
 
@@ -193,6 +196,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	if filepath.Base(path) == b.DinghyfileName {
 		gvs, err := preprocessor.ParseGlobalVars(contents)
 		if err != nil {
+			log.Error("Failed to parse global vars")
 			return nil, err
 		}
 
@@ -216,6 +220,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	// Parse the downloaded template.
 	tmpl, err := template.New("dinghy-render").Funcs(funcMap).Parse(contents)
 	if err != nil {
+		log.Error("Failed to parse template")
 		return nil, err
 	}
 
@@ -223,6 +228,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	buf := new(bytes.Buffer)
 	err = tmpl.Execute(buf, "")
 	if err != nil {
+		log.Error("Failed to execute buffer")
 		return nil, err
 	}
 
