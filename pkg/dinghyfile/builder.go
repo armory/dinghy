@@ -166,6 +166,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 
 	ids, _ := b.PipelineIDs(app.Name)
 	checklist := make(map[string]bool)
+	createIgnore := make(map[string]bool)
 	idToName := make(map[string]string)
 	for name, id := range ids {
 		checklist[id] = false
@@ -180,6 +181,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			checklist[id] = true
 			log.Info("Updating pipeline: " + p.Name)
 		} else {
+			createIgnore[p.Name] = true
 			log.Info("Creating pipeline: " + p.Name)
 		}
 		if autoLock == "true" {
@@ -195,6 +197,9 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 	if deleteStale {
 		// clear existing pipelines that weren't updated
 		for _, p := range pipelines {
+			if createIgnore[p.Name] {
+				continue
+			}
 			if !checklist[p.ID] {
 				log.Infof("Deleting stale pipeline %s", p.Name)
 				if err := b.Client.DeletePipeline(p); err != nil {
