@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"net"
 	"net/http"
+	"runtime"
 	"time"
 )
 
@@ -37,6 +39,47 @@ type Client struct {
 
 type ContentType string
 
+type ClientOption func(*Client)
+
+func WithClient(client *http.Client) ClientOption {
+	return func(c *Client) {
+		c.http = client
+	}
+}
+
+func WithTransport(transport *http.Transport) ClientOption {
+	return func(c *Client) {
+		c.http.Transport = transport
+	}
+}
+
+func WithRetryIncrement(t time.Duration) ClientOption {
+	return func(c *Client) {
+		c.retryIncrement = t
+	}
+}
+
+func WithMaxRetries(retries int) ClientOption {
+	return func(c *Client) {
+		c.maxRetry = retries
+	}
+}
+
+func WithFiatUser(user string) ClientOption {
+	return func(c *Client) {
+		c.FiatUser = user
+	}
+}
+
+func WithURLs(urls map[string]string) ClientOption {
+	return func(c *Client) {
+		c.URLs = make(map[string]string)
+		for k, v := range urls {
+			c.URLs[k] = v
+		}
+	}
+}
+
 const (
 	ApplicationJson        ContentType = "application/json"
 	ApplicationContextJson ContentType = "application/context+json"
@@ -49,11 +92,22 @@ var DefaultURLs = map[string]string{
 	"fiat":    "http://armory-fiat:7003",
 }
 
-// New constructs a Client using the given http.Client-compatible client.
-// Pass nil if you want to just use the default http.Client structure.
-func New(httpClient *http.Client) *Client {
-	if httpClient == nil {
-		httpClient = &http.Client{}
+// New constructs a Client using a default client and sane non-shared http transport
+func New(opts ...ClientOption) *Client {
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
+		},
 	}
 	c := &Client{
 		http:           httpClient,
@@ -67,12 +121,9 @@ func New(httpClient *http.Client) *Client {
 	for k, v := range DefaultURLs {
 		c.URLs[k] = v
 	}
-	return c
-}
-
-func NewAuthenticated(user string, httpClient *http.Client) *Client {
-	c := New(httpClient)
-	c.FiatUser = user
+	for _, opt := range opts {
+		opt(c)
+	}
 	return c
 }
 

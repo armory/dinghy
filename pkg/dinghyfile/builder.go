@@ -108,13 +108,13 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 		log.Errorf("Failed to render dinghyfile %s: %s", path, err.Error())
 		return err
 	}
-	log.Debug("Rendered: ", buf.String())
+	log.Info("Rendered: ", buf.String())
 	d, err := UpdateDinghyfile(buf.Bytes())
 	if err != nil {
 		log.Errorf("Failed to update dinghyfile %s: %s", path, err.Error())
 		return err
 	}
-	log.Debug("Updated: ", buf.String())
+	log.Info("Updated: ", buf.String())
 
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 		log.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
@@ -145,8 +145,8 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 
 	if errEncountered {
 		log.Error("The following dinghyfiles weren't updated successfully:")
-		for d := range failedUpdates {
-			log.Error(d)
+		for _, url := range failedUpdates {
+			log.Error(url)
 		}
 		return errors.New("Not all upstream dinghyfiles were updated successfully")
 	}

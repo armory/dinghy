@@ -77,7 +77,7 @@ func main() {
 	}
 
 	// New API client; nil arg uses default HTTP client.
-	client := plank.NewAuthenticated(config.Fiat.AuthUser, nil)
+	client := plank.New(plank.WithFiatUser(config.Fiat.AuthUser))
 
 	// Update the base URLs based on config
 	client.URLs["orca"] = config.Orca.BaseURL
