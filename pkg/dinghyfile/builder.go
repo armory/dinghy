@@ -165,11 +165,10 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 	}
 
 	ids, _ := b.PipelineIDs(app.Name)
-	checklist := make(map[string]bool)
-	createIgnore := make(map[string]bool)
+	ignoreList := make(map[string]bool)
 	idToName := make(map[string]string)
 	for name, id := range ids {
-		checklist[id] = false
+		ignoreList[id] = false
 		idToName[id] = name
 	}
 	log.Info("Found pipelines for ", app, ": ", ids)
@@ -177,11 +176,12 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		// Add ids to existing pipelines
 		if id, exists := ids[p.Name]; exists {
 			log.Debug("Added id ", id, " to pipeline ", p.Name)
-			p.ID = id
-			checklist[id] = true
+			ignoreList[p.Name] = true
+			p.ID = id //note: we're working with a copy.  once this loop exits all changes go out of scope!
 			log.Info("Updating pipeline: " + p.Name)
 		} else {
-			createIgnore[p.Name] = true
+			log.Debug("Adding ", p.Name, " to ignored stale pipelines")
+			ignoreList[p.Name] = true
 			log.Info("Creating pipeline: " + p.Name)
 		}
 		if autoLock == "true" {
@@ -196,11 +196,9 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 	}
 	if deleteStale {
 		// clear existing pipelines that weren't updated
+		log.Debug("Pipelines we should ignore because they were just created: ", ignoreList)
 		for _, p := range pipelines {
-			if createIgnore[p.Name] {
-				continue
-			}
-			if !checklist[p.ID] {
+			if !ignoreList[p.Name] {
 				log.Infof("Deleting stale pipeline %s", p.Name)
 				if err := b.Client.DeletePipeline(p); err != nil {
 					// Not worrying about handling errors here because it just means it
