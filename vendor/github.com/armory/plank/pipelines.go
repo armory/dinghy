@@ -57,20 +57,11 @@ func (c *Client) pipelinesURL() string {
 	return c.URLs["front50"] + "/pipelines"
 }
 
-// GetPipeline by app name and pipeline name.
-func (c *Client) GetPipeline(app, pipeline string) (*Pipeline, error) {
-	var p Pipeline
-	if err := c.GetWithRetry(c.URLs["front50"] + "/applications/" + app + "/pipelineConfigs/" + pipeline, &p); err != nil {
-		return nil, err
-	}
-	return &p, nil
-}
-
 // Get returns an array of all the Spinnaker pipelines
 // configured for app
 func (c *Client) GetPipelines(app string) ([]Pipeline, error) {
 	var pipelines []Pipeline
-	if err := c.GetWithRetry(c.URLs["front50"] + "/applications/" + app + "/pipelineConfigs", &pipelines); err != nil {
+	if err := c.GetWithRetry(c.pipelinesURL() + "/" + app, &pipelines); err != nil {
 		return nil, fmt.Errorf("could not get pipelines for %s - %v", app, err)
 	}
 	return pipelines, nil

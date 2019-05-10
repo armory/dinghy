@@ -92,5 +92,13 @@ clean:
 	rm -rf ${BUILD_DIR}
 	go clean
 
+# mac users need to use gnu-sed
+dep:
+	@echo "upgrading $(dep) to $(version)"
+	$(eval OLD_VERSION := $(shell grep $(dep) go.mod | awk '{print $$2}'))
+	$(eval CURR_BRANCH := $(shell git rev-parse --abbrev-ref HEAD))
+	sed -i -e 's/$(dep) $(OLD_VERSION)/$(dep) $(version)/g' go.mod
+	go mod vendor
+
 .PHONY: lint linux darwin test vet fmt clean run
 

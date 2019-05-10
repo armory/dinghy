@@ -223,3 +223,23 @@ func (b *PipelineBuilder) PipelineIDs(app string) (map[string]string, error) {
 	}
 	return ids, nil
 }
+
+// if a pipeline doesn't exist, create one and return an id for it
+func (b *PipelineBuilder) GetPipelinebyID(app, pipelineName string) (string, error) {
+	ids, err := b.PipelineIDs(app)
+	if err != nil {
+		return "", err
+	}
+	id, exists := ids[pipelineName]
+	if !exists {
+		err := b.Client.UpsertPipeline(plank.Pipeline{
+			Application: app,
+			Name: pipelineName,
+		}, "")
+		if err != nil {
+			return "", err
+		}
+		return b.GetPipelinebyID(app, pipelineName)
+	}
+	return id, nil
+}

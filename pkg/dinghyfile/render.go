@@ -101,11 +101,11 @@ func pipelineIDFunc(b *PipelineBuilder, vars []varMap) interface{} {
 				log.Info("Substituting pipeline trigger appname: ", app)
 			}
 		}
-		pipeline, err := b.Client.GetPipeline(app, pipelineName)
+		id, err := b.GetPipelinebyID(app, pipelineName)
 		if err != nil {
 			log.Errorf("could not get pipeline id for app %s, pipeline %s, err = %v", app, pipelineName, err)
 		}
-		return pipeline.ID
+		return id
 	}
 }
 
