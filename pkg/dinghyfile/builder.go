@@ -18,7 +18,6 @@ package dinghyfile
 
 import (
 	"errors"
-
 	"github.com/armory-io/dinghy/pkg/events"
 	log "github.com/sirupsen/logrus"
 
@@ -85,6 +84,7 @@ var (
 func UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error) {
 	d := NewDinghyfile()
 	if err := Unmarshal(dinghyfile, &d); err != nil {
+		log.Errorf("UpdateDinghyfile malformed json: %s", err.Error())
 		return d, ErrMalformedJSON
 	}
 	log.Info("Unmarshalled: ", d)
@@ -236,7 +236,7 @@ func (b *PipelineBuilder) GetPipelinebyID(app, pipelineName string) (string, err
 	if !exists {
 		err := b.Client.UpsertPipeline(plank.Pipeline{
 			Application: app,
-			Name: pipelineName,
+			Name:        pipelineName,
 		}, "")
 		if err != nil {
 			return "", err
