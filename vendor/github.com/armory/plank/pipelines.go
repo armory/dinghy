@@ -35,6 +35,7 @@ type Pipeline struct {
 	Triggers             []map[string]interface{} `json:"triggers,omitempty"`
 	Parameters           []map[string]interface{} `json:"parameterConfig,omitempty"`
 	Notifications        []map[string]interface{} `json:"notifications,omitempty"`
+	ExpectedArtifacts    []map[string]interface{} `json:"expectedArtifacts,omitempty"`
 	LastModifiedBy       string                   `json:"lastModifiedBy"`
 	Config               interface{}              `json:"config,omitempty"`
 	UpdateTs             string                   `json:"updateTs"`
@@ -61,7 +62,7 @@ func (c *Client) pipelinesURL() string {
 // configured for app
 func (c *Client) GetPipelines(app string) ([]Pipeline, error) {
 	var pipelines []Pipeline
-	if err := c.GetWithRetry(c.pipelinesURL() + "/" + app, &pipelines); err != nil {
+	if err := c.GetWithRetry(c.pipelinesURL()+"/"+app, &pipelines); err != nil {
 		return nil, fmt.Errorf("could not get pipelines for %s - %v", app, err)
 	}
 	return pipelines, nil

@@ -124,6 +124,13 @@ func TestUpdateDinghyfile(t *testing.T) {
 				"pipelines": [
 					{
 						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
 						"stages": [
 							{
 								"foo": {
@@ -147,6 +154,13 @@ func TestUpdateDinghyfile(t *testing.T) {
 				Pipelines: []plank.Pipeline{
 					{
 						Name: "test",
+						ExpectedArtifacts: []map[string]interface{}{
+							{
+								"foo": map[string]interface{}{
+									"bar": "baz",
+								},
+							},
+						},
 						Stages: []map[string]interface{}{
 							{
 								"foo": map[string]interface{}{
