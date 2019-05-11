@@ -115,6 +115,7 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 		return err
 	}
 	log.Info("Updated: ", buf.String())
+	log.Info("Dinghyfile struct: ", d)
 
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 		log.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
@@ -174,6 +175,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 	log.Info("Found pipelines for ", app, ": ", ids)
 	for _, p := range pipelines {
 		// Add ids to existing pipelines
+		log.Info("Processing pipeline ", p)
 		if id, exists := ids[p.Name]; exists {
 			log.Debug("Added id ", id, " to pipeline ", p.Name)
 			ignoreList[p.Name] = true

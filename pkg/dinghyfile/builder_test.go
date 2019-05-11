@@ -105,4 +105,65 @@ func TestUpdateDinghyfile(t *testing.T) {
 			assert.Equal(t, d.ApplicationSpec, c.spec)
 		})
 	}
+
+	fullCases := map[string]struct {
+		dinghyRaw []byte
+		dinghyStruct Dinghyfile
+	}{
+		"dinghyraw_with_expectedArtifacts": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"stages": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						]
+					}
+				]
+			}`),
+			dinghyStruct: Dinghyfile{
+				Application: "foo",
+				ApplicationSpec: plank.Application{
+					Name: "foo",
+					Email: "foo@test.com",
+					DataSources: plank.DataSourcesType{
+						Enabled: []string{},
+						Disabled: []string{},
+					},
+				},
+				Pipelines: []plank.Pipeline{
+					{
+						Name: "test",
+						Stages: []map[string]interface{}{
+							{
+								"foo": map[string]interface{}{
+									"bar": "baz",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for testName, c := range fullCases {
+		t.Run(testName, func(t *testing.T) {
+			d, _ := UpdateDinghyfile(c.dinghyRaw)
+			assert.Equal(t, d, c.dinghyStruct)
+		})
+	}
 }
