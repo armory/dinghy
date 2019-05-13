@@ -11,7 +11,7 @@ WORKDIR /opt/armory/build/
 ADD ./ /opt/armory/build/
 RUN make
 
-FROM alpine:3.9
+FROM alpine:3.9.3
 
 EXPOSE 8081
 WORKDIR /opt/armory/bin/
