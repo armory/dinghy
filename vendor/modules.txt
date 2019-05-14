@@ -1,17 +1,3 @@
-# github.com/armory/dinghy v0.0.0-20190430170351-359f5426865c
-github.com/armory/dinghy/pkg/cache
-github.com/armory/dinghy/pkg/events
-github.com/armory/dinghy/pkg/settings
-github.com/armory/dinghy/pkg/util
-github.com/armory/dinghy/pkg/web
-github.com/armory/dinghy/pkg/preprocessor
-github.com/armory/dinghy/pkg/cache/local
-github.com/armory/dinghy/pkg/git
-github.com/armory/dinghy/pkg/git/github
-github.com/armory/dinghy/pkg/dinghyfile
-github.com/armory/dinghy/pkg/git/bbcloud
-github.com/armory/dinghy/pkg/git/dummy
-github.com/armory/dinghy/pkg/git/stash
 # github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e
 github.com/armory/go-yaml-tools/pkg/spring
 github.com/armory/go-yaml-tools/pkg/yaml
