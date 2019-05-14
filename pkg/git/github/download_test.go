@@ -143,7 +143,11 @@ func TestDownload(t *testing.T) {
 		t.Run(desc, func(t *testing.T) {
 			actual, err := tc.fs.Download(tc.org, tc.repo, tc.path)
 			assert.Equal(t, tc.expected, actual)
-			assert.Equal(t, tc.expectedErr.Error(), err.Error())
+			if tc.expectedErr == nil {
+				assert.Equal(t, tc.expectedErr, err)
+			} else {
+				assert.Equal(t, tc.expectedErr.Error(), err.Error())
+			}
 
 			// test caching
 			v := tc.fs.cache.Get(tc.fs.EncodeURL("org", "repo", "path"))
