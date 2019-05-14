@@ -18,7 +18,6 @@ package dinghyfile
 
 import (
 	"errors"
-
 	"github.com/armory/dinghy/pkg/events"
 	log "github.com/sirupsen/logrus"
 
@@ -85,6 +84,7 @@ var (
 func UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error) {
 	d := NewDinghyfile()
 	if err := Unmarshal(dinghyfile, &d); err != nil {
+		log.Errorf("UpdateDinghyfile malformed json: %s", err.Error())
 		return d, ErrMalformedJSON
 	}
 	log.Info("Unmarshalled: ", d)
@@ -105,16 +105,20 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	// Render the dinghyfile and decode it into a Dinghyfile object
 	buf, err := b.Render(org, repo, path, nil)
 	if err != nil {
+		log.Errorf("Failed to render dinghyfile %s: %s", path, err.Error())
 		return err
 	}
-	log.Debug("Rendered: ", buf.String())
+	log.Info("Rendered: ", buf.String())
 	d, err := UpdateDinghyfile(buf.Bytes())
 	if err != nil {
+		log.Errorf("Failed to update dinghyfile %s: %s", path, err.Error())
 		return err
 	}
-	log.Debug("Updated: ", buf.String())
+	log.Info("Updated: ", buf.String())
+	log.Info("Dinghyfile struct: ", d)
 
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
+		log.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
 		return err
 	}
 
@@ -142,8 +146,8 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 
 	if errEncountered {
 		log.Error("The following dinghyfiles weren't updated successfully:")
-		for d := range failedUpdates {
-			log.Error(d)
+		for _, url := range failedUpdates {
+			log.Error(url)
 		}
 		return errors.New("Not all upstream dinghyfiles were updated successfully")
 	}
@@ -154,39 +158,50 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 	_, err := b.Client.GetApplication(app.Name)
 	if err != nil {
 		// Likely just not there...
+		log.Infof("Creating application '%s'...", app.Name)
 		if err := b.Client.CreateApplication(app); err != nil {
+			log.Errorf("Failed to create application (%s)", err.Error())
 			return err
 		}
 	}
 
 	ids, _ := b.PipelineIDs(app.Name)
-	checklist := make(map[string]bool)
+	ignoreList := make(map[string]bool)
 	idToName := make(map[string]string)
 	for name, id := range ids {
-		checklist[id] = false
+		ignoreList[id] = false
 		idToName[id] = name
 	}
 	log.Info("Found pipelines for ", app, ": ", ids)
 	for _, p := range pipelines {
 		// Add ids to existing pipelines
+		log.Info("Processing pipeline ", p)
 		if id, exists := ids[p.Name]; exists {
 			log.Debug("Added id ", id, " to pipeline ", p.Name)
-			p.ID = id
-			checklist[id] = true
+			ignoreList[p.Name] = true
+			p.ID = id //note: we're working with a copy.  once this loop exits all changes go out of scope!
+			log.Info("Updating pipeline: " + p.Name)
+		} else {
+			log.Debug("Adding ", p.Name, " to ignored stale pipelines")
+			ignoreList[p.Name] = true
+			log.Info("Creating pipeline: " + p.Name)
 		}
-		log.Info("Updating pipeline: " + p.Name)
 		if autoLock == "true" {
 			log.Debug("Locking pipeline ", p.Name)
 			p.Lock()
 		}
-		if err := b.Client.UpsertPipeline(p); err != nil {
+		if err := b.Client.UpsertPipeline(p, p.ID); err != nil {
+			log.Errorf("Upsert failed: %s", err.Error())
 			return err
 		}
+		log.Info("Upsert succeeded.")
 	}
 	if deleteStale {
 		// clear existing pipelines that weren't updated
+		log.Debug("Pipelines we should ignore because they were just created: ", ignoreList)
 		for _, p := range pipelines {
-			if !checklist[p.ID] {
+			if !ignoreList[p.Name] {
+				log.Infof("Deleting stale pipeline %s", p.Name)
 				if err := b.Client.DeletePipeline(p); err != nil {
 					// Not worrying about handling errors here because it just means it
 					// didn't get deleted *this time*.
@@ -209,4 +224,24 @@ func (b *PipelineBuilder) PipelineIDs(app string) (map[string]string, error) {
 		ids[p.Name] = p.ID
 	}
 	return ids, nil
+}
+
+// if a pipeline doesn't exist, create one and return an id for it
+func (b *PipelineBuilder) GetPipelinebyID(app, pipelineName string) (string, error) {
+	ids, err := b.PipelineIDs(app)
+	if err != nil {
+		return "", err
+	}
+	id, exists := ids[pipelineName]
+	if !exists {
+		err := b.Client.UpsertPipeline(plank.Pipeline{
+			Application: app,
+			Name:        pipelineName,
+		}, "")
+		if err != nil {
+			return "", err
+		}
+		return b.GetPipelinebyID(app, pipelineName)
+	}
+	return id, nil
 }
