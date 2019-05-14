@@ -24,8 +24,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/armory/monitoring/log/formatters"
-	"github.com/armory/monitoring/log/hooks"
+	"github.com/armory-io/monitoring/log/formatters"
+	"github.com/armory-io/monitoring/log/hooks"
 	"github.com/armory/plank"
 
 	"github.com/armory/dinghy/pkg/cache"
