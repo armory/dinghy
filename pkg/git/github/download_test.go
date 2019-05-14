@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package github
 
@@ -143,7 +143,7 @@ func TestDownload(t *testing.T) {
 		t.Run(desc, func(t *testing.T) {
 			actual, err := tc.fs.Download(tc.org, tc.repo, tc.path)
 			assert.Equal(t, tc.expected, actual)
-			assert.Equal(t, tc.expectedErr, err)
+			assert.Equal(t, tc.expectedErr.Error(), err.Error())
 
 			// test caching
 			v := tc.fs.cache.Get(tc.fs.EncodeURL("org", "repo", "path"))
