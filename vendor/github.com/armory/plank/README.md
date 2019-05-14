@@ -18,9 +18,17 @@ Very carefully. :smiley:
 Basic concept is that you instantiate a Plank client thusly:
 
 ```go
-client := plank.New(nil)
-// NOTE: nil defaults to http.Client, but you can sub in anything compatible
-//       you'd rather use.
+client := plank.New()
+```
+
+If you'd like to supply your own http client (we use a pooled client by default):
+```go
+client := plank.New(plank.WithClient(&http.Client{}))
+```
+
+To tune the maxiumum number of retries or set an exponential backoff value:
+```go
+client := plank.New(plank.WithMaxRetries(5), plank.WithRetryIncrement(5 * time.Second))
 ```
 
 You can (or may need to) replace the base URLs for the microservices by

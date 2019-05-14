@@ -19,12 +19,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/armory/dinghy/pkg/debug"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/armory-io/monitoring/log/formatters"
-	"github.com/armory-io/monitoring/log/hooks"
+	"github.com/armory/monitoring/log/formatters"
+	"github.com/armory/monitoring/log/hooks"
 	"github.com/armory/plank"
 
 	"github.com/armory/dinghy/pkg/cache"
@@ -33,7 +34,7 @@ import (
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/dinghy/pkg/web"
 	"github.com/go-redis/redis"
-	log "github.com/sirupsen/logrus"
+	logr "github.com/sirupsen/logrus"
 )
 
 func newRedisOptions(redisOptions settings.Redis) *redis.Options {
@@ -46,6 +47,7 @@ func newRedisOptions(redisOptions settings.Redis) *redis.Options {
 }
 
 func main() {
+	log := logr.New()
 	config, err := settings.LoadSettings()
 	if err != nil {
 		log.Fatalf("failed to load configuration: %s", err.Error())
@@ -65,19 +67,24 @@ func main() {
 		logLevelStr = strings.ToLower(config.Logging.Level)
 		log.Info("Debug level set to ", config.Logging.Level, " from settings")
 	}
-	logLevel, err := log.ParseLevel("DEBUG")
+	logLevel, err := logr.ParseLevel(logLevelStr)
 	if err != nil {
 		log.Fatalf("Invalid log level: " + logLevelStr)
 	}
 	log.SetLevel(logLevel)
 	if config.Logging.Remote.Enabled {
-		if err := setupRemoteLogging(log.StandardLogger(), config.Logging); err != nil {
+		if err := setupRemoteLogging(logr.StandardLogger(), config.Logging); err != nil {
 			log.Warnf("unable to setup remote log forwarding: %s", err.Error())
 		}
 	}
 
-	// New API client; nil arg uses default HTTP client.
-	client := plank.NewAuthenticated(config.Fiat.AuthUser, nil)
+	var client *plank.Client
+	client = plank.New(plank.WithFiatUser(config.Fiat.AuthUser))
+
+	if logLevel == logr.DebugLevel {
+		client = plank.New(plank.WithClient(debug.NewInterceptorHttpClient(log, true)),
+			plank.WithFiatUser(config.Fiat.AuthUser))
+	}
 
 	// Update the base URLs based on config
 	client.URLs["orca"] = config.Orca.BaseURL
@@ -94,7 +101,7 @@ func main() {
 	log.Info(http.ListenAndServe(":8081", api.Router()))
 }
 
-func setupRemoteLogging(l *log.Logger, loggingConfig settings.Logging) error {
+func setupRemoteLogging(l *logr.Logger, loggingConfig settings.Logging) error {
 	var hostname string
 	hostname, err := os.Hostname()
 	if err != nil || hostname == "" {
@@ -119,7 +126,7 @@ func setupRemoteLogging(l *log.Logger, loggingConfig settings.Logging) error {
 
 	l.AddHook(&hooks.HttpDebugHook{
 		Endpoint:  loggingConfig.Remote.Endpoint,
-		LogLevels: log.AllLevels,
+		LogLevels: logr.AllLevels,
 		Formatter: formatter,
 	})
 	return nil
