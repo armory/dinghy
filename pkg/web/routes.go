@@ -120,7 +120,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 	if p.Ref == "" {
 		// Unmarshal failed, might be a non-Push notification. Log event and return
-		log.Debug("Possibly a non-Push notification received")
+		log.Info("Possibly a non-Push notification received")
 		return
 	}
 
@@ -238,6 +238,7 @@ func (wa *WebAPI) bitbucketCloudWebhookHandler(w http.ResponseWriter, r *http.Re
 func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	// Ensure dinghyfile was changed.
 	if !p.ContainsFile(wa.Config.DinghyFilename) {
+		log.Infof("Push does not include %s, skipping.", wa.Config.DinghyFilename)
 		return nil
 	}
 

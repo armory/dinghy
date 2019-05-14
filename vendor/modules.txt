@@ -1,10 +1,10 @@
-# github.com/armory-io/monitoring v0.0.4
+# github.com/armory-io/monitoring v0.0.7
 github.com/armory-io/monitoring/log/formatters
 github.com/armory-io/monitoring/log/hooks
 # github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e
 github.com/armory/go-yaml-tools/pkg/spring
 github.com/armory/go-yaml-tools/pkg/yaml
-# github.com/armory/plank v1.0.1-0.20190426183421-5764a024dec7
+# github.com/armory/plank v1.2.1
 github.com/armory/plank
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
@@ -27,7 +27,7 @@ github.com/google/go-querystring/query
 github.com/gorilla/context
 # github.com/gorilla/mux v1.6.2
 github.com/gorilla/mux
-# github.com/hashicorp/go-cleanhttp v0.5.0
+# github.com/hashicorp/go-cleanhttp v0.5.1
 github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-retryablehttp v0.5.3
 github.com/hashicorp/go-retryablehttp
@@ -41,15 +41,14 @@ github.com/minio/minio/pkg/wildcard
 github.com/mitchellh/mapstructure
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/sirupsen/logrus v1.3.0
+# github.com/sirupsen/logrus v1.4.1
 github.com/sirupsen/logrus
 # github.com/spf13/afero v1.1.2
 github.com/spf13/afero
 github.com/spf13/afero/mem
 # github.com/stretchr/testify v1.3.0
 github.com/stretchr/testify/assert
-# golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c
-golang.org/x/crypto/ssh/terminal
+github.com/stretchr/testify/require
 # golang.org/x/net v0.0.0-20190327214358-63eda1eb0650
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/context
@@ -58,7 +57,6 @@ golang.org/x/oauth2
 golang.org/x/oauth2/internal
 # golang.org/x/sys v0.0.0-20190322080309-f49334f85ddc
 golang.org/x/sys/unix
-golang.org/x/sys/windows
 # golang.org/x/text v0.3.0
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm

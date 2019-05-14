@@ -27,6 +27,7 @@ import (
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/git/dummy"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var fileService = dummy.FileService{
@@ -56,15 +57,15 @@ var fileService = dummy.FileService{
 		"pipelines": [
 			{{ module "mod1" }},
 			{{ module "mod2" "type" "foobar" }}
-	    ]
+			]
 	}`,
 	"df_spec": `{
 		"spec": {
 			"name": "search",
 			"email": "unknown@unknown.com",
 			"dataSources": {
-			  "disabled":[],
-			  "enabled":["canaryConfigs"]
+				"disabled":[],
+				"enabled":["canaryConfigs"]
 			}
 		},
 		"globals": {
@@ -73,7 +74,7 @@ var fileService = dummy.FileService{
 		"pipelines": [
 			{{ module "mod1" }},
 			{{ module "mod2" "type" "foobar" }}
-	    ]
+			]
 	}`,
 	"df_app_global": `{
 		"application": "search",
@@ -84,7 +85,7 @@ var fileService = dummy.FileService{
 		"pipelines": [
 			{{ module "mod1" }},
 			{{ module "mod2" "type" "foobar" }}
-	    ]
+			]
 	}`,
 	"df_global/nested": `{
 		"application": "search",
@@ -94,7 +95,7 @@ var fileService = dummy.FileService{
 		"pipelines": [
 			{{ module "mod1" }},
 			{{ module "mod2" "type" "foobar" }}
-	    ]
+			]
 	}`,
 	"appmod": `"description": "description"`,
 	"mod1": `{
@@ -127,7 +128,7 @@ var fileService = dummy.FileService{
 	"nested_var_df": `{
 		"application": "dinernotifications",
 		"globals": {
-		   "application": "dinernotifications"
+			 "application": "dinernotifications"
 		 },
 		"pipelines": [
 			{{ module "preprod_teardown.pipeline.module" }}
@@ -142,12 +143,12 @@ var fileService = dummy.FileService{
 				"name": "service",
 				"required": true
 			}
-	  }`,
+		}`,
 
 	"deep_var_df": `{
 		"application": "dinernotifications",
 		"globals": {
-		   "application": "dinernotifications"
+			 "application": "dinernotifications"
 		 },
 		"pipelines": [
 			{{ module "deep.pipeline.module" 
@@ -170,14 +171,14 @@ var fileService = dummy.FileService{
 					"artifact" {{var artifact2}}
 				}}",
 			}
-	  }`,
+		}`,
 
 	"deep.stage.module": `{
 		"parameterConfig": [
 			{
 				"artifact": {{ var "artifact" }},
 			}
-	  }`,
+		}`,
 
 	"empty_default_variables": `{
 		"application": "dinernotifications",
@@ -194,7 +195,54 @@ var fileService = dummy.FileService{
 				"name": "service",
 				"required": true
 			}
-	  }`,
+		}`,
+
+	// if_params reproduced/resolved an issue Giphy had where they were trying to use an
+	// if conditional inside a {{ module }} call.
+	"if_params.dinghyfile": `{
+		"test": "if_params",
+		"result": {{ module "if_params.midmodule"
+								 "straightvar" "foo"
+								 "condvar" true }}
+	}`,
+	// NOTE:  This next example is a _functional_ way to do conditional arguments to a module.
+	// This is the result of trying to debug why this markup didn't work properly:
+	//    {{ module "if_params.bottom"
+	//              "foo" "bar"
+	//              {{ if var "condvar" }}
+	//              "extra" ["foo", "bar"]
+	//              {{ end }}
+	//   }}
+	// The reason is that nested template markup isn't evaluated inside-out, so the argument
+	// to "module" is actually the string "{{ if var "condvar" }}"
+	"if_params.midmodule": `
+		{{ if var "condvar" }}
+		{{ module "if_params.bottom"
+								 "foo" "bar"
+								 "extra" [ "foo", "bar" ]
+		}}
+		{{ else }}
+		{{ module "if_params.bottom" "foo" "bar" }}
+		{{ end }}
+	`,
+	"if_params.bottom": `{
+		"foo": "{{ var "foo" ?: "default" }}",
+		"biff": {{ var "extra" ?: ["NotSet"] }}
+	}`,
+
+	// var_params tests whether or not you can reference a variable inside a value
+	// being sent to a module.  The answer is "no"; and this will result in invalid JSON.
+	"var_params.outer": `
+		{{ module "var_params.middle" "myvar" "success" }}
+	`,
+	"var_params.middle": `
+		{{ module "var_params.inner"
+							"foo" [ { "bar": {{ var "myvar" ?: "failure"}} } ]
+		}}
+	`,
+	"var_params.inner": `{
+		"foo": {{ var "foo" }}
+	}`,
 }
 
 // mock out events so that it gets passed over and doesn't do anything
@@ -225,7 +273,7 @@ func TestNestedVars(t *testing.T) {
 	const expected = `{
 		"application": "dinernotifications",
 		"globals": {
-		   "application": "dinernotifications"
+			 "application": "dinernotifications"
 		 },
 		"pipelines": [
 			{
@@ -268,7 +316,7 @@ func TestGlobalVars(t *testing.T) {
 						"type": "foobar"
 					}
 				]
-			  }`,
+				}`,
 		},
 		"df_global_nested": {
 			filename: "df_global/nested",
@@ -286,7 +334,7 @@ func TestGlobalVars(t *testing.T) {
 						"type": "foobar"
 					}
 				]
-			  }`,
+				}`,
 		},
 		"df_global_appmodule": {
 			filename: "df_app_global",
@@ -305,7 +353,7 @@ func TestGlobalVars(t *testing.T) {
 						"type": "foobar"
 					}
 				]
-			  }`,
+				}`,
 		},
 		"df_spec": {
 			filename: "df_spec",
@@ -314,8 +362,8 @@ func TestGlobalVars(t *testing.T) {
 					"name": "search",
 					"email": "unknown@unknown.com",
 					"dataSources": {
-					  "disabled":[],
-					  "enabled":["canaryConfigs"]
+						"disabled":[],
+						"enabled":["canaryConfigs"]
 					}
 				},
 				"globals": {
@@ -330,7 +378,7 @@ func TestGlobalVars(t *testing.T) {
 						"type": "foobar"
 					}
 				]
-			  }`,
+				}`,
 		},
 	}
 
@@ -453,7 +501,7 @@ func TestDeepVars(t *testing.T) {
 	const expected = `{
 		"application": "dinernotifications",
 		"globals": {
-		   "application": "dinernotifications"
+			 "application": "dinernotifications"
 		 },
 		"pipelines": [
 			{
@@ -467,15 +515,15 @@ func TestDeepVars(t *testing.T) {
 			{
 				"artifact": artifact11,
 			}
-	  }",
+		}",
 				{
 		"parameterConfig": [
 			{
 				"artifact": artifact22,
 			}
-	  }",
+		}",
 			}
-	  }
+		}
 		]
 	}`
 
@@ -507,11 +555,84 @@ func TestEmptyDefaultVar(t *testing.T) {
 				"name": "service",
 				"required": true
 			}
-	  }
+		}
 		]
 	}`
 
 	exp := expected
 	actual := buf.String()
 	assert.Equal(t, exp, actual)
+}
+
+func TestConditionalArgs(t *testing.T) {
+	builder := &PipelineBuilder{
+		Depman:         cache.NewMemoryCache(),
+		Downloader:     fileService,
+		DinghyfileName: "if_params.dinghyfile",
+		TemplateOrg:    "org",
+		TemplateRepo:   "repo",
+		EventClient:    &EventsTestClient{},
+	}
+	buf, err := builder.Render("org", "repo", "if_params.dinghyfile", nil)
+	require.Nil(t, err)
+
+	const raw = `{
+		 "test": "if_params",
+		 "result": {
+			 "foo": "bar",
+			 "biff": ["foo", "bar"]
+		 }
+	}`
+	var expected interface{}
+	err = json.Unmarshal([]byte(raw), &expected)
+	require.Nil(t, err)
+	expected_str, err := json.Marshal(expected)
+	require.Nil(t, err)
+
+	var actual interface{}
+	err = json.Unmarshal(buf.Bytes(), &actual)
+	require.Nil(t, err)
+	actual_str, err := json.Marshal(actual)
+	require.Nil(t, err)
+
+	require.Equal(t, string(expected_str), string(actual_str))
+}
+
+// TODO:  This test is currently a negative test -- the example inputs do NOT work properly,
+//        and currently, this is expected behavior; we should change this test when we decide
+//        if a) we should be catching the error in the Render, or b) we should handle this
+//        kind of nested markup.
+func TestVarParams(t *testing.T) {
+	builder := &PipelineBuilder{
+		Depman:         cache.NewMemoryCache(),
+		Downloader:     fileService,
+		DinghyfileName: "var_params.outer",
+		TemplateOrg:    "org",
+		TemplateRepo:   "repo",
+		EventClient:    &EventsTestClient{},
+	}
+	buf, err := builder.Render("org", "repo", "var_params.outer", nil)
+	// Unfortunately, we don't currently catch this failure here.
+	assert.Nil(t, err)
+
+	var actual interface{}
+	err = json.Unmarshal(buf.Bytes(), &actual)
+	assert.NotNil(t, err)
+	/* TODO:  Uncomment this section when/if we make nested references work, delete this if
+						we test for the error properly.
+	require.Nil(t, err)
+	actual_str, err := json.Marshal(actual)
+	require.Nil(t, err)
+
+	const raw = `{
+		"test": [ { "bar": "success" } ]
+	}`
+	var expected interface{}
+	err = json.Unmarshal([]byte(raw), &expected)
+	require.Nil(t, err)
+	expected_str, err := json.Marshal(expected)
+	require.Nil(t, err)
+
+	require.Equal(t, string(expected_str), string(actual_str))
+	*/
 }

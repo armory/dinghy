@@ -35,6 +35,7 @@ type Pipeline struct {
 	Triggers             []map[string]interface{} `json:"triggers,omitempty"`
 	Parameters           []map[string]interface{} `json:"parameterConfig,omitempty"`
 	Notifications        []map[string]interface{} `json:"notifications,omitempty"`
+	ExpectedArtifacts    []map[string]interface{} `json:"expectedArtifacts,omitempty"`
 	LastModifiedBy       string                   `json:"lastModifiedBy"`
 	Config               interface{}              `json:"config,omitempty"`
 	UpdateTs             string                   `json:"updateTs"`
@@ -57,15 +58,6 @@ func (c *Client) pipelinesURL() string {
 	return c.URLs["front50"] + "/pipelines"
 }
 
-// GetPipeline by app name and pipeline name.
-func (c *Client) GetPipeline(app, pipeline string) (*Pipeline, error) {
-	var p Pipeline
-	if err := c.GetWithRetry(c.pipelinesURL()+"/"+app+"/"+pipeline, &p); err != nil {
-		return nil, err
-	}
-	return &p, nil
-}
-
 // Get returns an array of all the Spinnaker pipelines
 // configured for app
 func (c *Client) GetPipelines(app string) ([]Pipeline, error) {
@@ -77,10 +69,16 @@ func (c *Client) GetPipelines(app string) ([]Pipeline, error) {
 }
 
 // UpsertPipeline creates/updates a pipeline defined in the struct argument.
-func (c *Client) UpsertPipeline(p Pipeline) error {
+func (c *Client) UpsertPipeline(p Pipeline, id string) error {
 	var unused interface{}
-	if err := c.PostWithRetry(c.pipelinesURL(), ApplicationJson, p, &unused); err != nil {
-		return fmt.Errorf("could not create pipeline - %v", err)
+	if id == "" {
+		if err := c.PostWithRetry(c.pipelinesURL(), ApplicationJson, p, &unused); err != nil {
+			return fmt.Errorf("could not create pipeline - %v", err)
+		}
+	} else {
+		if err := c.PutWithRetry(fmt.Sprintf("%s/%s", c.pipelinesURL(), id), ApplicationJson, p, &unused); err != nil {
+			return fmt.Errorf("could not update pipeline - %v", err)
+		}
 	}
 	return nil
 }
