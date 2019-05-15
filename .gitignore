@@ -10,4 +10,4 @@ coveragereport.txt
 *.swp
 
 # Build cruft
-dinghy
+/dinghy

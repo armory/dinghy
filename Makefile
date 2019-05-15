@@ -28,10 +28,10 @@ endif
 
 
 # Build the project
-all: clean lint test vet build
+all: clean dependencies lint test vet build
 
 dependencies:
-	@echo "not running dep ensure because vendored deps"
+	@echo Dependencies vendored, skipping.
 
 run:
 	go run ./${BINARY}.go
@@ -40,8 +40,7 @@ build: ./${BINARY}.go
 	go build -i ${LDFLAGS} -o ${BUILD_DIR}/${BINARY} ./${BINARY}.go
 
 test: dependencies
-	# go test -cover -v $(PKGS)
-	PCT=39 bin/test_coverage.sh
+	go test -cover -v $(PKGS)
 
 # The go test tool won't create a coverage profile if you give it multiple
 # packages. Recommendation is to run the coverage for each package and merge
