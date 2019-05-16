@@ -9,6 +9,8 @@ RUN go get -u golang.org/x/lint/golint
 ENV GO111MODULE=on GOFLAGS='-mod=vendor' GOOS=linux GOARCH=amd64
 WORKDIR /opt/armory/build/
 ADD ./ /opt/armory/build/
+ARG OCDINGHY_HASH
+ENV OCDINGHY_HASH=$OCDINGHY_HASH
 RUN make
 
 FROM alpine:3.9.3

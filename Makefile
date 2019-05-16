@@ -26,12 +26,18 @@ ifeq ($(UNAME_S),Linux)
 	LDFLAGS = -ldflags "-X main.COMMIT=${COMMIT} -X main.BRANCH=${BRANCH} -linkmode external -extldflags -static -s -w"
 endif
 
+ifeq ($(OCDINGHY_HASH),)
+	OCDINGHY_HASH = master
+endif
+
 
 # Build the project
 all: clean dependencies lint test vet build
 
 dependencies:
-	@echo Dependencies vendored, skipping.
+	@echo "Setting Open Core Dinghy to ${OCDINGHY_HASH}..."
+	go mod edit -require=github.com/armory/dinghy@${OCDINGHY_HASH} && \
+	go mod tidy
 
 run:
 	go run ./${BINARY}.go
@@ -88,7 +94,7 @@ fmt:
 	go fmt $$(go list ./... | grep -v /vendor/) ; \
 
 clean:
-	rm -rf ${BUILD_DIR}
+	rm -rf ${BUILD_DIR}; \
 	go clean
 
 # mac users need to use gnu-sed
