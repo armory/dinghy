@@ -169,6 +169,7 @@ func varFunc(vars []varMap) interface{} {
 
 // Render renders the template
 func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
+	module := true
 	event := &events.Event{
 		Start: time.Now().UTC().Unix(),
 		Org:   org,
@@ -194,6 +195,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 
 	// Extract global vars if we're processing a dinghyfile (and not a module)
 	if filepath.Base(path) == b.DinghyfileName {
+		module = false
 		gvs, err := preprocessor.ParseGlobalVars(contents)
 		if err != nil {
 			log.Error("Failed to parse global vars")
@@ -241,6 +243,8 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 
 	event.End = time.Now().UTC().Unix()
 	eventType := "render"
+	event.Dinghyfile = buf.String()
+	event.Module = module
 	b.EventClient.SendEvent(eventType, event)
 
 	return buf, nil
