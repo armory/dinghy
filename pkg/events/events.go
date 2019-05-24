@@ -40,11 +40,13 @@ type Client struct {
 }
 
 type Event struct {
-	Start int64  `json:"start_time"`
-	End   int64  `json:"end_time"`
-	Org   string `json:"org"`
-	Repo  string `json:"repo"`
-	Path  string `json:"path"`
+	Start        int64  `json:"start_time"`
+	End          int64  `json:"end_time"`
+	Org          string `json:"org"`
+	Repo         string `json:"repo"`
+	Path         string `json:"path"`
+	Dinghyfile   string `json:"dinghyfile"`
+	Module		 bool   `json:"is_module"`
 }
 
 type details struct {
