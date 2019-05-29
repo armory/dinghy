@@ -5,6 +5,7 @@ require (
 	github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e
 	github.com/armory/plank v1.2.1
 	github.com/go-redis/redis v6.14.1+incompatible
+	github.com/golang/mock v1.1.1
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2

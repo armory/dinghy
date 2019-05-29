@@ -17,13 +17,39 @@
 package dinghyfile
 
 import (
+	"bytes"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/armory/plank"
 )
 
+// Test the high-level runthrough of ProcessDinghyfile
+func TestProcessDinghyfile(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	rendered := `{"application":"biff"}`
+
+	renderer := NewMockRenderer(ctrl)
+	renderer.EXPECT().Render(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication(gomock.Eq("biff")).Return(&plank.Application{}, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("biff")).Return([]plank.Pipeline{}, nil).Times(1)
+	// Never gets UpsertPipeline because our Render returns no pipelines.
+	client.EXPECT().UpsertPipeline(gomock.Any()).Return(nil).Times(0)
+	pb := PipelineBuilder{
+		Renderer: renderer,
+		Client:   client,
+	}
+	assert.Nil(t, pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path"))
+}
+
+// TestUpdateDinghyfile ONLY tests the function "updateDinghyfile" which,
+// despite its name, doesn't really update anything, it just unmarshals
+// the payload into the Dinghyfile{} struct.
 func TestUpdateDinghyfile(t *testing.T) {
 
 	cases := map[string]struct {

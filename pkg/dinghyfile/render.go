@@ -16,6 +16,11 @@
 
 package dinghyfile
 
+/*
+ * NOTE:  This is actually the Dinghyfile renderer; it should probably be
+ * renamed accordingly.
+ */
+
 import (
 	"bytes"
 	"encoding/json"
@@ -29,6 +34,14 @@ import (
 	"github.com/armory/dinghy/pkg/preprocessor"
 	log "github.com/sirupsen/logrus"
 )
+
+type DinghyfileRenderer struct {
+	Builder *PipelineBuilder
+}
+
+func NewDinghyfileRenderer(b *PipelineBuilder) *DinghyfileRenderer {
+	return &DinghyfileRenderer{Builder: b}
+}
 
 func parseValue(val interface{}) interface{} {
 	if jsonStr, ok := val.(string); ok && len(jsonStr) > 0 {
@@ -46,10 +59,10 @@ func parseValue(val interface{}) interface{} {
 type varMap map[string]interface{}
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []varMap) interface{} {
+func (r *DinghyfileRenderer) moduleFunc(org string, deps map[string]bool, allVars []varMap) interface{} {
 	return func(mod string, vars ...interface{}) string {
 		// Record the dependency.
-		child := b.Downloader.EncodeURL(org, b.TemplateRepo, mod)
+		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod)
 		if _, exists := deps[child]; !exists {
 			deps[child] = true
 		}
@@ -83,7 +96,7 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []
 			newVars[key] = parseValue(vars[i+1])
 		}
 
-		result, _ := b.Render(b.TemplateOrg, b.TemplateRepo, mod, append([]varMap{newVars}, allVars...))
+		result, _ := r.Render(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, append([]varMap{newVars}, allVars...))
 		return result.String()
 	}
 }
@@ -101,7 +114,7 @@ func pipelineIDFunc(b *PipelineBuilder, vars []varMap) interface{} {
 				log.Info("Substituting pipeline trigger appname: ", app)
 			}
 		}
-		id, err := b.GetPipelinebyID(app, pipelineName)
+		id, err := b.GetPipelineByID(app, pipelineName)
 		if err != nil {
 			log.Errorf("could not get pipeline id for app %s, pipeline %s, err = %v", app, pipelineName, err)
 		}
@@ -168,7 +181,7 @@ func varFunc(vars []varMap) interface{} {
 }
 
 // Render renders the template
-func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
+func (r *DinghyfileRenderer) Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
 	module := true
 	event := &events.Event{
 		Start: time.Now().UTC().Unix(),
@@ -180,7 +193,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	deps := make(map[string]bool)
 
 	// Download the template being rendered.
-	contents, err := b.Downloader.Download(org, repo, path)
+	contents, err := r.Builder.Downloader.Download(org, repo, path)
 	if err != nil {
 		log.Error("Failed to download")
 		return nil, err
@@ -194,7 +207,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	}
 
 	// Extract global vars if we're processing a dinghyfile (and not a module)
-	if filepath.Base(path) == b.DinghyfileName {
+	if filepath.Base(path) == r.Builder.DinghyfileName {
 		module = false
 		gvs, err := preprocessor.ParseGlobalVars(contents)
 		if err != nil {
@@ -213,9 +226,9 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	}
 
 	funcMap := template.FuncMap{
-		"module":     moduleFunc(b, org, deps, vars),
-		"appModule":  moduleFunc(b, org, deps, vars),
-		"pipelineID": pipelineIDFunc(b, vars),
+		"module":     r.moduleFunc(org, deps, vars),
+		"appModule":  r.moduleFunc(org, deps, vars),
+		"pipelineID": pipelineIDFunc(r.Builder, vars),
 		"var":        varFunc(vars),
 	}
 
@@ -239,13 +252,13 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	for dep := range deps {
 		depUrls = append(depUrls, dep)
 	}
-	b.Depman.SetDeps(b.Downloader.EncodeURL(org, repo, path), depUrls)
+	r.Builder.Depman.SetDeps(r.Builder.Downloader.EncodeURL(org, repo, path), depUrls)
 
 	event.End = time.Now().UTC().Unix()
 	eventType := "render"
 	event.Dinghyfile = buf.String()
 	event.Module = module
-	b.EventClient.SendEvent(eventType, event)
+	r.Builder.EventClient.SendEvent(eventType, event)
 
 	return buf, nil
 }
