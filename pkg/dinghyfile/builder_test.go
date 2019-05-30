@@ -39,7 +39,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	client.EXPECT().GetApplication(gomock.Eq("biff")).Return(&plank.Application{}, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("biff")).Return([]plank.Pipeline{}, nil).Times(1)
 	// Never gets UpsertPipeline because our Render returns no pipelines.
-	client.EXPECT().UpsertPipeline(gomock.Any()).Return(nil).Times(0)
+	client.EXPECT().UpsertPipeline(gomock.Any(), "").Return(nil).Times(0)
 	pb := PipelineBuilder{
 		Renderer: renderer,
 		Client:   client,

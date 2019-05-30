@@ -5,7 +5,6 @@
 package dinghyfile
 
 import (
-	util "github.com/armory/dinghy/pkg/util"
 	plank "github.com/armory/plank"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
@@ -59,19 +58,6 @@ func (mr *MockPlankClientMockRecorder) CreateApplication(arg0 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockPlankClient)(nil).CreateApplication), arg0)
 }
 
-// GetPipeline mocks base method
-func (m *MockPlankClient) GetPipeline(app, pipeline string) (*plank.Pipeline, error) {
-	ret := m.ctrl.Call(m, "GetPipeline", app, pipeline)
-	ret0, _ := ret[0].(*plank.Pipeline)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPipeline indicates an expected call of GetPipeline
-func (mr *MockPlankClientMockRecorder) GetPipeline(app, pipeline interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPipeline", reflect.TypeOf((*MockPlankClient)(nil).GetPipeline), app, pipeline)
-}
-
 // GetPipelines mocks base method
 func (m *MockPlankClient) GetPipelines(arg0 string) ([]plank.Pipeline, error) {
 	ret := m.ctrl.Call(m, "GetPipelines", arg0)
@@ -98,25 +84,13 @@ func (mr *MockPlankClientMockRecorder) DeletePipeline(arg0 interface{}) *gomock.
 }
 
 // UpsertPipeline mocks base method
-func (m *MockPlankClient) UpsertPipeline(arg0 plank.Pipeline) error {
-	ret := m.ctrl.Call(m, "UpsertPipeline", arg0)
+func (m *MockPlankClient) UpsertPipeline(arg0 plank.Pipeline, arg1 string) error {
+	ret := m.ctrl.Call(m, "UpsertPipeline", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpsertPipeline indicates an expected call of UpsertPipeline
-func (mr *MockPlankClientMockRecorder) UpsertPipeline(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertPipeline", reflect.TypeOf((*MockPlankClient)(nil).UpsertPipeline), arg0)
-}
-
-// WithFiatUser mocks base method
-func (m *MockPlankClient) WithFiatUser(arg0 string) util.PlankClient {
-	ret := m.ctrl.Call(m, "WithFiatUser", arg0)
-	ret0, _ := ret[0].(util.PlankClient)
-	return ret0
-}
-
-// WithFiatUser indicates an expected call of WithFiatUser
-func (mr *MockPlankClientMockRecorder) WithFiatUser(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithFiatUser", reflect.TypeOf((*MockPlankClient)(nil).WithFiatUser), arg0)
+func (mr *MockPlankClientMockRecorder) UpsertPipeline(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertPipeline", reflect.TypeOf((*MockPlankClient)(nil).UpsertPipeline), arg0, arg1)
 }

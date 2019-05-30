@@ -213,7 +213,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			log.Debug("Locking pipeline ", p.Name)
 			p.Lock()
 		}
-		if err := b.Client.UpsertPipeline(p); err != nil {
+		if err := b.Client.UpsertPipeline(p, p.ID); err != nil {
 			log.Errorf("Upsert failed: %s", err.Error())
 			return err
 		}
@@ -264,7 +264,7 @@ func (b *PipelineBuilder) GetPipelineByID(app, pipelineName string) (string, err
 	err = b.Client.UpsertPipeline(plank.Pipeline{
 		Application: app,
 		Name:        pipelineName,
-	})
+	}, "")
 	if err != nil {
 		return "", err
 	}
