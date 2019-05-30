@@ -250,25 +250,33 @@ type EventsTestClient struct{}
 
 func (c *EventsTestClient) SendEvent(eventType string, event *events.Event) {}
 
-func TestGracefulErrorHandling(t *testing.T) {
-	builder := &PipelineBuilder{
-		Depman:     cache.NewMemoryCache(),
-		Downloader: fileService,
+// This returns a test PipelineBuilder object.
+func testPipelineBuilder() *PipelineBuilder {
+	return &PipelineBuilder{
+		Depman:      cache.NewMemoryCache(),
+		Downloader:  fileService,
+		EventClient: &EventsTestClient{},
 	}
+}
+
+// For the most part, this is the base object to test against; you may need
+// to set things in .Builder from here (see above) after-the-fact.
+func testDinghyfileRenderer() *DinghyfileRenderer {
+	return NewDinghyfileRenderer(testPipelineBuilder())
+}
+
+func TestGracefulErrorHandling(t *testing.T) {
+	builder := testDinghyfileRenderer()
 	_, err := builder.Render("org", "repo", "df_bad", nil)
 	assert.NotNil(t, err, "Got non-nil output for mal-formed template action in df_bad")
 }
 
 func TestNestedVars(t *testing.T) {
-	builder := &PipelineBuilder{
-		Depman:         cache.NewMemoryCache(),
-		Downloader:     fileService,
-		DinghyfileName: "nested_var_df",
-		TemplateOrg:    "org",
-		TemplateRepo:   "repo",
-		EventClient:    &EventsTestClient{},
-	}
-	buf, _ := builder.Render("org", "repo", "nested_var_df", nil)
+	r := testDinghyfileRenderer()
+	r.Builder.DinghyfileName = "nested_var_df"
+	r.Builder.TemplateOrg = "org"
+	r.Builder.TemplateRepo = "repo"
+	buf, _ := r.Render("org", "repo", "nested_var_df", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -384,14 +392,10 @@ func TestGlobalVars(t *testing.T) {
 
 	for testName, c := range cases {
 		t.Run(testName, func(t *testing.T) {
-			builder := &PipelineBuilder{
-				Depman:         cache.NewMemoryCache(),
-				Downloader:     fileService,
-				DinghyfileName: filepath.Base(c.filename),
-				EventClient:    &EventsTestClient{},
-			}
+			r := testDinghyfileRenderer()
+			r.Builder.DinghyfileName = filepath.Base(c.filename)
 
-			buf, _ := builder.Render("org", "repo", c.filename, nil)
+			buf, _ := r.Render("org", "repo", c.filename, nil)
 			exp := strings.Join(strings.Fields(c.expected), "")
 			actual := strings.Join(strings.Fields(buf.String()), "")
 			assert.Equal(t, exp, actual)
@@ -400,12 +404,8 @@ func TestGlobalVars(t *testing.T) {
 }
 
 func TestSimpleWaitStage(t *testing.T) {
-	builder := &PipelineBuilder{
-		Depman:      cache.NewMemoryCache(),
-		Downloader:  fileService,
-		EventClient: &EventsTestClient{},
-	}
-	buf, _ := builder.Render("org", "repo", "df3", nil)
+	r := testDinghyfileRenderer()
+	buf, _ := r.Render("org", "repo", "df3", nil)
 
 	const expected = `{
 		"stages": [
@@ -426,12 +426,8 @@ func TestSimpleWaitStage(t *testing.T) {
 }
 
 func TestSpillover(t *testing.T) {
-	builder := &PipelineBuilder{
-		Depman:      cache.NewMemoryCache(),
-		Downloader:  fileService,
-		EventClient: &EventsTestClient{},
-	}
-	buf, _ := builder.Render("org", "repo", "df", nil)
+	r := testDinghyfileRenderer()
+	buf, _ := r.Render("org", "repo", "df", nil)
 
 	const expected = `{
 		"stages": [
@@ -455,13 +451,9 @@ type testStruct struct {
 }
 
 func TestModuleVariableSubstitution(t *testing.T) {
-	builder := &PipelineBuilder{
-		Depman:      cache.NewMemoryCache(),
-		Downloader:  fileService,
-		EventClient: &EventsTestClient{},
-	}
+	r := testDinghyfileRenderer()
 	ts := testStruct{}
-	ret, err := builder.Render("org", "repo", "df2", nil)
+	ret, err := r.Render("org", "repo", "df2", nil)
 	err = json.Unmarshal(ret.Bytes(), &ts)
 	assert.Equal(t, nil, err)
 
@@ -478,25 +470,17 @@ func TestPipelineID(t *testing.T) {
 */
 
 func TestModuleEmptyString(t *testing.T) {
-	builder := &PipelineBuilder{
-		Depman:      cache.NewMemoryCache(),
-		Downloader:  fileService,
-		EventClient: &EventsTestClient{},
-	}
-	ret, _ := builder.Render("org", "repo", "df4", nil)
+	r := testDinghyfileRenderer()
+	ret, _ := r.Render("org", "repo", "df4", nil)
 	assert.Equal(t, `{"foo": ""}`, ret.String())
 }
 
 func TestDeepVars(t *testing.T) {
-	builder := &PipelineBuilder{
-		Depman:         cache.NewMemoryCache(),
-		Downloader:     fileService,
-		DinghyfileName: "deep_var_df",
-		TemplateOrg:    "org",
-		TemplateRepo:   "repo",
-		EventClient:    &EventsTestClient{},
-	}
-	buf, _ := builder.Render("org", "repo", "deep_var_df", nil)
+	r := testDinghyfileRenderer()
+	r.Builder.DinghyfileName = "deep_var_df"
+	r.Builder.TemplateOrg = "org"
+	r.Builder.TemplateRepo = "repo"
+	buf, _ := r.Render("org", "repo", "deep_var_df", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -534,15 +518,11 @@ func TestDeepVars(t *testing.T) {
 }
 
 func TestEmptyDefaultVar(t *testing.T) {
-	builder := &PipelineBuilder{
-		Depman:         cache.NewMemoryCache(),
-		Downloader:     fileService,
-		DinghyfileName: "deep_var_df",
-		TemplateOrg:    "org",
-		TemplateRepo:   "repo",
-		EventClient:    &EventsTestClient{},
-	}
-	buf, _ := builder.Render("org", "repo", "empty_default_variables", nil)
+	r := testDinghyfileRenderer()
+	r.Builder.DinghyfileName = "deep_var_df"
+	r.Builder.TemplateOrg = "org"
+	r.Builder.TemplateRepo = "repo"
+	buf, _ := r.Render("org", "repo", "empty_default_variables", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -565,15 +545,11 @@ func TestEmptyDefaultVar(t *testing.T) {
 }
 
 func TestConditionalArgs(t *testing.T) {
-	builder := &PipelineBuilder{
-		Depman:         cache.NewMemoryCache(),
-		Downloader:     fileService,
-		DinghyfileName: "if_params.dinghyfile",
-		TemplateOrg:    "org",
-		TemplateRepo:   "repo",
-		EventClient:    &EventsTestClient{},
-	}
-	buf, err := builder.Render("org", "repo", "if_params.dinghyfile", nil)
+	r := testDinghyfileRenderer()
+	r.Builder.DinghyfileName = "if_params.dinghyfile"
+	r.Builder.TemplateOrg = "org"
+	r.Builder.TemplateRepo = "repo"
+	buf, err := r.Render("org", "repo", "if_params.dinghyfile", nil)
 	require.Nil(t, err)
 
 	const raw = `{
@@ -603,15 +579,11 @@ func TestConditionalArgs(t *testing.T) {
 //        if a) we should be catching the error in the Render, or b) we should handle this
 //        kind of nested markup.
 func TestVarParams(t *testing.T) {
-	builder := &PipelineBuilder{
-		Depman:         cache.NewMemoryCache(),
-		Downloader:     fileService,
-		DinghyfileName: "var_params.outer",
-		TemplateOrg:    "org",
-		TemplateRepo:   "repo",
-		EventClient:    &EventsTestClient{},
-	}
-	buf, err := builder.Render("org", "repo", "var_params.outer", nil)
+	r := testDinghyfileRenderer()
+	r.Builder.DinghyfileName = "var_params.outer"
+	r.Builder.TemplateOrg = "org"
+	r.Builder.TemplateRepo = "repo"
+	buf, err := r.Render("org", "repo", "var_params.outer", nil)
 	// Unfortunately, we don't currently catch this failure here.
 	assert.Nil(t, err)
 

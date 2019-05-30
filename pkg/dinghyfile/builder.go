@@ -17,12 +17,19 @@
 package dinghyfile
 
 import (
+	"bytes"
 	"errors"
 	"github.com/armory/dinghy/pkg/events"
-	log "github.com/sirupsen/logrus"
-
+	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/plank"
+	log "github.com/sirupsen/logrus"
 )
+
+type varMap map[string]interface{}
+
+type Renderer interface {
+	Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error)
+}
 
 // PipelineBuilder is responsible for downloading dinghyfiles/modules, compiling them, and sending them to Spinnaker
 type PipelineBuilder struct {
@@ -31,10 +38,11 @@ type PipelineBuilder struct {
 	TemplateRepo         string
 	TemplateOrg          string
 	DinghyfileName       string
-	Client               *plank.Client
+	Client               util.PlankClient
 	DeleteStalePipelines bool
 	AutolockPipelines    string
 	EventClient          events.EventClient
+	Renderer             Renderer
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -81,6 +89,9 @@ var (
 	DefaultEmail     = "unknown@unknown.com"
 )
 
+// UpdateDinghyfile doesn't actually update anything; it unmarshals the
+// results bytestream into the Dinghyfile{} struct, and sets the name and
+// email on the ApplicationSpec if it didn't get unmarshalled on its own.
 func UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error) {
 	d := NewDinghyfile()
 	if err := Unmarshal(dinghyfile, &d); err != nil {
@@ -100,10 +111,23 @@ func UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error) {
 	return d, nil
 }
 
+// DetermineRenderer currently only returns a DinghyfileRenderer; it could
+// return other types of renderers in the future (for example, MPTv2)
+// If we can't discern the types based on the path passed here, we may need
+// to revisit this.  For now, this is just a stub that always returns the
+// DinghyfileRenderer type.
+func (b *PipelineBuilder) DetermineRenderer(path string) Renderer {
+	return NewDinghyfileRenderer(b)
+}
+
 // ProcessDinghyfile downloads a dinghyfile and uses it to update Spinnaker's pipelines.
 func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
-	// Render the dinghyfile and decode it into a Dinghyfile object
-	buf, err := b.Render(org, repo, path, nil)
+	if b.Renderer == nil {
+		// Set the renderer based on evaluation of the path, if not already set
+		log.Errorf("Calling DetermineRenderer")
+		b.Renderer = b.DetermineRenderer(path)
+	}
+	buf, err := b.Renderer.Render(org, repo, path, nil)
 	if err != nil {
 		log.Errorf("Failed to render dinghyfile %s: %s", path, err.Error())
 		return err
@@ -154,6 +178,7 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 	return nil
 }
 
+// This is the bit that actually updates the pipeline(s) in Spinnaker
 func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []plank.Pipeline, deleteStale bool, autoLock string) error {
 	_, err := b.Client.GetApplication(app.Name)
 	if err != nil {
@@ -213,6 +238,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 	return err
 }
 
+// PipelineIDs returns a map of pipeline names -> their UUID.
 func (b *PipelineBuilder) PipelineIDs(app string) (map[string]string, error) {
 	ids := map[string]string{}
 	log.Info("Looking up existing pipelines")
@@ -226,22 +252,23 @@ func (b *PipelineBuilder) PipelineIDs(app string) (map[string]string, error) {
 	return ids, nil
 }
 
-// if a pipeline doesn't exist, create one and return an id for it
-func (b *PipelineBuilder) GetPipelinebyID(app, pipelineName string) (string, error) {
+// GetPipelineByID returns a pipeline's UUID by its name; if the pipeline
+// isn't found, one is created one and its ID is returned.
+func (b *PipelineBuilder) GetPipelineByID(app, pipelineName string) (string, error) {
 	ids, err := b.PipelineIDs(app)
 	if err != nil {
 		return "", err
 	}
 	id, exists := ids[pipelineName]
-	if !exists {
-		err := b.Client.UpsertPipeline(plank.Pipeline{
-			Application: app,
-			Name:        pipelineName,
-		}, "")
-		if err != nil {
-			return "", err
-		}
-		return b.GetPipelinebyID(app, pipelineName)
+	if exists {
+		return id, nil
 	}
-	return id, nil
+	err = b.Client.UpsertPipeline(plank.Pipeline{
+		Application: app,
+		Name:        pipelineName,
+	}, "")
+	if err != nil {
+		return "", err
+	}
+	return b.GetPipelineByID(app, pipelineName)
 }
