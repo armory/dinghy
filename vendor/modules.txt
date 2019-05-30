@@ -17,6 +17,8 @@ github.com/go-redis/redis/internal/pool
 github.com/go-redis/redis/internal/proto
 github.com/go-redis/redis/internal/singleflight
 github.com/go-redis/redis/internal/util
+# github.com/golang/mock v1.1.1
+github.com/golang/mock/gomock
 # github.com/golang/protobuf v1.3.0
 github.com/golang/protobuf/proto
 # github.com/google/go-github v17.0.0+incompatible
@@ -50,8 +52,8 @@ github.com/spf13/afero/mem
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # golang.org/x/net v0.0.0-20190327214358-63eda1eb0650
-golang.org/x/net/context/ctxhttp
 golang.org/x/net/context
+golang.org/x/net/context/ctxhttp
 # golang.org/x/oauth2 v0.0.0-20190319182350-c85d3e98c914
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
