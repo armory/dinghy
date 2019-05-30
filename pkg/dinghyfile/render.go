@@ -16,6 +16,11 @@
 
 package dinghyfile
 
+/*
+ * NOTE:  This is actually the Dinghyfile renderer; it should probably be
+ * renamed accordingly.
+ */
+
 import (
 	"bytes"
 	"encoding/json"
@@ -30,7 +35,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func parseValue(val interface{}) interface{} {
+type DinghyfileRenderer struct {
+	Builder *PipelineBuilder
+}
+
+func NewDinghyfileRenderer(b *PipelineBuilder) *DinghyfileRenderer {
+	return &DinghyfileRenderer{Builder: b}
+}
+
+func (r *DinghyfileRenderer) parseValue(val interface{}) interface{} {
 	if jsonStr, ok := val.(string); ok && len(jsonStr) > 0 {
 		if jsonStr[0] == '{' {
 			json.Unmarshal([]byte(jsonStr), &val)
@@ -43,13 +56,11 @@ func parseValue(val interface{}) interface{} {
 	return val
 }
 
-type varMap map[string]interface{}
-
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []varMap) interface{} {
+func (r *DinghyfileRenderer) moduleFunc(org string, deps map[string]bool, allVars []varMap) interface{} {
 	return func(mod string, vars ...interface{}) string {
 		// Record the dependency.
-		child := b.Downloader.EncodeURL(org, b.TemplateRepo, mod)
+		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod)
 		if _, exists := deps[child]; !exists {
 			deps[child] = true
 		}
@@ -74,34 +85,34 @@ func moduleFunc(b *PipelineBuilder, org string, deps map[string]bool, allVars []
 				if deepVariable[0:5] == "{{var" {
 					for _, vm := range allVars {
 						if val, exists := vm[deepVariable[6:len(deepVariable)-2]]; exists {
-							log.Info("Substituting deepvariable ", vars[i], " : old value : ", deepVariable, " for new value: ", renderValue(val).(string))
-							vars[i+1] = parseValue(val)
+							log.Info("Substituting deepvariable ", vars[i], " : old value : ", deepVariable, " for new value: ", r.renderValue(val).(string))
+							vars[i+1] = r.parseValue(val)
 						}
 					}
 				}
 			}
-			newVars[key] = parseValue(vars[i+1])
+			newVars[key] = r.parseValue(vars[i+1])
 		}
 
-		result, _ := b.Render(b.TemplateOrg, b.TemplateRepo, mod, append([]varMap{newVars}, allVars...))
+		result, _ := r.Render(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, append([]varMap{newVars}, allVars...))
 		return result.String()
 	}
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func pipelineIDFunc(b *PipelineBuilder, vars []varMap) interface{} {
+func (r *DinghyfileRenderer) pipelineIDFunc(b *PipelineBuilder, vars []varMap) interface{} {
 	return func(app, pipelineName string, defaultVal ...interface{}) string {
 		for _, vm := range vars {
 			if val, exists := vm["triggerApp"]; exists {
-				app = renderValue(val).(string)
+				app = r.renderValue(val).(string)
 				log.Info("Substituting pipeline trigger appname: ", app)
 			}
 			if val, exists := vm["triggerPipeline"]; exists {
-				pipelineName = renderValue(val).(string)
+				pipelineName = r.renderValue(val).(string)
 				log.Info("Substituting pipeline trigger appname: ", app)
 			}
 		}
-		id, err := b.GetPipelinebyID(app, pipelineName)
+		id, err := b.GetPipelineByID(app, pipelineName)
 		if err != nil {
 			log.Errorf("could not get pipeline id for app %s, pipeline %s, err = %v", app, pipelineName, err)
 		}
@@ -110,7 +121,7 @@ func pipelineIDFunc(b *PipelineBuilder, vars []varMap) interface{} {
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func renderValue(val interface{}) interface{} {
+func (r *DinghyfileRenderer) renderValue(val interface{}) interface{} {
 	// If it's an unserialized JSON array, serialize it back to JSON.
 	if newval, ok := val.([]interface{}); ok {
 		buf, err := json.Marshal(newval)
@@ -135,11 +146,11 @@ func renderValue(val interface{}) interface{} {
 	return val
 }
 
-func varFunc(vars []varMap) interface{} {
+func (r *DinghyfileRenderer) varFunc(vars []varMap) interface{} {
 	return func(varName string, defaultVal ...interface{}) interface{} {
 		for _, vm := range vars {
 			if val, exists := vm[varName]; exists {
-				return renderValue(val)
+				return r.renderValue(val)
 			}
 		}
 
@@ -156,7 +167,7 @@ func varFunc(vars []varMap) interface{} {
 					for _, vm := range vars {
 						if val, exists := vm[nested]; exists {
 							log.Info("Substituting nested variable: ", nested, ", val: ", val)
-							return renderValue(val)
+							return r.renderValue(val)
 						}
 					}
 				}
@@ -168,7 +179,7 @@ func varFunc(vars []varMap) interface{} {
 }
 
 // Render renders the template
-func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
+func (r *DinghyfileRenderer) Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
 	module := true
 	event := &events.Event{
 		Start: time.Now().UTC().Unix(),
@@ -180,7 +191,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	deps := make(map[string]bool)
 
 	// Download the template being rendered.
-	contents, err := b.Downloader.Download(org, repo, path)
+	contents, err := r.Builder.Downloader.Download(org, repo, path)
 	if err != nil {
 		log.Error("Failed to download")
 		return nil, err
@@ -194,7 +205,7 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	}
 
 	// Extract global vars if we're processing a dinghyfile (and not a module)
-	if filepath.Base(path) == b.DinghyfileName {
+	if filepath.Base(path) == r.Builder.DinghyfileName {
 		module = false
 		gvs, err := preprocessor.ParseGlobalVars(contents)
 		if err != nil {
@@ -213,10 +224,10 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	}
 
 	funcMap := template.FuncMap{
-		"module":     moduleFunc(b, org, deps, vars),
-		"appModule":  moduleFunc(b, org, deps, vars),
-		"pipelineID": pipelineIDFunc(b, vars),
-		"var":        varFunc(vars),
+		"module":     r.moduleFunc(org, deps, vars),
+		"appModule":  r.moduleFunc(org, deps, vars),
+		"pipelineID": r.pipelineIDFunc(r.Builder, vars),
+		"var":        r.varFunc(vars),
 	}
 
 	// Parse the downloaded template.
@@ -239,13 +250,13 @@ func (b *PipelineBuilder) Render(org, repo, path string, vars []varMap) (*bytes.
 	for dep := range deps {
 		depUrls = append(depUrls, dep)
 	}
-	b.Depman.SetDeps(b.Downloader.EncodeURL(org, repo, path), depUrls)
+	r.Builder.Depman.SetDeps(r.Builder.Downloader.EncodeURL(org, repo, path), depUrls)
 
 	event.End = time.Now().UTC().Unix()
 	eventType := "render"
 	event.Dinghyfile = buf.String()
 	event.Module = module
-	b.EventClient.SendEvent(eventType, event)
+	r.Builder.EventClient.SendEvent(eventType, event)
 
 	return buf, nil
 }

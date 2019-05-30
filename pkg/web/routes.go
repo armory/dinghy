@@ -24,7 +24,6 @@ import (
 
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/git/bbcloud"
-	"github.com/armory/plank"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -51,12 +50,12 @@ type Push interface {
 
 type WebAPI struct {
 	Config      *settings.Settings
-	Client      *plank.Client
+	Client      util.PlankClient
 	Cache       dinghyfile.DependencyManager
 	EventClient *events.Client
 }
 
-func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c *plank.Client, e *events.Client) *WebAPI {
+func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client) *WebAPI {
 	return &WebAPI{
 		Config:      s,
 		Client:      c,
