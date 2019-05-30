@@ -20,22 +20,13 @@ import (
 	"bytes"
 	"errors"
 	"github.com/armory/dinghy/pkg/events"
-	log "github.com/sirupsen/logrus"
-
+	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/plank"
+	log "github.com/sirupsen/logrus"
 )
 
 type Renderer interface {
 	Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error)
-}
-
-type PlankClient interface {
-	GetApplication(string) (*plank.Application, error)
-	CreateApplication(*plank.Application) error
-	GetPipeline(string, string) (*plank.Pipeline, error)
-	GetPipelines(string) ([]plank.Pipeline, error)
-	DeletePipeline(plank.Pipeline) error
-	UpsertPipeline(plank.Pipeline) error
 }
 
 // PipelineBuilder is responsible for downloading dinghyfiles/modules, compiling them, and sending them to Spinnaker
@@ -45,7 +36,7 @@ type PipelineBuilder struct {
 	TemplateRepo         string
 	TemplateOrg          string
 	DinghyfileName       string
-	Client               PlankClient
+	Client               util.PlankClient
 	DeleteStalePipelines bool
 	AutolockPipelines    string
 	EventClient          events.EventClient
