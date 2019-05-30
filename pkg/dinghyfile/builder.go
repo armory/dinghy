@@ -25,6 +25,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type varMap map[string]interface{}
+
 type Renderer interface {
 	Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error)
 }
