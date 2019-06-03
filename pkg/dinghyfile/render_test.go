@@ -17,6 +17,7 @@
 package dinghyfile
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -26,6 +27,8 @@ import (
 	"github.com/armory/dinghy/pkg/cache"
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/git/dummy"
+	"github.com/armory/plank"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -242,6 +245,18 @@ var fileService = dummy.FileService{
 	`,
 	"var_params.inner": `{
 		"foo": {{ var "foo" }}
+	}`,
+
+	// Testing the pipelineID function
+	"pipelineIDTest": `{
+		"application": "pipelineidexample",
+		"failPipeline": true,
+		"name": "Pipeline",
+		"pipeline": "{{ pipelineID "triggerApp" "triggerPipeline" }}",
+		"refId": "1",
+		"requisiteStageRefIds": [],
+		"type": "pipeline",
+		"waitForCompletion": true
 	}`,
 }
 
@@ -462,12 +477,65 @@ func TestModuleVariableSubstitution(t *testing.T) {
 	assert.Equal(t, 100, ts.Nested.WaitTime)
 }
 
-/*
-func TestPipelineID(t *testing.T) {
-	id := pipelineIDFunc("armoryspinnaker", "fake-echo-test")
-	assert.Equal(t, "f9c05bd0-5a50-4540-9e15-b44740abfb10", id)
+func TestPipelineIDFunc(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	r := testDinghyfileRenderer()
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetPipelines(gomock.Eq("triggerApp")).Return([]plank.Pipeline{plank.Pipeline{ID: "pipelineID", Name: "triggerPipeline"}}, nil).Times(1)
+	r.Builder.Client = client
+
+	vars := []varMap{
+		{"triggerApp": "triggerApp", "triggerPipeline": "triggerPipeline"},
+	}
+	idFunc := r.pipelineIDFunc(vars).(func(string, string) string)
+	result := idFunc("triggerApp", "triggerPipeline")
+	assert.Equal(t, "pipelineID", result)
 }
-*/
+func TestPipelineIDFuncDefault(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	r := testDinghyfileRenderer()
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetPipelines(gomock.Eq("triggerApp")).Return(nil, errors.New("fake not found")).Times(1)
+	r.Builder.Client = client
+
+	vars := []varMap{
+		{"triggerApp": "triggerApp"}, {"triggerPipeline": "triggerPipeline"},
+	}
+	idFunc := r.pipelineIDFunc(vars).(func(string, string) string)
+	result := idFunc("triggerApp", "triggerPipeline")
+	assert.Equal(t, "", result)
+}
+func TestPipelineIDRender(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	r := testDinghyfileRenderer()
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetPipelines(gomock.Eq("triggerApp")).Return([]plank.Pipeline{plank.Pipeline{ID: "pipelineID", Name: "triggerPipeline"}}, nil).Times(1)
+	r.Builder.Client = client
+
+	expected := `{
+		"application": "pipelineidexample",
+		"failPipeline": true,
+		"name": "Pipeline",
+		"pipeline": "pipelineID",
+		"refId": "1",
+		"requisiteStageRefIds": [],
+		"type": "pipeline",
+		"waitForCompletion": true
+	}`
+
+	ret, err := r.Render("org", "repo", "pipelineIDTest", nil)
+	assert.Nil(t, err)
+	assert.Equal(t, expected, ret.String())
+}
 
 func TestModuleEmptyString(t *testing.T) {
 	r := testDinghyfileRenderer()

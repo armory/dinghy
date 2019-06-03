@@ -19,3 +19,9 @@ How it works:
 
 <!-- made using ./bin/makeDiagrams.sh -->
 ![](diagrams/workflow.mmd.svg)
+
+### Testing manually.
+
+curl -X POST -H "Content-Type: application/json" -d "@bitbucket-webhook.json" http://localhost:8089/webhooks/git/bitbucket-cloud
+
+
