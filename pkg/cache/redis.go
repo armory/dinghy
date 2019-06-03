@@ -25,24 +25,31 @@ import (
 )
 
 // RedisCache maintains a dependency graph inside Redis
-type RedisCache redis.Client
+type RedisCache struct {
+	Client *redis.Client
+	Logger *log.Entry
+}
 
 func compileKey(keys ...string) string {
 	return fmt.Sprintf("Armory:dinghy:%s", strings.Join(keys, ":"))
 }
 
 // NewRedisCache initializes a new cache
-func NewRedisCache(redisOptions *redis.Options) *RedisCache {
-	return (*RedisCache)(redis.NewClient(redisOptions))
+func NewRedisCache(redisOptions *redis.Options, logger *log.Logger) *RedisCache {
+	return &RedisCache{
+		Client: redis.NewClient(redisOptions),
+		Logger: logger.WithFields(log.Fields{"cache": "redis"}),
+	}
 }
 
 // SetDeps sets dependencies for a parent
 func (c *RedisCache) SetDeps(parent string, deps []string) {
+	loge := log.WithFields(log.Fields{"func":"SetDeps"})
 	key := compileKey("children", parent)
 
-	currentDeps, err := c.SMembers(key).Result()
+	currentDeps, err := c.Client.SMembers(key).Result()
 	if err != nil {
-		log.Error(err)
+		loge.WithFields(log.Fields{"operation": "get members", "key": key}).Error(err)
 		return
 	}
 
@@ -74,18 +81,27 @@ func (c *RedisCache) SetDeps(parent string, deps []string) {
 		depsToAdd = append(depsToAdd, key)
 	}
 
+	//TODO:  if these redis operations fail, what happens?
 	key = compileKey("children", parent)
-	c.SRem(key, depsToDelete...)
-	c.SAdd(key, depsToAdd...)
+	if _, err := c.Client.SRem(key, depsToDelete...).Result(); err != nil {
+		loge.WithFields(log.Fields{"operation": "child delete deps"}).Error(err)
+	}
+	if _, err := c.Client.SAdd(key, depsToAdd...).Result(); err != nil {
+		loge.WithFields(log.Fields{"operation": "child add deps"}).Error(err)
+	}
 
 	for _, dep := range depsToDelete {
 		key = compileKey("parents", dep.(string))
-		c.SRem(key, parent)
+		if _, err := c.Client.SRem(key, parent).Result(); err != nil {
+			loge.WithFields(log.Fields{"operation": "delete deps"}).Error(err)
+		}
 	}
 
 	for _, dep := range depsToAdd {
 		key = compileKey("parents", dep.(string))
-		c.SAdd(key, parent)
+		if _, err := c.Client.SAdd(key, parent).Result(); err != nil {
+			loge.WithFields(log.Fields{"operation": "add deps"}).Error(err)
+		}
 	}
 }
 
@@ -93,6 +109,7 @@ func (c *RedisCache) SetDeps(parent string, deps []string) {
 func (c *RedisCache) GetRoots(url string) []string {
 	roots := make([]string, 0)
 	visited := map[string]bool{}
+	loge := log.WithFields(log.Fields{"func":"GetRoots"})
 
 	for q := []string{url}; len(q) > 0; {
 		curr := q[0]
@@ -101,9 +118,9 @@ func (c *RedisCache) GetRoots(url string) []string {
 		visited[curr] = true
 
 		key := compileKey("parents", curr)
-		parents, err := c.SMembers(key).Result()
+		parents, err := c.Client.SMembers(key).Result()
 		if err != nil {
-			log.Error(err)
+			loge.WithFields(log.Fields{"operation": "parents", "key": key}).Error(err)
 			break
 		}
 
@@ -124,9 +141,9 @@ func (c *RedisCache) GetRoots(url string) []string {
 
 // Clear clears everything
 func (c *RedisCache) Clear() {
-	keys, _ := c.Keys(compileKey("children", "*")).Result()
-	c.Del(keys...)
+	keys, _ := c.Client.Keys(compileKey("children", "*")).Result()
+	c.Client.Del(keys...)
 
-	keys, _ = c.Keys(compileKey("parents", "*")).Result()
-	c.Del(keys...)
+	keys, _ = c.Client.Keys(compileKey("parents", "*")).Result()
+	c.Client.Del(keys...)
 }
