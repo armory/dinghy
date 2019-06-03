@@ -100,19 +100,19 @@ func (r *DinghyfileRenderer) moduleFunc(org string, deps map[string]bool, allVar
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func (r *DinghyfileRenderer) pipelineIDFunc(b *PipelineBuilder, vars []varMap) interface{} {
-	return func(app, pipelineName string, defaultVal ...interface{}) string {
+func (r *DinghyfileRenderer) pipelineIDFunc(vars []varMap) interface{} {
+	return func(app, pipelineName string) string {
 		for _, vm := range vars {
 			if val, exists := vm["triggerApp"]; exists {
 				app = r.renderValue(val).(string)
-				log.Info("Substituting pipeline trigger appname: ", app)
+				log.Info("Substituting pipeline triggerApp: ", app)
 			}
 			if val, exists := vm["triggerPipeline"]; exists {
 				pipelineName = r.renderValue(val).(string)
-				log.Info("Substituting pipeline trigger appname: ", app)
+				log.Info("Substituting pipeline triggerPipeline: ", pipelineName)
 			}
 		}
-		id, err := b.GetPipelineByID(app, pipelineName)
+		id, err := r.Builder.GetPipelineByID(app, pipelineName)
 		if err != nil {
 			log.Errorf("could not get pipeline id for app %s, pipeline %s, err = %v", app, pipelineName, err)
 		}
@@ -226,7 +226,7 @@ func (r *DinghyfileRenderer) Render(org, repo, path string, vars []varMap) (*byt
 	funcMap := template.FuncMap{
 		"module":     r.moduleFunc(org, deps, vars),
 		"appModule":  r.moduleFunc(org, deps, vars),
-		"pipelineID": r.pipelineIDFunc(r.Builder, vars),
+		"pipelineID": r.pipelineIDFunc(vars),
 		"var":        r.varFunc(vars),
 	}
 

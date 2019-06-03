@@ -19,3 +19,13 @@ How it works:
 
 <!-- made using ./bin/makeDiagrams.sh -->
 ![](diagrams/workflow.mmd.svg)
+
+### Testing manually.
+
+curl -X POST -H "Content-Type: application/json" -d "@example/github_payload.json" http://localhost:8089/webhooks/git/github
+
+(The github_payload.json file in the example directory is a minimal set for
+testing the git webhook, as an example)
+
+
+
