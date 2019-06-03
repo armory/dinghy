@@ -17,6 +17,7 @@
 package cache
 
 import (
+	"github.com/sirupsen/logrus"
 	"testing"
 
 	"fmt"
@@ -34,7 +35,7 @@ func connectToRedis() *RedisCache {
 		Addr:     fmt.Sprintf("%s:%s", host, port),
 		Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
 		DB:       0,
-	})
+	}, logrus.New())
 
 	c.Clear()
 	return c
@@ -43,7 +44,7 @@ func connectToRedis() *RedisCache {
 func TestRedisCache(t *testing.T) {
 	c := connectToRedis()
 
-	_, err := c.Ping().Result()
+	_, err := c.Client.Ping().Result()
 	if err != nil {
 		t.Skip("Could not connect to Redis; skipping test")
 	}
