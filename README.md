@@ -22,6 +22,10 @@ How it works:
 
 ### Testing manually.
 
-curl -X POST -H "Content-Type: application/json" -d "@bitbucket-webhook.json" http://localhost:8089/webhooks/git/bitbucket-cloud
+curl -X POST -H "Content-Type: application/json" -d "@example/github_payload.json" http://localhost:8089/webhooks/git/github
+
+(The github_payload.json file in the example directory is a minimal set for
+testing the git webhook, as an example)
+
 
 
