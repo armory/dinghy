@@ -1,0 +1,17 @@
+{
+	 "commits": [
+		 {
+			 "id": "EXAMPLE",
+		         "added": [],
+		         "modified": ["dinghyfile"]
+		 }
+	 ],
+	 "repository": {
+		 "name": "dinghy-plank-integration",
+		 "organization": "armory-io",
+		 "owner": {
+			 "login": "dotdotdotpaul"
+		 }
+	 },
+	 "ref": "refs/heads/master"
+}
