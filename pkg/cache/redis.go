@@ -62,7 +62,8 @@ func (c *RedisCache) monitorWorker() {
 				count++
 				c.Logger.Errorf("Redis monitor failed %d times (5 max)", count)
 				if count >= 5 {
-					c.Logger.Error("Stopping dinghy because communicaiton with redis failed")
+					c.Logger.Error("Stopping dinghy because communication with redis failed")
+					timer.Stop()
 					c.stop <- syscall.SIGINT
 				}
 				continue
