@@ -12,13 +12,17 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package cache
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
@@ -28,6 +32,8 @@ import (
 type RedisCache struct {
 	Client *redis.Client
 	Logger *log.Entry
+	ctx    context.Context
+	stop   chan os.Signal
 }
 
 func compileKey(keys ...string) string {
@@ -35,16 +41,42 @@ func compileKey(keys ...string) string {
 }
 
 // NewRedisCache initializes a new cache
-func NewRedisCache(redisOptions *redis.Options, logger *log.Logger) *RedisCache {
-	return &RedisCache{
+func NewRedisCache(redisOptions *redis.Options, logger *log.Logger, ctx context.Context, stop chan os.Signal) *RedisCache {
+	rc := &RedisCache{
 		Client: redis.NewClient(redisOptions),
 		Logger: logger.WithFields(log.Fields{"cache": "redis"}),
+		ctx:    ctx,
+		stop:   stop,
+	}
+	go rc.monitorWorker()
+	return rc
+}
+
+func (c *RedisCache) monitorWorker() {
+	timer := time.NewTicker(10 * time.Second)
+	count := 0
+	for {
+		select {
+		case <-timer.C:
+			if _, err := c.Client.Ping().Result(); err != nil {
+				count++
+				c.Logger.Errorf("Redis monitor failed %d times (5 max)", count)
+				if count >= 5 {
+					c.Logger.Error("Stopping dinghy because communicaiton with redis failed")
+					c.stop <- syscall.SIGINT
+				}
+				continue
+			}
+			count = 0
+		case <-c.ctx.Done():
+			return
+		}
 	}
 }
 
 // SetDeps sets dependencies for a parent
 func (c *RedisCache) SetDeps(parent string, deps []string) {
-	loge := log.WithFields(log.Fields{"func":"SetDeps"})
+	loge := log.WithFields(log.Fields{"func": "SetDeps"})
 	key := compileKey("children", parent)
 
 	currentDeps, err := c.Client.SMembers(key).Result()
@@ -109,7 +141,7 @@ func (c *RedisCache) SetDeps(parent string, deps []string) {
 func (c *RedisCache) GetRoots(url string) []string {
 	roots := make([]string, 0)
 	visited := map[string]bool{}
-	loge := log.WithFields(log.Fields{"func":"GetRoots"})
+	loge := log.WithFields(log.Fields{"func": "GetRoots"})
 
 	for q := []string{url}; len(q) > 0; {
 		curr := q[0]
