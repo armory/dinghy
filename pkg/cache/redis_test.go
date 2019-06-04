@@ -17,7 +17,9 @@
 package cache
 
 import (
+	"context"
 	"github.com/sirupsen/logrus"
+	"os"
 	"testing"
 
 	"fmt"
@@ -35,7 +37,7 @@ func connectToRedis() *RedisCache {
 		Addr:     fmt.Sprintf("%s:%s", host, port),
 		Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
 		DB:       0,
-	}, logrus.New())
+	}, logrus.New(), context.Background(), make(chan os.Signal, 1))
 
 	c.Clear()
 	return c
