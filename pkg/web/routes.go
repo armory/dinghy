@@ -100,6 +100,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		Client:               wa.Client,
 		DeleteStalePipelines: false,
 		AutolockPipelines:    wa.Config.AutoLockPipelines,
+		Logger:               log.New(),
 	}
 
 	buf := new(bytes.Buffer)

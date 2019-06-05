@@ -32,7 +32,6 @@ import (
 
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/preprocessor"
-	log "github.com/sirupsen/logrus"
 )
 
 type DinghyfileRenderer struct {
@@ -67,7 +66,7 @@ func (r *DinghyfileRenderer) moduleFunc(org string, deps map[string]bool, allVar
 
 		length := len(vars)
 		if length%2 != 0 {
-			log.Warnf("odd number of parameters received to module %s", mod)
+			r.Builder.Logger.Warnf("odd number of parameters received to module %s", mod)
 		}
 
 		// Convert module argument pairs to key/value map
@@ -75,7 +74,7 @@ func (r *DinghyfileRenderer) moduleFunc(org string, deps map[string]bool, allVar
 		for i := 0; i+1 < length; i += 2 {
 			key, ok := vars[i].(string)
 			if !ok {
-				log.Errorf("dict keys must be strings in module: %s", mod)
+				r.Builder.Logger.Errorf("dict keys must be strings in module: %s", mod)
 				return ""
 			}
 
@@ -85,7 +84,7 @@ func (r *DinghyfileRenderer) moduleFunc(org string, deps map[string]bool, allVar
 				if deepVariable[0:5] == "{{var" {
 					for _, vm := range allVars {
 						if val, exists := vm[deepVariable[6:len(deepVariable)-2]]; exists {
-							log.Info("Substituting deepvariable ", vars[i], " : old value : ", deepVariable, " for new value: ", r.renderValue(val).(string))
+							r.Builder.Logger.Info("Substituting deepvariable ", vars[i], " : old value : ", deepVariable, " for new value: ", r.renderValue(val).(string))
 							vars[i+1] = r.parseValue(val)
 						}
 					}
@@ -105,16 +104,16 @@ func (r *DinghyfileRenderer) pipelineIDFunc(vars []varMap) interface{} {
 		for _, vm := range vars {
 			if val, exists := vm["triggerApp"]; exists {
 				app = r.renderValue(val).(string)
-				log.Info("Substituting pipeline triggerApp: ", app)
+				r.Builder.Logger.Info("Substituting pipeline triggerApp: ", app)
 			}
 			if val, exists := vm["triggerPipeline"]; exists {
 				pipelineName = r.renderValue(val).(string)
-				log.Info("Substituting pipeline triggerPipeline: ", pipelineName)
+				r.Builder.Logger.Info("Substituting pipeline triggerPipeline: ", pipelineName)
 			}
 		}
 		id, err := r.Builder.GetPipelineByID(app, pipelineName)
 		if err != nil {
-			log.Errorf("could not get pipeline id for app %s, pipeline %s, err = %v", app, pipelineName, err)
+			r.Builder.Logger.Errorf("could not get pipeline id for app %s, pipeline %s, err = %v", app, pipelineName, err)
 		}
 		return id
 	}
@@ -126,7 +125,7 @@ func (r *DinghyfileRenderer) renderValue(val interface{}) interface{} {
 	if newval, ok := val.([]interface{}); ok {
 		buf, err := json.Marshal(newval)
 		if err != nil {
-			log.Errorf("unable to json.marshal value %v", val)
+			r.Builder.Logger.Errorf("unable to json.marshal array value %v", val)
 			return ""
 		}
 		return string(buf)
@@ -136,7 +135,7 @@ func (r *DinghyfileRenderer) renderValue(val interface{}) interface{} {
 	if newval, ok := val.(map[string]interface{}); ok {
 		buf, err := json.Marshal(newval)
 		if err != nil {
-			log.Errorf("unable to json.marshal value %v", val)
+			r.Builder.Logger.Errorf("unable to json.marshal map value %v", val)
 			return ""
 		}
 		return string(buf)
@@ -166,7 +165,7 @@ func (r *DinghyfileRenderer) varFunc(vars []varMap) interface{} {
 					nested := s[1:]
 					for _, vm := range vars {
 						if val, exists := vm[nested]; exists {
-							log.Info("Substituting nested variable: ", nested, ", val: ", val)
+							r.Builder.Logger.Info("Substituting nested variable: ", nested, ", val: ", val)
 							return r.renderValue(val)
 						}
 					}
@@ -193,14 +192,14 @@ func (r *DinghyfileRenderer) Render(org, repo, path string, vars []varMap) (*byt
 	// Download the template being rendered.
 	contents, err := r.Builder.Downloader.Download(org, repo, path)
 	if err != nil {
-		log.Error("Failed to download")
+		r.Builder.Logger.Error("Failed to download")
 		return nil, err
 	}
 
 	// Preprocess to stringify any json args in calls to modules.
 	contents, err = preprocessor.Preprocess(contents)
 	if err != nil {
-		log.Error("Failed to preprocess")
+		r.Builder.Logger.Error("Failed to preprocess")
 		return nil, err
 	}
 
@@ -209,7 +208,7 @@ func (r *DinghyfileRenderer) Render(org, repo, path string, vars []varMap) (*byt
 		module = false
 		gvs, err := preprocessor.ParseGlobalVars(contents)
 		if err != nil {
-			log.Error("Failed to parse global vars")
+			r.Builder.Logger.Error("Failed to parse global vars")
 			return nil, err
 		}
 
@@ -219,7 +218,7 @@ func (r *DinghyfileRenderer) Render(org, repo, path string, vars []varMap) (*byt
 		} else if len(gvMap) > 0 {
 			vars = append(vars, gvMap)
 		} else {
-			log.Info("No global vars found in dinghyfile")
+			r.Builder.Logger.Info("No global vars found in dinghyfile")
 		}
 	}
 
@@ -233,7 +232,7 @@ func (r *DinghyfileRenderer) Render(org, repo, path string, vars []varMap) (*byt
 	// Parse the downloaded template.
 	tmpl, err := template.New("dinghy-render").Funcs(funcMap).Parse(contents)
 	if err != nil {
-		log.Error("Failed to parse template")
+		r.Builder.Logger.Error("Failed to parse template")
 		return nil, err
 	}
 
@@ -241,7 +240,7 @@ func (r *DinghyfileRenderer) Render(org, repo, path string, vars []varMap) (*byt
 	buf := new(bytes.Buffer)
 	err = tmpl.Execute(buf, "")
 	if err != nil {
-		log.Error("Failed to execute buffer")
+		r.Builder.Logger.Error("Failed to execute buffer")
 		return nil, err
 	}
 
