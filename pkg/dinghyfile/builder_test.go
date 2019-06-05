@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/armory/plank"
@@ -43,6 +44,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	pb := PipelineBuilder{
 		Renderer: renderer,
 		Client:   client,
+		Logger:   logrus.New(),
 	}
 	assert.Nil(t, pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path"))
 }
