@@ -18,6 +18,8 @@ package web
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -72,8 +74,9 @@ func (wa *WebAPI) Router() *mux.Router {
 	r.HandleFunc("/healthcheck", wa.healthcheck)
 	r.HandleFunc("/v1/webhooks/github", wa.githubWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/stash", wa.stashWebhookHandler).Methods("POST")
-	r.HandleFunc("/v1/webhooks/bitbucket", wa.bitbucketServerWebhookHandler).Methods("POST")
-	r.HandleFunc("/v1/webhooks/bitbucket-cloud", wa.bitbucketCloudWebhookHandler).Methods("POST")
+	r.HandleFunc("/v1/webhooks/bitbucket", wa.bitbucketWebhookHandler).Methods("POST")
+	// all of the bitbucket webhooks come through this one handler, this is being left for backwards compatibility
+	r.HandleFunc("/v1/webhooks/bitbucket-cloud", wa.bitbucketWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/updatePipeline", wa.manualUpdateHandler).Methods("POST")
 	r.Use(RequestLoggingMiddleware)
 	return r
@@ -165,68 +168,87 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	wa.buildPipelines(p, &fileService, w)
 }
 
-func (wa *WebAPI) bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	payload := stash.WebhookPayload{}
-	if err := readBody(r, &payload); err != nil {
+func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
+	// determine if this is a bitbucket-cloud event and handle accordingly
+	keys := make(map[string]interface{})
+	if err := json.NewDecoder(r.Body).Decode(&keys); err != nil {
+		log.Errorf("Unable to determine bitbucket event type: %s", err)
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	if payload.EventKey != "" && payload.EventKey != "repo:refs_changed" {
-		w.WriteHeader(200)
-		return
+	fmt.Println("keys:", keys["event_type"])
+
+	isBitbucketCloud := false
+	if keys["event_type"] == nil {
+		isBitbucketCloud = true
 	}
 
-	payload.IsOldStash = false
-	stashConfig := stash.StashConfig{
-		Endpoint: wa.Config.StashEndpoint,
-		Username: wa.Config.StashUsername,
-		Token:    wa.Config.StashToken,
-	}
-	p, err := stash.NewPush(payload, stashConfig)
-	if err != nil {
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
-		return
-	}
+	if isBitbucketCloud {
+		log.Info("Processing bitbucket-cloud webhook")
+		payload := bbcloud.WebhookPayload{}
+		if err := readBody(r, &payload); err != nil {
+			util.WriteHTTPError(w, http.StatusInternalServerError, err)
+			return
+		}
 
-	// TODO: WebAPI already has the fields that are being assigned here and it's
-	// the receiver on the buildPipelines. We don't need to reassign the values to
-	// fileService here.
-	fileService := stash.FileService{
-		StashToken:    wa.Config.StashToken,
-		StashUsername: wa.Config.StashUsername,
-		StashEndpoint: wa.Config.StashEndpoint,
-	}
-	wa.buildPipelines(p, &fileService, w)
-}
+		bbcloudConfig := bbcloud.Config{
+			Endpoint: wa.Config.StashEndpoint,
+			Username: wa.Config.StashUsername,
+			Token:    wa.Config.StashToken,
+		}
+		p, err := bbcloud.NewPush(payload, bbcloudConfig)
+		if err != nil {
+			util.WriteHTTPError(w, http.StatusInternalServerError, err)
+			return
+		}
 
-func (wa *WebAPI) bitbucketCloudWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	payload := bbcloud.WebhookPayload{}
-	if err := readBody(r, &payload); err != nil {
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
-		return
-	}
+		// TODO: WebAPI already has the fields that are being assigned here and it's
+		// the receiver on buildPipelines. We don't need to reassign the values to
+		// fileService here.
+		fileService := bbcloud.FileService{
+			BbcloudEndpoint: wa.Config.StashEndpoint,
+			BbcloudUsername: wa.Config.StashUsername,
+			BbcloudToken:    wa.Config.StashToken,
+		}
 
-	bbcloudConfig := bbcloud.Config{
-		Endpoint: wa.Config.StashEndpoint,
-		Username: wa.Config.StashUsername,
-		Token:    wa.Config.StashToken,
-	}
-	p, err := bbcloud.NewPush(payload, bbcloudConfig)
-	if err != nil {
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
-		return
-	}
+		wa.buildPipelines(p, &fileService, w)
+	} else {
+		log.Info("Processing bitbucket-server webhook")
+		payload := stash.WebhookPayload{}
+		if err := readBody(r, &payload); err != nil {
+			util.WriteHTTPError(w, http.StatusInternalServerError, err)
+			return
+		}
 
-	// TODO: WebAPI already has the fields that are being assigned here and it's
-	// the receiver on the buildPipelines. We don't need to reassign the values to
-	// fileService here.
-	fileService := bbcloud.FileService{
-		BbcloudEndpoint: wa.Config.StashEndpoint,
-		BbcloudUsername: wa.Config.StashUsername,
-		BbcloudToken:    wa.Config.StashToken,
+		if payload.EventKey != "" && payload.EventKey != "repo:refs_changed" {
+			w.WriteHeader(200)
+			return
+		}
+
+		payload.IsOldStash = false
+		stashConfig := stash.StashConfig{
+			Endpoint: wa.Config.StashEndpoint,
+			Username: wa.Config.StashUsername,
+			Token:    wa.Config.StashToken,
+		}
+		p, err := stash.NewPush(payload, stashConfig)
+		if err != nil {
+			util.WriteHTTPError(w, http.StatusInternalServerError, err)
+			return
+		}
+
+		// TODO: WebAPI already has the fields that are being assigned here and it's
+		// the receiver on buildPipelines. We don't need to reassign the values to
+		// fileService here.
+		fileService := stash.FileService{
+			StashToken:    wa.Config.StashToken,
+			StashUsername: wa.Config.StashUsername,
+			StashEndpoint: wa.Config.StashEndpoint,
+		}
+
+		wa.buildPipelines(p, &fileService, w)
 	}
-	wa.buildPipelines(p, &fileService, w)
 }
 
 // =========
