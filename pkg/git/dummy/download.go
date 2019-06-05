@@ -17,6 +17,7 @@
 package dummy
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/armory/dinghy/pkg/git/github"
@@ -30,7 +31,7 @@ func (f FileService) Download(org, repo, file string) (string, error) {
 	if ret, exists := f[file]; exists {
 		return ret, nil
 	}
-	return "", nil
+	return "", errors.New("File not found")
 }
 
 // EncodeURL encodes a URL

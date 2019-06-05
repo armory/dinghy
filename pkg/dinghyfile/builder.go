@@ -43,6 +43,7 @@ type PipelineBuilder struct {
 	AutolockPipelines    string
 	EventClient          events.EventClient
 	Renderer             Renderer
+	Logger               log.FieldLogger
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -124,7 +125,7 @@ func (b *PipelineBuilder) DetermineRenderer(path string) Renderer {
 func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	if b.Renderer == nil {
 		// Set the renderer based on evaluation of the path, if not already set
-		log.Errorf("Calling DetermineRenderer")
+		b.Logger.Errorf("Calling DetermineRenderer")
 		b.Renderer = b.DetermineRenderer(path)
 	}
 	buf, err := b.Renderer.Render(org, repo, path, nil)
@@ -135,14 +136,14 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	log.Info("Rendered: ", buf.String())
 	d, err := UpdateDinghyfile(buf.Bytes())
 	if err != nil {
-		log.Errorf("Failed to update dinghyfile %s: %s", path, err.Error())
+		b.Logger.Errorf("Failed to update dinghyfile %s: %s", path, err.Error())
 		return err
 	}
-	log.Info("Updated: ", buf.String())
-	log.Info("Dinghyfile struct: ", d)
+	b.Logger.Info("Updated: ", buf.String())
+	b.Logger.Info("Dinghyfile struct: ", d)
 
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
-		log.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
+		b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
 		return err
 	}
 
@@ -154,7 +155,7 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 	errEncountered := false
 	failedUpdates := []string{}
 	url := b.Downloader.EncodeURL(org, repo, path)
-	log.Info("Processing module: " + url)
+	b.Logger.Info("Processing module: " + url)
 
 	// TODO: could handle logging and errors for file processing more elegantly rather
 	// than making two passes.
@@ -169,9 +170,9 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 	}
 
 	if errEncountered {
-		log.Error("The following dinghyfiles weren't updated successfully:")
+		b.Logger.Error("The following dinghyfiles weren't updated successfully:")
 		for _, url := range failedUpdates {
-			log.Error(url)
+			b.Logger.Error(url)
 		}
 		return errors.New("Not all upstream dinghyfiles were updated successfully")
 	}
@@ -183,9 +184,9 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 	_, err := b.Client.GetApplication(app.Name)
 	if err != nil {
 		// Likely just not there...
-		log.Infof("Creating application '%s'...", app.Name)
+		b.Logger.Infof("Creating application '%s'...", app.Name)
 		if err := b.Client.CreateApplication(app); err != nil {
-			log.Errorf("Failed to create application (%s)", err.Error())
+			b.Logger.Errorf("Failed to create application (%s)", err.Error())
 			return err
 		}
 	}
@@ -197,40 +198,40 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		ignoreList[id] = false
 		idToName[id] = name
 	}
-	log.Info("Found pipelines for ", app, ": ", ids)
+	b.Logger.Info("Found pipelines for ", app, ": ", ids)
 	for _, p := range pipelines {
 		// Add ids to existing pipelines
-		log.Info("Processing pipeline ", p)
+		b.Logger.Info("Processing pipeline ", p)
 		if id, exists := ids[p.Name]; exists {
-			log.Debug("Added id ", id, " to pipeline ", p.Name)
+			b.Logger.Debug("Added id ", id, " to pipeline ", p.Name)
 			ignoreList[p.Name] = true
 			p.ID = id //note: we're working with a copy.  once this loop exits all changes go out of scope!
-			log.Info("Updating pipeline: " + p.Name)
+			b.Logger.Info("Updating pipeline: " + p.Name)
 		} else {
-			log.Debug("Adding ", p.Name, " to ignored stale pipelines")
+			b.Logger.Debug("Adding ", p.Name, " to ignored stale pipelines")
 			ignoreList[p.Name] = true
-			log.Info("Creating pipeline: " + p.Name)
+			b.Logger.Info("Creating pipeline: " + p.Name)
 		}
 		if autoLock == "true" {
-			log.Debug("Locking pipeline ", p.Name)
+			b.Logger.Debug("Locking pipeline ", p.Name)
 			p.Lock()
 		}
 		if err := b.Client.UpsertPipeline(p, p.ID); err != nil {
-			log.Errorf("Upsert failed: %s", err.Error())
+			b.Logger.Errorf("Upsert failed: %s", err.Error())
 			return err
 		}
-		log.Info("Upsert succeeded.")
+		b.Logger.Info("Upsert succeeded.")
 	}
 	if deleteStale {
 		// clear existing pipelines that weren't updated
-		log.Debug("Pipelines we should ignore because they were just created: ", ignoreList)
+		b.Logger.Debug("Pipelines we should ignore because they were just created: ", ignoreList)
 		for _, p := range pipelines {
 			if !ignoreList[p.Name] {
-				log.Infof("Deleting stale pipeline %s", p.Name)
+				b.Logger.Infof("Deleting stale pipeline %s", p.Name)
 				if err := b.Client.DeletePipeline(p); err != nil {
 					// Not worrying about handling errors here because it just means it
 					// didn't get deleted *this time*.
-					log.Warnf("Could not delete Pipeline %s (Application %s)", p.Name, p.Application)
+					b.Logger.Warnf("Could not delete Pipeline %s (Application %s)", p.Name, p.Application)
 				}
 			}
 		}
@@ -241,7 +242,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 // PipelineIDs returns a map of pipeline names -> their UUID.
 func (b *PipelineBuilder) PipelineIDs(app string) (map[string]string, error) {
 	ids := map[string]string{}
-	log.Info("Looking up existing pipelines")
+	b.Logger.Info("Looking up existing pipelines")
 	pipelines, err := b.Client.GetPipelines(app)
 	if err != nil {
 		return ids, err
