@@ -18,10 +18,11 @@ package dinghyfile
 
 import (
 	"bytes"
+	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/armory/plank"
@@ -36,23 +37,102 @@ func TestProcessDinghyfile(t *testing.T) {
 
 	renderer := NewMockRenderer(ctrl)
 	renderer.EXPECT().Render(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("biff")).Return(&plank.Application{}, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("biff")).Return([]plank.Pipeline{}, nil).Times(1)
+
+	logger := NewMockFieldLogger(ctrl)
+	logger.EXPECT().Infof(gomock.Eq("Unmarshalled: %v"), gomock.Any()).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Found pipelines for %v: %v"), gomock.Any()).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Dinghyfile struct: %v"), gomock.Any()).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Updated: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Rendered: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Looking up existing pipelines")).Times(1)
+
+	// Because we've set the renderer, we should NOT get this message...
+	logger.EXPECT().Info(gomock.Eq("Calling DetermineRenderer")).Times(0)
+
 	// Never gets UpsertPipeline because our Render returns no pipelines.
 	client.EXPECT().UpsertPipeline(gomock.Any(), "").Return(nil).Times(0)
-	pb := PipelineBuilder{
-		Renderer: renderer,
-		Client:   client,
-		Logger:   logrus.New(),
-	}
+	pb := testPipelineBuilder()
+	pb.Renderer = renderer
+	pb.Client = client
+	pb.Logger = logger
 	assert.Nil(t, pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path"))
+}
+
+// Note: This ALSO tests the error case where the renderer fails (in this
+// example, because the rendered file path info is invalid)
+func TestProcessDinghyfileDefaultRenderer(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := NewMockFieldLogger(ctrl)
+	logger.EXPECT().Info("Calling DetermineRenderer").Times(1)
+	logger.EXPECT().Error(gomock.Eq("Failed to download")).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to render dinghyfile %s: %s"), gomock.Eq("notfound"), gomock.Eq("File not found")).Times(1)
+
+	pb := testPipelineBuilder()
+	pb.Logger = logger
+	res := pb.ProcessDinghyfile("fake", "news", "notfound")
+	assert.NotNil(t, res)
+}
+
+func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	rendered := `{blargh}`
+
+	renderer := NewMockRenderer(ctrl)
+	renderer.EXPECT().Render(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+
+	logger := NewMockFieldLogger(ctrl)
+	logger.EXPECT().Errorf(gomock.Eq("UpdateDinghyfile malformed json: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to update dinghyfile %s: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
+
+	pb := testPipelineBuilder()
+	pb.Logger = logger
+	pb.Renderer = renderer
+	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path")
+	assert.NotNil(t, res)
+}
+
+func TestProcessDinghyfileFailedUpdate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	rendered := `{"application": "testapp"}`
+
+	renderer := NewMockRenderer(ctrl)
+	renderer.EXPECT().Render(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+
+	logger := NewMockFieldLogger(ctrl)
+	logger.EXPECT().Infof(gomock.Eq("Creating application '%s'..."), gomock.Eq("testapp")).Times(1)
+	logger.EXPECT().Errorf("Failed to create application (%s)", gomock.Any())
+	logger.EXPECT().Errorf(gomock.Eq("Failed to update Pipelines for %s: %s"), gomock.Eq("the/full/path")).Times(1)
+	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication(gomock.Eq("testapp")).Return(nil, errors.New("not found")).Times(1)
+	client.EXPECT().CreateApplication(gomock.Any()).Return(errors.New("boom")).Times(1)
+
+	pb := testPipelineBuilder()
+	pb.Logger = logger
+	pb.Renderer = renderer
+	pb.Client = client
+	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path")
+	assert.NotNil(t, res)
+	assert.Equal(t, res.Error(), "boom")
 }
 
 // TestUpdateDinghyfile ONLY tests the function "updateDinghyfile" which,
 // despite its name, doesn't really update anything, it just unmarshals
 // the payload into the Dinghyfile{} struct.
 func TestUpdateDinghyfile(t *testing.T) {
+	b := testPipelineBuilder()
 
 	cases := map[string]struct {
 		dinghyfile []byte
@@ -129,7 +209,7 @@ func TestUpdateDinghyfile(t *testing.T) {
 
 	for testName, c := range cases {
 		t.Run(testName, func(t *testing.T) {
-			d, _ := UpdateDinghyfile(c.dinghyfile)
+			d, _ := b.UpdateDinghyfile(c.dinghyfile)
 			assert.Equal(t, d.ApplicationSpec, c.spec)
 		})
 	}
@@ -204,8 +284,33 @@ func TestUpdateDinghyfile(t *testing.T) {
 
 	for testName, c := range fullCases {
 		t.Run(testName, func(t *testing.T) {
-			d, _ := UpdateDinghyfile(c.dinghyRaw)
+			d, _ := b.UpdateDinghyfile(c.dinghyRaw)
 			assert.Equal(t, d, c.dinghyStruct)
 		})
 	}
+}
+
+func TestUpdateDinghyfileMalformed(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	b := testPipelineBuilder()
+	logger := NewMockFieldLogger(ctrl)
+	b.Logger = logger
+	logger.EXPECT().Errorf(gomock.Eq("UpdateDinghyfile malformed json: %s"), gomock.Any()).Times(1)
+
+	df, err := b.UpdateDinghyfile([]byte("{ garbage"))
+	assert.Equal(t, err, ErrMalformedJSON)
+	assert.NotNil(t, df)
+}
+
+func TestDetermineRenderer(t *testing.T) {
+	// TODO:  Currently this will ALWAYS return a DinghyfileRenderer; when we
+	//        support additional types, we'll need to add those tests here.
+	b := testPipelineBuilder()
+	r := b.DetermineRenderer("dinghyfile")
+	assert.Equal(t, "*dinghyfile.DinghyfileRenderer", reflect.TypeOf(r).String())
+}
+
+func TestRebuildModuleRootes(t *testing.T) {
 }

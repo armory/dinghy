@@ -24,12 +24,9 @@ import (
 
 	"encoding/json"
 
-	"github.com/armory/dinghy/pkg/cache"
-	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/git/dummy"
 	"github.com/armory/plank"
 	"github.com/golang/mock/gomock"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -297,25 +294,11 @@ var fileService = dummy.FileService{
 	"dict_keys_error": "",
 }
 
-// mock out events so that it gets passed over and doesn't do anything
-type EventsTestClient struct{}
-
-func (c *EventsTestClient) SendEvent(eventType string, event *events.Event) {}
-
 // This returns a test PipelineBuilder object.
 func testPipelineBuilder() *PipelineBuilder {
-	return &PipelineBuilder{
-		Depman:      cache.NewMemoryCache(),
-		Downloader:  fileService,
-		EventClient: &EventsTestClient{},
-		Logger:      logrus.New(),
-	}
-}
-
-// This sets a mock logger on the pipeline {
-func mockLogger(dr *DinghyfileRenderer, ctrl *gomock.Controller) *MockFieldLogger {
-	dr.Builder.Logger = NewMockFieldLogger(ctrl)
-	return dr.Builder.Logger.(*MockFieldLogger)
+	pb := testBasePipelineBuilder()
+	pb.Downloader = fileService
+	return pb
 }
 
 // For the most part, this is the base object to test against; you may need

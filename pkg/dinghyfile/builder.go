@@ -93,13 +93,13 @@ var (
 // UpdateDinghyfile doesn't actually update anything; it unmarshals the
 // results bytestream into the Dinghyfile{} struct, and sets the name and
 // email on the ApplicationSpec if it didn't get unmarshalled on its own.
-func UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error) {
+func (b *PipelineBuilder) UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error) {
 	d := NewDinghyfile()
 	if err := Unmarshal(dinghyfile, &d); err != nil {
-		log.Errorf("UpdateDinghyfile malformed json: %s", err.Error())
+		b.Logger.Errorf("UpdateDinghyfile malformed json: %s", err.Error())
 		return d, ErrMalformedJSON
 	}
-	log.Info("Unmarshalled: ", d)
+	b.Logger.Infof("Unmarshalled: %v", d)
 
 	// If "spec" is not provided, these will be initialized to ""; need to pull them in.
 	if d.ApplicationSpec.Name == "" {
@@ -125,22 +125,22 @@ func (b *PipelineBuilder) DetermineRenderer(path string) Renderer {
 func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	if b.Renderer == nil {
 		// Set the renderer based on evaluation of the path, if not already set
-		b.Logger.Errorf("Calling DetermineRenderer")
+		b.Logger.Info("Calling DetermineRenderer")
 		b.Renderer = b.DetermineRenderer(path)
 	}
 	buf, err := b.Renderer.Render(org, repo, path, nil)
 	if err != nil {
-		log.Errorf("Failed to render dinghyfile %s: %s", path, err.Error())
+		b.Logger.Errorf("Failed to render dinghyfile %s: %s", path, err.Error())
 		return err
 	}
-	log.Info("Rendered: ", buf.String())
-	d, err := UpdateDinghyfile(buf.Bytes())
+	b.Logger.Infof("Rendered: %s", buf.String())
+	d, err := b.UpdateDinghyfile(buf.Bytes())
 	if err != nil {
 		b.Logger.Errorf("Failed to update dinghyfile %s: %s", path, err.Error())
 		return err
 	}
-	b.Logger.Info("Updated: ", buf.String())
-	b.Logger.Info("Dinghyfile struct: ", d)
+	b.Logger.Infof("Updated: %s", buf.String())
+	b.Logger.Infof("Dinghyfile struct: %v", d)
 
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 		b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
@@ -198,7 +198,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		ignoreList[id] = false
 		idToName[id] = name
 	}
-	b.Logger.Info("Found pipelines for ", app, ": ", ids)
+	b.Logger.Infof("Found pipelines for %v: %v", app, ids)
 	for _, p := range pipelines {
 		// Add ids to existing pipelines
 		b.Logger.Info("Processing pipeline ", p)
