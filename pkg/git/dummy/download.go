@@ -19,8 +19,7 @@ package dummy
 import (
 	"errors"
 	"fmt"
-
-	"github.com/armory/dinghy/pkg/git/github"
+	"regexp"
 )
 
 // FileService serves a map[string]string of files -> file contents
@@ -41,5 +40,11 @@ func (f FileService) EncodeURL(org, repo, path string) string {
 
 // DecodeURL decodes a URL
 func (f FileService) DecodeURL(url string) (org, repo, path string) {
-	return (&github.FileService{}).DecodeURL(url)
+	targetExpression := ".*/repos/(.+)/(.+)/contents/(.+)"
+	r, _ := regexp.Compile(targetExpression)
+	match := r.FindStringSubmatch(url)
+	org = match[1]
+	repo = match[2]
+	path = match[3]
+	return
 }
