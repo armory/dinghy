@@ -465,3 +465,66 @@ func TestUpdatePipelinesUpsertFail(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "upsert fail test")
 }
+
+func TestRebuildModuleRoots(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	jsonOne := `{ "application": "testone" }`
+
+	roots := []string{
+		"https://github.com/repos/org/repo/contents/foo",
+	}
+
+	b := testPipelineBuilder()
+	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test")
+
+	depman := NewMockDependencyManager(ctrl)
+	depman.EXPECT().GetRoots(gomock.Eq(url)).Return(roots).Times(1)
+	b.Depman = depman
+
+	renderer := NewMockRenderer(ctrl)
+	renderer.EXPECT().Render(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Nil()).Return(bytes.NewBufferString(jsonOne), nil).Times(1)
+	b.Renderer = renderer
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication(gomock.Eq("testone")).Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
+	b.Client = client
+
+	err := b.RebuildModuleRoots("org", "repo", "rebuild_test")
+	assert.Nil(t, err)
+}
+
+func TestRebuildModuleRootsFailureCase(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	jsonTwo := `{ "application": "testtwo" }`
+
+	roots := []string{
+		"https://github.com/repos/org/repo/contents/foo",
+		"https://github.com/repos/org/repo/contents/bar",
+	}
+
+	b := testPipelineBuilder()
+	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test")
+
+	depman := NewMockDependencyManager(ctrl)
+	depman.EXPECT().GetRoots(gomock.Eq(url)).Return(roots).Times(1)
+	b.Depman = depman
+
+	renderer := NewMockRenderer(ctrl)
+	renderer.EXPECT().Render(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Nil()).Return(nil, errors.New("rebuild fail test")).Times(1)
+	renderer.EXPECT().Render(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("bar"), gomock.Nil()).Return(bytes.NewBufferString(jsonTwo), nil).Times(1)
+	b.Renderer = renderer
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication(gomock.Eq("testtwo")).Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testtwo")).Return([]plank.Pipeline{}, nil).Times(1)
+	b.Client = client
+
+	err := b.RebuildModuleRoots("org", "repo", "rebuild_test")
+	assert.NotNil(t, err)
+	assert.Equal(t, err.Error(), "Not all upstream dinghyfiles were updated successfully")
+}
