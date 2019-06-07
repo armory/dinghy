@@ -312,5 +312,156 @@ func TestDetermineRenderer(t *testing.T) {
 	assert.Equal(t, "*dinghyfile.DinghyfileRenderer", reflect.TypeOf(r).String())
 }
 
-func TestRebuildModuleRootes(t *testing.T) {
+func TestGetPipelineByID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	emptyset := []plank.Pipeline{}
+	foundset := []plank.Pipeline{
+		plank.Pipeline{Name: "pipelineName", ID: "pipelineID"},
+	}
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(emptyset, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(foundset, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Any(), gomock.Eq("")).Times(1)
+
+	b := testPipelineBuilder()
+	b.Client = client
+
+	res, err := b.GetPipelineByID("testapp", "pipelineName")
+	assert.Nil(t, err)
+	assert.Equal(t, res, "pipelineID")
+}
+
+func TestGetPipelineByIDUpsertFail(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	emptyset := []plank.Pipeline{}
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(emptyset, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Any(), gomock.Eq("")).Return(errors.New("upsert fail test")).Times(1)
+
+	b := testPipelineBuilder()
+	b.Client = client
+
+	res, err := b.GetPipelineByID("testapp", "pipelineName")
+	assert.NotNil(t, err)
+	assert.Equal(t, err.Error(), "upsert fail test")
+	assert.Equal(t, res, "")
+}
+
+func TestUpdatePipelinesDeleteStaleWithExisting(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: plank.PipelineLockType{true, true}}
+	deletedPipeline := plank.Pipeline{Name: "DeletedPipeline", ID: "DeletedID", Application: "testapp"}
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: plank.PipelineLockType{true, true}}
+
+	existing := []plank.Pipeline{existingPipeline, deletedPipeline}
+	newPipelines := []plank.Pipeline{existingPipeline, newPipeline}
+	combined := []plank.Pipeline{existingPipeline, deletedPipeline, newPipeline}
+
+	testapp := &plank.Application{Name: "testapp"}
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(existing, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(combined, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
+	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Return(errors.New("fake delete failure")).Times(1)
+
+	b := testPipelineBuilder()
+	b.Client = client
+
+	err := b.updatePipelines(testapp, newPipelines, true, "true")
+	assert.Nil(t, err)
+}
+
+func TestUpdatePipelinesNoDeleteStaleWithExisting(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: plank.PipelineLockType{true, true}}
+	deletedPipeline := plank.Pipeline{Name: "DeletedPipeline", ID: "DeletedID", Application: "testapp"}
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: plank.PipelineLockType{true, true}}
+
+	existing := []plank.Pipeline{existingPipeline, deletedPipeline}
+	newPipelines := []plank.Pipeline{existingPipeline, newPipeline}
+
+	testapp := &plank.Application{Name: "testapp"}
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(existing, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
+	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Return(errors.New("fake delete failure")).Times(0)
+
+	b := testPipelineBuilder()
+	b.Client = client
+
+	err := b.updatePipelines(testapp, newPipelines, false, "true")
+	assert.Nil(t, err)
+}
+
+func TestUpdatePipelinesDeleteStaleWithFailure(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: plank.PipelineLockType{true, true}}
+	deletedPipeline := plank.Pipeline{Name: "DeletedPipeline", ID: "DeletedID", Application: "testapp"}
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: plank.PipelineLockType{true, true}}
+
+	existing := []plank.Pipeline{existingPipeline, deletedPipeline}
+	newPipelines := []plank.Pipeline{existingPipeline, newPipeline}
+
+	testapp := &plank.Application{Name: "testapp"}
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(existing, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(nil, errors.New("failure to retrieve")).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
+	// Should not be called because we couldn't re-retrieve the combined list.
+	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Return(errors.New("fake delete failure")).Times(0)
+
+	b := testPipelineBuilder()
+	b.Client = client
+
+	err := b.updatePipelines(testapp, newPipelines, true, "true")
+	assert.Nil(t, err)
+}
+
+func TestUpdatePipelinesUpsertFail(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: plank.PipelineLockType{true, true}}
+	deletedPipeline := plank.Pipeline{Name: "DeletedPipeline", ID: "DeletedID", Application: "testapp"}
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: plank.PipelineLockType{true, true}}
+
+	existing := []plank.Pipeline{existingPipeline, deletedPipeline}
+	newPipelines := []plank.Pipeline{existingPipeline, newPipeline}
+
+	testapp := &plank.Application{Name: "testapp"}
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(existing, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(errors.New("upsert fail test")).Times(1)
+	// Should not get called at all, because of earlier error
+	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Times(0)
+
+	b := testPipelineBuilder()
+	b.Client = client
+
+	err := b.updatePipelines(testapp, newPipelines, true, "true")
+	assert.NotNil(t, err)
+	assert.Equal(t, err.Error(), "upsert fail test")
 }

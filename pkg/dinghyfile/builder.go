@@ -225,13 +225,18 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 	if deleteStale {
 		// clear existing pipelines that weren't updated
 		b.Logger.Debug("Pipelines we should ignore because they were just created: ", ignoreList)
-		for _, p := range pipelines {
-			if !ignoreList[p.Name] {
-				b.Logger.Infof("Deleting stale pipeline %s", p.Name)
-				if err := b.Client.DeletePipeline(p); err != nil {
-					// Not worrying about handling errors here because it just means it
-					// didn't get deleted *this time*.
-					b.Logger.Warnf("Could not delete Pipeline %s (Application %s)", p.Name, p.Application)
+		allPipelines, err := b.Client.GetPipelines(app.Name)
+		if err != nil {
+			b.Logger.Errorf("Could not retrieve pipelines for %s: %s", app.Name, err.Error())
+		} else {
+			for _, p := range allPipelines {
+				if !ignoreList[p.Name] {
+					b.Logger.Infof("Deleting stale pipeline %s", p.Name)
+					if err := b.Client.DeletePipeline(p); err != nil {
+						// Not worrying about handling errors here because it just means it
+						// didn't get deleted *this time*.
+						b.Logger.Warnf("Could not delete Pipeline %s (Application %s)", p.Name, p.Application)
+					}
 				}
 			}
 		}
