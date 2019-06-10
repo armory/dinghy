@@ -22,6 +22,7 @@ import (
 
 	"github.com/armory/dinghy/pkg/cache"
 	"github.com/armory/dinghy/pkg/events"
+	"github.com/armory/dinghy/pkg/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
 )
@@ -53,7 +54,7 @@ func testBasePipelineBuilder() *PipelineBuilder {
 }
 
 // This sets a mock logger on the pipeline {
-func mockLogger(dr *DinghyfileRenderer, ctrl *gomock.Controller) *MockFieldLogger {
-	dr.Builder.Logger = NewMockFieldLogger(ctrl)
-	return dr.Builder.Logger.(*MockFieldLogger)
+func mockLogger(dr *DinghyfileRenderer, ctrl *gomock.Controller) *mock.MockFieldLogger {
+	dr.Builder.Logger = mock.NewMockFieldLogger(ctrl)
+	return dr.Builder.Logger.(*mock.MockFieldLogger)
 }
