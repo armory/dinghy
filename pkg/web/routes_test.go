@@ -17,11 +17,38 @@
 package web
 
 import (
-	"github.com/stretchr/testify/assert"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/armory/dinghy/pkg/mock"
 	// "github.com/armory/dinghy/pkg/settings"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTrue(t *testing.T) {
 	assert.Equal(t, true, true)
+}
+
+func TestHealthCheckLogging(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Debug(gomock.Any()).Times(1)
+	logger.EXPECT().Info(gomock.Any()).Times(0)
+
+	wa := &WebAPI{Logger: logger}
+	req, err := http.NewRequest("GET", "/health", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(wa.healthcheck)
+	handler.ServeHTTP(rr, req)
+	assert.Equal(t, rr.Code, http.StatusOK)
+	assert.Equal(t, rr.Body.String(), `{"status":"ok"}`)
 }
