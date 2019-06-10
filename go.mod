@@ -12,6 +12,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.1
 	github.com/hashicorp/go-retryablehttp v0.5.3
 	github.com/imdario/mergo v0.3.6
+	github.com/jinzhu/copier v0.0.0-20180308034124-7e38e58719c3
 	github.com/minio/minio v0.0.0-20190401191952-023866642ce3
 	github.com/mitchellh/mapstructure v1.0.0
 	github.com/sirupsen/logrus v1.4.1

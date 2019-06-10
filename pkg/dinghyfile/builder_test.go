@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/jinzhu/copier"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/armory/plank"
@@ -466,6 +467,56 @@ func TestUpdatePipelinesUpsertFail(t *testing.T) {
 	err := b.updatePipelines(testapp, newPipelines, true, "true")
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "upsert fail test")
+}
+
+func TestUpdatePipelinesRespectsAutoLockOn(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// New pipeline from file has locks "false"
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: plank.PipelineLockType{false, false}}
+	expectedPipeline := plank.Pipeline{}
+	copier.Copy(&expectedPipeline, &newPipeline)
+	// Expect to upsert with locks "true"
+	expectedPipeline.Locked = plank.PipelineLockType{true, true}
+
+	testapp := &plank.Application{Name: "testapp"}
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return([]plank.Pipeline{}, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(expectedPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
+
+	b := testPipelineBuilder()
+	b.Client = client
+
+	err := b.updatePipelines(testapp, []plank.Pipeline{newPipeline}, false, "true")
+	assert.Nil(t, err)
+}
+
+func TestUpdatePipelinesRespectsAutoLockOff(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// New pipeline from file has locks "false"
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: plank.PipelineLockType{false, false}}
+	expectedPipeline := plank.Pipeline{}
+	copier.Copy(&expectedPipeline, &newPipeline)
+	// Expect to upsert with locks "true"
+	expectedPipeline.Locked = plank.PipelineLockType{false, false}
+
+	testapp := &plank.Application{Name: "testapp"}
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return([]plank.Pipeline{}, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(expectedPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
+
+	b := testPipelineBuilder()
+	b.Client = client
+
+	err := b.updatePipelines(testapp, []plank.Pipeline{newPipeline}, false, "")
+	assert.Nil(t, err)
 }
 
 func TestRebuildModuleRoots(t *testing.T) {
