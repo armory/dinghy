@@ -19,7 +19,6 @@ package web
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -108,7 +107,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
 	fileService["dinghyfile"] = buf.String()
-	wa.Logger.Info("Received payload: ", fileService["dinghyfile"])
+	wa.Logger.Infof("Received payload: %s", fileService["dinghyfile"])
 
 	if err := builder.ProcessDinghyfile("", "", "dinghyfile"); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
@@ -119,13 +118,13 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p := github.Push{}
 	// TODO: stop using readbody, then we can return proper 422 status codes
 	if err := wa.readBody(r, &p); err != nil {
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	if p.Ref == "" {
 		// Unmarshal failed, might be a non-Push notification. Log event and return
-		wa.Logger.Info("Possibly a non-Push notification received")
+		wa.Logger.Info("Possibly a non-Push notification received (blank ref)")
 		return
 	}
 
@@ -144,7 +143,7 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload := stash.WebhookPayload{}
 	// TODO: stop using readbody, then we can return proper status codes here
 	if err := wa.readBody(r, &payload); err != nil {
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
@@ -176,11 +175,9 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 	keys := make(map[string]interface{})
 	if err := json.NewDecoder(r.Body).Decode(&keys); err != nil {
 		wa.Logger.Errorf("Unable to determine bitbucket event type: %s", err)
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
-	fmt.Println("keys:", keys["event_type"])
 
 	isBitbucketCloud := false
 	if keys["event_type"] == nil {
@@ -191,7 +188,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		wa.Logger.Info("Processing bitbucket-cloud webhook")
 		payload := bbcloud.WebhookPayload{}
 		if err := wa.readBody(r, &payload); err != nil {
-			util.WriteHTTPError(w, http.StatusInternalServerError, err)
+			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 			return
 		}
 
@@ -220,11 +217,12 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		wa.Logger.Info("Processing bitbucket-server webhook")
 		payload := stash.WebhookPayload{}
 		if err := wa.readBody(r, &payload); err != nil {
-			util.WriteHTTPError(w, http.StatusInternalServerError, err)
+			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 			return
 		}
 
 		if payload.EventKey != "" && payload.EventKey != "repo:refs_changed" {
+			// Not a commit, not an error, we're good.
 			w.WriteHeader(200)
 			return
 		}
@@ -354,8 +352,7 @@ func (wa *WebAPI) readBody(r *http.Request, dest interface{}) error {
 	if err != nil {
 		return err
 	}
-	wa.Logger.Info("Received payload: ", string(body))
+	wa.Logger.Infof("Received payload: %s", string(body))
 
-	util.ReadJSON(r.Body, &dest)
-	return nil
+	return util.ReadJSON(r.Body, &dest)
 }

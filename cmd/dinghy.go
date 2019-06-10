@@ -112,7 +112,7 @@ func Start() {
 	if _, err := redisClient.Client.Ping().Result(); err != nil {
 		log.Fatalf("Redis Server at %s could not be contacted", config.Redis.BaseURL)
 	}
-	api := web.NewWebAPI(config, redisClient, client, ec, log.New())
+	api := web.NewWebAPI(config, redisClient, client, ec, log)
 
 	log.Info("Dinghy started.")
 	log.Info(http.ListenAndServe(":8081", api.Router()))

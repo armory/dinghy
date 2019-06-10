@@ -17,8 +17,11 @@
 package web
 
 import (
+	"bytes"
+	// "errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/armory/dinghy/pkg/mock"
@@ -28,11 +31,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTrue(t *testing.T) {
-	assert.Equal(t, true, true)
+func TestRouterSanity(t *testing.T) {
+	wa := &WebAPI{}
+	r := wa.Router()
+	assert.Equal(t, "*mux.Router", reflect.TypeOf(r).String())
 }
 
-func TestHealthCheckLogging(t *testing.T) {
+func testHealthCheckLogging(t *testing.T, endpoint string) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -40,15 +45,159 @@ func TestHealthCheckLogging(t *testing.T) {
 	logger.EXPECT().Debug(gomock.Any()).Times(1)
 	logger.EXPECT().Info(gomock.Any()).Times(0)
 
-	wa := &WebAPI{Logger: logger}
-	req, err := http.NewRequest("GET", "/health", nil)
+	wa := NewWebAPI(nil, nil, nil, nil, logger)
+	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(wa.healthcheck)
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, rr.Code, http.StatusOK)
 	assert.Equal(t, rr.Body.String(), `{"status":"ok"}`)
+}
+
+func TestHealthCheckLogging(t *testing.T) {
+	// This is served by multiple endpoints, so we'll iterate over all of them.
+	endpoints := []string{"/", "/health", "/healthcheck"}
+	for _, e := range endpoints {
+		testHealthCheckLogging(t, e)
+	}
+}
+
+// Github webhook tests
+func TestGithubWebhookHandlerBadJSON(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
+
+	wa := NewWebAPI(nil, nil, nil, nil, logger)
+
+	payload := bytes.NewBufferString(`{broken`)
+	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
+	rr := httptest.NewRecorder()
+	wa.githubWebhookHandler(rr, req)
+	assert.Equal(t, rr.Code, 422)
+}
+func TestGithubWebhookHandlerNoRef(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Possibly a non-Push notification received (blank ref)")).Times(1)
+
+	wa := NewWebAPI(nil, nil, nil, nil, logger)
+
+	payload := bytes.NewBufferString(`{}`)
+	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
+	rr := httptest.NewRecorder()
+	wa.githubWebhookHandler(rr, req)
+	assert.Equal(t, rr.Code, http.StatusOK)
+}
+
+// Legacy Bitbucket ("Stash") webhook tests
+func TestStashWebhookHandlerBadJSON(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
+
+	wa := NewWebAPI(nil, nil, nil, nil, logger)
+
+	payload := bytes.NewBufferString(`{broken`)
+	req := httptest.NewRequest("POST", "/v1/webhooks/stash", payload)
+	rr := httptest.NewRecorder()
+	wa.stashWebhookHandler(rr, req)
+	assert.Equal(t, rr.Code, 422)
+}
+
+func TestStashWebhookBadPayload(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
+
+	wa := NewWebAPI(nil, nil, nil, nil, logger)
+
+	payload := bytes.NewBufferString(`{"event_type": "stash", "refChanges": "not an array"}`)
+
+	req := httptest.NewRequest("POST", "/v1/webhooks/stash", payload)
+	rr := httptest.NewRecorder()
+	wa.stashWebhookHandler(rr, req)
+	assert.Equal(t, rr.Code, 422)
+}
+
+// Bitbucket Server webhook tests
+func TestBitbucketWebhookHandlerBadJSON(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Errorf(gomock.Eq("Unable to determine bitbucket event type: %s"), gomock.Any()).Times(1)
+
+	wa := NewWebAPI(nil, nil, nil, nil, logger)
+
+	payload := bytes.NewBufferString(`{broken`)
+	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket", payload)
+	rr := httptest.NewRecorder()
+	wa.bitbucketWebhookHandler(rr, req)
+	assert.Equal(t, rr.Code, 422)
+}
+
+func TestBitbucketWebhookBadPayload(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Info(gomock.Eq("Processing bitbucket-server webhook")).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
+
+	wa := NewWebAPI(nil, nil, nil, nil, logger)
+
+	payload := bytes.NewBufferString(`{"event_type": "stash", "changes": "not an array"}`)
+
+	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
+	rr := httptest.NewRecorder()
+	wa.bitbucketWebhookHandler(rr, req)
+	assert.Equal(t, rr.Code, 422)
+}
+
+// Bitbucket Cloud webhook tests
+func TestBitbucketCloudWebhookHandlerBadJSON(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Errorf(gomock.Eq("Unable to determine bitbucket event type: %s"), gomock.Any()).Times(1)
+
+	wa := NewWebAPI(nil, nil, nil, nil, logger)
+
+	payload := bytes.NewBufferString(`{broken`)
+	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
+	rr := httptest.NewRecorder()
+	wa.bitbucketWebhookHandler(rr, req)
+	assert.Equal(t, rr.Code, 422)
+}
+
+func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Info(gomock.Eq("Processing bitbucket-cloud webhook")).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
+
+	wa := NewWebAPI(nil, nil, nil, nil, logger)
+
+	payload := bytes.NewBufferString(`{"changes": "not an array"}`)
+
+	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
+	rr := httptest.NewRecorder()
+	wa.bitbucketWebhookHandler(rr, req)
+	assert.Equal(t, rr.Code, 422)
 }
