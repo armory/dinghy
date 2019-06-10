@@ -2,7 +2,7 @@
 // Source: ../../vendor/github.com/sirupsen/logrus/logrus.go
 
 // Package dinghyfile is a generated GoMock package.
-package dinghyfile
+package mock
 
 import (
 	gomock "github.com/golang/mock/gomock"

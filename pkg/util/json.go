@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package util
 
@@ -33,12 +33,13 @@ func WriteJSON(obj interface{}, w http.ResponseWriter) {
 }
 
 // ReadJSON takes a json byte stream from a reader and decodes it into the struct passed in.
-func ReadJSON(reader io.Reader, dest interface{}) {
+func ReadJSON(reader io.Reader, dest interface{}) error {
 	decoder := json.NewDecoder(reader)
-	err := decoder.Decode(&dest)
-	if err != nil {
+	if err := decoder.Decode(&dest); err != nil {
 		// if the webhook is setup to deliver notifications for other events such as PR,
 		// decode will fail, just log and return
 		log.Error(err)
+		return err
 	}
+	return nil
 }
