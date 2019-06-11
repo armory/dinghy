@@ -35,6 +35,8 @@ github.com/hashicorp/go-cleanhttp
 github.com/hashicorp/go-retryablehttp
 # github.com/imdario/mergo v0.3.6
 github.com/imdario/mergo
+# github.com/jinzhu/copier v0.0.0-20180308034124-7e38e58719c3
+github.com/jinzhu/copier
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/minio/minio v0.0.0-20190401191952-023866642ce3
