@@ -60,8 +60,11 @@ type WebhookChange struct {
 }
 
 // IsMaster detects if a change was on master
-func (c *WebhookChange) IsMaster() bool {
-	return c.RefID == "refs/heads/master"
+func (c *WebhookChange) IsMaster(branch string) bool {
+	if branch == "" {
+		return c.RefID == "refs/heads/master"
+	}
+	return c.RefID == fmt.Sprintf("refs/heads/%s", branch)
 }
 
 // APIResponse is the response from Stash API
@@ -126,9 +129,10 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 }
 
 type StashConfig struct {
-	Username string
-	Token    string
-	Endpoint string
+	Username      string
+	Token         string
+	Endpoint      string
+	DefaultBranch string
 }
 
 // NewPush creates a new Push
@@ -142,7 +146,7 @@ func NewPush(payload WebhookPayload, cfg StashConfig) (*Push, error) {
 	}
 
 	for _, change := range p.changes() {
-		if !change.IsMaster() {
+		if !change.IsMaster(cfg.DefaultBranch) {
 			continue
 		}
 		for start := -1; start != 0; {
@@ -190,9 +194,9 @@ func (p *Push) changes() []WebhookChange {
 }
 
 // IsMaster detects if the branch is master.
-func (p *Push) IsMaster() bool {
+func (p *Push) IsMaster(branch string) bool {
 	for _, change := range p.changes() {
-		if change.IsMaster() {
+		if change.IsMaster(branch) {
 			return true
 		}
 	}

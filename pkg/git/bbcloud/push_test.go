@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package bbcloud
 
@@ -283,4 +283,22 @@ func contains(files []string, file string) bool {
 		}
 	}
 	return false
+}
+
+func TestDefaultBranch(t *testing.T) {
+	payload := WebhookPayload{}
+	if err := json.NewDecoder(bytes.NewBufferString(webhookPayloadTwoChanges)).Decode(&payload); err != nil {
+		t.Fatalf(err.Error())
+	}
+	p := Push{
+		Payload: payload,
+	}
+	assert.Equal(t, p.IsMaster(""), true, "empty branchname")
+	assert.Equal(t, p.IsMaster("master"), true, "master")
+	assert.Equal(t, p.IsMaster("other"), false, "other")
+	// This one should fail because the branch is NOT in "New"...
+	assert.Equal(t, p.IsMaster("feature/awesome"), false, "feature/awesome")
+
+	p.Payload.Push.Changes[0].New.Name = "awesome"
+	assert.Equal(t, p.IsMaster("awesome"), true, "awesome")
 }

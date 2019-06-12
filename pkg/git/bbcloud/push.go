@@ -87,9 +87,10 @@ type APIDiff struct {
 
 // Connection details for talking with bitbucket cloud
 type Config struct {
-	Username string
-	Token    string
-	Endpoint string
+	Username      string
+	Token         string
+	Endpoint      string
+	DefaultBranch string
 }
 
 // Information about what files changed in a push
@@ -114,7 +115,7 @@ func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
 
 	for _, change := range p.changes() {
 		// Only process changes in "master" branch
-		if !change.IsMaster() {
+		if !change.IsMaster("") {
 			continue
 		}
 		for page := 1; true; page++ {
@@ -141,8 +142,11 @@ func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
 }
 
 // Find in the webook payload if the change was done in "master" branch
-func (c *WebhookChange) IsMaster() bool {
-	return c.New.Name == "master"
+func (c *WebhookChange) IsMaster(branch string) bool {
+	if branch == "" {
+		return c.New.Name == "master"
+	}
+	return c.New.Name == branch
 }
 
 func getFilesChanged(fromCommitHash, toCommitHash string, page int, cfg Config,
@@ -254,9 +258,9 @@ func (p *Push) changes() []WebhookChange {
 }
 
 // IsMaster detects if the branch is master.
-func (p *Push) IsMaster() bool {
+func (p *Push) IsMaster(branch string) bool {
 	for _, change := range p.changes() {
-		if change.IsMaster() {
+		if change.IsMaster(branch) {
 			return true
 		}
 	}

@@ -51,7 +51,7 @@ func (p *Push) Org() string {
 }
 
 // IsMaster detects if the branch is master.
-func (p *Push) IsMaster() bool {
+func (p *Push) IsMaster(_unused string) bool {
 	return true
 }
 

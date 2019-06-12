@@ -12,11 +12,14 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package github
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // Push is the payload received from a GitHub webhook.
 type Push struct {
@@ -98,6 +101,9 @@ func (p *Push) Org() string {
 }
 
 // IsMaster detects if the branch is master.
-func (p *Push) IsMaster() bool {
-	return p.Ref == "refs/heads/master"
+func (p *Push) IsMaster(branch string) bool {
+	if branch == "" {
+		return p.Ref == "refs/heads/master"
+	}
+	return p.Ref == fmt.Sprintf("refs/heads/%s", branch)
 }

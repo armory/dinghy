@@ -45,7 +45,7 @@ type Push interface {
 	Files() []string
 	Repo() string
 	Org() string
-	IsMaster() bool
+	IsMaster(branch string) bool
 	SetCommitStatus(s git.Status)
 }
 
@@ -149,9 +149,10 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 	payload.IsOldStash = true
 	stashConfig := stash.StashConfig{
-		Endpoint: wa.Config.StashEndpoint,
-		Username: wa.Config.StashUsername,
-		Token:    wa.Config.StashToken,
+		Endpoint:      wa.Config.StashEndpoint,
+		Username:      wa.Config.StashUsername,
+		Token:         wa.Config.StashToken,
+		DefaultBranch: wa.Config.DefaultBranch,
 	}
 	p, err := stash.NewPush(payload, stashConfig)
 	if err != nil {
@@ -193,9 +194,10 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		}
 
 		bbcloudConfig := bbcloud.Config{
-			Endpoint: wa.Config.StashEndpoint,
-			Username: wa.Config.StashUsername,
-			Token:    wa.Config.StashToken,
+			Endpoint:      wa.Config.StashEndpoint,
+			Username:      wa.Config.StashUsername,
+			Token:         wa.Config.StashToken,
+			DefaultBranch: wa.Config.DefaultBranch,
 		}
 		p, err := bbcloud.NewPush(payload, bbcloudConfig)
 		if err != nil {
@@ -229,9 +231,10 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 
 		payload.IsOldStash = false
 		stashConfig := stash.StashConfig{
-			Endpoint: wa.Config.StashEndpoint,
-			Username: wa.Config.StashUsername,
-			Token:    wa.Config.StashToken,
+			Endpoint:      wa.Config.StashEndpoint,
+			Username:      wa.Config.StashUsername,
+			Token:         wa.Config.StashToken,
+			DefaultBranch: wa.Config.DefaultBranch,
 		}
 		p, err := stash.NewPush(payload, stashConfig)
 		if err != nil {
@@ -265,7 +268,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	}
 
 	// Ensure we're on the master branch.
-	if !p.IsMaster() {
+	if !p.IsMaster(wa.Config.DefaultBranch) {
 		wa.Logger.Info("Skipping Spinnaker pipeline update because this is not master")
 		return nil
 	}
