@@ -60,7 +60,7 @@ func TestOrg(t *testing.T) {
 	}
 }
 
-func TestDefaultBranch(t *testing.T) {
+func TestDefaultBranchOldStash(t *testing.T) {
 	p := Push{
 		Payload: WebhookPayload{
 			IsOldStash: true,
@@ -76,6 +76,27 @@ func TestDefaultBranch(t *testing.T) {
 	assert.Equal(t, p.IsMaster("master"), false)
 
 	p.Payload.StashChanges = append(p.Payload.StashChanges, WebhookChange{RefID: "refs/heads/master"})
+	assert.Equal(t, p.IsMaster(""), true)
+	assert.Equal(t, p.IsMaster("master"), true)
+	assert.Equal(t, p.IsMaster("nothing"), false)
+}
+
+func TestDefaultBranchBBS(t *testing.T) {
+	p := Push{
+		Payload: WebhookPayload{
+			IsOldStash: false,
+			BBSChanges: []WebhookChange{
+				WebhookChange{RefID: "refs/heads/default"},
+				WebhookChange{RefID: "refs/heads/other"},
+			},
+		},
+	}
+	assert.Equal(t, p.IsMaster("default"), true)
+	assert.Equal(t, p.IsMaster("other"), true)
+	assert.Equal(t, p.IsMaster(""), false)
+	assert.Equal(t, p.IsMaster("master"), false)
+
+	p.Payload.BBSChanges = append(p.Payload.BBSChanges, WebhookChange{RefID: "refs/heads/master"})
 	assert.Equal(t, p.IsMaster(""), true)
 	assert.Equal(t, p.IsMaster("master"), true)
 	assert.Equal(t, p.IsMaster("nothing"), false)
