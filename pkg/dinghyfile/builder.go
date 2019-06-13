@@ -38,6 +38,7 @@ type PipelineBuilder struct {
 	TemplateRepo         string
 	TemplateOrg          string
 	DinghyfileName       string
+	DefaultBranch        string
 	Client               util.PlankClient
 	DeleteStalePipelines bool
 	AutolockPipelines    string
@@ -54,9 +55,9 @@ type DependencyManager interface {
 
 // Downloader is an interface that fetches files from a source
 type Downloader interface {
-	Download(org, repo, file string) (string, error)
-	EncodeURL(org, repo, file string) string
-	DecodeURL(url string) (string, string, string)
+	Download(org, repo, file, ref string) (string, error)
+	EncodeURL(org, repo, file, ref string) string
+	DecodeURL(url string) (org, repo, file, ref string)
 }
 
 // Dinghyfile is the format of the pipeline template JSON
@@ -154,7 +155,7 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 	errEncountered := false
 	failedUpdates := []string{}
-	url := b.Downloader.EncodeURL(org, repo, path)
+	url := b.Downloader.EncodeURL(org, repo, path, b.DefaultBranch)
 	b.Logger.Info("Processing module: " + url)
 
 	// TODO: could handle logging and errors for file processing more elegantly rather
@@ -162,7 +163,7 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
 	// Process all dinghyfiles that depend on this module
 	for _, url := range b.Depman.GetRoots(url) {
 		// TODO: we don't need to decode here because these values come in as parameters
-		org, repo, path := b.Downloader.DecodeURL(url)
+		org, repo, path, _ := b.Downloader.DecodeURL(url)
 		if err := b.ProcessDinghyfile(org, repo, path); err != nil {
 			errEncountered = true
 			failedUpdates = append(failedUpdates, url)

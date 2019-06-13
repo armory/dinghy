@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package github
 
@@ -22,7 +22,7 @@ type GitHubTest struct {
 	err      error
 }
 
-func (g *GitHubTest) DownloadContents(org, repo, path string) (string, error) {
+func (g *GitHubTest) DownloadContents(org, repo, path, ref string) (string, error) {
 	return g.contents, g.err
 }
 

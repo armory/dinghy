@@ -87,8 +87,8 @@ func (f *FileService) downloadLines(url string, start int) (lines []string, next
 
 // Download downloads a file from Stash.
 // Stash's API returns the file's contents as a paginated list of lines
-func (f *FileService) Download(org, repo, path string) (string, error) {
-	url := f.EncodeURL(org, repo, path)
+func (f *FileService) Download(org, repo, path, ref string) (string, error) {
+	url := f.EncodeURL(org, repo, path, ref)
 	body := f.cache.Get(url)
 	if body != "" {
 		return body, nil
@@ -109,12 +109,12 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 }
 
 // EncodeURL returns the git url for a given org, repo, path
-func (f *FileService) EncodeURL(org, repo, path string) string {
+func (f *FileService) EncodeURL(org, repo, path, _ref string) string {
 	return fmt.Sprintf(`%s/projects/%s/repos/%s/browse/%s?raw`, f.StashEndpoint, org, repo, path)
 }
 
 // DecodeURL takes a url and returns the org, repo, path
-func (f *FileService) DecodeURL(url string) (org, repo, path string) {
+func (f *FileService) DecodeURL(url string) (org, repo, path, ref string) {
 	r, _ := regexp.Compile(`/projects/(.+)/repos/(.+)/browse/(.+)\?raw`)
 	match := r.FindStringSubmatch(url)
 	org = match[1]

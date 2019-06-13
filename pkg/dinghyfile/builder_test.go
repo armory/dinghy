@@ -530,7 +530,7 @@ func TestRebuildModuleRoots(t *testing.T) {
 	}
 
 	b := testPipelineBuilder()
-	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test")
+	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test", "branch")
 
 	depman := NewMockDependencyManager(ctrl)
 	depman.EXPECT().GetRoots(gomock.Eq(url)).Return(roots).Times(1)
@@ -561,7 +561,7 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	}
 
 	b := testPipelineBuilder()
-	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test")
+	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test", "branch")
 
 	depman := NewMockDependencyManager(ctrl)
 	depman.EXPECT().GetRoots(gomock.Eq(url)).Return(roots).Times(1)

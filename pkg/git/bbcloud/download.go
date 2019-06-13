@@ -35,8 +35,8 @@ type FileService struct {
 
 // Download downloads a file from Bitbucket Cloud.
 // The API returns the file's contents as a paginated list of lines
-func (f *FileService) Download(org, repo, path string) (string, error) {
-	url := f.EncodeURL(org, repo, path)
+func (f *FileService) Download(org, repo, path, ref string) (string, error) {
+	url := f.EncodeURL(org, repo, path, ref)
 	body := f.cache.Get(url)
 	if body != "" {
 		return body, nil
@@ -71,16 +71,20 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 }
 
 // EncodeURL returns the git url for a given org, repo, path
-func (f *FileService) EncodeURL(org, repo, path string) string {
-	return fmt.Sprintf(`%s/repositories/%s/%s/src/master/%s?raw`, f.BbcloudEndpoint, org, repo, path)
+func (f *FileService) EncodeURL(org, repo, path, ref string) string {
+	if ref == "" {
+		ref = "master"
+	}
+	return fmt.Sprintf(`%s/repositories/%s/%s/src/%s/%s?raw`, f.BbcloudEndpoint, org, repo, ref, path)
 }
 
 // DecodeURL takes a url and returns the org, repo, path
-func (f *FileService) DecodeURL(url string) (org, repo, path string) {
-	r, _ := regexp.Compile(`/repositories/(.+)/(.+)/src/master/(.+)\?raw`)
+func (f *FileService) DecodeURL(url string) (org, repo, path, ref string) {
+	r, _ := regexp.Compile(`/repositories/([^/]+)/([^/]+)/src/([^/]+)/(.+)\?raw`)
 	match := r.FindStringSubmatch(url)
 	org = match[1]
 	repo = match[2]
-	path = match[3]
+	ref = match[3]
+	path = match[4]
 	return
 }

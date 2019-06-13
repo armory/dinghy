@@ -59,7 +59,7 @@ func (r *DinghyfileRenderer) parseValue(val interface{}) interface{} {
 func (r *DinghyfileRenderer) moduleFunc(org string, deps map[string]bool, allVars []varMap) interface{} {
 	return func(mod string, vars ...interface{}) string {
 		// Record the dependency.
-		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod)
+		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod, r.Builder.DefaultBranch)
 		if _, exists := deps[child]; !exists {
 			deps[child] = true
 		}
@@ -190,7 +190,7 @@ func (r *DinghyfileRenderer) Render(org, repo, path string, vars []varMap) (*byt
 	deps := make(map[string]bool)
 
 	// Download the template being rendered.
-	contents, err := r.Builder.Downloader.Download(org, repo, path)
+	contents, err := r.Builder.Downloader.Download(org, repo, path, r.Builder.DefaultBranch)
 	if err != nil {
 		r.Builder.Logger.Error("Failed to download")
 		return nil, err
@@ -249,7 +249,7 @@ func (r *DinghyfileRenderer) Render(org, repo, path string, vars []varMap) (*byt
 	for dep := range deps {
 		depUrls = append(depUrls, dep)
 	}
-	r.Builder.Depman.SetDeps(r.Builder.Downloader.EncodeURL(org, repo, path), depUrls)
+	r.Builder.Depman.SetDeps(r.Builder.Downloader.EncodeURL(org, repo, path, r.Builder.DefaultBranch), depUrls)
 
 	event.End = time.Now().UTC().Unix()
 	eventType := "render"

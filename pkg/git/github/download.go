@@ -33,14 +33,14 @@ type FileService struct {
 // Download a file from github
 // note that "path" is the full path relative to the repo root
 // eg: src/foo/bar/filename
-func (f *FileService) Download(org, repo, path string) (string, error) {
-	url := f.EncodeURL(org, repo, path)
+func (f *FileService) Download(org, repo, path, ref string) (string, error) {
+	url := f.EncodeURL(org, repo, path, ref)
 	body := f.cache.Get(url)
 	if body != "" {
 		return body, nil
 	}
 
-	contents, err := f.GitHub.DownloadContents(org, repo, path)
+	contents, err := f.GitHub.DownloadContents(org, repo, path, ref)
 	if err != nil {
 		log.Error(err)
 		return "", err
@@ -52,13 +52,13 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 }
 
 // EncodeURL returns the git url for a given org, repo, path
-func (f *FileService) EncodeURL(org, repo, path string) string {
+func (f *FileService) EncodeURL(org, repo, path, _ref string) string {
 	// this is only used for caching purposes
 	return fmt.Sprintf(`%s/repos/%s/%s/contents/%s`, f.GitHub.GetEndpoint(), org, repo, path)
 }
 
 // DecodeURL takes a url and returns the org, repo, path
-func (f *FileService) DecodeURL(url string) (org, repo, path string) {
+func (f *FileService) DecodeURL(url string) (org, repo, path, ref string) {
 	targetExpression := fmt.Sprintf("%s/repos/(.+)/(.+)/contents/(.+)", f.GitHub.GetEndpoint())
 	r, _ := regexp.Compile(targetExpression)
 	match := r.FindStringSubmatch(url)

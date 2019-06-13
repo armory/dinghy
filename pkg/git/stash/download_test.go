@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package stash
 
@@ -28,6 +28,7 @@ func TestDecodeUrl(t *testing.T) {
 		repo     string
 		path     string
 		url      string
+		branch   string
 	}{
 		{
 			endpoint: "https://api.github.com",
@@ -42,10 +43,11 @@ func TestDecodeUrl(t *testing.T) {
 		downloader := &FileService{
 			StashEndpoint: c.endpoint,
 		}
-		org, repo, path := downloader.DecodeURL(c.url)
+		org, repo, path, branch := downloader.DecodeURL(c.url)
 
 		assert.Equal(t, c.owner, org)
 		assert.Equal(t, c.repo, repo)
 		assert.Equal(t, c.path, path)
+		assert.Equal(t, c.branch, branch)
 	}
 }
