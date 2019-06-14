@@ -105,19 +105,26 @@ type Push struct {
 // Converts the raw webhook payload sent by Bitbucket Cloud, to an internal Push structure
 // with the list of files changed.
 func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
+
 	p := &Push{
 		Payload:      payload,
 		ChangedFiles: make([]string, 0),
 	}
 
+	log.Info("in here4")
+
 	changedFilesMap := map[string]bool{}
 
 	for _, change := range p.changes() {
+		log.Info("in here5")
+		log.Info("change: " + change.New.Target.Hash)
 		// Only process changes in "master" branch
 		if !change.IsMaster() {
+			log.Info("change is not master ")
 			continue
 		}
 		for page := 1; true; page++ {
+			log.Info("on loop to check changes ")
 			changedFiles, nextPage, err := getFilesChanged(change.Old.Target.Hash, change.New.Target.Hash, page, cfg,
 				payload.Repository.FullName)
 			if err != nil {
@@ -147,21 +154,27 @@ func (c *WebhookChange) IsMaster() bool {
 
 func getFilesChanged(fromCommitHash, toCommitHash string, page int, cfg Config,
 	repoName string) (changedFiles []string, nextPage int, err error) {
-
+	log.Info("in here")
+	log.Info("cfg.Endpoint: " + cfg.Endpoint)
+	log.Info("repoName: " + repoName)
+	log.Info("toCommitHash: " + toCommitHash)
 	url := fmt.Sprintf(
 		`%s/repositories/%s/diffstat/%s`,
 		cfg.Endpoint,
 		repoName,
 		toCommitHash,
 	)
+	log.Info("url: " + url)
 
 	nextPage = page
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
+		log.Info("error1")
 		return []string{}, page, err
 	}
 
+	log.Info("req")
 	query := req.URL.Query()
 	query.Add("since", fromCommitHash)
 	query.Add("withComments", "false")

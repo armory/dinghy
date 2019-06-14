@@ -18,7 +18,6 @@ package web
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -171,85 +170,35 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	// determine if this is a bitbucket-cloud event and handle accordingly
-	keys := make(map[string]interface{})
-	if err := json.NewDecoder(r.Body).Decode(&keys); err != nil {
-		wa.Logger.Errorf("Unable to determine bitbucket event type: %s", err)
+
+	wa.Logger.Info("Processing bitbucket-cloud webhook")
+	payload := bbcloud.WebhookPayload{}
+	if err := wa.readBody(r, &payload); err != nil {
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	isBitbucketCloud := false
-	if keys["event_type"] == nil {
-		isBitbucketCloud = true
+	bbcloudConfig := bbcloud.Config{
+		Endpoint: wa.Config.StashEndpoint,
+		Username: wa.Config.StashUsername,
+		Token:    wa.Config.StashToken,
+	}
+	p, err := bbcloud.NewPush(payload, bbcloudConfig)
+	if err != nil {
+		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+		return
 	}
 
-	if isBitbucketCloud {
-		wa.Logger.Info("Processing bitbucket-cloud webhook")
-		payload := bbcloud.WebhookPayload{}
-		if err := wa.readBody(r, &payload); err != nil {
-			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
-			return
-		}
-
-		bbcloudConfig := bbcloud.Config{
-			Endpoint: wa.Config.StashEndpoint,
-			Username: wa.Config.StashUsername,
-			Token:    wa.Config.StashToken,
-		}
-		p, err := bbcloud.NewPush(payload, bbcloudConfig)
-		if err != nil {
-			util.WriteHTTPError(w, http.StatusInternalServerError, err)
-			return
-		}
-
-		// TODO: WebAPI already has the fields that are being assigned here and it's
-		// the receiver on buildPipelines. We don't need to reassign the values to
-		// fileService here.
-		fileService := bbcloud.FileService{
-			BbcloudEndpoint: wa.Config.StashEndpoint,
-			BbcloudUsername: wa.Config.StashUsername,
-			BbcloudToken:    wa.Config.StashToken,
-		}
-
-		wa.buildPipelines(p, &fileService, w)
-	} else {
-		wa.Logger.Info("Processing bitbucket-server webhook")
-		payload := stash.WebhookPayload{}
-		if err := wa.readBody(r, &payload); err != nil {
-			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
-			return
-		}
-
-		if payload.EventKey != "" && payload.EventKey != "repo:refs_changed" {
-			// Not a commit, not an error, we're good.
-			w.WriteHeader(200)
-			return
-		}
-
-		payload.IsOldStash = false
-		stashConfig := stash.StashConfig{
-			Endpoint: wa.Config.StashEndpoint,
-			Username: wa.Config.StashUsername,
-			Token:    wa.Config.StashToken,
-		}
-		p, err := stash.NewPush(payload, stashConfig)
-		if err != nil {
-			util.WriteHTTPError(w, http.StatusInternalServerError, err)
-			return
-		}
-
-		// TODO: WebAPI already has the fields that are being assigned here and it's
-		// the receiver on buildPipelines. We don't need to reassign the values to
-		// fileService here.
-		fileService := stash.FileService{
-			StashToken:    wa.Config.StashToken,
-			StashUsername: wa.Config.StashUsername,
-			StashEndpoint: wa.Config.StashEndpoint,
-		}
-
-		wa.buildPipelines(p, &fileService, w)
+	// TODO: WebAPI already has the fields that are being assigned here and it's
+	// the receiver on buildPipelines. We don't need to reassign the values to
+	// fileService here.
+	fileService := bbcloud.FileService{
+		BbcloudEndpoint: wa.Config.StashEndpoint,
+		BbcloudUsername: wa.Config.StashUsername,
+		BbcloudToken:    wa.Config.StashToken,
 	}
+
+	wa.buildPipelines(p, &fileService, w)
 }
 
 // =========
@@ -259,6 +208,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 // ProcessPush processes a push using a pipeline builder
 func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	// Ensure dinghyfile was changed.
+	log.Info("in here1212")
 	if !p.ContainsFile(wa.Config.DinghyFilename) {
 		wa.Logger.Infof("Push does not include %s, skipping.", wa.Config.DinghyFilename)
 		return nil
