@@ -63,10 +63,8 @@ func Start() {
 			log.Fatalf("Couldn't open log file")
 		}
 		log.SetOutput(f)
-		logr.SetOutput(f)
 	} else {
 		log.SetOutput(os.Stdout)
-		logr.SetOutput(os.Stdout)
 	}
 	logLevelStr := util.GetenvOrDefault("DEBUG_LEVEL", "info")
 	if config.Logging.Level != "" {
@@ -78,7 +76,6 @@ func Start() {
 		log.Fatalf("Invalid log level: " + logLevelStr)
 	}
 	log.SetLevel(logLevel)
-	logr.SetLevel(logLevel)
 	if config.Logging.Remote.Enabled {
 		if err := setupRemoteLogging(logr.StandardLogger(), config.Logging); err != nil {
 			log.Warnf("unable to setup remote log forwarding: %s", err.Error())

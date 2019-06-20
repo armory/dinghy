@@ -12,11 +12,14 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package github
 
-import "strings"
+import (
+	"github.com/sirupsen/logrus"
+	"strings"
+)
 
 // Push is the payload received from a GitHub webhook.
 type Push struct {
@@ -25,6 +28,7 @@ type Push struct {
 	Ref         string     `json:"ref"`
 	GitHub      GitHub
 	DeckBaseURL string
+	Logger      logrus.FieldLogger
 }
 
 // Commit is a commit received from Github webhook

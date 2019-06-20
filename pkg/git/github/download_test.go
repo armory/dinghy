@@ -20,6 +20,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -120,6 +121,7 @@ func TestDownload(t *testing.T) {
 			path: "path",
 			fs: &FileService{
 				GitHub: &GitHubTest{contents: "file contents"},
+				Logger: logrus.New(),
 			},
 			expected:    "file contents",
 			expectedErr: nil,
@@ -133,6 +135,7 @@ func TestDownload(t *testing.T) {
 					contents: "",
 					err:      errors.New("fail"),
 				},
+				Logger: logrus.New(),
 			},
 			expected:    "",
 			expectedErr: errors.New("fail"),
