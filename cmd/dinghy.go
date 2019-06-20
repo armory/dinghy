@@ -63,8 +63,10 @@ func Start() {
 			log.Fatalf("Couldn't open log file")
 		}
 		log.SetOutput(f)
+		logr.SetOutput(f)
 	} else {
 		log.SetOutput(os.Stdout)
+		logr.SetOutput(os.Stdout)
 	}
 	logLevelStr := util.GetenvOrDefault("DEBUG_LEVEL", "info")
 	if config.Logging.Level != "" {
