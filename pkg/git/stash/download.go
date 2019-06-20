@@ -70,6 +70,7 @@ func (f *FileService) downloadLines(url string, start int) (lines []string, next
 	var body FileContentsResponse
 	err = json.NewDecoder(resp.Body).Decode(&body)
 	if err != nil {
+		log.Warnf("JSON parse error downloading Stash file from %s, got: %s", url, resp.Body)
 		return
 	}
 	if !body.IsLastPage {
