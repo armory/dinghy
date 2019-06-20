@@ -19,12 +19,13 @@ package dinghy
 import (
 	"context"
 	"fmt"
-	"github.com/armory/dinghy/pkg/debug"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/armory/dinghy/pkg/debug"
 
 	"github.com/armory-io/monitoring/log/formatters"
 	"github.com/armory-io/monitoring/log/hooks"
@@ -75,6 +76,7 @@ func Start() {
 		log.Fatalf("Invalid log level: " + logLevelStr)
 	}
 	log.SetLevel(logLevel)
+	logr.SetLevel(logLevel)
 	if config.Logging.Remote.Enabled {
 		if err := setupRemoteLogging(logr.StandardLogger(), config.Logging); err != nil {
 			log.Warnf("unable to setup remote log forwarding: %s", err.Error())
