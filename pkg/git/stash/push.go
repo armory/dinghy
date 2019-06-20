@@ -113,6 +113,7 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 	log.Debugf("APIResponse: %+v\n", body)
 	err = json.NewDecoder(resp.Body).Decode(&body)
 	if err != nil {
+		log.Warnf("Got error parsing JSON response from Stash query %s: %s", url, resp.Body)
 		return 0, err
 	}
 	if !body.IsLastPage {
