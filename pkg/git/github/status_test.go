@@ -22,10 +22,19 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+
 	"github.com/armory/dinghy/pkg/git"
+	"github.com/armory/dinghy/pkg/mock"
 )
 
 func TestSetCommitStatusSuccessfully(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Error(gomock.Any()).Times(0)
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "")
 	}))
@@ -41,6 +50,7 @@ func TestSetCommitStatusSuccessfully(t *testing.T) {
 				ID: "ABC",
 			},
 		},
+		Logger: logger,
 	}
 
 	// This shouldn't throw exceptions/panics
@@ -48,6 +58,12 @@ func TestSetCommitStatusSuccessfully(t *testing.T) {
 }
 
 func TestSetCommitStatusFails(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Error(gomock.Any()).Times(1)
+
 	// TODO: Do not use global variable. This will lead to side-effects.
 	p := Push{
 		GitHub: GitHub{
@@ -59,6 +75,7 @@ func TestSetCommitStatusFails(t *testing.T) {
 				ID: "ABC",
 			},
 		},
+		Logger: logger,
 	}
 
 	// TODO: this doesn't actually test anything

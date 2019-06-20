@@ -115,7 +115,8 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	p := github.Push{}
+	p := github.Push{Logger: wa.Logger}
+
 	// TODO: stop using readbody, then we can return proper 422 status codes
 	if err := wa.readBody(r, &p); err != nil {
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
@@ -134,7 +135,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	gh := github.GitHub{Endpoint: wa.Config.GithubEndpoint, Token: wa.Config.GitHubToken}
 	p.GitHub = gh
 	p.DeckBaseURL = wa.Config.Deck.BaseURL
-	fileService := github.FileService{GitHub: &gh}
+	fileService := github.FileService{GitHub: &gh, Logger: wa.Logger}
 
 	wa.buildPipelines(&p, &fileService, w)
 }
@@ -152,6 +153,7 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		Endpoint: wa.Config.StashEndpoint,
 		Username: wa.Config.StashUsername,
 		Token:    wa.Config.StashToken,
+		Logger:   wa.Logger,
 	}
 	p, err := stash.NewPush(payload, stashConfig)
 	if err != nil {
@@ -166,6 +168,7 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		StashToken:    wa.Config.StashToken,
 		StashUsername: wa.Config.StashUsername,
 		StashEndpoint: wa.Config.StashEndpoint,
+		Logger:        wa.Logger,
 	}
 	wa.buildPipelines(p, &fileService, w)
 }
@@ -196,6 +199,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			Endpoint: wa.Config.StashEndpoint,
 			Username: wa.Config.StashUsername,
 			Token:    wa.Config.StashToken,
+			Logger:   wa.Logger,
 		}
 		p, err := bbcloud.NewPush(payload, bbcloudConfig)
 		if err != nil {
@@ -210,6 +214,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			BbcloudEndpoint: wa.Config.StashEndpoint,
 			BbcloudUsername: wa.Config.StashUsername,
 			BbcloudToken:    wa.Config.StashToken,
+			Logger:          wa.Logger,
 		}
 
 		wa.buildPipelines(p, &fileService, w)
@@ -232,6 +237,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			Endpoint: wa.Config.StashEndpoint,
 			Username: wa.Config.StashUsername,
 			Token:    wa.Config.StashToken,
+			Logger:   wa.Logger,
 		}
 		p, err := stash.NewPush(payload, stashConfig)
 		if err != nil {
@@ -246,6 +252,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			StashToken:    wa.Config.StashToken,
 			StashUsername: wa.Config.StashUsername,
 			StashEndpoint: wa.Config.StashEndpoint,
+			Logger:        wa.Logger,
 		}
 
 		wa.buildPipelines(p, &fileService, w)

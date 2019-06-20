@@ -23,7 +23,7 @@ import (
 	"strconv"
 
 	"github.com/armory/dinghy/pkg/git"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // Push contains data about a push full of commits
@@ -33,6 +33,7 @@ type Push struct {
 	StashEndpoint string
 	StashUsername string
 	StashToken    string
+	Logger        logrus.FieldLogger
 }
 
 // WebhookPayload is the payload from the webhook
@@ -85,7 +86,7 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 		p.Payload.Repository.Slug,
 		toCommitHash,
 	)
-	log.Debug("ApiCall: ", url)
+	p.Logger.Debug("ApiCall: ", url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -110,10 +111,10 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 	}
 
 	var body APIResponse
-	log.Debugf("APIResponse: %+v\n", body)
+	p.Logger.Debugf("APIResponse: %+v\n", body)
 	err = json.NewDecoder(resp.Body).Decode(&body)
 	if err != nil {
-		log.Warnf("Got error parsing JSON response from Stash query %s: %s", url, resp.Body)
+		p.Logger.Warnf("Got error parsing JSON response from Stash query %s: %s", url, resp.Body)
 		return 0, err
 	}
 	if !body.IsLastPage {
@@ -130,6 +131,7 @@ type StashConfig struct {
 	Username string
 	Token    string
 	Endpoint string
+	Logger   logrus.FieldLogger
 }
 
 // NewPush creates a new Push
