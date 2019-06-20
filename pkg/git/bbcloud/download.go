@@ -23,6 +23,7 @@ import (
 	"regexp"
 
 	"github.com/armory/dinghy/pkg/cache/local"
+	"github.com/sirupsen/logrus"
 )
 
 // FileService is for working with repositories
@@ -31,6 +32,7 @@ type FileService struct {
 	BbcloudEndpoint string
 	BbcloudToken    string
 	BbcloudUsername string
+	Logger          logrus.FieldLogger
 }
 
 // Download downloads a file from Bitbucket Cloud.

@@ -18,8 +18,6 @@ package github
 
 import (
 	"github.com/armory/dinghy/pkg/git"
-
-	log "github.com/sirupsen/logrus"
 )
 
 /* Example: POST /repos/:owner/:repo/statuses/:sha
@@ -45,7 +43,7 @@ func (p *Push) SetCommitStatus(status git.Status) {
 	for _, c := range p.Commits {
 		s := newStatus(status, p.DeckBaseURL)
 		if err := p.GitHub.CreateStatus(s, p.Org(), p.Repo(), c.ID); err != nil {
-			log.Error(err)
+			p.Logger.Error(err)
 			return
 		}
 	}

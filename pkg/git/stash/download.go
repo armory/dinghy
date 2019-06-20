@@ -26,7 +26,7 @@ import (
 
 	"github.com/armory/dinghy/pkg/cache/local"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // FileService is for working with repositories
@@ -35,6 +35,7 @@ type FileService struct {
 	StashEndpoint string
 	StashToken    string
 	StashUsername string
+	Logger        logrus.FieldLogger
 }
 
 // FileContentsResponse contains response from Stash when you fetch a file
@@ -70,12 +71,12 @@ func (f *FileService) downloadLines(url string, start int) (lines []string, next
 	var body FileContentsResponse
 	err = json.NewDecoder(resp.Body).Decode(&body)
 	if err != nil {
-		log.Warnf("JSON parse error downloading Stash file from %s, got: %s", url, resp.Body)
+		f.Logger.Warnf("JSON parse error downloading Stash file from %s, got: %s", url, resp.Body)
 		return
 	}
 	if !body.IsLastPage {
 		if body.NextPageStart == 0 {
-			log.Errorf("IsLastPage is false but NextPageStart is nil for: %s", url)
+			f.Logger.Errorf("IsLastPage is false but NextPageStart is nil for: %s", url)
 		} else {
 			nextStart = body.NextPageStart
 		}
