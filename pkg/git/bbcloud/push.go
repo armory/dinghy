@@ -203,6 +203,7 @@ func handleDiffstatResponse(resp *http.Response, err error) (changedFiles []stri
 
 	err = json.Unmarshal(respRaw, &apiResponse)
 	if err != nil {
+		log.Warnf("Got error parsing JSON response from Bitbucket query: %s", respRaw)
 		return []string{}, false, err
 	}
 
