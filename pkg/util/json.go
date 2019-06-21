@@ -21,7 +21,7 @@ import (
 	"io"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // WriteJSON encodes an object to a json string and writes it to the writer.
