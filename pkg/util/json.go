@@ -20,8 +20,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // WriteJSON encodes an object to a json string and writes it to the writer.
@@ -38,7 +36,6 @@ func ReadJSON(reader io.Reader, dest interface{}) error {
 	if err := decoder.Decode(&dest); err != nil {
 		// if the webhook is setup to deliver notifications for other events such as PR,
 		// decode will fail, just log and return
-		log.Error(err)
 		return err
 	}
 	return nil
