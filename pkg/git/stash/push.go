@@ -18,6 +18,7 @@ package stash
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -114,9 +115,14 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 
 	var body APIResponse
 	p.Logger.Debugf("APIResponse: %+v\n", body)
+	if resp.StatusCode != 200 {
+		msg := fmt.Sprintf("Got %d from retrieving commit data", resp.StatusCode)
+		p.Logger.Error(msg)
+		return 0, errors.New(msg)
+	}
 	err = json.NewDecoder(resp.Body).Decode(&body)
 	if err != nil {
-		p.Logger.Warnf("Got error parsing JSON response from Stash query %s: %s", url, resp.Body)
+		p.Logger.Errorf("Got error parsing JSON response from Stash query %ss", url)
 		return 0, err
 	}
 	if !body.IsLastPage {
