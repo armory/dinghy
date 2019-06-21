@@ -157,6 +157,7 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	p, err := stash.NewPush(payload, stashConfig)
 	if err != nil {
+		wa.Logger.Warnf("stash.NewPush failed: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
@@ -290,8 +291,10 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 			// Set commit status based on result of processing.
 			if err != nil {
 				if err == dinghyfile.ErrMalformedJSON {
+					wa.Logger.Errorf("Error processing Dinghyfile (malformed JSON): %s", err.Error())
 					p.SetCommitStatus(git.StatusFailure)
 				} else {
+					wa.Logger.Errorf("Error processing Dinghyfile: %s", err.Error())
 					p.SetCommitStatus(git.StatusError)
 				}
 				return err

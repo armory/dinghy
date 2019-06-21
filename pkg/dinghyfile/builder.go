@@ -250,6 +250,7 @@ func (b *PipelineBuilder) PipelineIDs(app string) (map[string]string, error) {
 	b.Logger.Info("Looking up existing pipelines")
 	pipelines, err := b.Client.GetPipelines(app)
 	if err != nil {
+		b.Logger.Errorf("Failed to GetPipelines for %s: %s", app, err.Error())
 		return ids, err
 	}
 	for _, p := range pipelines {
@@ -274,6 +275,7 @@ func (b *PipelineBuilder) GetPipelineByID(app, pipelineName string) (string, err
 		Name:        pipelineName,
 	}, "")
 	if err != nil {
+		b.Logger.Errorf("Failed to UpsertPipeline for %s (%s): %s", pipelineName, app, err.Error())
 		return "", err
 	}
 	return b.GetPipelineByID(app, pipelineName)
