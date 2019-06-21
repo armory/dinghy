@@ -90,6 +90,7 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
+		p.Logger.Warnf("Could not create request for getFilesChanged (url: %s): %s", url, err.Error())
 		return 0, err
 	}
 
@@ -107,6 +108,7 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 		defer resp.Body.Close()
 	}
 	if err != nil {
+		p.Logger.Warnf("getFilesChanged: failed to retrieve %s: %s", req.URL.RawQuery, err.Error())
 		return 0, err
 	}
 

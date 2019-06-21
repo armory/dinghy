@@ -47,6 +47,7 @@ type FileContentsResponse struct {
 func (f *FileService) downloadLines(url string, start int) (lines []string, nextStart int, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
+		f.Logger.Warnf("downloadLines: NewRequest for %s failed: %s", url, err.Error())
 		return
 	}
 	if start != -1 {
@@ -60,6 +61,7 @@ func (f *FileService) downloadLines(url string, start int) (lines []string, next
 		defer resp.Body.Close()
 	}
 	if err != nil {
+		f.Logger.Warnf("downloadLines: DefaultClient.Do for %s failed: %s", req.URL.RawQuery, err.Error())
 		return
 	}
 
