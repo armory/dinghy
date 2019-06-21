@@ -686,7 +686,7 @@ func TestVarParams(t *testing.T) {
 	// TODO:  We should perhaps figure out how to identify this failure case?
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Warnf(gomock.Any()).Times(0)
-	logger.EXPECT().Errorf(gomock.Any()).Times(0)
+	logger.EXPECT().Errorf(gomock.Eq("Error parsing value %s: %s"), gomock.Any(), gomock.Any()).Times(1)
 	logger.EXPECT().Error(gomock.Any()).Times(0)
 	logger.EXPECT().Info(gomock.Eq("No global vars found in dinghyfile")).Times(1)
 

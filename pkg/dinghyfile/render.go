@@ -43,13 +43,17 @@ func NewDinghyfileRenderer(b *PipelineBuilder) *DinghyfileRenderer {
 }
 
 func (r *DinghyfileRenderer) parseValue(val interface{}) interface{} {
+	var err error
 	if jsonStr, ok := val.(string); ok && len(jsonStr) > 0 {
 		if jsonStr[0] == '{' {
-			json.Unmarshal([]byte(jsonStr), &val)
+			err = json.Unmarshal([]byte(jsonStr), &val)
 		}
 		if jsonStr[0] == '[' {
-			json.Unmarshal([]byte(jsonStr), &val)
+			err = json.Unmarshal([]byte(jsonStr), &val)
 		}
+	}
+	if err != nil {
+		r.Builder.Logger.Errorf("Error parsing value %s: %s", val.(string), err.Error())
 	}
 
 	return val
@@ -93,7 +97,10 @@ func (r *DinghyfileRenderer) moduleFunc(org string, deps map[string]bool, allVar
 			newVars[key] = r.parseValue(vars[i+1])
 		}
 
-		result, _ := r.Render(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, append([]varMap{newVars}, allVars...))
+		result, err := r.Render(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, append([]varMap{newVars}, allVars...))
+		if err != nil {
+			r.Builder.Logger.Errorf("Error rendering imported module '%s': %s", mod, err.Error())
+		}
 		return result.String()
 	}
 }
