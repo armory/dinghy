@@ -37,7 +37,8 @@ all: clean dependencies lint test vet build
 dependencies:
 	@echo "Setting Open Core Dinghy to ${OCDINGHY_HASH}..."
 	go mod edit -require=github.com/armory/dinghy@${OCDINGHY_HASH} && \
-	go mod tidy
+	go mod tidy && \
+	go mod vendor
 
 run:
 	go run ./${BINARY}.go

@@ -21,13 +21,14 @@ import (
 	"regexp"
 
 	"github.com/armory/dinghy/pkg/cache/local"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // FileService is for working with repositories
 type FileService struct {
 	cache  local.Cache
 	GitHub GitHubClient
+	Logger logrus.FieldLogger
 }
 
 // Download a file from github
@@ -42,7 +43,7 @@ func (f *FileService) Download(org, repo, path string) (string, error) {
 
 	contents, err := f.GitHub.DownloadContents(org, repo, path)
 	if err != nil {
-		log.Error(err)
+		f.Logger.Error(err)
 		return "", err
 	}
 

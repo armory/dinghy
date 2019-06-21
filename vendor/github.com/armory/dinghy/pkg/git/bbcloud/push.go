@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/armory/dinghy/pkg/git"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // -----------------------------------------------------------------------------
@@ -90,12 +90,14 @@ type Config struct {
 	Username string
 	Token    string
 	Endpoint string
+	Logger   logrus.FieldLogger
 }
 
 // Information about what files changed in a push
 type Push struct {
 	Payload      WebhookPayload
 	ChangedFiles []string
+	Logger       logrus.FieldLogger
 }
 
 // -----------------------------------------------------------------------------
@@ -105,9 +107,13 @@ type Push struct {
 // Converts the raw webhook payload sent by Bitbucket Cloud, to an internal Push structure
 // with the list of files changed.
 func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
+	if cfg.Logger == nil {
+		cfg.Logger = logrus.New()
+	}
 	p := &Push{
 		Payload:      payload,
 		ChangedFiles: make([]string, 0),
+		Logger:       cfg.Logger,
 	}
 
 	changedFilesMap := map[string]bool{}
@@ -169,15 +175,19 @@ func getFilesChanged(fromCommitHash, toCommitHash string, page int, cfg Config,
 		query.Add("page", strconv.Itoa(page))
 	}
 	req.URL.RawQuery = query.Encode()
-	log.Infof("Diffstat request: GET %s?%s\n", url, req.URL.RawQuery)
+	cfg.Logger.Infof("Diffstat request: GET %s?%s\n", url, req.URL.RawQuery)
 	req.SetBasicAuth(cfg.Username, cfg.Token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
+	if err != nil {
+		cfg.Logger.Errorf("Error getting changes: %v", err)
+		return changedFiles, page, err
+	}
 
-	changedFiles, hasNext, err := handleDiffstatResponse(resp, err)
+	changedFiles, hasNext, err := handleDiffstatResponse(resp, cfg.Logger)
 	if hasNext {
 		nextPage = page + 1
 	}
@@ -185,24 +195,20 @@ func getFilesChanged(fromCommitHash, toCommitHash string, page int, cfg Config,
 	return
 }
 
-func handleDiffstatResponse(resp *http.Response, err error) (changedFiles []string, hasNext bool, outErr error) {
-	if err != nil {
-		log.Errorf("Diffstat error: %v", err)
-		return []string{}, false, err
-	}
-
+func handleDiffstatResponse(resp *http.Response, logger logrus.FieldLogger) (changedFiles []string, hasNext bool, err error) {
 	var apiResponse DiffStatResponse
 	respRaw, err := ioutil.ReadAll(resp.Body)
 	respString := string(respRaw)
-	log.Debugf("DiffStatResponse: %s\n", respString)
+	logger.Debugf("DiffStatResponse: %s\n", respString)
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		log.Errorf("Diffstat error: response status code %d\n", resp.StatusCode)
+		logger.Errorf("Diffstat error: response status code %d\n", resp.StatusCode)
 		return []string{}, false, err
 	}
 
 	err = json.Unmarshal(respRaw, &apiResponse)
 	if err != nil {
+		logger.Warnf("Got error parsing JSON response from Bitbucket query: %s", respRaw)
 		return []string{}, false, err
 	}
 

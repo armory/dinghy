@@ -1,7 +1,7 @@
 # github.com/armory-io/monitoring v0.0.7
 github.com/armory-io/monitoring/log/formatters
 github.com/armory-io/monitoring/log/hooks
-# github.com/armory/dinghy v0.0.0-20190514213848-afd7da2c1002
+# github.com/armory/dinghy v0.0.0-20190621223420-91c34fc2766d
 github.com/armory/dinghy/cmd
 github.com/armory/dinghy/pkg/cache
 github.com/armory/dinghy/pkg/debug
@@ -15,6 +15,7 @@ github.com/armory/dinghy/pkg/git
 github.com/armory/dinghy/pkg/git/bbcloud
 github.com/armory/dinghy/pkg/git/github
 github.com/armory/dinghy/pkg/git/stash
+github.com/armory/dinghy/pkg/mock
 github.com/armory/dinghy/pkg/preprocessor
 github.com/armory/dinghy/pkg/cache/local
 # github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e
@@ -31,6 +32,8 @@ github.com/go-redis/redis/internal/pool
 github.com/go-redis/redis/internal/proto
 github.com/go-redis/redis/internal/singleflight
 github.com/go-redis/redis/internal/util
+# github.com/golang/mock v1.1.1
+github.com/golang/mock/gomock
 # github.com/golang/protobuf v1.3.0
 github.com/golang/protobuf/proto
 # github.com/google/go-github v17.0.0+incompatible
@@ -59,8 +62,8 @@ github.com/sirupsen/logrus
 github.com/spf13/afero
 github.com/spf13/afero/mem
 # golang.org/x/net v0.0.0-20190327214358-63eda1eb0650
-golang.org/x/net/context/ctxhttp
 golang.org/x/net/context
+golang.org/x/net/context/ctxhttp
 # golang.org/x/oauth2 v0.0.0-20190319182350-c85d3e98c914
 golang.org/x/oauth2
 golang.org/x/oauth2/internal

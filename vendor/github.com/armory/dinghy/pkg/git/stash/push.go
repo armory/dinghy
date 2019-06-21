@@ -18,12 +18,13 @@ package stash
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/armory/dinghy/pkg/git"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // Push contains data about a push full of commits
@@ -33,6 +34,7 @@ type Push struct {
 	StashEndpoint string
 	StashUsername string
 	StashToken    string
+	Logger        logrus.FieldLogger
 }
 
 // WebhookPayload is the payload from the webhook
@@ -85,10 +87,11 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 		p.Payload.Repository.Slug,
 		toCommitHash,
 	)
-	log.Debug("ApiCall: ", url)
+	p.Logger.Debug("ApiCall: ", url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
+		p.Logger.Warnf("Could not create request for getFilesChanged (url: %s): %s", url, err.Error())
 		return 0, err
 	}
 
@@ -106,13 +109,20 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 		defer resp.Body.Close()
 	}
 	if err != nil {
+		p.Logger.Warnf("getFilesChanged: failed to retrieve %s: %s", req.URL.RawQuery, err.Error())
 		return 0, err
 	}
 
 	var body APIResponse
-	log.Debugf("APIResponse: %+v\n", body)
+	p.Logger.Debugf("APIResponse: %+v\n", body)
+	if resp.StatusCode != 200 {
+		msg := fmt.Sprintf("Got %d from retrieving commit data", resp.StatusCode)
+		p.Logger.Error(msg)
+		return 0, errors.New(msg)
+	}
 	err = json.NewDecoder(resp.Body).Decode(&body)
 	if err != nil {
+		p.Logger.Errorf("Got error parsing JSON response from Stash query %s", url)
 		return 0, err
 	}
 	if !body.IsLastPage {
@@ -129,6 +139,7 @@ type StashConfig struct {
 	Username string
 	Token    string
 	Endpoint string
+	Logger   logrus.FieldLogger
 }
 
 // NewPush creates a new Push
@@ -139,6 +150,7 @@ func NewPush(payload WebhookPayload, cfg StashConfig) (*Push, error) {
 		StashEndpoint: cfg.Endpoint,
 		StashToken:    cfg.Token,
 		StashUsername: cfg.Username,
+		Logger:        cfg.Logger,
 	}
 
 	for _, change := range p.changes() {
@@ -148,6 +160,7 @@ func NewPush(payload WebhookPayload, cfg StashConfig) (*Push, error) {
 		for start := -1; start != 0; {
 			nextStart, err := p.getFilesChanged(change.FromHash, change.ToHash, start)
 			if err != nil {
+				cfg.Logger.Warnf("getFilesChanged failed: %s", err.Error())
 				return nil, err
 			}
 			start = nextStart

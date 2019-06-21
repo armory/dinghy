@@ -18,13 +18,13 @@ package web
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httputil"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/git/bbcloud"
-	"github.com/armory/plank"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -51,17 +51,19 @@ type Push interface {
 
 type WebAPI struct {
 	Config      *settings.Settings
-	Client      *plank.Client
+	Client      util.PlankClient
 	Cache       dinghyfile.DependencyManager
 	EventClient *events.Client
+	Logger      log.FieldLogger
 }
 
-func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c *plank.Client, e *events.Client) *WebAPI {
+func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger) *WebAPI {
 	return &WebAPI{
 		Config:      s,
 		Client:      c,
 		Cache:       r,
 		EventClient: e,
+		Logger:      l,
 	}
 }
 
@@ -73,8 +75,9 @@ func (wa *WebAPI) Router() *mux.Router {
 	r.HandleFunc("/healthcheck", wa.healthcheck)
 	r.HandleFunc("/v1/webhooks/github", wa.githubWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/stash", wa.stashWebhookHandler).Methods("POST")
-	r.HandleFunc("/v1/webhooks/bitbucket", wa.bitbucketServerWebhookHandler).Methods("POST")
-	r.HandleFunc("/v1/webhooks/bitbucket-cloud", wa.bitbucketCloudWebhookHandler).Methods("POST")
+	r.HandleFunc("/v1/webhooks/bitbucket", wa.bitbucketWebhookHandler).Methods("POST")
+	// all of the bitbucket webhooks come through this one handler, this is being left for backwards compatibility
+	r.HandleFunc("/v1/webhooks/bitbucket-cloud", wa.bitbucketWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/updatePipeline", wa.manualUpdateHandler).Methods("POST")
 	r.Use(RequestLoggingMiddleware)
 	return r
@@ -85,7 +88,7 @@ func (wa *WebAPI) Router() *mux.Router {
 // ==============
 
 func (wa *WebAPI) healthcheck(w http.ResponseWriter, r *http.Request) {
-	log.Debug(r.RemoteAddr, " Requested ", r.RequestURI)
+	wa.Logger.Debug(r.RemoteAddr, " Requested ", r.RequestURI)
 	w.Write([]byte(`{"status":"ok"}`))
 }
 
@@ -98,12 +101,13 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		Client:               wa.Client,
 		DeleteStalePipelines: false,
 		AutolockPipelines:    wa.Config.AutoLockPipelines,
+		Logger:               wa.Logger,
 	}
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
 	fileService["dinghyfile"] = buf.String()
-	log.Info("Received payload: ", fileService["dinghyfile"])
+	wa.Logger.Infof("Received payload: %s", fileService["dinghyfile"])
 
 	if err := builder.ProcessDinghyfile("", "", "dinghyfile"); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
@@ -111,16 +115,17 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	p := github.Push{}
+	p := github.Push{Logger: wa.Logger}
+
 	// TODO: stop using readbody, then we can return proper 422 status codes
-	if err := readBody(r, &p); err != nil {
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+	if err := wa.readBody(r, &p); err != nil {
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	if p.Ref == "" {
 		// Unmarshal failed, might be a non-Push notification. Log event and return
-		log.Info("Possibly a non-Push notification received")
+		wa.Logger.Info("Possibly a non-Push notification received (blank ref)")
 		return
 	}
 
@@ -130,7 +135,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	gh := github.GitHub{Endpoint: wa.Config.GithubEndpoint, Token: wa.Config.GitHubToken}
 	p.GitHub = gh
 	p.DeckBaseURL = wa.Config.Deck.BaseURL
-	fileService := github.FileService{GitHub: &gh}
+	fileService := github.FileService{GitHub: &gh, Logger: wa.Logger}
 
 	wa.buildPipelines(&p, &fileService, w)
 }
@@ -138,8 +143,9 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload := stash.WebhookPayload{}
 	// TODO: stop using readbody, then we can return proper status codes here
-	if err := readBody(r, &payload); err != nil {
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+	wa.Logger.Infof("Reading stash payload body")
+	if err := wa.readBody(r, &payload); err != nil {
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
@@ -148,9 +154,12 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		Endpoint: wa.Config.StashEndpoint,
 		Username: wa.Config.StashUsername,
 		Token:    wa.Config.StashToken,
+		Logger:   wa.Logger,
 	}
+	wa.Logger.Infof("Instantiating Stash Payload")
 	p, err := stash.NewPush(payload, stashConfig)
 	if err != nil {
+		wa.Logger.Warnf("stash.NewPush failed: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
@@ -162,72 +171,96 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		StashToken:    wa.Config.StashToken,
 		StashUsername: wa.Config.StashUsername,
 		StashEndpoint: wa.Config.StashEndpoint,
+		Logger:        wa.Logger,
 	}
+	wa.Logger.Infof("Building pipeslines from Stash webhook")
 	wa.buildPipelines(p, &fileService, w)
 }
 
-func (wa *WebAPI) bitbucketServerWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	payload := stash.WebhookPayload{}
-	if err := readBody(r, &payload); err != nil {
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
+	// determine if this is a bitbucket-cloud event and handle accordingly
+	keys := make(map[string]interface{})
+	if err := json.NewDecoder(r.Body).Decode(&keys); err != nil {
+		wa.Logger.Errorf("Unable to determine bitbucket event type: %s", err)
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	if payload.EventKey != "" && payload.EventKey != "repo:refs_changed" {
-		w.WriteHeader(200)
-		return
+	isBitbucketCloud := false
+	if keys["event_type"] == nil {
+		isBitbucketCloud = true
 	}
 
-	payload.IsOldStash = false
-	stashConfig := stash.StashConfig{
-		Endpoint: wa.Config.StashEndpoint,
-		Username: wa.Config.StashUsername,
-		Token:    wa.Config.StashToken,
-	}
-	p, err := stash.NewPush(payload, stashConfig)
-	if err != nil {
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
-		return
-	}
+	if isBitbucketCloud {
+		wa.Logger.Info("Processing bitbucket-cloud webhook")
+		payload := bbcloud.WebhookPayload{}
+		if err := wa.readBody(r, &payload); err != nil {
+			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+			return
+		}
 
-	// TODO: WebAPI already has the fields that are being assigned here and it's
-	// the receiver on the buildPipelines. We don't need to reassign the values to
-	// fileService here.
-	fileService := stash.FileService{
-		StashToken:    wa.Config.StashToken,
-		StashUsername: wa.Config.StashUsername,
-		StashEndpoint: wa.Config.StashEndpoint,
-	}
-	wa.buildPipelines(p, &fileService, w)
-}
+		bbcloudConfig := bbcloud.Config{
+			Endpoint: wa.Config.StashEndpoint,
+			Username: wa.Config.StashUsername,
+			Token:    wa.Config.StashToken,
+			Logger:   wa.Logger,
+		}
+		p, err := bbcloud.NewPush(payload, bbcloudConfig)
+		if err != nil {
+			util.WriteHTTPError(w, http.StatusInternalServerError, err)
+			return
+		}
 
-func (wa *WebAPI) bitbucketCloudWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	payload := bbcloud.WebhookPayload{}
-	if err := readBody(r, &payload); err != nil {
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
-		return
-	}
+		// TODO: WebAPI already has the fields that are being assigned here and it's
+		// the receiver on buildPipelines. We don't need to reassign the values to
+		// fileService here.
+		fileService := bbcloud.FileService{
+			BbcloudEndpoint: wa.Config.StashEndpoint,
+			BbcloudUsername: wa.Config.StashUsername,
+			BbcloudToken:    wa.Config.StashToken,
+			Logger:          wa.Logger,
+		}
 
-	bbcloudConfig := bbcloud.Config{
-		Endpoint: wa.Config.StashEndpoint,
-		Username: wa.Config.StashUsername,
-		Token:    wa.Config.StashToken,
-	}
-	p, err := bbcloud.NewPush(payload, bbcloudConfig)
-	if err != nil {
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
-		return
-	}
+		wa.buildPipelines(p, &fileService, w)
+	} else {
+		wa.Logger.Info("Processing bitbucket-server webhook")
+		payload := stash.WebhookPayload{}
+		if err := wa.readBody(r, &payload); err != nil {
+			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+			return
+		}
 
-	// TODO: WebAPI already has the fields that are being assigned here and it's
-	// the receiver on the buildPipelines. We don't need to reassign the values to
-	// fileService here.
-	fileService := bbcloud.FileService{
-		BbcloudEndpoint: wa.Config.StashEndpoint,
-		BbcloudUsername: wa.Config.StashUsername,
-		BbcloudToken:    wa.Config.StashToken,
+		if payload.EventKey != "" && payload.EventKey != "repo:refs_changed" {
+			// Not a commit, not an error, we're good.
+			w.WriteHeader(200)
+			return
+		}
+
+		payload.IsOldStash = false
+		stashConfig := stash.StashConfig{
+			Endpoint: wa.Config.StashEndpoint,
+			Username: wa.Config.StashUsername,
+			Token:    wa.Config.StashToken,
+			Logger:   wa.Logger,
+		}
+		p, err := stash.NewPush(payload, stashConfig)
+		if err != nil {
+			util.WriteHTTPError(w, http.StatusInternalServerError, err)
+			return
+		}
+
+		// TODO: WebAPI already has the fields that are being assigned here and it's
+		// the receiver on buildPipelines. We don't need to reassign the values to
+		// fileService here.
+		fileService := stash.FileService{
+			StashToken:    wa.Config.StashToken,
+			StashUsername: wa.Config.StashUsername,
+			StashEndpoint: wa.Config.StashEndpoint,
+			Logger:        wa.Logger,
+		}
+
+		wa.buildPipelines(p, &fileService, w)
 	}
-	wa.buildPipelines(p, &fileService, w)
 }
 
 // =========
@@ -238,17 +271,17 @@ func (wa *WebAPI) bitbucketCloudWebhookHandler(w http.ResponseWriter, r *http.Re
 func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	// Ensure dinghyfile was changed.
 	if !p.ContainsFile(wa.Config.DinghyFilename) {
-		log.Infof("Push does not include %s, skipping.", wa.Config.DinghyFilename)
+		wa.Logger.Infof("Push does not include %s, skipping.", wa.Config.DinghyFilename)
 		return nil
 	}
 
 	// Ensure we're on the master branch.
 	if !p.IsMaster() {
-		log.Info("Skipping Spinnaker pipeline update because this is not master")
+		wa.Logger.Info("Skipping Spinnaker pipeline update because this is not master")
 		return nil
 	}
 
-	log.Info("Dinghyfile found in commit for repo " + p.Repo())
+	wa.Logger.Info("Dinghyfile found in commit for repo " + p.Repo())
 
 	// Set commit status to the pending yellow dot.
 	p.SetCommitStatus(git.StatusPending)
@@ -261,8 +294,10 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 			// Set commit status based on result of processing.
 			if err != nil {
 				if err == dinghyfile.ErrMalformedJSON {
+					wa.Logger.Errorf("Error processing Dinghyfile (malformed JSON): %s", err.Error())
 					p.SetCommitStatus(git.StatusFailure)
 				} else {
+					wa.Logger.Errorf("Error processing Dinghyfile: %s", err.Error())
 					p.SetCommitStatus(git.StatusError)
 				}
 				return err
@@ -290,11 +325,14 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 	}
 
 	// Process the push.
+	wa.Logger.Info("Processing Push")
 	err := wa.ProcessPush(p, builder)
 	if err == dinghyfile.ErrMalformedJSON {
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+		wa.Logger.Errorf("ProcessPush Failed (malformed JSON): %s", err.Error())
 		return
 	} else if err != nil {
+		wa.Logger.Errorf("ProcessPush Failed (other): %s", err.Error())
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
@@ -314,6 +352,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 					util.WriteHTTPError(w, http.StatusInternalServerError, err)
 				}
 				p.SetCommitStatus(git.StatusError)
+				wa.Logger.Errorf("RebuildModuleRoots Failed: %s", err.Error())
 				return
 			}
 		}
@@ -325,13 +364,17 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 
 // TODO: get rid of this function and unmarshal JSON in the handlers so that we can
 // return proper status codes
-func readBody(r *http.Request, dest interface{}) error {
+func (wa *WebAPI) readBody(r *http.Request, dest interface{}) error {
 	body, err := httputil.DumpRequest(r, true)
 	if err != nil {
+		wa.Logger.Errorf("DumpRequest Failed: %s", err.Error())
 		return err
 	}
-	log.Info("Received payload: ", string(body))
+	wa.Logger.Infof("Received payload: %s", string(body))
 
-	util.ReadJSON(r.Body, &dest)
-	return nil
+	err = util.ReadJSON(r.Body, &dest)
+	if err != nil {
+		wa.Logger.Errorf("ReadJSON failed:  %s (content: %s)", err, r.Body)
+	}
+	return err
 }

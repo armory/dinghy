@@ -19,10 +19,13 @@ package dinghy
 import (
 	"context"
 	"fmt"
-	"github.com/armory/dinghy/pkg/debug"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+
+	"github.com/armory/dinghy/pkg/debug"
 
 	"github.com/armory-io/monitoring/log/formatters"
 	"github.com/armory-io/monitoring/log/hooks"
@@ -40,9 +43,10 @@ import (
 func newRedisOptions(redisOptions settings.Redis) *redis.Options {
 	url := strings.TrimPrefix(redisOptions.BaseURL, "redis://")
 	return &redis.Options{
-		Addr:     url,
-		Password: redisOptions.Password,
-		DB:       0,
+		MaxRetries: 5,
+		Addr:       url,
+		Password:   redisOptions.Password,
+		DB:         0,
 	}
 }
 
@@ -91,11 +95,25 @@ func Start() {
 	client.URLs["front50"] = config.Front50.BaseURL
 
 	// Create the EventClient
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 	ec := events.NewEventClient(ctx, config)
 
-	redis := cache.NewRedisCache(newRedisOptions(config.Redis))
-	api := web.NewWebAPI(config, redis, client, ec)
+	// spawn stop thread
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+
+	go func() {
+		<-stop
+		log.Info("Stopping Dinghy")
+		cancel()
+		os.Exit(1)
+	}()
+
+	redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)
+	if _, err := redisClient.Client.Ping().Result(); err != nil {
+		log.Fatalf("Redis Server at %s could not be contacted", config.Redis.BaseURL)
+	}
+	api := web.NewWebAPI(config, redisClient, client, ec, log)
 
 	log.Info("Dinghy started.")
 	log.Info(http.ListenAndServe(":8081", api.Router()))
