@@ -144,6 +144,7 @@ func NewPush(payload WebhookPayload, cfg StashConfig) (*Push, error) {
 		StashEndpoint: cfg.Endpoint,
 		StashToken:    cfg.Token,
 		StashUsername: cfg.Username,
+		Logger:        cfg.Logger,
 	}
 
 	for _, change := range p.changes() {
