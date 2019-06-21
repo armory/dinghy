@@ -143,6 +143,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload := stash.WebhookPayload{}
 	// TODO: stop using readbody, then we can return proper status codes here
+	wa.Logger.Infof("Reading stash payload body")
 	if err := wa.readBody(r, &payload); err != nil {
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -155,6 +156,7 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		Token:    wa.Config.StashToken,
 		Logger:   wa.Logger,
 	}
+	wa.Logger.Infof("Instantiating Stash Payload")
 	p, err := stash.NewPush(payload, stashConfig)
 	if err != nil {
 		wa.Logger.Warnf("stash.NewPush failed: %s", err.Error())
@@ -171,6 +173,7 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		StashEndpoint: wa.Config.StashEndpoint,
 		Logger:        wa.Logger,
 	}
+	wa.Logger.Infof("Building pipeslines from Stash webhook")
 	wa.buildPipelines(p, &fileService, w)
 }
 
@@ -322,11 +325,14 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 	}
 
 	// Process the push.
+	wa.Logger.Info("Processing Push")
 	err := wa.ProcessPush(p, builder)
 	if err == dinghyfile.ErrMalformedJSON {
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+		wa.Logger.Errorf("ProcessPush Failed (malformed JSON): %s", err.Error())
 		return
 	} else if err != nil {
+		wa.Logger.Errorf("ProcessPush Failed (other): %s", err.Error())
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 		return
 	}
@@ -346,6 +352,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 					util.WriteHTTPError(w, http.StatusInternalServerError, err)
 				}
 				p.SetCommitStatus(git.StatusError)
+				wa.Logger.Errorf("RebuildModuleRoots Failed: %s", err.Error())
 				return
 			}
 		}
@@ -360,9 +367,14 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 func (wa *WebAPI) readBody(r *http.Request, dest interface{}) error {
 	body, err := httputil.DumpRequest(r, true)
 	if err != nil {
+		wa.Logger.Errorf("DumpRequest Failed: %s", err.Error())
 		return err
 	}
 	wa.Logger.Infof("Received payload: %s", string(body))
 
-	return util.ReadJSON(r.Body, &dest)
+	err = util.ReadJSON(r.Body, &dest)
+	if err != nil {
+		wa.Logger.Errorf("ReadJSON failed:  %s (content: %s)", err, r.Body)
+	}
+	return err
 }
