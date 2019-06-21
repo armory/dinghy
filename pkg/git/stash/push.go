@@ -153,6 +153,7 @@ func NewPush(payload WebhookPayload, cfg StashConfig) (*Push, error) {
 		for start := -1; start != 0; {
 			nextStart, err := p.getFilesChanged(change.FromHash, change.ToHash, start)
 			if err != nil {
+				cfg.Logger.Warnf("getFilesChanged failed: %s", err.Error())
 				return nil, err
 			}
 			start = nextStart
