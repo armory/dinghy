@@ -322,6 +322,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 		AutolockPipelines:    wa.Config.AutoLockPipelines,
 		Client:               wa.Client,
 		EventClient:          wa.EventClient,
+		Logger:               wa.Logger,
 	}
 
 	// Process the push.
