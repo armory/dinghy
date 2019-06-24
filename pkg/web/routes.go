@@ -19,6 +19,7 @@ package web
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -178,7 +179,6 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	// determine if this is a bitbucket-cloud event and handle accordingly
 	keys := make(map[string]interface{})
 	if err := json.NewDecoder(r.Body).Decode(&keys); err != nil {
 		wa.Logger.Errorf("Unable to determine bitbucket event type: %s", err)
@@ -186,12 +186,8 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	isBitbucketCloud := false
-	if keys["event_type"] == nil {
-		isBitbucketCloud = true
-	}
-
-	if isBitbucketCloud {
+	switch keys["event_type"] {
+	case "repo:push", "pullrequest:fulfilled":
 		wa.Logger.Info("Processing bitbucket-cloud webhook")
 		payload := bbcloud.WebhookPayload{}
 		if err := wa.readBody(r, &payload); err != nil {
@@ -222,7 +218,8 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		}
 
 		wa.buildPipelines(p, &fileService, w)
-	} else {
+
+	case "repo:refs_changed", "pr:merged":
 		wa.Logger.Info("Processing bitbucket-server webhook")
 		payload := stash.WebhookPayload{}
 		if err := wa.readBody(r, &payload); err != nil {
@@ -260,6 +257,10 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		}
 
 		wa.buildPipelines(p, &fileService, w)
+
+	default:
+		util.WriteHTTPError(w, http.StatusInternalServerError, errors.New("Unknown bitbucket event type"))
+		return
 	}
 }
 
