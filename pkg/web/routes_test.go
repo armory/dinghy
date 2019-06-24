@@ -53,8 +53,8 @@ func testHealthCheckLogging(t *testing.T, endpoint string) {
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(wa.healthcheck)
 	handler.ServeHTTP(rr, req)
-	assert.Equal(t, rr.Code, http.StatusOK)
-	assert.Equal(t, rr.Body.String(), `{"status":"ok"}`)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t,`{"status":"ok"}`, rr.Body.String())
 }
 
 func TestHealthCheckLogging(t *testing.T) {
@@ -80,7 +80,7 @@ func TestGithubWebhookHandlerBadJSON(t *testing.T) {
 	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
 	rr := httptest.NewRecorder()
 	wa.githubWebhookHandler(rr, req)
-	assert.Equal(t, rr.Code, 422)
+	assert.Equal(t, 422, rr.Code)
 }
 func TestGithubWebhookHandlerNoRef(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -96,7 +96,7 @@ func TestGithubWebhookHandlerNoRef(t *testing.T) {
 	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
 	rr := httptest.NewRecorder()
 	wa.githubWebhookHandler(rr, req)
-	assert.Equal(t, rr.Code, http.StatusOK)
+	assert.Equal(t, http.StatusOK, rr.Code)
 }
 
 // Legacy Bitbucket ("Stash") webhook tests
@@ -115,7 +115,7 @@ func TestStashWebhookHandlerBadJSON(t *testing.T) {
 	req := httptest.NewRequest("POST", "/v1/webhooks/stash", payload)
 	rr := httptest.NewRecorder()
 	wa.stashWebhookHandler(rr, req)
-	assert.Equal(t, rr.Code, 422)
+	assert.Equal(t, 422, rr.Code)
 }
 
 func TestStashWebhookBadPayload(t *testing.T) {
@@ -134,7 +134,7 @@ func TestStashWebhookBadPayload(t *testing.T) {
 	req := httptest.NewRequest("POST", "/v1/webhooks/stash", payload)
 	rr := httptest.NewRecorder()
 	wa.stashWebhookHandler(rr, req)
-	assert.Equal(t, rr.Code, 422)
+	assert.Equal(t, 422, rr.Code)
 }
 
 // Bitbucket Server webhook tests
@@ -151,7 +151,7 @@ func TestBitbucketWebhookHandlerBadJSON(t *testing.T) {
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket", payload)
 	rr := httptest.NewRecorder()
 	wa.bitbucketWebhookHandler(rr, req)
-	assert.Equal(t, rr.Code, 422)
+	assert.Equal(t, 422, rr.Code)
 }
 
 func TestBitbucketWebhookBadPayload(t *testing.T) {
@@ -170,7 +170,7 @@ func TestBitbucketWebhookBadPayload(t *testing.T) {
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
 	rr := httptest.NewRecorder()
 	wa.bitbucketWebhookHandler(rr, req)
-	assert.Equal(t, rr.Code, 422)
+	assert.Equal(t, 422, rr.Code)
 }
 
 // Bitbucket Cloud webhook tests
@@ -187,7 +187,7 @@ func TestBitbucketCloudWebhookHandlerBadJSON(t *testing.T) {
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
 	rr := httptest.NewRecorder()
 	wa.bitbucketWebhookHandler(rr, req)
-	assert.Equal(t, rr.Code, 422)
+	assert.Equal(t, 422, rr.Code)
 }
 
 func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
@@ -206,7 +206,7 @@ func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
 	rr := httptest.NewRecorder()
 	wa.bitbucketWebhookHandler(rr, req)
-	assert.Equal(t, rr.Code, 422)
+	assert.Equal(t, 422, rr.Code)
 }
 
 func TestUnknownEventType(t *testing.T) {
