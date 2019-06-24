@@ -128,7 +128,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	pb.Client = client
 	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path")
 	assert.NotNil(t, res)
-	assert.Equal(t, res.Error(), "boom")
+	assert.Equal(t, "boom", res.Error())
 }
 
 // TestUpdateDinghyfile ONLY tests the function "updateDinghyfile" which,
@@ -213,7 +213,7 @@ func TestUpdateDinghyfile(t *testing.T) {
 	for testName, c := range cases {
 		t.Run(testName, func(t *testing.T) {
 			d, _ := b.UpdateDinghyfile(c.dinghyfile)
-			assert.Equal(t, d.ApplicationSpec, c.spec)
+			assert.Equal(t, c.spec, d.ApplicationSpec)
 		})
 	}
 
@@ -303,7 +303,7 @@ func TestUpdateDinghyfileMalformed(t *testing.T) {
 	logger.EXPECT().Errorf(gomock.Eq("UpdateDinghyfile malformed json: %s"), gomock.Any()).Times(1)
 
 	df, err := b.UpdateDinghyfile([]byte("{ garbage"))
-	assert.Equal(t, err, ErrMalformedJSON)
+	assert.Equal(t, ErrMalformedJSON, err)
 	assert.NotNil(t, df)
 }
 
@@ -334,7 +334,7 @@ func TestGetPipelineByID(t *testing.T) {
 
 	res, err := b.GetPipelineByID("testapp", "pipelineName")
 	assert.Nil(t, err)
-	assert.Equal(t, res, "pipelineID")
+	assert.Equal(t, "pipelineID", res)
 }
 
 func TestGetPipelineByIDUpsertFail(t *testing.T) {
@@ -351,8 +351,8 @@ func TestGetPipelineByIDUpsertFail(t *testing.T) {
 
 	res, err := b.GetPipelineByID("testapp", "pipelineName")
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "upsert fail test")
-	assert.Equal(t, res, "")
+	assert.Equal(t, "upsert fail test", err.Error())
+	assert.Equal(t, "", res)
 }
 
 func TestUpdatePipelinesDeleteStaleWithExisting(t *testing.T) {
@@ -466,7 +466,7 @@ func TestUpdatePipelinesUpsertFail(t *testing.T) {
 
 	err := b.updatePipelines(testapp, newPipelines, true, "true")
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "upsert fail test")
+	assert.Equal(t, "upsert fail test", err.Error())
 }
 
 func TestUpdatePipelinesRespectsAutoLockOn(t *testing.T) {
@@ -579,5 +579,5 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 
 	err := b.RebuildModuleRoots("org", "repo", "rebuild_test")
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "Not all upstream dinghyfiles were updated successfully")
+	assert.Equal(t, "Not all upstream dinghyfiles were updated successfully", err.Error())
 }
