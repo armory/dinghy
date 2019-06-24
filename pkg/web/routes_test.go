@@ -165,7 +165,7 @@ func TestBitbucketWebhookBadPayload(t *testing.T) {
 
 	wa := NewWebAPI(nil, nil, nil, nil, logger)
 
-	payload := bytes.NewBufferString(`{"event_type": "stash", "changes": "not an array"}`)
+	payload := bytes.NewBufferString(`{"event_type": "repo:refs_changed", "changes": "not an array"}`)
 
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
 	rr := httptest.NewRecorder()
@@ -201,10 +201,26 @@ func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
 
 	wa := NewWebAPI(nil, nil, nil, nil, logger)
 
-	payload := bytes.NewBufferString(`{"changes": "not an array"}`)
+	payload := bytes.NewBufferString(`{"event_type": "repo:push", "changes": "not an array"}`)
 
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
 	rr := httptest.NewRecorder()
 	wa.bitbucketWebhookHandler(rr, req)
 	assert.Equal(t, rr.Code, 422)
+}
+
+func TestUnknownEventType(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+
+	wa := NewWebAPI(nil, nil, nil, nil, logger)
+
+	payload := bytes.NewBufferString(`{"event_type": "", "changes": "not an array"}`)
+
+	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
+	rr := httptest.NewRecorder()
+	wa.bitbucketWebhookHandler(rr, req)
+	assert.Equal(t, 500, rr.Code)
 }

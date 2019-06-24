@@ -179,7 +179,6 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	// determine if this is a bitbucket-cloud event and handle accordingly
 	keys := make(map[string]interface{})
 	if err := json.NewDecoder(r.Body).Decode(&keys); err != nil {
 		wa.Logger.Errorf("Unable to determine bitbucket event type: %s", err)
@@ -259,8 +258,9 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 
 		wa.buildPipelines(p, &fileService, w)
 
-	default: util.WriteHTTPError(w, http.StatusInternalServerError, errors.New("unknown bitbucket event type"))
-	return
+	default:
+		util.WriteHTTPError(w, http.StatusInternalServerError, errors.New("Unknown bitbucket event type"))
+		return
 	}
 }
 
