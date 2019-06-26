@@ -17,9 +17,9 @@
 package main
 
 import (
-	"github.com/armory/dinghy/cmd"
+	dinghy "github.com/armory/dinghy/cmd"
 )
 
 func main() {
-	dinghy.Start()
+	dinghy.Setup()
 }

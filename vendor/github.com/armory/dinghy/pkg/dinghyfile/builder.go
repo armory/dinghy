@@ -44,6 +44,7 @@ type PipelineBuilder struct {
 	EventClient          events.EventClient
 	Renderer             Renderer
 	Logger               log.FieldLogger
+	Ums                  []Unmarshaller
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -95,8 +96,17 @@ var (
 // email on the ApplicationSpec if it didn't get unmarshalled on its own.
 func (b *PipelineBuilder) UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error) {
 	d := NewDinghyfile()
-	if err := Unmarshal(dinghyfile, &d); err != nil {
-		b.Logger.Errorf("UpdateDinghyfile malformed json: %s", err.Error())
+	// try every parser, maybe we'll get lucky
+	parseErrs := 0
+	for _, ums := range b.Ums {
+		if err := ums.Unmarshal(dinghyfile, &d); err != nil {
+			b.Logger.Warnf("UpdateDinghyfile malformed syntax: %s", err.Error())
+			parseErrs++
+			continue
+		}
+	}
+	// we weren't lucky, all the parsers failed
+	if parseErrs == len(b.Ums) {
 		return d, ErrMalformedJSON
 	}
 	b.Logger.Infof("Unmarshalled: %v", d)
@@ -279,4 +289,8 @@ func (b *PipelineBuilder) GetPipelineByID(app, pipelineName string) (string, err
 		return "", err
 	}
 	return b.GetPipelineByID(app, pipelineName)
+}
+
+func (b *PipelineBuilder) AddUnmarshaller(u Unmarshaller) {
+	b.Ums = append(b.Ums, u)
 }
