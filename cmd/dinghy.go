@@ -51,7 +51,7 @@ func newRedisOptions(redisOptions settings.Redis) *redis.Options {
 	}
 }
 
-func Setup() *web.WebAPI {
+func Setup() (*logr.Logger,*web.WebAPI) {
 	log := logr.New()
 	config, err := settings.LoadSettings()
 	if err != nil {
@@ -116,14 +116,14 @@ func Setup() *web.WebAPI {
 	}
 	api := web.NewWebAPI(config, redisClient, client, ec, log)
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
-	return api
+	return log, api
 }
 
 func AddUnmarshaller(u dinghyfile.DinghyJsonUnmarshaller, api *web.WebAPI) {
 	api.AddDinghyfileUnmarshaller(u)
 }
 
-func Start(log logr.Logger, api *web.WebAPI) {
+func Start(log *logr.Logger, api *web.WebAPI) {
 	log.Info("Dinghy started.")
 	log.Info(http.ListenAndServe(":8081", api.Router()))
 }
