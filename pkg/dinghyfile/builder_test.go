@@ -92,7 +92,7 @@ func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
 	renderer.EXPECT().Render(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
 	logger := mock.NewMockFieldLogger(ctrl)
-	logger.EXPECT().Errorf(gomock.Eq("UpdateDinghyfile malformed json: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Warnf(gomock.Eq("UpdateDinghyfile malformed syntax: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to update dinghyfile %s: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -300,7 +300,7 @@ func TestUpdateDinghyfileMalformed(t *testing.T) {
 	b := testPipelineBuilder()
 	logger := mock.NewMockFieldLogger(ctrl)
 	b.Logger = logger
-	logger.EXPECT().Errorf(gomock.Eq("UpdateDinghyfile malformed json: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Warnf(gomock.Eq("UpdateDinghyfile malformed syntax: %s"), gomock.Any()).Times(1)
 
 	df, err := b.UpdateDinghyfile([]byte("{ garbage"))
 	assert.Equal(t, ErrMalformedJSON, err)

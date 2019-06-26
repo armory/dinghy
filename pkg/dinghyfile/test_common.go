@@ -50,6 +50,7 @@ func testBasePipelineBuilder() *PipelineBuilder {
 		Depman:      cache.NewMemoryCache(),
 		EventClient: &EventsTestClient{},
 		Logger:      logrus.New(),
+		Ums:         []Unmarshaller{&DinghyJsonUnmarshaller{}},
 	}
 }
 
