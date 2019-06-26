@@ -103,6 +103,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		DeleteStalePipelines: false,
 		AutolockPipelines:    wa.Config.AutoLockPipelines,
 		Logger:               wa.Logger,
+		Ums:                  []dinghyfile.Unmarshaller{&dinghyfile.DinghyJsonUnmarshaller{}},
 	}
 
 	buf := new(bytes.Buffer)
@@ -324,6 +325,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 		Client:               wa.Client,
 		EventClient:          wa.EventClient,
 		Logger:               wa.Logger,
+		Ums:                  []dinghyfile.Unmarshaller{&dinghyfile.DinghyJsonUnmarshaller{}},
 	}
 
 	// Process the push.
