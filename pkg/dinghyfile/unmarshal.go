@@ -25,9 +25,15 @@ import (
 	"fmt"
 )
 
+type Unmarshaller interface {
+	Unmarshal(data []byte, i interface{}) error
+}
+
+type DinghyJsonUnmarshaller struct {}
+
 // Unmarshal is wrapper around json.Unmarshal that returns user-friendly
 // errors when there are syntax errors.
-func Unmarshal(data []byte, i interface{}) error {
+func (d DinghyJsonUnmarshaller) Unmarshal(data []byte, i interface{}) error {
 	err := json.Unmarshal(data, i)
 	if err != nil {
 		syntaxErr, ok := err.(*json.SyntaxError)
