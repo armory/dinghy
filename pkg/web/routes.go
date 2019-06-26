@@ -56,6 +56,7 @@ type WebAPI struct {
 	Cache       dinghyfile.DependencyManager
 	EventClient *events.Client
 	Logger      log.FieldLogger
+	Ums         []dinghyfile.Unmarshaller
 }
 
 func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger) *WebAPI {
@@ -65,7 +66,12 @@ func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.Plan
 		Cache:       r,
 		EventClient: e,
 		Logger:      l,
+		Ums:         []dinghyfile.Unmarshaller{},
 	}
+}
+
+func (wa *WebAPI) AddDinghyfileUnmarshaller(u dinghyfile.Unmarshaller) {
+	wa.Ums = append(wa.Ums, u)
 }
 
 // Router defines the routes for the application.
@@ -103,7 +109,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		DeleteStalePipelines: false,
 		AutolockPipelines:    wa.Config.AutoLockPipelines,
 		Logger:               wa.Logger,
-		Ums:                  []dinghyfile.Unmarshaller{&dinghyfile.DinghyJsonUnmarshaller{}},
+		Ums:                  wa.Ums,
 	}
 
 	buf := new(bytes.Buffer)
@@ -325,7 +331,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 		Client:               wa.Client,
 		EventClient:          wa.EventClient,
 		Logger:               wa.Logger,
-		Ums:                  []dinghyfile.Unmarshaller{&dinghyfile.DinghyJsonUnmarshaller{}},
+		Ums:                  wa.Ums,
 	}
 
 	// Process the push.

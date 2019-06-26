@@ -19,6 +19,7 @@ package dinghy
 import (
 	"context"
 	"fmt"
+	"github.com/armory/dinghy/pkg/dinghyfile"
 	"net/http"
 	"os"
 	"os/signal"
@@ -50,7 +51,7 @@ func newRedisOptions(redisOptions settings.Redis) *redis.Options {
 	}
 }
 
-func Start() {
+func Setup() *web.WebAPI {
 	log := logr.New()
 	config, err := settings.LoadSettings()
 	if err != nil {
@@ -58,7 +59,7 @@ func Start() {
 	}
 
 	if config.Logging.File != "" {
-		f, err := os.OpenFile(config.Logging.File, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0764)
+		f, err := os.OpenFile(config.Logging.File, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0664)
 		if err != nil {
 			log.Fatalf("Couldn't open log file")
 		}
@@ -114,7 +115,15 @@ func Start() {
 		log.Fatalf("Redis Server at %s could not be contacted", config.Redis.BaseURL)
 	}
 	api := web.NewWebAPI(config, redisClient, client, ec, log)
+	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
+	return api
+}
 
+func AddUnmarshaller(u dinghyfile.DinghyJsonUnmarshaller, api *web.WebAPI) {
+	api.AddDinghyfileUnmarshaller(u)
+}
+
+func Start(log logr.Logger, api *web.WebAPI) {
 	log.Info("Dinghy started.")
 	log.Info(http.ListenAndServe(":8081", api.Router()))
 }
