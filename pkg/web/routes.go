@@ -20,13 +20,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/git/bbcloud"
-
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
@@ -186,17 +186,28 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
+	// read the response body to check for the type and use NopCloser so it can be decoded later
 	keys := make(map[string]interface{})
-	if err := json.NewDecoder(r.Body).Decode(&keys); err != nil {
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		wa.Logger.Errorf("Failed to read request body: %s", err)
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	r.Body.Close()
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+	if err := json.Unmarshal(b, &keys); err != nil {
 		wa.Logger.Errorf("Unable to determine bitbucket event type: %s", err)
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
+
 	switch keys["event_type"] {
 	case "repo:push", "pullrequest:fulfilled":
 		wa.Logger.Info("Processing bitbucket-cloud webhook")
 		payload := bbcloud.WebhookPayload{}
+
 		if err := wa.readBody(r, &payload); err != nil {
 			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 			return
@@ -229,6 +240,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 	case "repo:refs_changed", "pr:merged":
 		wa.Logger.Info("Processing bitbucket-server webhook")
 		payload := stash.WebhookPayload{}
+
 		if err := wa.readBody(r, &payload); err != nil {
 			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 			return

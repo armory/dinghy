@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/armory/dinghy/pkg/mock"
+
 	// "github.com/armory/dinghy/pkg/settings"
 
 	"github.com/golang/mock/gomock"
@@ -54,7 +55,7 @@ func testHealthCheckLogging(t *testing.T, endpoint string) {
 	handler := http.HandlerFunc(wa.healthcheck)
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Equal(t,`{"status":"ok"}`, rr.Body.String())
+	assert.Equal(t, `{"status":"ok"}`, rr.Body.String())
 }
 
 func TestHealthCheckLogging(t *testing.T) {
@@ -167,7 +168,7 @@ func TestBitbucketWebhookBadPayload(t *testing.T) {
 
 	payload := bytes.NewBufferString(`{"event_type": "repo:refs_changed", "changes": "not an array"}`)
 
-	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
+	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket", payload)
 	rr := httptest.NewRecorder()
 	wa.bitbucketWebhookHandler(rr, req)
 	assert.Equal(t, 422, rr.Code)
@@ -201,7 +202,7 @@ func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
 
 	wa := NewWebAPI(nil, nil, nil, nil, logger)
 
-	payload := bytes.NewBufferString(`{"event_type": "repo:push", "changes": "not an array"}`)
+	payload := bytes.NewBufferString(`{"event_type": "repo:push", "push": {"changes": "not an array"}}`)
 
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
 	rr := httptest.NewRecorder()
