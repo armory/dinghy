@@ -29,6 +29,7 @@ import (
 	"github.com/armory/plank"
 
 	"github.com/armory/dinghy/pkg/mock"
+	"github.com/armory/dinghy/pkg/notifiers"
 )
 
 // Test the high-level runthrough of ProcessDinghyfile
@@ -580,4 +581,43 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	err := b.RebuildModuleRoots("org", "repo", "rebuild_test")
 	assert.NotNil(t, err)
 	assert.Equal(t, "Not all upstream dinghyfiles were updated successfully", err.Error())
+}
+
+func TestAddRenderer(t *testing.T) {
+	b := testPipelineBuilder()
+	b.AddUnmarshaller(&DinghyJsonUnmarshaller{})
+	assert.Equal(t, len(b.Ums), 2)
+}
+
+type mockNotifier struct {
+	SuccessCalls int
+	FailureCalls int
+	LastError    error
+}
+
+func (m *mockNotifier) SendSuccess(org, repo, path string) {
+	m.SuccessCalls = m.SuccessCalls + 1
+}
+func (m *mockNotifier) SendFailure(org, repo, path string, err error) {
+	m.FailureCalls = m.FailureCalls + 1
+	m.LastError = err
+}
+
+func TestSuccessNotifier(t *testing.T) {
+	b := testPipelineBuilder()
+	n := mockNotifier{}
+	b.Notifiers = []notifiers.Notifier{&n}
+	b.NotifySuccess("foo", "bar", "biff")
+	assert.Equal(t, n.SuccessCalls, 1)
+	assert.Equal(t, n.FailureCalls, 0)
+}
+
+func TestFailureNotifier(t *testing.T) {
+	b := testPipelineBuilder()
+	n := mockNotifier{}
+	b.Notifiers = []notifiers.Notifier{&n}
+	b.NotifyFailure("foo", "bar", "biff", errors.New("foo"))
+	assert.Equal(t, n.SuccessCalls, 0)
+	assert.Equal(t, n.FailureCalls, 1)
+	assert.Equal(t, n.LastError.Error(), "foo")
 }

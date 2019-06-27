@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/armory/dinghy/pkg/events"
+	"github.com/armory/dinghy/pkg/notifiers"
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/plank"
 	log "github.com/sirupsen/logrus"
@@ -45,6 +46,7 @@ type PipelineBuilder struct {
 	Renderer             Renderer
 	Logger               log.FieldLogger
 	Ums                  []Unmarshaller
+	Notifiers            []notifiers.Notifier
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -141,12 +143,14 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	buf, err := b.Renderer.Render(org, repo, path, nil)
 	if err != nil {
 		b.Logger.Errorf("Failed to render dinghyfile %s: %s", path, err.Error())
+		b.NotifyFailure(org, repo, path, err)
 		return err
 	}
 	b.Logger.Infof("Rendered: %s", buf.String())
 	d, err := b.UpdateDinghyfile(buf.Bytes())
 	if err != nil {
 		b.Logger.Errorf("Failed to update dinghyfile %s: %s", path, err.Error())
+		b.NotifyFailure(org, repo, path, err)
 		return err
 	}
 	b.Logger.Infof("Updated: %s", buf.String())
@@ -154,9 +158,11 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 		b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
+		b.NotifyFailure(org, repo, path, err)
 		return err
 	}
 
+	b.NotifySuccess(org, repo, path)
 	return nil
 }
 
@@ -293,4 +299,16 @@ func (b *PipelineBuilder) GetPipelineByID(app, pipelineName string) (string, err
 
 func (b *PipelineBuilder) AddUnmarshaller(u Unmarshaller) {
 	b.Ums = append(b.Ums, u)
+}
+
+func (b *PipelineBuilder) NotifySuccess(org, repo, path string) {
+	for _, n := range b.Notifiers {
+		n.SendSuccess(org, repo, path)
+	}
+}
+
+func (b *PipelineBuilder) NotifyFailure(org, repo, path string, err error) {
+	for _, n := range b.Notifiers {
+		n.SendFailure(org, repo, path, err)
+	}
 }
