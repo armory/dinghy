@@ -36,6 +36,7 @@ import (
 	"github.com/armory/dinghy/pkg/git/dummy"
 	"github.com/armory/dinghy/pkg/git/github"
 	"github.com/armory/dinghy/pkg/git/stash"
+	"github.com/armory/dinghy/pkg/notifiers"
 	"github.com/armory/dinghy/pkg/settings"
 	"github.com/armory/dinghy/pkg/util"
 )
@@ -57,6 +58,7 @@ type WebAPI struct {
 	EventClient *events.Client
 	Logger      log.FieldLogger
 	Ums         []dinghyfile.Unmarshaller
+	Notifiers   []notifiers.Notifier
 }
 
 func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger) *WebAPI {
@@ -67,11 +69,20 @@ func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.Plan
 		EventClient: e,
 		Logger:      l,
 		Ums:         []dinghyfile.Unmarshaller{},
+		Notifiers:   []notifiers.Notifier{},
 	}
 }
 
 func (wa *WebAPI) AddDinghyfileUnmarshaller(u dinghyfile.Unmarshaller) {
 	wa.Ums = append(wa.Ums, u)
+}
+
+// AddNotifier adds a Notifier type instance that will be triggered when
+// a Dinghyfile processing phase completes (success/fail).  It only gets
+// triggered if there is work to do on a push (ie. a pipeline is intended
+// to be updated)
+func (wa *WebAPI) AddNotifier(n notifiers.Notifier) {
+	wa.Notifiers = append(wa.Notifiers, n)
 }
 
 // Router defines the routes for the application.
@@ -332,6 +343,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 		EventClient:          wa.EventClient,
 		Logger:               wa.Logger,
 		Ums:                  wa.Ums,
+		Notifiers:            wa.Notifiers,
 	}
 
 	// Process the push.
