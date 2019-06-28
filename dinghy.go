@@ -17,10 +17,26 @@
 package main
 
 import (
+	// Open Core Dinghy
 	dinghy "github.com/armory/dinghy/cmd"
+
+	"github.com/armory-io/dinghy/pkg/notifiers"
+	"github.com/armory-io/dinghy/pkg/settings"
 )
 
 func main() {
 	log, api := dinghy.Setup()
+	moreConfig, err := settings.LoadExtraSettings(api.Config)
+	if err != nil {
+		log.Errorf("Error loading additional settings: %s", err.Error())
+	}
+	if moreConfig.Notifiers.Slack.IsEnabled() {
+		log.Infof("Slack notifications enabled, sending to %s", moreConfig.Notifiers.Slack.Channel)
+	} else {
+		log.Info("Slack notifications disabled/not configured")
+	}
+	if moreConfig.Notifiers.Slack.IsEnabled() {
+		api.AddNotifier(notifiers.NewSlackNotifier(moreConfig))
+	}
 	dinghy.Start(log, api)
 }

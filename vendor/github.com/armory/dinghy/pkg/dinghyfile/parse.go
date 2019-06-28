@@ -34,15 +34,15 @@ import (
 	"github.com/armory/dinghy/pkg/preprocessor"
 )
 
-type DinghyfileRenderer struct {
+type DinghyfileParser struct {
 	Builder *PipelineBuilder
 }
 
-func NewDinghyfileRenderer(b *PipelineBuilder) *DinghyfileRenderer {
-	return &DinghyfileRenderer{Builder: b}
+func NewDinghyfileParser(b *PipelineBuilder) *DinghyfileParser {
+	return &DinghyfileParser{Builder: b}
 }
 
-func (r *DinghyfileRenderer) parseValue(val interface{}) interface{} {
+func (r *DinghyfileParser) parseValue(val interface{}) interface{} {
 	var err error
 	if jsonStr, ok := val.(string); ok && len(jsonStr) > 0 {
 		if jsonStr[0] == '{' {
@@ -60,7 +60,7 @@ func (r *DinghyfileRenderer) parseValue(val interface{}) interface{} {
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func (r *DinghyfileRenderer) moduleFunc(org string, deps map[string]bool, allVars []varMap) interface{} {
+func (r *DinghyfileParser) moduleFunc(org string, deps map[string]bool, allVars []varMap) interface{} {
 	return func(mod string, vars ...interface{}) string {
 		// Record the dependency.
 		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod)
@@ -97,7 +97,7 @@ func (r *DinghyfileRenderer) moduleFunc(org string, deps map[string]bool, allVar
 			newVars[key] = r.parseValue(vars[i+1])
 		}
 
-		result, err := r.Render(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, append([]varMap{newVars}, allVars...))
+		result, err := r.Parse(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, append([]varMap{newVars}, allVars...))
 		if err != nil {
 			r.Builder.Logger.Errorf("Error rendering imported module '%s': %s", mod, err.Error())
 		}
@@ -106,7 +106,7 @@ func (r *DinghyfileRenderer) moduleFunc(org string, deps map[string]bool, allVar
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func (r *DinghyfileRenderer) pipelineIDFunc(vars []varMap) interface{} {
+func (r *DinghyfileParser) pipelineIDFunc(vars []varMap) interface{} {
 	return func(app, pipelineName string) string {
 		for _, vm := range vars {
 			if val, exists := vm["triggerApp"]; exists {
@@ -127,7 +127,7 @@ func (r *DinghyfileRenderer) pipelineIDFunc(vars []varMap) interface{} {
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func (r *DinghyfileRenderer) renderValue(val interface{}) interface{} {
+func (r *DinghyfileParser) renderValue(val interface{}) interface{} {
 	// If it's an unserialized JSON array, serialize it back to JSON.
 	if newval, ok := val.([]interface{}); ok {
 		buf, err := json.Marshal(newval)
@@ -152,7 +152,7 @@ func (r *DinghyfileRenderer) renderValue(val interface{}) interface{} {
 	return val
 }
 
-func (r *DinghyfileRenderer) varFunc(vars []varMap) interface{} {
+func (r *DinghyfileParser) varFunc(vars []varMap) interface{} {
 	return func(varName string, defaultVal ...interface{}) interface{} {
 		for _, vm := range vars {
 			if val, exists := vm[varName]; exists {
@@ -184,8 +184,8 @@ func (r *DinghyfileRenderer) varFunc(vars []varMap) interface{} {
 	}
 }
 
-// Render renders the template
-func (r *DinghyfileRenderer) Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
+// Parse parses the template
+func (r *DinghyfileParser) Parse(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
 	module := true
 	event := &events.Event{
 		Start: time.Now().UTC().Unix(),
@@ -196,7 +196,7 @@ func (r *DinghyfileRenderer) Render(org, repo, path string, vars []varMap) (*byt
 
 	deps := make(map[string]bool)
 
-	// Download the template being rendered.
+	// Download the template being parsed.
 	contents, err := r.Builder.Downloader.Download(org, repo, path)
 	if err != nil {
 		r.Builder.Logger.Error("Failed to download")
