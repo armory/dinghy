@@ -40,7 +40,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	rendered := `{"application":"biff"}`
 
 	renderer := NewMockRenderer(ctrl)
-	renderer.EXPECT().Render(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("biff")).Return(&plank.Application{}, nil).Times(1)
@@ -60,7 +60,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	// Never gets UpsertPipeline because our Render returns no pipelines.
 	client.EXPECT().UpsertPipeline(gomock.Any(), "").Return(nil).Times(0)
 	pb := testPipelineBuilder()
-	pb.Renderer = renderer
+	pb.Parser = renderer
 	pb.Client = client
 	pb.Logger = logger
 	assert.Nil(t, pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path"))
@@ -90,7 +90,7 @@ func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
 	rendered := `{blargh}`
 
 	renderer := NewMockRenderer(ctrl)
-	renderer.EXPECT().Render(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Warnf(gomock.Eq("UpdateDinghyfile malformed syntax: %s"), gomock.Any()).Times(1)
@@ -99,7 +99,7 @@ func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
-	pb.Renderer = renderer
+	pb.Parser = renderer
 	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path")
 	assert.NotNil(t, res)
 }
@@ -111,7 +111,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	rendered := `{"application": "testapp"}`
 
 	renderer := NewMockRenderer(ctrl)
-	renderer.EXPECT().Render(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Creating application '%s'..."), gomock.Eq("testapp")).Times(1)
@@ -125,7 +125,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
-	pb.Renderer = renderer
+	pb.Parser = renderer
 	pb.Client = client
 	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path")
 	assert.NotNil(t, res)
@@ -309,11 +309,11 @@ func TestUpdateDinghyfileMalformed(t *testing.T) {
 }
 
 func TestDetermineRenderer(t *testing.T) {
-	// TODO:  Currently this will ALWAYS return a DinghyfileRenderer; when we
+	// TODO:  Currently this will ALWAYS return a DinghyfileParser; when we
 	//        support additional types, we'll need to add those tests here.
 	b := testPipelineBuilder()
-	r := b.DetermineRenderer("dinghyfile")
-	assert.Equal(t, "*dinghyfile.DinghyfileRenderer", reflect.TypeOf(r).String())
+	r := b.DetermineParser("dinghyfile")
+	assert.Equal(t, "*dinghyfile.DinghyfileParser", reflect.TypeOf(r).String())
 }
 
 func TestGetPipelineByID(t *testing.T) {
@@ -538,8 +538,8 @@ func TestRebuildModuleRoots(t *testing.T) {
 	b.Depman = depman
 
 	renderer := NewMockRenderer(ctrl)
-	renderer.EXPECT().Render(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Nil()).Return(bytes.NewBufferString(jsonOne), nil).Times(1)
-	b.Renderer = renderer
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Nil()).Return(bytes.NewBufferString(jsonOne), nil).Times(1)
+	b.Parser = renderer
 
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("testone")).Return(nil, nil).Times(1)
@@ -569,9 +569,9 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	b.Depman = depman
 
 	renderer := NewMockRenderer(ctrl)
-	renderer.EXPECT().Render(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Nil()).Return(nil, errors.New("rebuild fail test")).Times(1)
-	renderer.EXPECT().Render(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("bar"), gomock.Nil()).Return(bytes.NewBufferString(jsonTwo), nil).Times(1)
-	b.Renderer = renderer
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Nil()).Return(nil, errors.New("rebuild fail test")).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("bar"), gomock.Nil()).Return(bytes.NewBufferString(jsonTwo), nil).Times(1)
+	b.Parser = renderer
 
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("testtwo")).Return(nil, nil).Times(1)
