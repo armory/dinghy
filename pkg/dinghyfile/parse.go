@@ -42,6 +42,10 @@ func NewDinghyfileParser(b *PipelineBuilder) *DinghyfileParser {
 	return &DinghyfileParser{Builder: b}
 }
 
+func (r *DinghyfileParser) SetBuilder(b *PipelineBuilder) {
+	r.Builder = b
+}
+
 func (r *DinghyfileParser) parseValue(val interface{}) interface{} {
 	var err error
 	if jsonStr, ok := val.(string); ok && len(jsonStr) > 0 {
