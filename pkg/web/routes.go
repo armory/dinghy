@@ -194,7 +194,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	r.Body.Close()
+	defer r.Body.Close()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 	if err := json.Unmarshal(b, &keys); err != nil {
 		wa.Logger.Errorf("Unable to determine bitbucket event type: %s", err)
