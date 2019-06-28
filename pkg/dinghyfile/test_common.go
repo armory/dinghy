@@ -55,7 +55,7 @@ func testBasePipelineBuilder() *PipelineBuilder {
 }
 
 // This sets a mock logger on the pipeline {
-func mockLogger(dr *DinghyfileRenderer, ctrl *gomock.Controller) *mock.MockFieldLogger {
+func mockLogger(dr *DinghyfileParser, ctrl *gomock.Controller) *mock.MockFieldLogger {
 	dr.Builder.Logger = mock.NewMockFieldLogger(ctrl)
 	return dr.Builder.Logger.(*mock.MockFieldLogger)
 }

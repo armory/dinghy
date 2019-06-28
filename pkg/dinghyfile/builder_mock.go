@@ -10,40 +10,40 @@ import (
 	reflect "reflect"
 )
 
-// MockRenderer is a mock of Renderer interface
-type MockRenderer struct {
+// MockParser is a mock of Renderer interface
+type MockParser struct {
 	ctrl     *gomock.Controller
 	recorder *MockRendererMockRecorder
 }
 
-// MockRendererMockRecorder is the mock recorder for MockRenderer
+// MockRendererMockRecorder is the mock recorder for MockParser
 type MockRendererMockRecorder struct {
-	mock *MockRenderer
+	mock *MockParser
 }
 
 // NewMockRenderer creates a new mock instance
-func NewMockRenderer(ctrl *gomock.Controller) *MockRenderer {
-	mock := &MockRenderer{ctrl: ctrl}
+func NewMockRenderer(ctrl *gomock.Controller) *MockParser {
+	mock := &MockParser{ctrl: ctrl}
 	mock.recorder = &MockRendererMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockRenderer) EXPECT() *MockRendererMockRecorder {
+func (m *MockParser) EXPECT() *MockRendererMockRecorder {
 	return m.recorder
 }
 
 // Render mocks base method
-func (m *MockRenderer) Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
-	ret := m.ctrl.Call(m, "Render", org, repo, path, vars)
+func (m *MockParser) Parse(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
+	ret := m.ctrl.Call(m, "Parse", org, repo, path, vars)
 	ret0, _ := ret[0].(*bytes.Buffer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Render indicates an expected call of Render
-func (mr *MockRendererMockRecorder) Render(org, repo, path, vars interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Render", reflect.TypeOf((*MockRenderer)(nil).Render), org, repo, path, vars)
+func (mr *MockRendererMockRecorder) Parse(org, repo, path, vars interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parse", reflect.TypeOf((*MockParser)(nil).Parse), org, repo, path, vars)
 }
 
 // MockDependencyManager is a mock of DependencyManager interface
