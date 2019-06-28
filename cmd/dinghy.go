@@ -116,6 +116,9 @@ func Setup() (*logr.Logger,*web.WebAPI) {
 	}
 	api := web.NewWebAPI(config, redisClient, client, ec, log)
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
+	if config.ParserFormat == "json" {
+		api.SetDinghyfileParser(dinghyfile.NewDinghyfileParser(&dinghyfile.PipelineBuilder{}))
+	}
 	return log, api
 }
 

@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 // Package settings is a single place to put all of the application settings.
 package settings
@@ -33,6 +33,7 @@ type Settings struct {
 	StashEndpoint     string  `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
 	FiatUser          string  `json:"fiatUser,omitempty" yaml:"fiatUser"`
 	Logging           Logging `json:"logging,omitempty" yaml:"logging"`
+	ParserFormat      string  `json:"parserFormat,omitempty" yaml:"parserFormat"`
 	spinnakerSupplied `mapstructure:",squash"`
 }
 

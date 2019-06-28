@@ -39,7 +39,7 @@ func TestProcessDinghyfile(t *testing.T) {
 
 	rendered := `{"application":"biff"}`
 
-	renderer := NewMockRenderer(ctrl)
+	renderer := NewMockParser(ctrl)
 	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
 	client := NewMockPlankClient(ctrl)
@@ -51,7 +51,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Found pipelines for %v: %v"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Dinghyfile struct: %v"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Updated: %s"), gomock.Any()).Times(1)
-	logger.EXPECT().Infof(gomock.Eq("Rendered: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Compiled: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Looking up existing pipelines")).Times(1)
 
 	// Because we've set the renderer, we should NOT get this message...
@@ -73,9 +73,9 @@ func TestProcessDinghyfileDefaultRenderer(t *testing.T) {
 	defer ctrl.Finish()
 
 	logger := mock.NewMockFieldLogger(ctrl)
-	logger.EXPECT().Info("Calling DetermineRenderer").Times(1)
+	logger.EXPECT().Info("Calling DetermineParser").Times(1)
 	logger.EXPECT().Error(gomock.Eq("Failed to download")).Times(1)
-	logger.EXPECT().Errorf(gomock.Eq("Failed to render dinghyfile %s: %s"), gomock.Eq("notfound"), gomock.Eq("File not found")).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to parse dinghyfile %s: %s"), gomock.Eq("notfound"), gomock.Eq("File not found")).Times(1)
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
@@ -89,7 +89,7 @@ func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
 
 	rendered := `{blargh}`
 
-	renderer := NewMockRenderer(ctrl)
+	renderer := NewMockParser(ctrl)
 	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
 	logger := mock.NewMockFieldLogger(ctrl)
@@ -110,7 +110,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 
 	rendered := `{"application": "testapp"}`
 
-	renderer := NewMockRenderer(ctrl)
+	renderer := NewMockParser(ctrl)
 	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
 	logger := mock.NewMockFieldLogger(ctrl)
@@ -537,7 +537,7 @@ func TestRebuildModuleRoots(t *testing.T) {
 	depman.EXPECT().GetRoots(gomock.Eq(url)).Return(roots).Times(1)
 	b.Depman = depman
 
-	renderer := NewMockRenderer(ctrl)
+	renderer := NewMockParser(ctrl)
 	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Nil()).Return(bytes.NewBufferString(jsonOne), nil).Times(1)
 	b.Parser = renderer
 
@@ -568,7 +568,7 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	depman.EXPECT().GetRoots(gomock.Eq(url)).Return(roots).Times(1)
 	b.Depman = depman
 
-	renderer := NewMockRenderer(ctrl)
+	renderer := NewMockParser(ctrl)
 	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Nil()).Return(nil, errors.New("rebuild fail test")).Times(1)
 	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("bar"), gomock.Nil()).Return(bytes.NewBufferString(jsonTwo), nil).Times(1)
 	b.Parser = renderer
