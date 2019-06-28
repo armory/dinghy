@@ -69,6 +69,7 @@ func NewDefaultSettings() Settings {
 				Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
 			},
 		},
+		ParserFormat: "json",
 	}
 }
 
@@ -137,6 +138,10 @@ func configureSettings(defaultSettings, overrides Settings) (*Settings, error) {
 	// Take the FiatUser setting if fiat is enabled (coming from hal settings)
 	if defaultSettings.Fiat.Enabled == "true" && defaultSettings.FiatUser != "" {
 		defaultSettings.Fiat.AuthUser = defaultSettings.FiatUser
+	}
+
+	if defaultSettings.ParserFormat == "" {
+		defaultSettings.ParserFormat = "json"
 	}
 
 	c, _ := json.Marshal(defaultSettings)

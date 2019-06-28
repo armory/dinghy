@@ -40,6 +40,7 @@ func TestConfigureSettings(t *testing.T) {
 				GitHubToken: "45678",
 			},
 			expected: Settings{
+				ParserFormat: "json",
 				GitHubToken: "45678",
 			},
 		},

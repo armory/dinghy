@@ -59,6 +59,7 @@ type WebAPI struct {
 	Logger      log.FieldLogger
 	Ums         []dinghyfile.Unmarshaller
 	Notifiers   []notifiers.Notifier
+	Parser      dinghyfile.Parser
 }
 
 func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger) *WebAPI {
@@ -75,6 +76,10 @@ func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.Plan
 
 func (wa *WebAPI) AddDinghyfileUnmarshaller(u dinghyfile.Unmarshaller) {
 	wa.Ums = append(wa.Ums, u)
+}
+
+func (wa *WebAPI) SetDinghyfileParser(p dinghyfile.Parser) {
+	wa.Parser = p
 }
 
 // AddNotifier adds a Notifier type instance that will be triggered when
@@ -122,6 +127,9 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		Logger:               wa.Logger,
 		Ums:                  wa.Ums,
 	}
+
+	builder.Parser = wa.Parser
+	builder.Parser.SetBuilder(builder)
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
@@ -357,6 +365,9 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 		Ums:                  wa.Ums,
 		Notifiers:            wa.Notifiers,
 	}
+
+	builder.Parser = wa.Parser
+	builder.Parser.SetBuilder(builder)
 
 	// Process the push.
 	wa.Logger.Info("Processing Push")

@@ -29,6 +29,7 @@ import (
 type varMap map[string]interface{}
 
 type Parser interface {
+	SetBuilder(b *PipelineBuilder)
 	Parse(org, repo, path string, vars []varMap) (*bytes.Buffer, error)
 }
 
@@ -124,8 +125,8 @@ func (b *PipelineBuilder) UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error
 	return d, nil
 }
 
-// DetermineRenderer currently only returns a DinghyfileParser; it could
-// return other types of renderers in the future (for example, MPTv2)
+// DetermineParser currently only returns a DinghyfileParser; it could
+// return other types of parsers in the future (for example, MPTv2)
 // If we can't discern the types based on the path passed here, we may need
 // to revisit this.  For now, this is just a stub that always returns the
 // DinghyfileParser type.
@@ -137,16 +138,16 @@ func (b *PipelineBuilder) DetermineParser(path string) Parser {
 func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 	if b.Parser == nil {
 		// Set the renderer based on evaluation of the path, if not already set
-		b.Logger.Info("Calling DetermineRenderer")
+		b.Logger.Info("Calling DetermineParser")
 		b.Parser = b.DetermineParser(path)
 	}
 	buf, err := b.Parser.Parse(org, repo, path, nil)
 	if err != nil {
-		b.Logger.Errorf("Failed to render dinghyfile %s: %s", path, err.Error())
+		b.Logger.Errorf("Failed to parse dinghyfile %s: %s", path, err.Error())
 		b.NotifyFailure(org, repo, path, err)
 		return err
 	}
-	b.Logger.Infof("Rendered: %s", buf.String())
+	b.Logger.Infof("Compiled: %s", buf.String())
 	d, err := b.UpdateDinghyfile(buf.Bytes())
 	if err != nil {
 		b.Logger.Errorf("Failed to update dinghyfile %s: %s", path, err.Error())
