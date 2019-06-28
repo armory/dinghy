@@ -28,8 +28,8 @@ import (
 
 type varMap map[string]interface{}
 
-type Renderer interface {
-	Render(org, repo, path string, vars []varMap) (*bytes.Buffer, error)
+type Parser interface {
+	Parse(org, repo, path string, vars []varMap) (*bytes.Buffer, error)
 }
 
 // PipelineBuilder is responsible for downloading dinghyfiles/modules, compiling them, and sending them to Spinnaker
@@ -43,7 +43,7 @@ type PipelineBuilder struct {
 	DeleteStalePipelines bool
 	AutolockPipelines    string
 	EventClient          events.EventClient
-	Renderer             Renderer
+	Parser               Parser
 	Logger               log.FieldLogger
 	Ums                  []Unmarshaller
 	Notifiers            []notifiers.Notifier
@@ -124,23 +124,23 @@ func (b *PipelineBuilder) UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error
 	return d, nil
 }
 
-// DetermineRenderer currently only returns a DinghyfileRenderer; it could
+// DetermineRenderer currently only returns a DinghyfileParser; it could
 // return other types of renderers in the future (for example, MPTv2)
 // If we can't discern the types based on the path passed here, we may need
 // to revisit this.  For now, this is just a stub that always returns the
-// DinghyfileRenderer type.
-func (b *PipelineBuilder) DetermineRenderer(path string) Renderer {
-	return NewDinghyfileRenderer(b)
+// DinghyfileParser type.
+func (b *PipelineBuilder) DetermineParser(path string) Parser {
+	return NewDinghyfileParser(b)
 }
 
 // ProcessDinghyfile downloads a dinghyfile and uses it to update Spinnaker's pipelines.
 func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
-	if b.Renderer == nil {
+	if b.Parser == nil {
 		// Set the renderer based on evaluation of the path, if not already set
 		b.Logger.Info("Calling DetermineRenderer")
-		b.Renderer = b.DetermineRenderer(path)
+		b.Parser = b.DetermineParser(path)
 	}
-	buf, err := b.Renderer.Render(org, repo, path, nil)
+	buf, err := b.Parser.Parse(org, repo, path, nil)
 	if err != nil {
 		b.Logger.Errorf("Failed to render dinghyfile %s: %s", path, err.Error())
 		b.NotifyFailure(org, repo, path, err)
