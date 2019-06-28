@@ -21,5 +21,6 @@ import (
 )
 
 func main() {
-	dinghy.Setup()
+	log, api := dinghy.Setup()
+	dinghy.Start(log, api)
 }
