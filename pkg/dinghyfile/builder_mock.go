@@ -44,7 +44,7 @@ func (mr *MockParserMockRecorder) SetBuilder(b interface{}) *gomock.Call {
 }
 
 // Parse mocks base method
-func (m *MockParser) Parse(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
+func (m *MockParser) Parse(org, repo, path string, vars []VarMap) (*bytes.Buffer, error) {
 	ret := m.ctrl.Call(m, "Parse", org, repo, path, vars)
 	ret0, _ := ret[0].(*bytes.Buffer)
 	ret1, _ := ret[1].(error)
