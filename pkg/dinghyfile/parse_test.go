@@ -514,7 +514,7 @@ func TestPipelineIDFunc(t *testing.T) {
 	client.EXPECT().GetPipelines(gomock.Eq("triggerApp")).Return([]plank.Pipeline{plank.Pipeline{ID: "pipelineID", Name: "triggerPipeline"}}, nil).Times(1)
 	r.Builder.Client = client
 
-	vars := []varMap{
+	vars := []VarMap{
 		{"triggerApp": "triggerApp", "triggerPipeline": "triggerPipeline"},
 	}
 	idFunc := r.pipelineIDFunc(vars).(func(string, string) string)
@@ -531,7 +531,7 @@ func TestPipelineIDFuncDefault(t *testing.T) {
 	client.EXPECT().GetPipelines(gomock.Eq("triggerApp")).Return(nil, errors.New("fake not found")).Times(1)
 	r.Builder.Client = client
 
-	vars := []varMap{
+	vars := []VarMap{
 		{"triggerApp": "triggerApp"}, {"triggerPipeline": "triggerPipeline"},
 	}
 	idFunc := r.pipelineIDFunc(vars).(func(string, string) string)
@@ -843,7 +843,7 @@ func TestModuleFuncOddParamsError(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Warnf(gomock.Eq("odd number of parameters received to module %s"), gomock.Eq(test_key)).Times(1)
 
-	modFunc := r.moduleFunc("org", map[string]bool{}, []varMap{})
+	modFunc := r.moduleFunc("org", map[string]bool{}, []VarMap{})
 	res := modFunc.(func(string, ...interface{}) string)(test_key, "biff")
 	assert.Equal(t, "", res)
 }
@@ -857,7 +857,7 @@ func TestModuleFuncDictKeysError(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("dict keys must be strings in module: %s"), gomock.Eq(test_key)).Times(1)
 
-	modFunc := r.moduleFunc("org", map[string]bool{}, []varMap{})
+	modFunc := r.moduleFunc("org", map[string]bool{}, []VarMap{})
 	res := modFunc.(func(string, ...interface{}) string)(test_key, 42, "foo")
 	assert.Equal(t, "", res)
 }

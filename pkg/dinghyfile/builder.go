@@ -26,11 +26,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type varMap map[string]interface{}
+type VarMap map[string]interface{}
 
 type Parser interface {
 	SetBuilder(b *PipelineBuilder)
-	Parse(org, repo, path string, vars []varMap) (*bytes.Buffer, error)
+	Parse(org, repo, path string, vars []VarMap) (*bytes.Buffer, error)
 }
 
 // PipelineBuilder is responsible for downloading dinghyfiles/modules, compiling them, and sending them to Spinnaker
