@@ -18,6 +18,7 @@ package main
 
 import (
 	// Open Core Dinghy
+	dinghy_yaml "github.com/armory-io/dinghy/pkg/parsers/yaml"
 	dinghy "github.com/armory/dinghy/cmd"
 
 	"github.com/armory-io/dinghy/pkg/notifiers"
@@ -37,6 +38,10 @@ func main() {
 	}
 	if moreConfig.Notifiers.Slack.IsEnabled() {
 		api.AddNotifier(notifiers.NewSlackNotifier(moreConfig))
+	}
+	api.AddDinghyfileUnmarshaller(&dinghy_yaml.DinghyYaml{})
+	if moreConfig.Settings.ParserFormat == "yaml" {
+		api.SetDinghyfileParser(&dinghy_yaml.DinghyfileYamlParser{})
 	}
 	dinghy.Start(log, api)
 }

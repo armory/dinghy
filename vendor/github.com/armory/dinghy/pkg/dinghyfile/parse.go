@@ -42,6 +42,10 @@ func NewDinghyfileParser(b *PipelineBuilder) *DinghyfileParser {
 	return &DinghyfileParser{Builder: b}
 }
 
+func (r *DinghyfileParser) SetBuilder(b *PipelineBuilder) {
+	r.Builder = b
+}
+
 func (r *DinghyfileParser) parseValue(val interface{}) interface{} {
 	var err error
 	if jsonStr, ok := val.(string); ok && len(jsonStr) > 0 {
@@ -60,7 +64,7 @@ func (r *DinghyfileParser) parseValue(val interface{}) interface{} {
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func (r *DinghyfileParser) moduleFunc(org string, deps map[string]bool, allVars []varMap) interface{} {
+func (r *DinghyfileParser) moduleFunc(org string, deps map[string]bool, allVars []VarMap) interface{} {
 	return func(mod string, vars ...interface{}) string {
 		// Record the dependency.
 		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod)
@@ -74,7 +78,7 @@ func (r *DinghyfileParser) moduleFunc(org string, deps map[string]bool, allVars 
 		}
 
 		// Convert module argument pairs to key/value map
-		newVars := make(varMap)
+		newVars := make(VarMap)
 		for i := 0; i+1 < length; i += 2 {
 			key, ok := vars[i].(string)
 			if !ok {
@@ -97,7 +101,7 @@ func (r *DinghyfileParser) moduleFunc(org string, deps map[string]bool, allVars 
 			newVars[key] = r.parseValue(vars[i+1])
 		}
 
-		result, err := r.Parse(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, append([]varMap{newVars}, allVars...))
+		result, err := r.Parse(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, append([]VarMap{newVars}, allVars...))
 		if err != nil {
 			r.Builder.Logger.Errorf("Error rendering imported module '%s': %s", mod, err.Error())
 		}
@@ -106,7 +110,7 @@ func (r *DinghyfileParser) moduleFunc(org string, deps map[string]bool, allVars 
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func (r *DinghyfileParser) pipelineIDFunc(vars []varMap) interface{} {
+func (r *DinghyfileParser) pipelineIDFunc(vars []VarMap) interface{} {
 	return func(app, pipelineName string) string {
 		for _, vm := range vars {
 			if val, exists := vm["triggerApp"]; exists {
@@ -152,7 +156,7 @@ func (r *DinghyfileParser) renderValue(val interface{}) interface{} {
 	return val
 }
 
-func (r *DinghyfileParser) varFunc(vars []varMap) interface{} {
+func (r *DinghyfileParser) varFunc(vars []VarMap) interface{} {
 	return func(varName string, defaultVal ...interface{}) interface{} {
 		for _, vm := range vars {
 			if val, exists := vm[varName]; exists {
@@ -185,7 +189,7 @@ func (r *DinghyfileParser) varFunc(vars []varMap) interface{} {
 }
 
 // Parse parses the template
-func (r *DinghyfileParser) Parse(org, repo, path string, vars []varMap) (*bytes.Buffer, error) {
+func (r *DinghyfileParser) Parse(org, repo, path string, vars []VarMap) (*bytes.Buffer, error) {
 	module := true
 	event := &events.Event{
 		Start: time.Now().UTC().Unix(),
