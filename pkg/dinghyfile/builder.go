@@ -67,11 +67,11 @@ type Downloader interface {
 type Dinghyfile struct {
 	// Application name can be specified either in top-level "application" or as a key in "spec"
 	// We don't want arbitrary application properties in the top-level Dinghyfile so we put them in .spec
-	Application          string                 `json:"application" yaml:"application"`
-	ApplicationSpec      plank.Application      `json:"spec" yaml:"spec"`
-	DeleteStalePipelines bool                   `json:"deleteStalePipelines" yaml:"deleteStalePipelines"`
-	Globals              map[string]interface{} `json:"globals" yaml:"globals"`
-	Pipelines            []plank.Pipeline       `json:"pipelines" yaml:"pipelines"`
+	Application          string                 `json:"application" yaml:"application" hcl:"application"`
+	ApplicationSpec      plank.Application      `json:"spec" yaml:"spec" hcl:"spec"`
+	DeleteStalePipelines bool                   `json:"deleteStalePipelines" yaml:"deleteStalePipelines" hcl:"deleteStalePipelines"`
+	Globals              map[string]interface{} `json:"globals" yaml:"globals" hcl:"globals"`
+	Pipelines            []plank.Pipeline       `json:"pipelines" yaml:"pipelines" hcl:"pipelines"`
 }
 
 func NewDinghyfile() Dinghyfile {
