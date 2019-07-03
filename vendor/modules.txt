@@ -4,7 +4,7 @@ github.com/armory-io/monitoring/log/hooks
 # github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e
 github.com/armory/go-yaml-tools/pkg/spring
 github.com/armory/go-yaml-tools/pkg/yaml
-# github.com/armory/plank v1.2.1
+# github.com/armory/plank v1.2.2-0.20190701222838-9278b87ef841
 github.com/armory/plank
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
