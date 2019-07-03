@@ -17,6 +17,7 @@
 package main
 
 import (
+	dinghy_hcl "github.com/armory-io/dinghy/pkg/parsers/hcl"
 	// Open Core Dinghy
 	dinghy_yaml "github.com/armory-io/dinghy/pkg/parsers/yaml"
 	dinghy "github.com/armory/dinghy/cmd"
@@ -39,9 +40,16 @@ func main() {
 	if moreConfig.Notifiers.Slack.IsEnabled() {
 		api.AddNotifier(notifiers.NewSlackNotifier(moreConfig))
 	}
-	api.AddDinghyfileUnmarshaller(&dinghy_yaml.DinghyYaml{})
-	if moreConfig.Settings.ParserFormat == "yaml" {
+
+	switch moreConfig.Settings.ParserFormat {
+	case "yaml":
+		log.Info("Setting Dinghyfile parser to YAML")
+		api.AddDinghyfileUnmarshaller(&dinghy_yaml.DinghyYaml{})
 		api.SetDinghyfileParser(&dinghy_yaml.DinghyfileYamlParser{})
+	case "hcl":
+		log.Info("Settting Dinghyfile parser to HCL")
+		api.AddDinghyfileUnmarshaller(&dinghy_hcl.DinghyHcl{})
+		api.SetDinghyfileParser(&dinghy_hcl.DinghyfileHclParser{})
 	}
 	dinghy.Start(log, api)
 }

@@ -1,6 +1,7 @@
 package yaml
 
 import (
+	"github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 	"testing"
@@ -37,4 +38,36 @@ bar:
 	data, ok := d.(map[string]interface{})
 	assert.True(t, ok)
 	assert.Equal(t, "somedata", data["foo"])
+}
+
+func TestDinghyYaml_Unmarshal_toDinghyfile(t *testing.T) {
+	input := `
+---
+application: dinghyregression
+pipelines:
+- application: dinghyregression
+  name: Dinghy Regression Yaml Test File
+  appConfig: {}
+  keepWaitingPipelines: false
+  limitConcurrent: true
+  stages:
+  - name: Wait For It...
+    refId: '1'
+    requisiteStageRefIds: []
+    type: wait
+    waitTime: 4
+  - name: Wait For It, Yo...
+    refId: '2'
+    requisiteStageRefIds: []
+    type: wait
+    waitTime: 20
+  triggers: []
+`
+
+	um := &DinghyYaml{}
+	danglyfile := dinghyfile.NewDinghyfile()
+	err := um.Unmarshal([]byte(input), &danglyfile)
+	assert.Nil(t, err)
+	assert.Equal(t, "dinghyregression", danglyfile.Application)
+	assert.Equal(t, 2, len(danglyfile.Pipelines[0].Stages))
 }

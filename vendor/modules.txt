@@ -1,7 +1,7 @@
 # github.com/armory-io/monitoring v0.0.7
 github.com/armory-io/monitoring/log/formatters
 github.com/armory-io/monitoring/log/hooks
-# github.com/armory/dinghy v0.0.0-20190701165058-70be35dc9d0a
+# github.com/armory/dinghy v0.0.0-20190701221605-03c753b19535
 github.com/armory/dinghy/cmd
 github.com/armory/dinghy/pkg/dinghyfile
 github.com/armory/dinghy/pkg/events
@@ -51,6 +51,16 @@ github.com/gorilla/mux
 github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-retryablehttp v0.5.3
 github.com/hashicorp/go-retryablehttp
+# github.com/hashicorp/hcl v1.0.0
+github.com/hashicorp/hcl
+github.com/hashicorp/hcl/hcl/ast
+github.com/hashicorp/hcl/hcl/parser
+github.com/hashicorp/hcl/hcl/token
+github.com/hashicorp/hcl/json/parser
+github.com/hashicorp/hcl/hcl/scanner
+github.com/hashicorp/hcl/hcl/strconv
+github.com/hashicorp/hcl/json/scanner
+github.com/hashicorp/hcl/json/token
 # github.com/imdario/mergo v0.3.6
 github.com/imdario/mergo
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
