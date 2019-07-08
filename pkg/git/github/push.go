@@ -101,7 +101,17 @@ func (p *Push) Org() string {
 	return p.Repository.Owner.Login
 }
 
+// Branch returns the branch of the push
+func (p *Push) Branch() string {
+	return p.Ref
+}
+
 // IsMaster detects if the branch is master.
 func (p *Push) IsMaster() bool {
 	return p.Ref == "refs/heads/master"
+}
+
+// Name returns the name of the provider to be used in configuration
+func (p *Push) Name() string {
+	return "github"
 }

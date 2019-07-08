@@ -20,14 +20,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 )
 
 type GitHubClient interface {
-	DownloadContents(string, string, string) (string, error)
+	DownloadContents(string, string, string, string) (string, error)
 	CreateStatus(*Status, string, string, string) error
 	GetEndpoint() string
 }
@@ -50,14 +49,15 @@ func newGitHubClient(ctx context.Context, endpoint, token string) (*github.Clien
 	return client, nil
 }
 
-func (g *GitHub) DownloadContents(org, repo, path string) (string, error) {
+func (g *GitHub) DownloadContents(org, repo, path, branch string) (string, error) {
 	ctx := context.Background()
 	client, err := newGitHubClient(ctx, g.Endpoint, g.Token)
 	if err != nil {
 		return "", err
 	}
 
-	r, err := client.Repositories.DownloadContents(ctx, org, repo, path, nil)
+	opt := github.RepositoryContentGetOptions{Ref: branch}
+	r, err := client.Repositories.DownloadContents(ctx, org, repo, path, &opt)
 	if err != nil {
 		if e, ok := err.(*github.RateLimitError); ok {
 			return "", &util.GithubRateLimitErr{RateLimit: e.Rate.Limit, RateReset: e.Rate.Reset.String()}

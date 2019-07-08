@@ -22,7 +22,7 @@ type GitHubTest struct {
 	err      error
 }
 
-func (g *GitHubTest) DownloadContents(org, repo, path string) (string, error) {
+func (g *GitHubTest) DownloadContents(org, repo, path, branch string) (string, error) {
 	return g.contents, g.err
 }
 
