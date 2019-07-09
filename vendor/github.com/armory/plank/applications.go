@@ -21,9 +21,25 @@ import (
 	"time"
 )
 
+// DataSourcesType creates this block:
+//   "dataSources": {
+//     "disabled": [],
+//     "enabled": ["canaryConfigs"]
+//   }
 type DataSourcesType struct {
 	Enabled  []string `json:"enabled" mapstructure:"enabled" yaml:"enabled" hcl:"enabled"`
 	Disabled []string `json:"disabled" mapstructure:"disabled" yaml:"disabled" hcl:"disabled"`
+}
+
+// PermissionsType creates this block:
+//   "permissions": {
+//     "READ": ["armory-io", "core"],
+//     "WRITE": ["armory-io", "core"]
+//   }
+type PermissionsType struct {
+	Read    []string `json:"READ" mapstructure:"READ" yaml:"READ" hcl:"READ"`
+	Write   []string `json:"WRITE" mapstructure:"WRITE" yaml:"WRITE" hcl:"WRITE"`
+	Execute []string `json:"EXECUTE" mapstructure:"EXECUTE" yaml:"EXECUTE" hcl:"EXECUTE"`
 }
 
 // Application as returned from the Spinnaker API.
@@ -33,6 +49,7 @@ type Application struct {
 	Description string          `json:"description,omitempty" mapstructure:"description" yaml:"description,omitempty" hcl:"description,omitempty"`
 	User        string          `json:"user,omitempty" mapstructure:"user" yaml:"user,omitempty" hcl:"user,omitempty"`
 	DataSources DataSourcesType `json:"dataSources,omitempty" mapstructure:"dataSources" yaml:"datasources,omitempty" hcl:"datasources,omitempty"`
+	Permissions PermissionsType `json:"permissions,omitempty" mapstructure:"permissions" yaml:"permissions,omitempty" hcl:"permissions,omitempty"`
 }
 
 // GetApplication returns the Application data struct for the

@@ -153,6 +153,9 @@ func (c *Client) Get(url string, dest interface{}) error {
 	}
 	if c.FiatUser != "" {
 		req.Header.Set("X-Spinnaker-User", c.FiatUser)
+		// I /think/, since we're not going through Gate, we need to fill in the
+		// accounts header as though we were configured with Fiat.
+		req.Header.Set("X-Spinnaker-Accounts", c.FiatUser)
 	}
 
 	resp, err := c.http.Do(req)
