@@ -22,7 +22,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"net/http/httputil"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/events"
@@ -144,8 +143,17 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p := github.Push{Logger: wa.Logger}
 
-	// TODO: stop using readbody, then we can return proper 422 status codes
-	if err := wa.readBody(r, &p); err != nil {
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		wa.Logger.Errorf("failed to read body in github webhook handler: %s", err.Error())
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	defer r.Body.Close()
+	wa.Logger.Infof("Received payload: %s", string(body))
+	if err := json.Unmarshal(body, &p); err != nil {
+		wa.Logger.Errorf("failed to decode github webhook: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -169,9 +177,18 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload := stash.WebhookPayload{}
-	// TODO: stop using readbody, then we can return proper status codes here
+
 	wa.Logger.Infof("Reading stash payload body")
-	if err := wa.readBody(r, &payload); err != nil {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		wa.Logger.Errorf("failed to read body in stash webhook handler: %s", err.Error())
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	defer r.Body.Close()
+	wa.Logger.Infof("Received payload: %s", string(body))
+	if err := json.Unmarshal(body, &payload); err != nil {
+		wa.Logger.Errorf("failed to decode stash webhook: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -214,6 +231,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	defer r.Body.Close()
+
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 	if err := json.Unmarshal(b, &keys); err != nil {
 		wa.Logger.Errorf("Unable to determine bitbucket event type: %s", err)
@@ -227,7 +245,16 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		wa.Logger.Info("Processing bitbucket-cloud webhook")
 		payload := bbcloud.WebhookPayload{}
 
-		if err := wa.readBody(r, &payload); err != nil {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			wa.Logger.Errorf("failed to read body in bitbucket-cloud webhook handler: %s", err.Error())
+			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+			return
+		}
+		defer r.Body.Close()
+		wa.Logger.Infof("Received payload: %s", string(body))
+		if err := json.Unmarshal(body, &payload); err != nil {
+			wa.Logger.Errorf("failed to decode bitbucket-cloud webhook: %s", err.Error())
 			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 			return
 		}
@@ -260,7 +287,16 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		wa.Logger.Info("Processing bitbucket-server webhook")
 		payload := stash.WebhookPayload{}
 
-		if err := wa.readBody(r, &payload); err != nil {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			wa.Logger.Errorf("failed to read body in bitbucket-server webhook handler: %s", err.Error())
+			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+			return
+		}
+		defer r.Body.Close()
+		wa.Logger.Infof("Received payload: %s", string(body))
+		if err := json.Unmarshal(body, &payload); err != nil {
+			wa.Logger.Errorf("failed to decode bitbucket-server webhook: %s", err.Error())
 			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 			return
 		}
@@ -405,21 +441,4 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 	}
 
 	w.Write([]byte(`{"status":"accepted"}`))
-}
-
-// TODO: get rid of this function and unmarshal JSON in the handlers so that we can
-// return proper status codes
-func (wa *WebAPI) readBody(r *http.Request, dest interface{}) error {
-	body, err := httputil.DumpRequest(r, true)
-	if err != nil {
-		wa.Logger.Errorf("DumpRequest Failed: %s", err.Error())
-		return err
-	}
-	wa.Logger.Infof("Received payload: %s", string(body))
-
-	err = util.ReadJSON(r.Body, &dest)
-	if err != nil {
-		wa.Logger.Errorf("ReadJSON failed:  %s (content: %s)", err, r.Body)
-	}
-	return err
 }
