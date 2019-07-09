@@ -73,7 +73,7 @@ func TestGithubWebhookHandlerBadJSON(t *testing.T) {
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
-	logger.EXPECT().Errorf(gomock.Eq("ReadJSON failed:  %s (content: %s)"), gomock.Any(), gomock.Any()).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("failed to decode github webhook: %s"), gomock.Any()).Times(1)
 
 	wa := NewWebAPI(nil, nil, nil, nil, logger)
 
@@ -108,7 +108,7 @@ func TestStashWebhookHandlerBadJSON(t *testing.T) {
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Reading stash payload body"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
-	logger.EXPECT().Errorf(gomock.Eq("ReadJSON failed:  %s (content: %s)"), gomock.Any(), gomock.Any()).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("failed to decode stash webhook: %s"), gomock.Any()).Times(1)
 
 	wa := NewWebAPI(nil, nil, nil, nil, logger)
 
@@ -126,7 +126,7 @@ func TestStashWebhookBadPayload(t *testing.T) {
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Reading stash payload body"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
-	logger.EXPECT().Errorf(gomock.Eq("ReadJSON failed:  %s (content: %s)"), gomock.Any(), gomock.Any()).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("failed to decode stash webhook: %s"), gomock.Any()).Times(1)
 
 	wa := NewWebAPI(nil, nil, nil, nil, logger)
 
@@ -162,7 +162,7 @@ func TestBitbucketWebhookBadPayload(t *testing.T) {
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Info(gomock.Eq("Processing bitbucket-server webhook")).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
-	logger.EXPECT().Errorf(gomock.Eq("ReadJSON failed:  %s (content: %s)"), gomock.Any(), gomock.Any()).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("failed to decode bitbucket-server webhook: %s"), gomock.Any()).Times(1)
 
 	wa := NewWebAPI(nil, nil, nil, nil, logger)
 
@@ -198,7 +198,7 @@ func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Info(gomock.Eq("Processing bitbucket-cloud webhook")).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
-	logger.EXPECT().Errorf(gomock.Eq("ReadJSON failed:  %s (content: %s)"), gomock.Any(), gomock.Any()).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("failed to decode bitbucket-cloud webhook: %s"), gomock.Any()).Times(1)
 
 	wa := NewWebAPI(nil, nil, nil, nil, logger)
 
