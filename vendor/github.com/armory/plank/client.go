@@ -192,6 +192,9 @@ func (c *Client) Post(url string, contentType ContentType, body interface{}, des
 	}
 	if c.FiatUser != "" {
 		req.Header.Set("X-Spinnaker-User", c.FiatUser)
+		// I /think/, since we're not going through Gate, we need to fill in the
+		// accounts header as though we were configured with Fiat.
+		req.Header.Set("X-Spinnaker-Accounts", c.FiatUser)
 	}
 	req.Header.Set("Content-Type", string(contentType))
 
@@ -239,6 +242,9 @@ func (c *Client) Put(url string, contentType ContentType, body interface{}, dest
 	}
 	if c.FiatUser != "" {
 		req.Header.Set("X-Spinnaker-User", c.FiatUser)
+		// I /think/, since we're not going through Gate, we need to fill in the
+		// accounts header as though we were configured with Fiat.
+		req.Header.Set("X-Spinnaker-Accounts", c.FiatUser)
 	}
 	req.Header.Set("Content-Type", string(contentType))
 	resp, err := c.http.Do(req)
