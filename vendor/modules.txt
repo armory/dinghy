@@ -5,7 +5,7 @@ github.com/armory-io/monitoring/log/hooks
 github.com/armory/go-yaml-tools/pkg/secrets
 github.com/armory/go-yaml-tools/pkg/spring
 github.com/armory/go-yaml-tools/pkg/yaml
-# github.com/armory/plank v1.2.2-0.20190709183305-23705ab67c8a
+# github.com/armory/plank v1.2.2-0.20190709184116-de2af2f0b6c5
 github.com/armory/plank
 # github.com/aws/aws-sdk-go v1.15.31
 github.com/aws/aws-sdk-go/aws
