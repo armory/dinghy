@@ -106,7 +106,7 @@ func (c *Client) CreateApplication(a *Application) error {
 // pollAppConfig isn't exposed because not sure it's worth exposing.  Just
 // call GetApplication() if you're expecting it to be there.
 func (c *Client) pollAppConfig(appName string) error {
-	timer := time.NewTimer(c.retryIncrement)
+	timer := time.NewTimer(4 * time.Minute)
 	t := time.NewTicker(5 * time.Second)
 	defer t.Stop()
 	for range t.C {
