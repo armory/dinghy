@@ -30,11 +30,12 @@ import (
 
 // Client for working with API servers that accept and return JSON payloads.
 type Client struct {
-	http           *http.Client
-	retryIncrement time.Duration
-	maxRetry       int
-	URLs           map[string]string
-	FiatUser       string
+	http            *http.Client
+	retryIncrement  time.Duration
+	maxRetry        int
+	URLs            map[string]string
+	FiatUser        string
+	ArmoryEndpoints bool
 }
 
 type ContentType string

@@ -80,3 +80,22 @@ func (c *Client) GetUser(name string) (*User, error) {
 	}
 	return &u, nil
 }
+
+// ResyncFiat calls to Fiat to tell it to resync its cache of applications
+// and permissions.  This uses an endpoint specific to Armory's distribution
+// of Fiat; if ArmoryEndpoints is not set (it's false by default) this is
+// a no-op.
+func (c *Client) ResyncFiat() error {
+	if !c.ArmoryEndpoints {
+		// This only works if Armory endpoints are available
+		return nil
+	}
+
+	if c.FiatUser == "" {
+		// No FiatUser, no Fiat, do nothing.
+		return nil
+	}
+
+	var unused interface{}
+	return c.Post(c.URLs["fiat"]+"/forceRefresh/all", ApplicationJson, nil, &unused)
+}

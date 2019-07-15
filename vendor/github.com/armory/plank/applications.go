@@ -94,6 +94,11 @@ func (c *Client) CreateApplication(a *Application) error {
 		return errors.New(fmt.Sprintf("failed to create application: %s", errMsg))
 	}
 
+	// Not worried if ResyncFiat fails -- if ArmoryEndpoints not enabled, this
+	// is a no-op, if it fails, the polling later might still succeed, or we'll
+	// get an error about not being able to retrieve the Application.
+	c.ResyncFiat()
+
 	// This really shouldn't have to be here, but after the task to create an
 	// app is marked complete sometimes the object still doesn't exist. So
 	// after doing the create, and getting back a completion, we still need
