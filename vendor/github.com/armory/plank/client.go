@@ -301,3 +301,15 @@ func (c *Client) DeleteWithRetry(url string) error {
 		return c.Delete(url)
 	})
 }
+
+func (c *Client) ArmoryEndpointsEnabled() bool {
+	return c.ArmoryEndpoints
+}
+
+func (c *Client) EnableArmoryEndpoints() {
+	c.ArmoryEndpoints = true
+}
+
+func (c *Client) DisableARmoryEndpoints() {
+	c.ArmoryEndpoints = false
+}
