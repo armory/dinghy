@@ -3,7 +3,7 @@ module github.com/armory/dinghy
 require (
 	github.com/armory-io/monitoring v0.0.7
 	github.com/armory/go-yaml-tools v0.0.0-20190704002208-a9130e93f444
-	github.com/armory/plank v1.2.2-0.20190715215534-bf1faacba1f7
+	github.com/armory/plank v1.2.2-0.20190715231448-fa0acb56c4cd
 	github.com/go-redis/redis v6.14.1+incompatible
 	github.com/golang/mock v1.1.1
 	github.com/google/go-github v17.0.0+incompatible
