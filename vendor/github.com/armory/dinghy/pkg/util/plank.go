@@ -10,4 +10,7 @@ type PlankClient interface {
 	GetPipelines(string) ([]plank.Pipeline, error)
 	DeletePipeline(plank.Pipeline) error
 	UpsertPipeline(plank.Pipeline, string) error
+	ResyncFiat() error
+	ArmoryEndpointsEnabled() bool
+	EnableArmoryEndpoints()
 }

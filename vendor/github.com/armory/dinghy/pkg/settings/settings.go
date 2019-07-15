@@ -17,6 +17,8 @@
 // Package settings is a single place to put all of the application settings.
 package settings
 
+import "github.com/armory/go-yaml-tools/pkg/secrets"
+
 // Settings contains all information needed to startup and run the dinghy service
 type Settings struct {
 	TemplateOrg       string  `json:"templateOrg,omitempty" yaml:"templateOrg"`
@@ -33,6 +35,7 @@ type Settings struct {
 	StashEndpoint     string  `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
 	FiatUser          string  `json:"fiatUser,omitempty" yaml:"fiatUser"`
 	Logging           Logging `json:"logging,omitempty" yaml:"logging"`
+	Secrets           Secrets `json:"secrets,omitempty" yaml:"secrets"`
 	ParserFormat      string  `json:"parserFormat,omitempty" yaml:"parserFormat"`
 	spinnakerSupplied `mapstructure:",squash"`
 }
@@ -73,4 +76,8 @@ type RemoteLogging struct {
 	Endpoint   string `json:"endpoint" yaml:"endpoint"`
 	CustomerID string `json:"customerId" yaml:"customerId"`
 	Version    string `json:"version" yaml:"version"`
+}
+
+type Secrets struct {
+	Vault secrets.VaultConfig `json:"vault" yaml:"vault"`
 }

@@ -51,5 +51,7 @@ func main() {
 		api.AddDinghyfileUnmarshaller(&dinghy_hcl.DinghyHcl{})
 		api.SetDinghyfileParser(&dinghy_hcl.DinghyfileHclParser{})
 	}
+
+	api.Client.EnableArmoryEndpoints()
 	dinghy.Start(log, api)
 }

@@ -30,11 +30,12 @@ import (
 
 // Client for working with API servers that accept and return JSON payloads.
 type Client struct {
-	http           *http.Client
-	retryIncrement time.Duration
-	maxRetry       int
-	URLs           map[string]string
-	FiatUser       string
+	http            *http.Client
+	retryIncrement  time.Duration
+	maxRetry        int
+	URLs            map[string]string
+	FiatUser        string
+	ArmoryEndpoints bool
 }
 
 type ContentType string
@@ -153,6 +154,9 @@ func (c *Client) Get(url string, dest interface{}) error {
 	}
 	if c.FiatUser != "" {
 		req.Header.Set("X-Spinnaker-User", c.FiatUser)
+		// I /think/, since we're not going through Gate, we need to fill in the
+		// accounts header as though we were configured with Fiat.
+		req.Header.Set("X-Spinnaker-Accounts", c.FiatUser)
 	}
 
 	resp, err := c.http.Do(req)
@@ -189,6 +193,9 @@ func (c *Client) Post(url string, contentType ContentType, body interface{}, des
 	}
 	if c.FiatUser != "" {
 		req.Header.Set("X-Spinnaker-User", c.FiatUser)
+		// I /think/, since we're not going through Gate, we need to fill in the
+		// accounts header as though we were configured with Fiat.
+		req.Header.Set("X-Spinnaker-Accounts", c.FiatUser)
 	}
 	req.Header.Set("Content-Type", string(contentType))
 
@@ -236,6 +243,9 @@ func (c *Client) Put(url string, contentType ContentType, body interface{}, dest
 	}
 	if c.FiatUser != "" {
 		req.Header.Set("X-Spinnaker-User", c.FiatUser)
+		// I /think/, since we're not going through Gate, we need to fill in the
+		// accounts header as though we were configured with Fiat.
+		req.Header.Set("X-Spinnaker-Accounts", c.FiatUser)
 	}
 	req.Header.Set("Content-Type", string(contentType))
 	resp, err := c.http.Do(req)
@@ -290,4 +300,16 @@ func (c *Client) DeleteWithRetry(url string) error {
 	return c.RequestWithRetry(func() error {
 		return c.Delete(url)
 	})
+}
+
+func (c *Client) ArmoryEndpointsEnabled() bool {
+	return c.ArmoryEndpoints
+}
+
+func (c *Client) EnableArmoryEndpoints() {
+	c.ArmoryEndpoints = true
+}
+
+func (c *Client) DisableARmoryEndpoints() {
+	c.ArmoryEndpoints = false
 }

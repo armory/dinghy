@@ -94,3 +94,37 @@ func (m *MockPlankClient) UpsertPipeline(arg0 plank.Pipeline, arg1 string) error
 func (mr *MockPlankClientMockRecorder) UpsertPipeline(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertPipeline", reflect.TypeOf((*MockPlankClient)(nil).UpsertPipeline), arg0, arg1)
 }
+
+// ResyncFiat mocks base method
+func (m *MockPlankClient) ResyncFiat() error {
+	ret := m.ctrl.Call(m, "ResyncFiat")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResyncFiat indicates an expected call of ResyncFiat
+func (mr *MockPlankClientMockRecorder) ResyncFiat() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResyncFiat", reflect.TypeOf((*MockPlankClient)(nil).ResyncFiat))
+}
+
+// ArmoryEndpointsEnabled mocks base method
+func (m *MockPlankClient) ArmoryEndpointsEnabled() bool {
+	ret := m.ctrl.Call(m, "ArmoryEndpointsEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// ArmoryEndpointsEnabled indicates an expected call of ArmoryEndpointsEnabled
+func (mr *MockPlankClientMockRecorder) ArmoryEndpointsEnabled() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ArmoryEndpointsEnabled", reflect.TypeOf((*MockPlankClient)(nil).ArmoryEndpointsEnabled))
+}
+
+// EnableArmoryEndpoints mocks base method
+func (m *MockPlankClient) EnableArmoryEndpoints() {
+	m.ctrl.Call(m, "EnableArmoryEndpoints")
+}
+
+// EnableArmoryEndpoints indicates an expected call of EnableArmoryEndpoints
+func (mr *MockPlankClientMockRecorder) EnableArmoryEndpoints() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableArmoryEndpoints", reflect.TypeOf((*MockPlankClient)(nil).EnableArmoryEndpoints))
+}

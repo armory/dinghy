@@ -21,17 +21,17 @@ import (
 
 // User is returned by Fiat's /authorize endpoint.
 type User struct {
-	Name         string          `json:"name"`
-	Admin        bool            `json:"admin"`
-	Accounts     []Authorization `json:"accounts"`
-	Applications []Authorization `json:"applications"`
+	Name         string          `json:"name" yaml:"name" hcl:"name"`
+	Admin        bool            `json:"admin" yaml:"admin" hcl:"admin"`
+	Accounts     []Authorization `json:"accounts" yaml:"accounts" hcl:"accounts"`
+	Applications []Authorization `json:"applications" yaml:"applications" hcl:"applications"`
 }
 
 // Authorization describes permissinos for an account or application.
 type Authorization struct {
-	Name string `json:"name"`
+	Name string `json:"name" yaml:"name" hcl:"name"`
 	// Authorizations can be 'READ' 'WRITE'
-	Authorizations []string `json:"authorizations"`
+	Authorizations []string `json:"authorizations" yaml:"authorizations" hcl:"authorizations"`
 }
 
 // IsAdmin returns true if the user has admin permissions
@@ -79,4 +79,23 @@ func (c *Client) GetUser(name string) (*User, error) {
 		return nil, err
 	}
 	return &u, nil
+}
+
+// ResyncFiat calls to Fiat to tell it to resync its cache of applications
+// and permissions.  This uses an endpoint specific to Armory's distribution
+// of Fiat; if ArmoryEndpoints is not set (it's false by default) this is
+// a no-op.
+func (c *Client) ResyncFiat() error {
+	if !c.ArmoryEndpoints {
+		// This only works if Armory endpoints are available
+		return nil
+	}
+
+	if c.FiatUser == "" {
+		// No FiatUser, no Fiat, do nothing.
+		return nil
+	}
+
+	var unused interface{}
+	return c.Post(c.URLs["fiat"]+"/forceRefresh/all", ApplicationJson, nil, &unused)
 }

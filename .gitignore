@@ -1,5 +1,5 @@
 build/
-secrets/
+/secrets
 node_modules/
 
 # Coverage script SHOULD remove this, but just in case, ignore it.

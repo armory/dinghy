@@ -21,18 +21,35 @@ import (
 	"time"
 )
 
+// DataSourcesType creates this block:
+//   "dataSources": {
+//     "disabled": [],
+//     "enabled": ["canaryConfigs"]
+//   }
 type DataSourcesType struct {
-	Enabled  []string `json:"enabled" mapstructure:"enabled"`
-	Disabled []string `json:"disabled" mapstructure:"disabled"`
+	Enabled  []string `json:"enabled" mapstructure:"enabled" yaml:"enabled" hcl:"enabled"`
+	Disabled []string `json:"disabled" mapstructure:"disabled" yaml:"disabled" hcl:"disabled"`
+}
+
+// PermissionsType creates this block:
+//   "permissions": {
+//     "READ": ["armory-io", "core"],
+//     "WRITE": ["armory-io", "core"]
+//   }
+type PermissionsType struct {
+	Read    []string `json:"READ" mapstructure:"READ" yaml:"READ" hcl:"READ"`
+	Write   []string `json:"WRITE" mapstructure:"WRITE" yaml:"WRITE" hcl:"WRITE"`
+	Execute []string `json:"EXECUTE" mapstructure:"EXECUTE" yaml:"EXECUTE" hcl:"EXECUTE"`
 }
 
 // Application as returned from the Spinnaker API.
 type Application struct {
-	Name        string          `json:"name" mapstructure:"name"`
-	Email       string          `json:"email" mapstructure:"email"`
-	Description string          `json:"description,omitempty" mapstructure:"description"`
-	User        string          `json:"user,omitempty" mapstructure:"user"`
-	DataSources DataSourcesType `json:"dataSources,omitempty" mapstructure:"dataSources"`
+	Name        string          `json:"name" mapstructure:"name" yaml:"name" hcl:"name"`
+	Email       string          `json:"email" mapstructure:"email" yaml:"email" hcl:"email"`
+	Description string          `json:"description,omitempty" mapstructure:"description" yaml:"description,omitempty" hcl:"description,omitempty"`
+	User        string          `json:"user,omitempty" mapstructure:"user" yaml:"user,omitempty" hcl:"user,omitempty"`
+	DataSources DataSourcesType `json:"dataSources,omitempty" mapstructure:"dataSources" yaml:"datasources,omitempty" hcl:"datasources,omitempty"`
+	Permissions PermissionsType `json:"permissions,omitempty" mapstructure:"permissions" yaml:"permissions,omitempty" hcl:"permissions,omitempty"`
 }
 
 // GetApplication returns the Application data struct for the
@@ -55,8 +72,8 @@ func (c *Client) GetApplications() (*[]Application, error) {
 }
 
 type createApplicationTask struct {
-	Application Application `json:"application" mapstructure:"application"`
-	Type        string      `json:"type" mapstructure:"type"`
+	Application Application `json:"application" mapstructure:"application" yaml:"application" hcl:"application"`
+	Type        string      `json:"type" mapstructure:"type" yaml:"type" hcl:"type"`
 }
 
 // CreateApplication does what it says.
@@ -77,6 +94,11 @@ func (c *Client) CreateApplication(a *Application) error {
 		return errors.New(fmt.Sprintf("failed to create application: %s", errMsg))
 	}
 
+	// Not worried if ResyncFiat fails -- if ArmoryEndpoints not enabled, this
+	// is a no-op, if it fails, the polling later might still succeed, or we'll
+	// get an error about not being able to retrieve the Application.
+	c.ResyncFiat()
+
 	// This really shouldn't have to be here, but after the task to create an
 	// app is marked complete sometimes the object still doesn't exist. So
 	// after doing the create, and getting back a completion, we still need
@@ -89,7 +111,7 @@ func (c *Client) CreateApplication(a *Application) error {
 // pollAppConfig isn't exposed because not sure it's worth exposing.  Just
 // call GetApplication() if you're expecting it to be there.
 func (c *Client) pollAppConfig(appName string) error {
-	timer := time.NewTimer(c.retryIncrement)
+	timer := time.NewTimer(4 * time.Minute)
 	t := time.NewTicker(5 * time.Second)
 	defer t.Stop()
 	for range t.C {
