@@ -62,7 +62,7 @@ func (sn *SlackNotifier) SendSuccess(org, repo, path string) {
 }
 
 func (sn *SlackNotifier) SendFailure(org, repo, path string, err error) {
-	sn.sendToEcho(newSlackNotification(sn.Channel, fmt.Sprintf("Dinghy Failed Update: %s/%s/%s", org, repo, path)))
+	sn.sendToEcho(newSlackNotification(sn.Channel, fmt.Sprintf("Dinghy Failed Update: %s/%s/%s (%s)", org, repo, path, err.Error())))
 }
 
 // Actually ships the notification off to the echo endpoint.
