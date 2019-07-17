@@ -56,8 +56,8 @@ func (g *GitHub) DownloadContents(org, repo, path, branch string) (string, error
 		return "", err
 	}
 
-	opt := github.RepositoryContentGetOptions{Ref: branch}
-	r, err := client.Repositories.DownloadContents(ctx, org, repo, path, &opt)
+	opt := &github.RepositoryContentGetOptions{Ref: branch}
+	r, err := client.Repositories.DownloadContents(ctx, org, repo, path, opt)
 	if err != nil {
 		if e, ok := err.(*github.RateLimitError); ok {
 			return "", &util.GithubRateLimitErr{RateLimit: e.Rate.Limit, RateReset: e.Rate.Reset.String()}
