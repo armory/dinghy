@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package stash
 
@@ -21,20 +21,22 @@ import (
 	"testing"
 )
 
-func TestDecodeUrl(t *testing.T) {
+func TestEncodeUrl(t *testing.T) {
 	cases := []struct {
 		endpoint string
 		owner    string
 		repo     string
 		path     string
+		branch   string
 		url      string
 	}{
 		{
-			endpoint: "https://api.github.com",
+			endpoint: "https://api.something.com",
 			owner:    "armory",
 			repo:     "myrepo",
 			path:     "my/path.yml",
-			url:      "/projects/armory/repos/myrepo/browse/my/path.yml?raw",
+			branch:   "refs/heads/mybranch",
+			url:      "https://api.something.com/projects/armory/repos/myrepo/browse/my/path.yml?at=refs/heads/mybranch&raw",
 		},
 	}
 
@@ -42,10 +44,40 @@ func TestDecodeUrl(t *testing.T) {
 		downloader := &FileService{
 			StashEndpoint: c.endpoint,
 		}
-		org, repo, path := downloader.DecodeURL(c.url)
+		url := downloader.EncodeURL(c.owner, c.repo, c.path, c.branch)
+
+		assert.Equal(t, c.url, url)
+	}
+}
+
+func TestDecodeUrl(t *testing.T) {
+	cases := []struct {
+		endpoint string
+		owner    string
+		repo     string
+		path     string
+		branch   string
+		url      string
+	}{
+		{
+			endpoint: "https://api.something.com",
+			owner:    "armory",
+			repo:     "myrepo",
+			path:     "my/path.yml",
+			branch:   "refs/heads/mybranch",
+			url:      "https://api.something.com/projects/armory/repos/myrepo/browse/my/path.yml?at=refs/heads/mybranch&raw",
+		},
+	}
+
+	for _, c := range cases {
+		downloader := &FileService{
+			StashEndpoint: c.endpoint,
+		}
+		org, repo, path, branch := downloader.DecodeURL(c.url)
 
 		assert.Equal(t, c.owner, org)
 		assert.Equal(t, c.repo, repo)
 		assert.Equal(t, c.path, path)
+		assert.Equal(t, c.branch, branch)
 	}
 }

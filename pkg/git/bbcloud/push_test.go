@@ -261,21 +261,6 @@ func TestNewPushFromFeatureBranchToMaster(t *testing.T) {
 	assert.True(t, contains(push.ChangedFiles, "dinghyfile"), "Error: expected dinghyfile found in push info")
 }
 
-func TestNewPushFeatureBranch(t *testing.T) {
-	webhookPayload := WebhookPayload{}
-	payloadString := fmt.Sprintf(webhookPayloadOneChange, "feature/awesome", "feature/awesome")
-	if err := json.NewDecoder(bytes.NewBufferString(payloadString)).Decode(&webhookPayload); err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	push, err := NewPush(webhookPayload, Config{Endpoint: "dummy"})
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	assert.Equal(t, 0, len(push.ChangedFiles))
-}
-
 func contains(files []string, file string) bool {
 	for _, a := range files {
 		if a == file {

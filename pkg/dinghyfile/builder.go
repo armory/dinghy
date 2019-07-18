@@ -30,7 +30,7 @@ type VarMap map[string]interface{}
 
 type Parser interface {
 	SetBuilder(b *PipelineBuilder)
-	Parse(org, repo, path string, vars []VarMap) (*bytes.Buffer, error)
+	Parse(org, repo, path, branch string, vars []VarMap) (*bytes.Buffer, error)
 }
 
 // PipelineBuilder is responsible for downloading dinghyfiles/modules, compiling them, and sending them to Spinnaker
@@ -58,9 +58,9 @@ type DependencyManager interface {
 
 // Downloader is an interface that fetches files from a source
 type Downloader interface {
-	Download(org, repo, file string) (string, error)
-	EncodeURL(org, repo, file string) string
-	DecodeURL(url string) (string, string, string)
+	Download(org, repo, file, branch string) (string, error)
+	EncodeURL(org, repo, file, branch string) string
+	DecodeURL(url string) (string, string, string, string)
 }
 
 // Dinghyfile is the format of the pipeline template JSON
@@ -135,13 +135,13 @@ func (b *PipelineBuilder) DetermineParser(path string) Parser {
 }
 
 // ProcessDinghyfile downloads a dinghyfile and uses it to update Spinnaker's pipelines.
-func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
+func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) error {
 	if b.Parser == nil {
 		// Set the renderer based on evaluation of the path, if not already set
 		b.Logger.Info("Calling DetermineParser")
 		b.Parser = b.DetermineParser(path)
 	}
-	buf, err := b.Parser.Parse(org, repo, path, nil)
+	buf, err := b.Parser.Parse(org, repo, path, branch, nil)
 	if err != nil {
 		b.Logger.Errorf("Failed to parse dinghyfile %s: %s", path, err.Error())
 		b.NotifyFailure(org, repo, path, err)
@@ -168,19 +168,18 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path string) error {
 }
 
 // RebuildModuleRoots rebuilds all dinghyfiles which are roots of the specified file
-func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path string) error {
+func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) error {
 	errEncountered := false
 	failedUpdates := []string{}
-	url := b.Downloader.EncodeURL(org, repo, path)
+	url := b.Downloader.EncodeURL(org, repo, path, branch)
 	b.Logger.Info("Processing module: " + url)
 
 	// TODO: could handle logging and errors for file processing more elegantly rather
 	// than making two passes.
 	// Process all dinghyfiles that depend on this module
 	for _, url := range b.Depman.GetRoots(url) {
-		// TODO: we don't need to decode here because these values come in as parameters
-		org, repo, path := b.Downloader.DecodeURL(url)
-		if err := b.ProcessDinghyfile(org, repo, path); err != nil {
+		org, repo, path, branch := b.Downloader.DecodeURL(url)
+		if err := b.ProcessDinghyfile(org, repo, path, branch); err != nil {
 			errEncountered = true
 			failedUpdates = append(failedUpdates, url)
 		}

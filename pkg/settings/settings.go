@@ -21,22 +21,23 @@ import "github.com/armory/go-yaml-tools/pkg/secrets"
 
 // Settings contains all information needed to startup and run the dinghy service
 type Settings struct {
-	TemplateOrg       string  `json:"templateOrg,omitempty" yaml:"templateOrg"`
-	TemplateRepo      string  `json:"templateRepo,omitempty" yaml:"templateRepo"`
-	DinghyFilename    string  `json:"dinghyFilename,omitempty" yaml:"dinghyFilename"`
-	AutoLockPipelines string  `json:"autoLockPipelines,omitempty" yaml:"autoLockPipelines"`
-	SpinnakerUIURL    string  `json:"spinUIUrl,omitempty" yaml:"spinUIUrl"`
-	GitHubCredsPath   string  `json:"githubCredsPath,omitempty" yaml:"githubCredsPath"`
-	GitHubToken       string  `json:"githubToken,omitempty" yaml:"githubToken"`
-	GithubEndpoint    string  `json:"githubEndpoint,omitempty" yaml:"githubEndpoint"`
-	StashCredsPath    string  `json:"stashCredsPath,omitempty" yaml:"stashCredsPath"`
-	StashUsername     string  `json:"stashUsername,omitempty" yaml:"stashUsername"`
-	StashToken        string  `json:"stashToken,omitempty" yaml:"stashToken"`
-	StashEndpoint     string  `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
-	FiatUser          string  `json:"fiatUser,omitempty" yaml:"fiatUser"`
-	Logging           Logging `json:"logging,omitempty" yaml:"logging"`
-	Secrets           Secrets `json:"secrets,omitempty" yaml:"secrets"`
-	ParserFormat      string  `json:"parserFormat,omitempty" yaml:"parserFormat"`
+	TemplateOrg       string       `json:"templateOrg,omitempty" yaml:"templateOrg"`
+	TemplateRepo      string       `json:"templateRepo,omitempty" yaml:"templateRepo"`
+	DinghyFilename    string       `json:"dinghyFilename,omitempty" yaml:"dinghyFilename"`
+	AutoLockPipelines string       `json:"autoLockPipelines,omitempty" yaml:"autoLockPipelines"`
+	SpinnakerUIURL    string       `json:"spinUIUrl,omitempty" yaml:"spinUIUrl"`
+	GitHubCredsPath   string       `json:"githubCredsPath,omitempty" yaml:"githubCredsPath"`
+	GitHubToken       string       `json:"githubToken,omitempty" yaml:"githubToken"`
+	GithubEndpoint    string       `json:"githubEndpoint,omitempty" yaml:"githubEndpoint"`
+	StashCredsPath    string       `json:"stashCredsPath,omitempty" yaml:"stashCredsPath"`
+	StashUsername     string       `json:"stashUsername,omitempty" yaml:"stashUsername"`
+	StashToken        string       `json:"stashToken,omitempty" yaml:"stashToken"`
+	StashEndpoint     string       `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
+	FiatUser          string       `json:"fiatUser,omitempty" yaml:"fiatUser"`
+	Logging           Logging      `json:"logging,omitempty" yaml:"logging"`
+	Secrets           Secrets      `json:"secrets,omitempty" yaml:"secrets"`
+	ParserFormat      string       `json:"parserFormat,omitempty" yaml:"parserFormat"`
+	RepoConfig        []RepoConfig `json:"repoConfig,omitempty" yaml:"repoConfig"`
 	spinnakerSupplied `mapstructure:",squash"`
 }
 
@@ -80,4 +81,19 @@ type RemoteLogging struct {
 
 type Secrets struct {
 	Vault secrets.VaultConfig `json:"vault" yaml:"vault"`
+}
+
+type RepoConfig struct {
+	Provider string `json:"provider,omitempty" yaml:"provider"`
+	Repo     string `json:"repo,omitempty" yaml:"repo"`
+	Branch   string `json:"branch,omitempty" yaml:"branch"`
+}
+
+func (s *Settings) GetRepoConfig(provider, repo string) *RepoConfig {
+	for _, c := range s.RepoConfig {
+		if c.Provider == provider && c.Repo == repo {
+			return &c
+		}
+	}
+	return nil
 }

@@ -13,3 +13,6 @@
 
 # Vim temp files.
 *.swp
+
+# IntelliJ
+.idea

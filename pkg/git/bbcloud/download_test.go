@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package bbcloud
 
@@ -21,12 +21,13 @@ import (
 	"testing"
 )
 
-func TestDecodeUrl(t *testing.T) {
+func TestEncodeUrl(t *testing.T) {
 	cases := []struct {
 		endpoint string
 		owner    string
 		repo     string
 		path     string
+		branch   string
 		url      string
 	}{
 		{
@@ -34,7 +35,8 @@ func TestDecodeUrl(t *testing.T) {
 			owner:    "armory",
 			repo:     "myrepo",
 			path:     "my/path.yml",
-			url:      "/repositories/armory/myrepo/src/master/my/path.yml?raw",
+			branch:   "mybranch",
+			url:      "https://api.github.com/repositories/armory/myrepo/src/mybranch/my/path.yml?raw",
 		},
 	}
 
@@ -42,10 +44,41 @@ func TestDecodeUrl(t *testing.T) {
 		downloader := &FileService{
 			BbcloudEndpoint: c.endpoint,
 		}
-		org, repo, path := downloader.DecodeURL(c.url)
+		url := downloader.EncodeURL(c.owner, c.repo, c.path, c.branch)
+
+		assert.Equal(t, c.url, url)
+	}
+}
+
+
+func TestDecodeUrl(t *testing.T) {
+	cases := []struct {
+		endpoint string
+		owner    string
+		repo     string
+		path     string
+		branch   string
+		url      string
+	}{
+		{
+			endpoint: "https://api.github.com",
+			owner:    "armory",
+			repo:     "myrepo",
+			path:     "my/path.yml",
+			branch:   "mybranch",
+			url:      "/repositories/armory/myrepo/src/mybranch/my/path.yml?raw",
+		},
+	}
+
+	for _, c := range cases {
+		downloader := &FileService{
+			BbcloudEndpoint: c.endpoint,
+		}
+		org, repo, path, branch := downloader.DecodeURL(c.url)
 
 		assert.Equal(t, c.owner, org)
 		assert.Equal(t, c.repo, repo)
 		assert.Equal(t, c.path, path)
+		assert.Equal(t, c.branch, branch)
 	}
 }
