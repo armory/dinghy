@@ -26,7 +26,7 @@ import (
 type FileService map[string]string
 
 // Download returns a file from the map
-func (f FileService) Download(org, repo, file string) (string, error) {
+func (f FileService) Download(org, repo, file, branch string) (string, error) {
 	if ret, exists := f[file]; exists {
 		return ret, nil
 	}
@@ -34,17 +34,18 @@ func (f FileService) Download(org, repo, file string) (string, error) {
 }
 
 // EncodeURL encodes a URL
-func (f FileService) EncodeURL(org, repo, path string) string {
-	return fmt.Sprintf(`%s/repos/%s/%s/contents/%s`, "https://github.com", org, repo, path)
+func (f FileService) EncodeURL(org, repo, path, branch string) string {
+	return fmt.Sprintf(`%s/repos/%s/%s/contents/%s?ref=%s`, "https://github.com", org, repo, path, branch)
 }
 
 // DecodeURL decodes a URL
-func (f FileService) DecodeURL(url string) (org, repo, path string) {
-	targetExpression := ".*/repos/(.+)/(.+)/contents/(.+)"
+func (f FileService) DecodeURL(url string) (org, repo, path, branch string) {
+	targetExpression := fmt.Sprintf(`%s/repos/(.+)/(.+)/contents/(.+)\?ref=(.+)`, "https://github.com")
 	r, _ := regexp.Compile(targetExpression)
 	match := r.FindStringSubmatch(url)
 	org = match[1]
 	repo = match[2]
 	path = match[3]
+	branch = match[4]
 	return
 }

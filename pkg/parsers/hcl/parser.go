@@ -78,10 +78,10 @@ func (r *DinghyfileHclParser) pipelineIDFunc(vars []dinghyfile.VarMap) interface
 	}
 }
 
-func (r *DinghyfileHclParser) moduleFunc(org string, deps map[string]bool, allVars []dinghyfile.VarMap) interface{} {
+func (r *DinghyfileHclParser) moduleFunc(org, branch string, deps map[string]bool, allVars []dinghyfile.VarMap) interface{} {
 	return func(mod string, vars ...interface{}) (string, error) {
 		// Record the dependency.
-		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod)
+		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod, branch)
 		if _, exists := deps[child]; !exists {
 			deps[child] = true
 		}
@@ -115,7 +115,7 @@ func (r *DinghyfileHclParser) moduleFunc(org string, deps map[string]bool, allVa
 			newVars[key] = vars[i+1]
 		}
 
-		result, err := r.Parse(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, append([]dinghyfile.VarMap{newVars}, allVars...))
+		result, err := r.Parse(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, branch, append([]dinghyfile.VarMap{newVars}, allVars...))
 		if err != nil {
 			r.Builder.Logger.Errorf("Error rendering imported module '%s': %s", mod, err.Error())
 		}
@@ -123,7 +123,7 @@ func (r *DinghyfileHclParser) moduleFunc(org string, deps map[string]bool, allVa
 	}
 }
 
-func (r *DinghyfileHclParser) Parse(org, repo, path string, vars []dinghyfile.VarMap) (*bytes.Buffer, error) {
+func (r *DinghyfileHclParser) Parse(org, repo, path, branch string, vars []dinghyfile.VarMap) (*bytes.Buffer, error) {
 	module := true
 	event := &events.Event{
 		Start: time.Now().UTC().Unix(),
@@ -136,7 +136,7 @@ func (r *DinghyfileHclParser) Parse(org, repo, path string, vars []dinghyfile.Va
 
 	// Download the template being parsed.
 	r.Builder.Logger.Info("Downloading ", path)
-	contents, err := r.Builder.Downloader.Download(org, repo, path)
+	contents, err := r.Builder.Downloader.Download(org, repo, path, branch)
 	if err != nil {
 		r.Builder.Logger.Error("Failed to download")
 		return nil, err
@@ -171,8 +171,8 @@ func (r *DinghyfileHclParser) Parse(org, repo, path string, vars []dinghyfile.Va
 	}
 
 	funcMap := template.FuncMap{
-		"module":     r.moduleFunc(org, deps, vars),
-		"appModule":  r.moduleFunc(org, deps, vars),
+		"module":     r.moduleFunc(org, branch, deps, vars),
+		"appModule":  r.moduleFunc(org, branch, deps, vars),
 		"pipelineID": r.pipelineIDFunc(vars),
 		"var":        r.varFunc(vars),
 	}
@@ -197,7 +197,7 @@ func (r *DinghyfileHclParser) Parse(org, repo, path string, vars []dinghyfile.Va
 	for dep := range deps {
 		depUrls = append(depUrls, dep)
 	}
-	r.Builder.Depman.SetDeps(r.Builder.Downloader.EncodeURL(org, repo, path), depUrls)
+	r.Builder.Depman.SetDeps(r.Builder.Downloader.EncodeURL(org, repo, path, branch), depUrls)
 
 	event.End = time.Now().UTC().Unix()
 	eventType := "render"

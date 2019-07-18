@@ -1,8 +1,8 @@
 module github.com/armory-io/dinghy
 
 require (
-	github.com/armory/dinghy v0.0.0-20190715233101-b3a071cb509d
-	github.com/armory/go-yaml-tools v0.0.0-20190704002208-a9130e93f444
+	github.com/armory/dinghy v0.0.0-20190718162436-a3a23cf42d67
+	github.com/armory/go-yaml-tools v0.0.0-20190717183726-e1c16a26c6d7
 	github.com/armory/plank v1.2.2-0.20190715231448-fa0acb56c4cd
 	github.com/golang/mock v1.3.1
 	github.com/hashicorp/go-retryablehttp v0.5.3

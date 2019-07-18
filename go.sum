@@ -1,8 +1,10 @@
 cloud.google.com/go v0.23.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
+cloud.google.com/go v0.34.0 h1:eOI3/cP2VTU6uZLDYAoic+eyzzB9YyGmJ7eIjl8rOPg=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 contrib.go.opencensus.io/exporter/ocagent v0.4.7 h1:7NiGV38nUxXevUGX5rJdG6QBRRXRDRb6ABwdYHjhiXI=
 contrib.go.opencensus.io/exporter/ocagent v0.4.7/go.mod h1:+KkYrcvvEN0E5ls626sqMv8PdMx2931feKtzIwP01qI=
+contrib.go.opencensus.io/exporter/stackdriver v0.0.0-20180919222851-d1e19f5c23e9 h1:qGDL/as+reGch2TnQl053h96loeNRKASdiRqnKQDLko=
 contrib.go.opencensus.io/exporter/stackdriver v0.0.0-20180919222851-d1e19f5c23e9/go.mod h1:hNe5qQofPbg6bLQY5wHCvQ7o+2E5P8PkegEuQ+MyRw0=
 git.apache.org/thrift.git v0.0.0-20180902110319-2566ecd5d999/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
 git.apache.org/thrift.git v0.12.0/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
@@ -40,12 +42,12 @@ github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310 h1:BUAU3CGlLvorLI26
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/armory-io/monitoring v0.0.7 h1:IVVhiqhavr+yH2IXlMZMyqjhBb9Ms9L6qmKswLh+ODQ=
 github.com/armory-io/monitoring v0.0.7/go.mod h1:EqWc/9ldt7teZxnS2xnAMJsthM7ldI4ArLnjBRGCYSo=
-github.com/armory/dinghy v0.0.0-20190715233101-b3a071cb509d h1:uH/21y6Pe78YMs+OBudrQkBfdkkCFlmxCbnG7ozZLXA=
-github.com/armory/dinghy v0.0.0-20190715233101-b3a071cb509d/go.mod h1:yAZPdmX5lTTZbxK2Qn6tBiGC+7ulMtBdwUYiAaLyDuo=
+github.com/armory/dinghy v0.0.0-20190718162436-a3a23cf42d67 h1:miIFQmo5zw63FlCmgponELes3zIAldlcNNDsG0hUavg=
+github.com/armory/dinghy v0.0.0-20190718162436-a3a23cf42d67/go.mod h1:8DxD56txY1xy1qDMZ06wC3uGhHaFA7HGPD0jNuNq3hw=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e h1:d7XSZxwhDUIMoFHVq2bVTsZLdN6KGDyASfdEJ+8WQHM=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
-github.com/armory/go-yaml-tools v0.0.0-20190704002208-a9130e93f444 h1:n5/rlRBzuFRusBGUwlP3hgY3n3/ZbopOZDh8hvJ5wWE=
-github.com/armory/go-yaml-tools v0.0.0-20190704002208-a9130e93f444/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
+github.com/armory/go-yaml-tools v0.0.0-20190717183726-e1c16a26c6d7 h1:qPkuuL6tn14kBnf4VuYcS5waCCRrNH/b9/Ozjcn9RW4=
+github.com/armory/go-yaml-tools v0.0.0-20190717183726-e1c16a26c6d7/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
 github.com/armory/plank v1.2.2-0.20190715231448-fa0acb56c4cd h1:96L9Tb+OwAHil/nqBwbMSU0+XQLCEpNX5TUgsIYdepI=
 github.com/armory/plank v1.2.2-0.20190715231448-fa0acb56c4cd/go.mod h1:HZRBezMqPh1sZtVdR3SjTRq3loINO7xdf+0ZpzfVeKY=
 github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf h1:eg0MeVzsP1G42dRafH3vf+al2vQIJU0YHX+1Tw87oco=
@@ -188,6 +190,7 @@ github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf/go.mod h1:HP5RmnzzSN
 github.com/google/martian v2.1.0+incompatible/go.mod h1:9I4somxYTbIHy5NJKHRl3wXiIaQGbYVAs8BPL6v8lEs=
 github.com/google/uuid v1.0.0 h1:b4Gk+7WdP/d3HZH8EJsZpvV7EtDOgaZLtnaNGIu1adA=
 github.com/google/uuid v1.0.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/googleapis/gax-go v2.0.0+incompatible h1:j0GKcs05QVmm7yesiZq2+9cxHkNK9YM6zKx4D2qucQU=
 github.com/googleapis/gax-go v2.0.0+incompatible/go.mod h1:SFVmujtThgffbyetf+mdk2eWhX2bMyUtNHzFKcPA9HY=
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=

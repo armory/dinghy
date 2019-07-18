@@ -34,6 +34,18 @@ func convertToStringMap(m map[interface{}]interface{}) map[string]interface{} {
 		case map[interface{}]interface{}:
 			stringMap := convertToStringMap(v.(map[interface{}]interface{}))
 			newMap[k.(string)] = stringMap
+		case []interface{}:
+			var collection []interface{}
+			for _, vv := range v.([]interface{}) {
+				switch vv.(type) {
+				case map[interface{}]interface{}:
+					collection = append(collection, convertToStringMap(vv.(map[interface{}]interface{})))
+				case string:
+					collection = append(collection, fmt.Sprintf("%v", vv))
+				}
+			}
+			newMap[k.(string)] = collection
+
 		default:
 			newMap[k.(string)] = fmt.Sprintf("%v", v)
 		}

@@ -259,7 +259,7 @@ func testDinghyfileParser() *DinghyfileYamlParser {
 
 func TestGracefulErrorHandling(t *testing.T) {
 	builder := testDinghyfileParser()
-	_, err := builder.Parse("org", "repo", "df_bad", nil)
+	_, err := builder.Parse("org", "repo", "df_bad", "branch", nil)
 	assert.NotNil(t, err, "Got non-nil output for mal-formed template action in df_bad")
 }
 
@@ -268,7 +268,7 @@ func TestNestedVars(t *testing.T) {
 	r.Builder.DinghyfileName = "nested_var_df"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, _ := r.Parse("org", "repo", "nested_var_df", nil)
+	buf, _ := r.Parse("org", "repo", "nested_var_df", "branch", nil)
 
 	const expected = `---
 application: dinernotifications
@@ -353,7 +353,7 @@ pipelines:
 			r := testDinghyfileParser()
 			r.Builder.DinghyfileName = filepath.Base(c.filename)
 
-			buf, _ := r.Parse("org", "repo", c.filename, nil)
+			buf, _ := r.Parse("org", "repo", c.filename, "branch", nil)
 			exp := strings.Join(strings.Fields(c.expected), "")
 			actual := strings.Join(strings.Fields(buf.String()), "")
 			assert.Equal(t, exp, actual)
@@ -436,7 +436,7 @@ func TestPreprocess(t *testing.T) {
 
 func TestSimpleWaitStage(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, _ := r.Parse("org", "repo", "df3", nil)
+	buf, _ := r.Parse("org", "repo", "df3", "branch", nil)
 
 	const expected = `
 stages:
@@ -456,7 +456,7 @@ stages:
 
 func TestSpillover(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, _ := r.Parse("org", "repo", "df", nil)
+	buf, _ := r.Parse("org", "repo", "df", "branch", nil)
 
 	const expected = `
 stages:
@@ -482,7 +482,7 @@ type testStruct struct {
 func TestModuleVariableSubstitution(t *testing.T) {
 	r := testDinghyfileParser()
 	ts := testStruct{}
-	ret, err := r.Parse("org", "repo", "df2", nil)
+	ret, err := r.Parse("org", "repo", "df2", "branch", nil)
 	err = yaml.Unmarshal(ret.Bytes(), &ts)
 	assert.Equal(t, nil, err)
 
@@ -547,14 +547,14 @@ requisiteStageRefIds: []
 type: pipeline
 waitForCompletion: true`
 
-	ret, err := r.Parse("org", "repo", "pipelineIDTest", nil)
+	ret, err := r.Parse("org", "repo", "pipelineIDTest", "branch", nil)
 	assert.Nil(t, err)
 	assert.Equal(t, expected, ret.String())
 }
 
 func TestModuleEmptyString(t *testing.T) {
 	r := testDinghyfileParser()
-	ret, _ := r.Parse("org", "repo", "df4", nil)
+	ret, _ := r.Parse("org", "repo", "df4", "branch", nil)
 	assert.Equal(t, `foo: ""`, ret.String())
 }
 
@@ -563,7 +563,7 @@ func TestDeepVars(t *testing.T) {
 	r.Builder.DinghyfileName = "deep_var_df"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, _ := r.Parse("org", "repo", "deep_var_df", nil)
+	buf, _ := r.Parse("org", "repo", "deep_var_df", "branch", nil)
 
 	const expected = `
 application: dinernotifications
@@ -592,7 +592,7 @@ func TestEmptyDefaultVar(t *testing.T) {
 	r.Builder.DinghyfileName = "deep_var_df"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, _ := r.Parse("org", "repo", "empty_default_variables", nil)
+	buf, _ := r.Parse("org", "repo", "empty_default_variables", "branch", nil)
 
 	const expected = `
 application: dinernotifications
@@ -616,7 +616,7 @@ func TestConditionalArgs(t *testing.T) {
 	r.Builder.DinghyfileName = "if_params.dinghyfile"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, err := r.Parse("org", "repo", "if_params.dinghyfile", nil)
+	buf, err := r.Parse("org", "repo", "if_params.dinghyfile", "branch", nil)
 	require.Nil(t, err)
 
 	const raw = `
@@ -653,7 +653,7 @@ func TestVarParams(t *testing.T) {
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
 
-	buf, err := r.Parse("org", "repo", "var_params.outer", nil)
+	buf, err := r.Parse("org", "repo", "var_params.outer", "branch", nil)
 	// Unfortunately, we don't currently catch this failure here.
 	assert.Nil(t, err)
 

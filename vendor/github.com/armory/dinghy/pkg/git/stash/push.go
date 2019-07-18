@@ -66,6 +66,11 @@ func (c *WebhookChange) IsMaster() bool {
 	return c.RefID == "refs/heads/master"
 }
 
+// Find the branch in the webhook payload
+func (c *WebhookChange) Branch() string {
+	return c.RefID
+}
+
 // APIResponse is the response from Stash API
 type APIResponse struct {
 	PagedAPIResponse
@@ -139,6 +144,7 @@ type StashConfig struct {
 	Username string
 	Token    string
 	Endpoint string
+	Branch   string
 	Logger   logrus.FieldLogger
 }
 
@@ -147,6 +153,7 @@ func NewPush(payload WebhookPayload, cfg StashConfig) (*Push, error) {
 	p := &Push{
 		Payload:       payload,
 		ChangedFiles:  make([]string, 0),
+
 		StashEndpoint: cfg.Endpoint,
 		StashToken:    cfg.Token,
 		StashUsername: cfg.Username,
@@ -154,9 +161,6 @@ func NewPush(payload WebhookPayload, cfg StashConfig) (*Push, error) {
 	}
 
 	for _, change := range p.changes() {
-		if !change.IsMaster() {
-			continue
-		}
 		for start := -1; start != 0; {
 			nextStart, err := p.getFilesChanged(change.FromHash, change.ToHash, start)
 			if err != nil {
@@ -195,6 +199,16 @@ func (p *Push) Org() string {
 	return p.Payload.Repository.Project.Key
 }
 
+// Branch returns the branch of the push
+func (p *Push) Branch() string {
+	for _, change := range p.changes() {
+		if change.Branch() != "" {
+			return change.Branch()
+		}
+	}
+	return ""
+}
+
 func (p *Push) changes() []WebhookChange {
 	if p.Payload.IsOldStash {
 		return p.Payload.StashChanges
@@ -213,5 +227,9 @@ func (p *Push) IsMaster() bool {
 }
 
 // SetCommitStatus sets a commit status
-func (p *Push) SetCommitStatus(s git.Status) {
+func (p *Push) SetCommitStatus(s git.Status) {}
+
+// Name returns the name of the provider to be used in configuration
+func (p *Push) Name() string {
+	return "bitbucket-server"
 }

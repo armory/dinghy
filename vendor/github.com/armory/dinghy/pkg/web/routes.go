@@ -46,8 +46,10 @@ type Push interface {
 	Files() []string
 	Repo() string
 	Org() string
+	Branch() string
 	IsMaster() bool
 	SetCommitStatus(s git.Status)
+	Name() string
 }
 
 type WebAPI struct {
@@ -135,14 +137,13 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	fileService["dinghyfile"] = buf.String()
 	wa.Logger.Infof("Received payload: %s", fileService["dinghyfile"])
 
-	if err := builder.ProcessDinghyfile("", "", "dinghyfile"); err != nil {
+	if err := builder.ProcessDinghyfile("", "", "dinghyfile", ""); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 	}
 }
 
 func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p := github.Push{Logger: wa.Logger}
-
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -164,9 +165,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: we're assigning config in two places here, we should refactor build pipelines so that
-	// it takes file contents as a parameter and then we can create the github client, do the push
-	// and download from here
+	// TODO: we're assigning config in two places here, we should refactor this
 	gh := github.GitHub{Endpoint: wa.Config.GithubEndpoint, Token: wa.Config.GitHubToken}
 	p.GitHub = gh
 	p.DeckBaseURL = wa.Config.Deck.BaseURL
@@ -238,7 +237,6 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 
 	switch keys["event_type"] {
 	case "repo:push", "pullrequest:fulfilled":
@@ -312,6 +310,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			Endpoint: wa.Config.StashEndpoint,
 			Username: wa.Config.StashUsername,
 			Token:    wa.Config.StashToken,
+
 			Logger:   wa.Logger,
 		}
 		p, err := stash.NewPush(payload, stashConfig)
@@ -350,12 +349,6 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 		return nil
 	}
 
-	// Ensure we're on the master branch.
-	if !p.IsMaster() {
-		wa.Logger.Info("Skipping Spinnaker pipeline update because this is not master")
-		return nil
-	}
-
 	wa.Logger.Info("Dinghyfile found in commit for repo " + p.Repo())
 
 	// Set commit status to the pending yellow dot.
@@ -365,7 +358,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 		components := strings.Split(filePath, "/")
 		if components[len(components)-1] == wa.Config.DinghyFilename {
 			// Process the dinghyfile.
-			err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath)
+			err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath, p.Branch())
 			// Set commit status based on result of processing.
 			if err != nil {
 				if err == dinghyfile.ErrMalformedJSON {
@@ -386,6 +379,24 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 // TODO: this func should return an error and allow the handlers to return the http response. Additionally,
 // it probably doesn't belong in this file once refactored.
 func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
+	// see if we have any configurations for this repo.
+	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
+	if rc := wa.Config.GetRepoConfig(p.Name(), p.Repo()); rc != nil {
+		if rc.Branch != p.Branch() {
+			wa.Logger.Infof("Received request from branch %s. Does not match configured branch %s. Skipping.", p.Branch(), rc.Branch)
+			return
+		}
+	} else {
+		// if we didn't find any configurations for this repo, proceed with master
+		wa.Logger.Info("Found no custom configuration for repo: %s, proceeding with master", p.Repo())
+		if !p.IsMaster() {
+			wa.Logger.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master", p.Branch())
+			return
+		}
+	}
+
+	wa.Logger.Infof("Processing request for branch: %s", p.Branch())
+
 	// Construct a pipeline builder using provided downloader
 	builder := &dinghyfile.PipelineBuilder{
 		Downloader:           f,
@@ -425,7 +436,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
-			if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file); err != nil {
+			if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch()); err != nil {
 				switch err.(type) {
 				case *util.GitHubFileNotFoundErr:
 					util.WriteHTTPError(w, http.StatusNotFound, err)

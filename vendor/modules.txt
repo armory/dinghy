@@ -1,7 +1,7 @@
 # github.com/armory-io/monitoring v0.0.7
 github.com/armory-io/monitoring/log/formatters
 github.com/armory-io/monitoring/log/hooks
-# github.com/armory/dinghy v0.0.0-20190715233101-b3a071cb509d
+# github.com/armory/dinghy v0.0.0-20190718162436-a3a23cf42d67
 github.com/armory/dinghy/cmd
 github.com/armory/dinghy/pkg/dinghyfile
 github.com/armory/dinghy/pkg/events
@@ -19,7 +19,7 @@ github.com/armory/dinghy/pkg/git/bbcloud
 github.com/armory/dinghy/pkg/git/github
 github.com/armory/dinghy/pkg/git/stash
 github.com/armory/dinghy/pkg/cache/local
-# github.com/armory/go-yaml-tools v0.0.0-20190704002208-a9130e93f444
+# github.com/armory/go-yaml-tools v0.0.0-20190717183726-e1c16a26c6d7
 github.com/armory/go-yaml-tools/pkg/spring
 github.com/armory/go-yaml-tools/pkg/secrets
 github.com/armory/go-yaml-tools/pkg/yaml

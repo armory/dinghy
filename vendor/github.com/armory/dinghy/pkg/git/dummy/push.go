@@ -50,12 +50,17 @@ func (p *Push) Org() string {
 	return p.OrgName
 }
 
-// IsMaster detects if the branch is master.
-func (p *Push) IsMaster() bool {
-	return true
+// Branch returns the branch of the push
+func (p *Push) Branch() string {
+	return "branch_name"
 }
 
 // SetCommitStatus sets a commit status
 func (p *Push) SetCommitStatus(s git.Status) {
 	// Do nothing
+}
+
+// Name returns the name of the provider to be used in configuration
+func (p *Push) Name() string {
+	return "dummy"
 }
