@@ -40,7 +40,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	rendered := `{"application":"biff"}`
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("biff")).Return(&plank.Application{}, nil).Times(1)
@@ -63,7 +63,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	pb.Parser = renderer
 	pb.Client = client
 	pb.Logger = logger
-	assert.Nil(t, pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path"))
+	assert.Nil(t, pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch"))
 }
 
 // Note: This ALSO tests the error case where the renderer fails (in this
@@ -79,7 +79,7 @@ func TestProcessDinghyfileDefaultRenderer(t *testing.T) {
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
-	res := pb.ProcessDinghyfile("fake", "news", "notfound")
+	res := pb.ProcessDinghyfile("fake", "news", "notfound", "branch")
 	assert.NotNil(t, res)
 }
 
@@ -90,7 +90,7 @@ func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
 	rendered := `{blargh}`
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Warnf(gomock.Eq("UpdateDinghyfile malformed syntax: %s"), gomock.Any()).Times(1)
@@ -100,7 +100,7 @@ func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
 	pb := testPipelineBuilder()
 	pb.Logger = logger
 	pb.Parser = renderer
-	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path")
+	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
 	assert.NotNil(t, res)
 }
 
@@ -111,7 +111,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	rendered := `{"application": "testapp"}`
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Creating application '%s'..."), gomock.Eq("testapp")).Times(1)
@@ -127,7 +127,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	pb.Logger = logger
 	pb.Parser = renderer
 	pb.Client = client
-	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path")
+	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
 	assert.NotNil(t, res)
 	assert.Equal(t, "boom", res.Error())
 }
@@ -527,18 +527,18 @@ func TestRebuildModuleRoots(t *testing.T) {
 	jsonOne := `{ "application": "testone" }`
 
 	roots := []string{
-		"https://github.com/repos/org/repo/contents/foo",
+		"https://github.com/repos/org/repo/contents/foo?ref=branch",
 	}
 
 	b := testPipelineBuilder()
-	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test")
+	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test", "branch")
 
 	depman := NewMockDependencyManager(ctrl)
 	depman.EXPECT().GetRoots(gomock.Eq(url)).Return(roots).Times(1)
 	b.Depman = depman
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Nil()).Return(bytes.NewBufferString(jsonOne), nil).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Eq("branch"), gomock.Nil()).Return(bytes.NewBufferString(jsonOne), nil).Times(1)
 	b.Parser = renderer
 
 	client := NewMockPlankClient(ctrl)
@@ -546,7 +546,7 @@ func TestRebuildModuleRoots(t *testing.T) {
 	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
 
-	err := b.RebuildModuleRoots("org", "repo", "rebuild_test")
+	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
 	assert.Nil(t, err)
 }
 
@@ -557,20 +557,20 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	jsonTwo := `{ "application": "testtwo" }`
 
 	roots := []string{
-		"https://github.com/repos/org/repo/contents/foo",
-		"https://github.com/repos/org/repo/contents/bar",
+		"https://github.com/repos/org/repo/contents/foo?ref=branch",
+		"https://github.com/repos/org/repo/contents/bar?ref=branch",
 	}
 
 	b := testPipelineBuilder()
-	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test")
+	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test", "branch")
 
 	depman := NewMockDependencyManager(ctrl)
 	depman.EXPECT().GetRoots(gomock.Eq(url)).Return(roots).Times(1)
 	b.Depman = depman
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Nil()).Return(nil, errors.New("rebuild fail test")).Times(1)
-	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("bar"), gomock.Nil()).Return(bytes.NewBufferString(jsonTwo), nil).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Eq("branch"), gomock.Nil()).Return(nil, errors.New("rebuild fail test")).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("bar"), gomock.Eq("branch"), gomock.Nil()).Return(bytes.NewBufferString(jsonTwo), nil).Times(1)
 	b.Parser = renderer
 
 	client := NewMockPlankClient(ctrl)
@@ -578,7 +578,7 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	client.EXPECT().GetPipelines(gomock.Eq("testtwo")).Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
 
-	err := b.RebuildModuleRoots("org", "repo", "rebuild_test")
+	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
 	assert.NotNil(t, err)
 	assert.Equal(t, "Not all upstream dinghyfiles were updated successfully", err.Error())
 }

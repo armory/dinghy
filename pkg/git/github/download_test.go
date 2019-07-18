@@ -30,6 +30,7 @@ func TestEncodeUrl(t *testing.T) {
 		owner    string
 		repo     string
 		path     string
+		branch   string
 		expected string
 	}{
 		{
@@ -37,14 +38,16 @@ func TestEncodeUrl(t *testing.T) {
 			owner:    "armory",
 			repo:     "armory",
 			path:     "my/path.yml",
-			expected: "https://api.github.com/repos/armory/armory/contents/my/path.yml",
+			branch:   "mybranch",
+			expected: "https://api.github.com/repos/armory/armory/contents/my/path.yml?ref=mybranch",
 		},
 		{
 			endpoint: "https://mygithub.com",
 			owner:    "armory",
 			repo:     "armory",
 			path:     "my/path.yml",
-			expected: "https://mygithub.com/repos/armory/armory/contents/my/path.yml",
+			branch:   "mybranch",
+			expected: "https://mygithub.com/repos/armory/armory/contents/my/path.yml?ref=mybranch",
 		},
 	}
 
@@ -54,9 +57,8 @@ func TestEncodeUrl(t *testing.T) {
 				endpoint: c.endpoint,
 			},
 		}
-		if out := downloader.EncodeURL(c.owner, c.repo, c.path); out != c.expected {
-			t.Errorf("%s did not match expected %s", out, c.expected)
-		}
+		actual := downloader.EncodeURL(c.owner, c.repo, c.path, c.branch)
+		assert.Equal(t, c.expected, actual)
 	}
 }
 
@@ -66,6 +68,7 @@ func TestDecodeUrl(t *testing.T) {
 		owner    string
 		repo     string
 		path     string
+		branch   string
 		url      string
 	}{
 		{
@@ -73,14 +76,16 @@ func TestDecodeUrl(t *testing.T) {
 			owner:    "armory",
 			repo:     "armory",
 			path:     "my/path.yml",
-			url:      "https://api.github.com/repos/armory/armory/contents/my/path.yml",
+			branch:   "mybranch",
+			url:      "https://api.github.com/repos/armory/armory/contents/my/path.yml?ref=mybranch",
 		},
 		{
 			endpoint: "https://mygithub.com",
 			owner:    "armory",
 			repo:     "armory",
 			path:     "my/path.yml",
-			url:      "https://mygithub.com/repos/armory/armory/contents/my/path.yml",
+			branch:   "mybranch",
+			url:      "https://mygithub.com/repos/armory/armory/contents/my/path.yml?ref=mybranch",
 		},
 	}
 
@@ -90,19 +95,11 @@ func TestDecodeUrl(t *testing.T) {
 				endpoint: c.endpoint,
 			},
 		}
-		org, repo, path := downloader.DecodeURL(c.url)
-
-		if org != c.owner {
-			t.Errorf("%s did not match expected owner %s", org, c.owner)
-		}
-
-		if repo != c.repo {
-			t.Errorf("%s did not match expected repo %s", repo, c.repo)
-		}
-
-		if path != c.path {
-			t.Errorf("%s did not match expected path %s", path, c.path)
-		}
+		org, repo, path, branch := downloader.DecodeURL(c.url)
+		assert.Equal(t, c.owner, org)
+		assert.Equal(t, c.repo, repo)
+		assert.Equal(t, c.path, path)
+		assert.Equal(t, c.branch, branch)
 	}
 }
 
@@ -111,14 +108,16 @@ func TestDownload(t *testing.T) {
 		org         string
 		repo        string
 		path        string
+		branch      string
 		fs          *FileService
 		expected    string
 		expectedErr error
 	}{
 		"success": {
-			org:  "org",
-			repo: "repo",
-			path: "path",
+			org:    "org",
+			repo:   "repo",
+			path:   "path",
+			branch: "branch",
 			fs: &FileService{
 				GitHub: &GitHubTest{contents: "file contents"},
 				Logger: logrus.New(),
@@ -127,9 +126,10 @@ func TestDownload(t *testing.T) {
 			expectedErr: nil,
 		},
 		"error": {
-			org:  "org",
-			repo: "repo",
-			path: "path",
+			org:    "org",
+			repo:   "repo",
+			path:   "path",
+			branch: "branch",
 			fs: &FileService{
 				GitHub: &GitHubTest{
 					contents: "",
@@ -144,7 +144,7 @@ func TestDownload(t *testing.T) {
 
 	for desc, tc := range testCases {
 		t.Run(desc, func(t *testing.T) {
-			actual, err := tc.fs.Download(tc.org, tc.repo, tc.path)
+			actual, err := tc.fs.Download(tc.org, tc.repo, tc.path, tc.branch)
 			assert.Equal(t, tc.expected, actual)
 			if tc.expectedErr == nil {
 				assert.Equal(t, tc.expectedErr, err)
@@ -153,7 +153,7 @@ func TestDownload(t *testing.T) {
 			}
 
 			// test caching
-			v := tc.fs.cache.Get(tc.fs.EncodeURL("org", "repo", "path"))
+			v := tc.fs.cache.Get(tc.fs.EncodeURL("org", "repo", "path", "branch"))
 			assert.Equal(t, tc.expected, v)
 		})
 	}

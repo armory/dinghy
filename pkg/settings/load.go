@@ -71,6 +71,7 @@ func NewDefaultSettings() Settings {
 			},
 		},
 		ParserFormat: "json",
+		RepoConfig: []RepoConfig{},
 	}
 }
 

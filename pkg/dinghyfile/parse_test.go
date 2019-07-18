@@ -309,7 +309,7 @@ func testDinghyfileParser() *DinghyfileParser {
 
 func TestGracefulErrorHandling(t *testing.T) {
 	builder := testDinghyfileParser()
-	_, err := builder.Parse("org", "repo", "df_bad", nil)
+	_, err := builder.Parse("org", "repo", "df_bad", "branch", nil)
 	assert.NotNil(t, err, "Got non-nil output for mal-formed template action in df_bad")
 }
 
@@ -318,7 +318,7 @@ func TestNestedVars(t *testing.T) {
 	r.Builder.DinghyfileName = "nested_var_df"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, _ := r.Parse("org", "repo", "nested_var_df", nil)
+	buf, _ := r.Parse("org", "repo", "nested_var_df", "branch", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -437,7 +437,7 @@ func TestGlobalVars(t *testing.T) {
 			r := testDinghyfileParser()
 			r.Builder.DinghyfileName = filepath.Base(c.filename)
 
-			buf, _ := r.Parse("org", "repo", c.filename, nil)
+			buf, _ := r.Parse("org", "repo", c.filename, "branch", nil)
 			exp := strings.Join(strings.Fields(c.expected), "")
 			actual := strings.Join(strings.Fields(buf.String()), "")
 			assert.Equal(t, exp, actual)
@@ -447,7 +447,7 @@ func TestGlobalVars(t *testing.T) {
 
 func TestSimpleWaitStage(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, _ := r.Parse("org", "repo", "df3", nil)
+	buf, _ := r.Parse("org", "repo", "df3", "branch", nil)
 
 	const expected = `{
 		"stages": [
@@ -469,7 +469,7 @@ func TestSimpleWaitStage(t *testing.T) {
 
 func TestSpillover(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, _ := r.Parse("org", "repo", "df", nil)
+	buf, _ := r.Parse("org", "repo", "df", "branch",nil)
 
 	const expected = `{
 		"stages": [
@@ -495,7 +495,7 @@ type testStruct struct {
 func TestModuleVariableSubstitution(t *testing.T) {
 	r := testDinghyfileParser()
 	ts := testStruct{}
-	ret, err := r.Parse("org", "repo", "df2", nil)
+	ret, err := r.Parse("org", "repo", "df2", "branch", nil)
 	err = json.Unmarshal(ret.Bytes(), &ts)
 	assert.Equal(t, nil, err)
 
@@ -559,14 +559,14 @@ func TestPipelineIDRender(t *testing.T) {
 		"waitForCompletion": true
 	}`
 
-	ret, err := r.Parse("org", "repo", "pipelineIDTest", nil)
+	ret, err := r.Parse("org", "repo", "pipelineIDTest", "branch", nil)
 	assert.Nil(t, err)
 	assert.Equal(t, expected, ret.String())
 }
 
 func TestModuleEmptyString(t *testing.T) {
 	r := testDinghyfileParser()
-	ret, _ := r.Parse("org", "repo", "df4", nil)
+	ret, _ := r.Parse("org", "repo", "df4", "branch", nil)
 	assert.Equal(t, `{"foo": ""}`, ret.String())
 }
 
@@ -575,7 +575,7 @@ func TestDeepVars(t *testing.T) {
 	r.Builder.DinghyfileName = "deep_var_df"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, _ := r.Parse("org", "repo", "deep_var_df", nil)
+	buf, _ := r.Parse("org", "repo", "deep_var_df", "branch", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -617,7 +617,7 @@ func TestEmptyDefaultVar(t *testing.T) {
 	r.Builder.DinghyfileName = "deep_var_df"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, _ := r.Parse("org", "repo", "empty_default_variables", nil)
+	buf, _ := r.Parse("org", "repo", "empty_default_variables", "branch", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -644,7 +644,7 @@ func TestConditionalArgs(t *testing.T) {
 	r.Builder.DinghyfileName = "if_params.dinghyfile"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, err := r.Parse("org", "repo", "if_params.dinghyfile", nil)
+	buf, err := r.Parse("org", "repo", "if_params.dinghyfile", "branch", nil)
 	require.Nil(t, err)
 
 	const raw = `{
@@ -690,7 +690,7 @@ func TestVarParams(t *testing.T) {
 	logger.EXPECT().Error(gomock.Any()).Times(0)
 	logger.EXPECT().Info(gomock.Eq("No global vars found in dinghyfile")).Times(1)
 
-	buf, err := r.Parse("org", "repo", "var_params.outer", nil)
+	buf, err := r.Parse("org", "repo", "var_params.outer", "branch", nil)
 	// Unfortunately, we don't currently catch this failure here.
 	assert.Nil(t, err)
 
@@ -725,7 +725,7 @@ func TestRenderPreprocessFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Error(gomock.Eq("Failed to preprocess")).Times(1)
 
-	_, err := r.Parse("org", "repo", "preprocess_fail", nil)
+	_, err := r.Parse("org", "repo", "preprocess_fail", "branch", nil)
 	assert.NotNil(t, err)
 }
 
@@ -738,7 +738,7 @@ func TestRenderParseGlobalVarsFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Error(gomock.Eq("Failed to parse global vars")).Times(1)
 
-	_, err := r.Parse("org", "repo", "global_vars_parse_fail", nil)
+	_, err := r.Parse("org", "repo", "global_vars_parse_fail", "branch", nil)
 	assert.NotNil(t, err)
 }
 
@@ -746,7 +746,7 @@ func TestRenderGlobalVarsExtractFail(t *testing.T) {
 	r := testDinghyfileParser()
 	r.Builder.DinghyfileName = "global_vars_extract_fail"
 
-	_, err := r.Parse("org", "repo", "global_vars_extract_fail", nil)
+	_, err := r.Parse("org", "repo", "global_vars_extract_fail", "branch", nil)
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "Could not extract global vars")
 }
@@ -755,7 +755,7 @@ func TestRenderVarFuncNotDefined(t *testing.T) {
 	r := testDinghyfileParser()
 	r.Builder.DinghyfileName = "varfunc_not_defined"
 
-	buf, err := r.Parse("org", "repo", "varfunc_not_defined", nil)
+	buf, err := r.Parse("org", "repo", "varfunc_not_defined", "branch", nil)
 	require.Nil(t, err)
 
 	var actual interface{}
@@ -773,7 +773,7 @@ func TestRenderDownloadFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Error(gomock.Eq("Failed to download")).Times(1)
 
-	_, err := r.Parse("org", "repo", "nonexistentfile", nil)
+	_, err := r.Parse("org", "repo", "nonexistentfile", "branch", nil)
 	require.NotNil(t, err)
 	require.Equal(t, "File not found", err.Error())
 }
@@ -786,7 +786,7 @@ func TestRenderTemplateParseFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Error(gomock.Eq("Failed to parse template")).Times(1)
 
-	_, err := r.Parse("org", "repo", "template_parse_fail", nil)
+	_, err := r.Parse("org", "repo", "template_parse_fail", "branch", nil)
 	require.NotNil(t, err)
 	require.Equal(t, "template: dinghy-render:2: function \"nope\" not defined", err.Error())
 }
@@ -799,7 +799,7 @@ func TestRenderTemplateBufferFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Error(gomock.Eq("Failed to execute buffer")).Times(1)
 
-	_, err := r.Parse("org", "repo", "template_buffer_fail", nil)
+	_, err := r.Parse("org", "repo", "template_buffer_fail", "branch", nil)
 	require.NotNil(t, err)
 	require.Equal(t, "template: dinghy-render:2:17: executing \"dinghy-render\" at <4>: can't give argument to non-function 4", err.Error())
 }
@@ -843,7 +843,7 @@ func TestModuleFuncOddParamsError(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Warnf(gomock.Eq("odd number of parameters received to module %s"), gomock.Eq(test_key)).Times(1)
 
-	modFunc := r.moduleFunc("org", map[string]bool{}, []VarMap{})
+	modFunc := r.moduleFunc("org", "branch", map[string]bool{}, []VarMap{})
 	res := modFunc.(func(string, ...interface{}) string)(test_key, "biff")
 	assert.Equal(t, "", res)
 }
@@ -857,7 +857,7 @@ func TestModuleFuncDictKeysError(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("dict keys must be strings in module: %s"), gomock.Eq(test_key)).Times(1)
 
-	modFunc := r.moduleFunc("org", map[string]bool{}, []VarMap{})
+	modFunc := r.moduleFunc("org", "branch", map[string]bool{}, []VarMap{})
 	res := modFunc.(func(string, ...interface{}) string)(test_key, 42, "foo")
 	assert.Equal(t, "", res)
 }

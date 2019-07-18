@@ -45,6 +45,7 @@ type Event struct {
 	Org        string `json:"org"`
 	Repo       string `json:"repo"`
 	Path       string `json:"path"`
+	Branch     string `json:"branch"`
 	Dinghyfile string `json:"dinghyfile"`
 	Module     bool   `json:"is_module"`
 }

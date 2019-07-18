@@ -119,10 +119,6 @@ func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
 	changedFilesMap := map[string]bool{}
 
 	for _, change := range p.changes() {
-		// Only process changes in "master" branch
-		if !change.IsMaster() {
-			continue
-		}
 		for page := 1; true; page++ {
 			changedFiles, nextPage, err := getFilesChanged(change.Old.Target.Hash, change.New.Target.Hash, page, cfg,
 				payload.Repository.FullName)
@@ -146,7 +142,12 @@ func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
 	return p, nil
 }
 
-// Find in the webook payload if the change was done in "master" branch
+// Find the branch in the webhook payload
+func (c *WebhookChange) Branch() string {
+	return c.New.Name
+}
+
+// Find in the webhook payload if the change was done in "master" branch
 func (c *WebhookChange) IsMaster() bool {
 	return c.New.Name == "master"
 }
@@ -255,6 +256,16 @@ func (p *Push) Org() string {
 	}
 }
 
+// Branch returns the branch of the push
+func (p *Push) Branch() string {
+	for _, change := range p.changes() {
+		if change.Branch() != "" {
+			return change.Branch()
+		}
+	}
+	return ""
+}
+
 func (p *Push) changes() []WebhookChange {
 	return p.Payload.Push.Changes
 }
@@ -270,5 +281,9 @@ func (p *Push) IsMaster() bool {
 }
 
 // SetCommitStatus sets a commit status
-func (p *Push) SetCommitStatus(s git.Status) {
+func (p *Push) SetCommitStatus(s git.Status) {}
+
+// Name returns the name of the provider to be used in configuration
+func (p *Push) Name() string {
+	return "bitbucket-cloud"
 }
