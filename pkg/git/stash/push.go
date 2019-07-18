@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/armory/dinghy/pkg/git"
 	"github.com/sirupsen/logrus"
@@ -151,8 +152,8 @@ type StashConfig struct {
 // NewPush creates a new Push
 func NewPush(payload WebhookPayload, cfg StashConfig) (*Push, error) {
 	p := &Push{
-		Payload:       payload,
-		ChangedFiles:  make([]string, 0),
+		Payload:      payload,
+		ChangedFiles: make([]string, 0),
 
 		StashEndpoint: cfg.Endpoint,
 		StashToken:    cfg.Token,
@@ -177,7 +178,8 @@ func NewPush(payload WebhookPayload, cfg StashConfig) (*Push, error) {
 // ContainsFile checks to see if a given file is in the push.
 func (p *Push) ContainsFile(file string) bool {
 	for _, name := range p.ChangedFiles {
-		if name == file {
+		parts := strings.Split(name, "/")
+		if parts[len(parts)-1] == file {
 			return true
 		}
 	}
