@@ -388,7 +388,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 		}
 	} else {
 		// if we didn't find any configurations for this repo, proceed with master
-		wa.Logger.Info("Found no custom configuration for repo: %s, proceeding with master", p.Repo())
+		wa.Logger.Infof("Found no custom configuration for repo: %s, proceeding with master", p.Repo())
 		if !p.IsMaster() {
 			wa.Logger.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master", p.Branch())
 			return
