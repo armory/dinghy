@@ -46,8 +46,8 @@ github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e h1:d7XSZxwhDU
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
 github.com/armory/go-yaml-tools v0.0.0-20190717183726-e1c16a26c6d7 h1:qPkuuL6tn14kBnf4VuYcS5waCCRrNH/b9/Ozjcn9RW4=
 github.com/armory/go-yaml-tools v0.0.0-20190717183726-e1c16a26c6d7/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
-github.com/armory/plank v1.2.2-0.20190715231448-fa0acb56c4cd h1:96L9Tb+OwAHil/nqBwbMSU0+XQLCEpNX5TUgsIYdepI=
-github.com/armory/plank v1.2.2-0.20190715231448-fa0acb56c4cd/go.mod h1:HZRBezMqPh1sZtVdR3SjTRq3loINO7xdf+0ZpzfVeKY=
+github.com/armory/plank v1.2.2-0.20190722171433-afce6411ed97 h1:Qi5uuPDD7xT8I/xm3mEmEFt1S5ThA7p/DFlTJI+2GdU=
+github.com/armory/plank v1.2.2-0.20190722171433-afce6411ed97/go.mod h1:HZRBezMqPh1sZtVdR3SjTRq3loINO7xdf+0ZpzfVeKY=
 github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf h1:eg0MeVzsP1G42dRafH3vf+al2vQIJU0YHX+1Tw87oco=
 github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/aws/aws-sdk-go v1.15.31 h1:ExgD8W8QDeD8Y4CPVlcP/laumxvikDbkVWB+VCHgXxA=
