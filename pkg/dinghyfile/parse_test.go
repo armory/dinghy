@@ -250,7 +250,7 @@ var fileService = dummy.FileService{
 		"application": "pipelineidexample",
 		"failPipeline": true,
 		"name": "Pipeline",
-		"pipeline": "{{ pipelineID "triggerApp" "triggerPipeline" }}",
+		"pipeline": "{{ pipelineID "triggerApp" "trigger Pipeline" }}",
 		"refId": "1",
 		"requisiteStageRefIds": [],
 		"type": "pipeline",
@@ -469,7 +469,7 @@ func TestSimpleWaitStage(t *testing.T) {
 
 func TestSpillover(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, _ := r.Parse("org", "repo", "df", "branch",nil)
+	buf, _ := r.Parse("org", "repo", "df", "branch", nil)
 
 	const expected = `{
 		"stages": [
@@ -511,14 +511,14 @@ func TestPipelineIDFunc(t *testing.T) {
 	r := testDinghyfileParser()
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetPipelines(gomock.Eq("triggerApp")).Return([]plank.Pipeline{plank.Pipeline{ID: "pipelineID", Name: "triggerPipeline"}}, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("triggerApp")).Return([]plank.Pipeline{plank.Pipeline{ID: "pipelineID", Name: "trigger Pipeline"}}, nil).Times(1)
 	r.Builder.Client = client
 
 	vars := []VarMap{
-		{"triggerApp": "triggerApp", "triggerPipeline": "triggerPipeline"},
+		{"triggerApp": "triggerApp", "trigger Pipeline": "trigger Pipeline"},
 	}
 	idFunc := r.pipelineIDFunc(vars).(func(string, string) string)
-	result := idFunc("triggerApp", "triggerPipeline")
+	result := idFunc("triggerApp", "trigger Pipeline")
 	assert.Equal(t, "pipelineID", result)
 }
 func TestPipelineIDFuncDefault(t *testing.T) {
@@ -532,10 +532,10 @@ func TestPipelineIDFuncDefault(t *testing.T) {
 	r.Builder.Client = client
 
 	vars := []VarMap{
-		{"triggerApp": "triggerApp"}, {"triggerPipeline": "triggerPipeline"},
+		{"triggerApp": "triggerApp"}, {"trigger Pipeline": "trigger Pipeline"},
 	}
 	idFunc := r.pipelineIDFunc(vars).(func(string, string) string)
-	result := idFunc("triggerApp", "triggerPipeline")
+	result := idFunc("triggerApp", "trigger Pipeline")
 	assert.Equal(t, "", result)
 }
 func TestPipelineIDRender(t *testing.T) {
@@ -545,14 +545,14 @@ func TestPipelineIDRender(t *testing.T) {
 	r := testDinghyfileParser()
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetPipelines(gomock.Eq("triggerApp")).Return([]plank.Pipeline{plank.Pipeline{ID: "pipelineID", Name: "triggerPipeline"}}, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("triggerApp")).Return([]plank.Pipeline{plank.Pipeline{ID: "pipeline ID", Name: "trigger Pipeline"}}, nil).Times(1)
 	r.Builder.Client = client
 
 	expected := `{
 		"application": "pipelineidexample",
 		"failPipeline": true,
 		"name": "Pipeline",
-		"pipeline": "pipelineID",
+		"pipeline": "pipeline ID",
 		"refId": "1",
 		"requisiteStageRefIds": [],
 		"type": "pipeline",
