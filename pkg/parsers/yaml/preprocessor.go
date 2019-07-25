@@ -76,7 +76,7 @@ func removeModules(input string) string {
 		"module":     dummySubstitute,
 		"appModule":  dummyKV,
 		"var":        dummyVar,
-		"pipelineID": dummySubstitute,
+		"pipelineID": dummyVar,
 	}
 
 	tmpl, err := template.New("blank-out").Funcs(funcMap).Parse(input)
