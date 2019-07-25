@@ -74,7 +74,7 @@ func TestProcessDinghyfileDefaultRenderer(t *testing.T) {
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Info("Calling DetermineParser").Times(1)
-	logger.EXPECT().Error(gomock.Eq("Failed to download")).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to download %s/%s/%s/%s"), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to parse dinghyfile %s: %s"), gomock.Eq("notfound"), gomock.Eq("File not found")).Times(1)
 
 	pb := testPipelineBuilder()
@@ -95,6 +95,7 @@ func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Warnf(gomock.Eq("UpdateDinghyfile malformed syntax: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to update dinghyfile %s: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("update-dinghyfile-unmarshal-err: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	pb := testPipelineBuilder()
@@ -302,6 +303,7 @@ func TestUpdateDinghyfileMalformed(t *testing.T) {
 	logger := mock.NewMockFieldLogger(ctrl)
 	b.Logger = logger
 	logger.EXPECT().Warnf(gomock.Eq("UpdateDinghyfile malformed syntax: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("update-dinghyfile-unmarshal-err: %s"), gomock.Any()).Times(1)
 
 	df, err := b.UpdateDinghyfile([]byte("{ garbage"))
 	assert.Equal(t, ErrMalformedJSON, err)
