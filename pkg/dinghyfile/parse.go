@@ -24,7 +24,7 @@ package dinghyfile
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -197,6 +197,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		Repo:  repo,
 		Path:  path,
 		Branch: branch,
+		End: time.Now().UTC().Unix(),
 	}
 
 	deps := make(map[string]bool)
@@ -204,14 +205,18 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// Download the template being parsed.
 	contents, err := r.Builder.Downloader.Download(org, repo, path, branch)
 	if err != nil {
-		r.Builder.Logger.Error("Failed to download")
+		r.Builder.Logger.Errorf("Failed to download %s/%s/%s/%s", org, repo, path, branch)
+		// we don't actually have a dinghyfile we can send at this point
+		r.Builder.EventClient.SendEvent("parse-err-download", event)
 		return nil, err
 	}
 
 	// Preprocess to stringify any json args in calls to modules.
 	contents, err = preprocessor.Preprocess(contents)
 	if err != nil {
-		r.Builder.Logger.Error("Failed to preprocess")
+		r.Builder.Logger.Errorf("Failed to preprocess:\n %s", contents)
+		event.Dinghyfile = contents
+		r.Builder.EventClient.SendEvent("parse-err-preprocess", event)
 		return nil, err
 	}
 
@@ -220,13 +225,17 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		module = false
 		gvs, err := preprocessor.ParseGlobalVars(contents)
 		if err != nil {
-			r.Builder.Logger.Error("Failed to parse global vars")
+			r.Builder.Logger.Errorf("Failed to parse global vars:\n %s", contents)
+			event.Dinghyfile = contents
+			r.Builder.EventClient.SendEvent("parse-err-globalvar", event)
 			return nil, err
 		}
 
 		gvMap, ok := gvs.(map[string]interface{})
 		if !ok {
-			return nil, errors.New("Could not extract global vars")
+			event.Dinghyfile = contents
+			r.Builder.EventClient.SendEvent("parse-err-globalvar", event)
+			return nil, fmt.Errorf("could not extract global vars from:\n %s", contents)
 		} else if len(gvMap) > 0 {
 			vars = append(vars, gvMap)
 		} else {
@@ -244,7 +253,9 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// Parse the downloaded template.
 	tmpl, err := template.New("dinghy-render").Funcs(funcMap).Parse(contents)
 	if err != nil {
-		r.Builder.Logger.Error("Failed to parse template")
+		r.Builder.Logger.Errorf("Failed to parse template:\n %s", contents)
+		event.Dinghyfile = contents
+		r.Builder.EventClient.SendEvent("parse-err-gotemplate-funcs", event)
 		return nil, err
 	}
 
@@ -252,7 +263,9 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	buf := new(bytes.Buffer)
 	err = tmpl.Execute(buf, "")
 	if err != nil {
-		r.Builder.Logger.Error("Failed to execute buffer")
+		r.Builder.Logger.Errorf("Failed to execute buffer:\n %s", contents)
+		event.Dinghyfile = contents
+		r.Builder.EventClient.SendEvent("parse-err-bytebuffer", event)
 		return nil, err
 	}
 
@@ -263,11 +276,9 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	}
 	r.Builder.Depman.SetDeps(r.Builder.Downloader.EncodeURL(org, repo, path, branch), depUrls)
 
-	event.End = time.Now().UTC().Unix()
-	eventType := "render"
 	event.Dinghyfile = buf.String()
 	event.Module = module
-	r.Builder.EventClient.SendEvent(eventType, event)
+	r.Builder.EventClient.SendEvent("parse", event)
 
 	return buf, nil
 }
