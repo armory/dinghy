@@ -122,6 +122,7 @@ func (b *PipelineBuilder) UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error
 
 	// we weren't lucky, all the parsers failed
 	if parseErrs == len(b.Ums) {
+		b.Logger.Errorf("update-dingyfile-unmarshal-err: %s", string(dinghyfile))
 		b.EventClient.SendEvent("update-dinghyfile-unmarshal-err", event)
 		return d, ErrMalformedJSON
 	}
