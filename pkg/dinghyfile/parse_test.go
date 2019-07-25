@@ -723,7 +723,7 @@ func TestRenderPreprocessFail(t *testing.T) {
 	r := testDinghyfileParser()
 	r.Builder.DinghyfileName = "preprocess_fail"
 	logger := mockLogger(r, ctrl)
-	logger.EXPECT().Error(gomock.Eq("Failed to preprocess")).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to preprocess:\n %s"), gomock.Any()).Times(1)
 
 	_, err := r.Parse("org", "repo", "preprocess_fail", "branch", nil)
 	assert.NotNil(t, err)
@@ -736,7 +736,7 @@ func TestRenderParseGlobalVarsFail(t *testing.T) {
 	r := testDinghyfileParser()
 	r.Builder.DinghyfileName = "global_vars_parse_fail"
 	logger := mockLogger(r, ctrl)
-	logger.EXPECT().Error(gomock.Eq("Failed to parse global vars")).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to parse global vars:\n %s"), gomock.Any()).Times(1)
 
 	_, err := r.Parse("org", "repo", "global_vars_parse_fail", "branch", nil)
 	assert.NotNil(t, err)
@@ -748,7 +748,7 @@ func TestRenderGlobalVarsExtractFail(t *testing.T) {
 
 	_, err := r.Parse("org", "repo", "global_vars_extract_fail", "branch", nil)
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "Could not extract global vars")
+	assert.Equal(t, err.Error(), "could not extract global vars from:\n {\n\t\t\"globals\": 42\n\t}")
 }
 
 func TestRenderVarFuncNotDefined(t *testing.T) {
@@ -771,7 +771,7 @@ func TestRenderDownloadFail(t *testing.T) {
 
 	r := testDinghyfileParser()
 	logger := mockLogger(r, ctrl)
-	logger.EXPECT().Error(gomock.Eq("Failed to download")).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to download %s/%s/%s/%s"), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
 	_, err := r.Parse("org", "repo", "nonexistentfile", "branch", nil)
 	require.NotNil(t, err)
@@ -784,7 +784,7 @@ func TestRenderTemplateParseFail(t *testing.T) {
 
 	r := testDinghyfileParser()
 	logger := mockLogger(r, ctrl)
-	logger.EXPECT().Error(gomock.Eq("Failed to parse template")).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to parse template:\n %s"), gomock.Any()).Times(1)
 
 	_, err := r.Parse("org", "repo", "template_parse_fail", "branch", nil)
 	require.NotNil(t, err)
@@ -797,7 +797,7 @@ func TestRenderTemplateBufferFail(t *testing.T) {
 
 	r := testDinghyfileParser()
 	logger := mockLogger(r, ctrl)
-	logger.EXPECT().Error(gomock.Eq("Failed to execute buffer")).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to execute buffer:\n %s"), gomock.Any()).Times(1)
 
 	_, err := r.Parse("org", "repo", "template_buffer_fail", "branch", nil)
 	require.NotNil(t, err)

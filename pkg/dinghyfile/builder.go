@@ -24,6 +24,7 @@ import (
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/plank"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 type VarMap map[string]interface{}
@@ -108,8 +109,21 @@ func (b *PipelineBuilder) UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error
 			continue
 		}
 	}
+	event := &events.Event{
+		Start:      time.Now().UTC().Unix(),
+		End:        time.Now().UTC().Unix(),
+		Org:        "",
+		Repo:       "",
+		Path:       "",
+		Branch:     "",
+		Dinghyfile: string(dinghyfile),
+		Module:     false,
+	}
+
 	// we weren't lucky, all the parsers failed
 	if parseErrs == len(b.Ums) {
+		b.Logger.Errorf("update-dinghyfile-unmarshal-err: %s", string(dinghyfile))
+		b.EventClient.SendEvent("update-dinghyfile-unmarshal-err", event)
 		return d, ErrMalformedJSON
 	}
 	b.Logger.Infof("Unmarshalled: %v", d)
