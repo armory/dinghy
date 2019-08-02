@@ -38,6 +38,9 @@ type FileService struct {
 // Download downloads a file from Bitbucket Cloud.
 // The API returns the file's contents as a paginated list of lines
 func (f *FileService) Download(org, repo, path, branch string) (string, error) {
+	// bitbucket cloud requires the full path to the branch name
+	branch = fmt.Sprintf("refs/heads/%s", branch)
+
 	url := f.EncodeURL(org, repo, path, branch)
 	body := f.cache.Get(url)
 	if body != "" {
