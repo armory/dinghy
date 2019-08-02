@@ -21,7 +21,6 @@ import (
 	"github.com/armory/dinghy/pkg/cache/local"
 	"github.com/sirupsen/logrus"
 	"regexp"
-	"strings"
 )
 
 // FileService is for working with repositories
@@ -40,12 +39,6 @@ func (f *FileService) Download(org, repo, path, branch string) (string, error) {
 	if body != "" {
 		return body, nil
 	}
-
-	// The endpoint used by the Github lib (https://raw.githubusercontent.com/) does not
-	// accept branch names such as refs/heads/master, but only the name of the branch.
-	// Need to strip that if it exists. Can't use split here either, because '/' is allowed
-	// in branch names
-	branch = strings.Replace(branch, "refs/heads/", "", 1)
 
 	contents, err := f.GitHub.DownloadContents(org, repo, path, branch)
 	if err != nil {
