@@ -36,7 +36,6 @@ func (decrypter *VaultDecrypter) Decrypt() (string, error) {
 	if (VaultConfig{}) == Registry.VaultConfig {
 		return "", fmt.Errorf("error: vault secrets configuration not found")
 	}
-	//vaultSecret, err := ParseVaultSecret(v.encryptedSecret)
 	vaultSecret, err := ParseVaultSecret(decrypter.params)
 	if err != nil {
 		return "", fmt.Errorf("error parsing vault secret syntax - %s", err)
@@ -92,19 +91,22 @@ func ParseVaultSecret(params map[string]string) (VaultSecret, error) {
 
 	engine, ok := params["e"]
 	if !ok {
-		return VaultSecret{}, fmt.Errorf("secret format error - 'r' for region is required")
+		return VaultSecret{}, fmt.Errorf("secret format error - 'e' for engine is required")
 	}
 	vaultSecret.engine = engine
 
-	path, ok := params["n"]
+	path, ok := params["p"]
 	if !ok {
-		return VaultSecret{}, fmt.Errorf("secret format error - 'b' for bucket is required")
+		path, ok = params["n"]
+		if !ok {
+			return VaultSecret{}, fmt.Errorf("secret format error - 'p' for path is required (replaces deprecated 'n' param)")
+		}
 	}
 	vaultSecret.path = path
 
 	key, ok := params["k"]
 	if !ok {
-		return VaultSecret{}, fmt.Errorf("secret format error - 'f' for file is required")
+		return VaultSecret{}, fmt.Errorf("secret format error - 'k' for key is required")
 	}
 	vaultSecret.key = key
 
