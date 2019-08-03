@@ -32,6 +32,22 @@ import (
 )
 
 var fileService = dummy.FileService{
+	"if_test": `{
+		{{ if eq .Branch "master" }}
+		"stages": [
+			{{ module "mod1" }},
+			{{ module "mod2" }}
+		]
+		{{ end }}
+    }`,
+    "range_test": `{
+		"stages": [
+			{{ $mods := makeSlice "mod1" "mod2" }}
+			{{ range $mods }}
+				{{ module . }}
+			{{ end }}
+		]
+	}`,
 	"df": `{
 		"stages": [
 			{{ module "mod1" }},
@@ -484,6 +500,34 @@ func TestSpillover(t *testing.T) {
 	assert.Equal(t, exp, actual)
 }
 
+func TestIfConditionEmpty(t *testing.T) {
+	r := testDinghyfileParser()
+
+	// if we don't match the if condition this should be blank
+	buf , _ := r.Parse("org", "repo", "if_test", "testing", nil)
+	expected := `{}`
+	exp := strings.Join(strings.Fields(expected), "")
+	actual := strings.Join(strings.Fields(buf.String()), "")
+	assert.Equal(t, exp, actual)
+
+	// if we do match the if condition, we should see some stage data
+	buf , _ = r.Parse("foo", "repo", "if_test", "master", nil)
+	expected = `{"stages":[{"foo":"bar","type":"deploy"},{"type":"jenkins"}]}`
+	exp = strings.Join(strings.Fields(expected), "")
+	actual = strings.Join(strings.Fields(buf.String()), "")
+	assert.Equal(t, exp, actual)
+}
+
+func TestRangeSyntax(t *testing.T) {
+	r := testDinghyfileParser()
+	buf , _ := r.Parse("org", "repo", "range_test", "testing", nil)
+
+	const expected = `{"stages":[{"foo":"bar","type":"deploy"}{"type":"jenkins"}]}`
+	exp := strings.Join(strings.Fields(expected), "")
+	actual := strings.Join(strings.Fields(buf.String()), "")
+	assert.Equal(t, exp, actual)
+}
+
 type testStruct struct {
 	Foo    string `json:"foo"`
 	A      string `json:"a"`
@@ -797,7 +841,7 @@ func TestRenderTemplateBufferFail(t *testing.T) {
 
 	r := testDinghyfileParser()
 	logger := mockLogger(r, ctrl)
-	logger.EXPECT().Errorf(gomock.Eq("Failed to execute buffer:\n %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to execute buffer:\n %s\nError: %s"), gomock.Any(), gomock.Any()).Times(1)
 
 	_, err := r.Parse("org", "repo", "template_buffer_fail", "branch", nil)
 	require.NotNil(t, err)
