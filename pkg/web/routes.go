@@ -171,7 +171,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p.DeckBaseURL = wa.Config.Deck.BaseURL
 	fileService := github.FileService{GitHub: &gh, Logger: wa.Logger}
 
-	wa.buildPipelines(&p, &fileService, w)
+	wa.buildPipelines(&p, body, &fileService, w)
 }
 
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -217,7 +217,7 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		Logger:        wa.Logger,
 	}
 	wa.Logger.Infof("Building pipeslines from Stash webhook")
-	wa.buildPipelines(p, &fileService, w)
+	wa.buildPipelines(p, body, &fileService, w)
 }
 
 func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -279,7 +279,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			Logger:          wa.Logger,
 		}
 
-		wa.buildPipelines(p, &fileService, w)
+		wa.buildPipelines(p, body, &fileService, w)
 
 	case "repo:refs_changed", "pr:merged":
 		wa.Logger.Info("Processing bitbucket-server webhook")
@@ -329,7 +329,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			Logger:        wa.Logger,
 		}
 
-		wa.buildPipelines(p, &fileService, w)
+		wa.buildPipelines(p, body, &fileService, w)
 
 	default:
 		util.WriteHTTPError(w, http.StatusInternalServerError, errors.New("Unknown bitbucket event type"))
@@ -378,7 +378,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 
 // TODO: this func should return an error and allow the handlers to return the http response. Additionally,
 // it probably doesn't belong in this file once refactored.
-func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
+func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader, w http.ResponseWriter) {
 	// see if we have any configurations for this repo.
 	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
 	if rc := wa.Config.GetRepoConfig(p.Name(), p.Repo()); rc != nil {
@@ -397,6 +397,12 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 
 	wa.Logger.Infof("Processing request for branch: %s", p.Branch())
 
+	// deserialze push data to a map.  used in template logic later
+	rawPushData := make(map[string]interface{})
+	if err := json.Unmarshal(rawPush, &rawPushData); err != nil {
+		wa.Logger.Errorf("unable to deserialze raw data to map")
+	}
+
 	// Construct a pipeline builder using provided downloader
 	builder := &dinghyfile.PipelineBuilder{
 		Downloader:           f,
@@ -411,6 +417,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 		Logger:               wa.Logger,
 		Ums:                  wa.Ums,
 		Notifiers:            wa.Notifiers,
+		PushRaw:              rawPushData,
 	}
 
 	builder.Parser = wa.Parser
