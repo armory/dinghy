@@ -188,6 +188,10 @@ func (r *DinghyfileParser) varFunc(vars []VarMap) interface{} {
 	}
 }
 
+func (r *DinghyfileParser) makeSlice(args ...interface{}) []interface{} {
+	return args
+}
+
 // Parse parses the template
 func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) (*bytes.Buffer, error) {
 	module := true
@@ -198,6 +202,10 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		Path:  path,
 		Branch: branch,
 		End: time.Now().UTC().Unix(),
+	}
+
+	gitInfo := struct { Org, Repo, Path, Branch string }{
+		org, repo, path, branch,
 	}
 
 	deps := make(map[string]bool)
@@ -248,6 +256,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		"appModule":  r.moduleFunc(org, branch, deps, vars),
 		"pipelineID": r.pipelineIDFunc(vars),
 		"var":        r.varFunc(vars),
+		"makeSlice":  r.makeSlice,
 	}
 
 	// Parse the downloaded template.
@@ -261,9 +270,9 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 
 	// Run the template to verify the output.
 	buf := new(bytes.Buffer)
-	err = tmpl.Execute(buf, "")
+	err = tmpl.Execute(buf, gitInfo)
 	if err != nil {
-		r.Builder.Logger.Errorf("Failed to execute buffer:\n %s", contents)
+		r.Builder.Logger.Errorf("Failed to execute buffer:\n %s\nError: %s", contents, err.Error())
 		event.Dinghyfile = contents
 		r.Builder.EventClient.SendEvent("parse-err-bytebuffer", event)
 		return nil, err
