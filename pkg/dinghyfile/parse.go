@@ -204,8 +204,11 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		End: time.Now().UTC().Unix(),
 	}
 
-	gitInfo := struct { Org, Repo, Path, Branch string }{
-		org, repo, path, branch,
+	gitInfo := struct {
+			RawData map[string]interface{}
+			Org, Repo, Path, Branch string }{
+				r.Builder.PushRaw,
+				org, repo, path, branch,
 	}
 
 	deps := make(map[string]bool)
