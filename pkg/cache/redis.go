@@ -117,23 +117,23 @@ func (c *RedisCache) SetDeps(parent string, deps []string) {
 	//TODO:  if these redis operations fail, what happens?
 	key = compileKey("children", parent)
 	if _, err := c.Client.SRem(key, depsToDelete...).Result(); err != nil {
-		loge.WithFields(log.Fields{"operation": "child delete deps"}).Error(err)
+		loge.WithFields(log.Fields{"operation": "child delete deps"}).Debug(err)
 	}
 	if _, err := c.Client.SAdd(key, depsToAdd...).Result(); err != nil {
-		loge.WithFields(log.Fields{"operation": "child add deps"}).Error(err)
+		loge.WithFields(log.Fields{"operation": "child add deps"}).Debug(err)
 	}
 
 	for _, dep := range depsToDelete {
 		key = compileKey("parents", dep.(string))
 		if _, err := c.Client.SRem(key, parent).Result(); err != nil {
-			loge.WithFields(log.Fields{"operation": "delete deps"}).Error(err)
+			loge.WithFields(log.Fields{"operation": "delete deps"}).Debug(err)
 		}
 	}
 
 	for _, dep := range depsToAdd {
 		key = compileKey("parents", dep.(string))
 		if _, err := c.Client.SAdd(key, parent).Result(); err != nil {
-			loge.WithFields(log.Fields{"operation": "add deps"}).Error(err)
+			loge.WithFields(log.Fields{"operation": "add deps"}).Debug(err)
 		}
 	}
 }
