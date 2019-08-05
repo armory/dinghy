@@ -171,6 +171,7 @@ var githubPayloadtest = `
 `
 
 var fileService = dummy.FileService{
+	"missing_module_test": `{ {{ module "missing" }} }`,
 	"extra_data_test": `{
 		"application": "my fancy application (author: {{ .RawData.pusher.name }})",
 		"pipelines": [
@@ -652,6 +653,13 @@ func TestSpillover(t *testing.T) {
 	exp := strings.Join(strings.Fields(expected), "")
 	actual := strings.Join(strings.Fields(buf.String()), "")
 	assert.Equal(t, exp, actual)
+}
+
+func TestMissingModule(t *testing.T) {
+	r := testDinghyfileParser()
+	buf, err := r.Parse("org", "repo", "missing_module_test", "branch", nil)
+	assert.Error(t, err)
+	assert.Nil(t, buf)
 }
 
 func TestIfConditionEmpty(t *testing.T) {
