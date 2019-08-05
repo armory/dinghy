@@ -49,6 +49,7 @@ type PipelineBuilder struct {
 	Logger               log.FieldLogger
 	Ums                  []Unmarshaller
 	Notifiers            []notifiers.Notifier
+	PushRaw              map[string]interface{}
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
