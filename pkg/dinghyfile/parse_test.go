@@ -171,6 +171,7 @@ var githubPayloadtest = `
 `
 
 var fileService = dummy.FileService{
+	"missing_module_test": `{ {{ module "missing" }} }`,
 	"extra_data_test": `{
 		"application": "my fancy application (author: {{ .RawData.pusher.name }})",
 		"pipelines": [
@@ -654,6 +655,13 @@ func TestSpillover(t *testing.T) {
 	assert.Equal(t, exp, actual)
 }
 
+func TestMissingModule(t *testing.T) {
+	r := testDinghyfileParser()
+	buf, err := r.Parse("org", "repo", "missing_module_test", "branch", nil)
+	assert.Error(t, err)
+	assert.Nil(t, buf)
+}
+
 func TestIfConditionEmpty(t *testing.T) {
 	r := testDinghyfileParser()
 
@@ -1056,7 +1064,7 @@ func TestModuleFuncOddParamsError(t *testing.T) {
 	logger.EXPECT().Warnf(gomock.Eq("odd number of parameters received to module %s"), gomock.Eq(test_key)).Times(1)
 
 	modFunc := r.moduleFunc("org", "branch", map[string]bool{}, []VarMap{})
-	res := modFunc.(func(string, ...interface{}) string)(test_key, "biff")
+	res, _ := modFunc.(func(string, ...interface{}) (string, error))(test_key, "biff")
 	assert.Equal(t, "", res)
 }
 
@@ -1070,6 +1078,6 @@ func TestModuleFuncDictKeysError(t *testing.T) {
 	logger.EXPECT().Errorf(gomock.Eq("dict keys must be strings in module: %s"), gomock.Eq(test_key)).Times(1)
 
 	modFunc := r.moduleFunc("org", "branch", map[string]bool{}, []VarMap{})
-	res := modFunc.(func(string, ...interface{}) string)(test_key, 42, "foo")
+	res, _ := modFunc.(func(string, ...interface{}) (string, error))(test_key, 42, "foo")
 	assert.Equal(t, "", res)
 }
