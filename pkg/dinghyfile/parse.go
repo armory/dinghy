@@ -65,7 +65,7 @@ func (r *DinghyfileParser) parseValue(val interface{}) interface{} {
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
 func (r *DinghyfileParser) moduleFunc(org, branch string, deps map[string]bool, allVars []VarMap) interface{} {
-	return func(mod string, vars ...interface{}) string {
+	return func(mod string, vars ...interface{}) (string, error) {
 		// Record the dependency.
 		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod, branch)
 		if _, exists := deps[child]; !exists {
@@ -83,7 +83,7 @@ func (r *DinghyfileParser) moduleFunc(org, branch string, deps map[string]bool, 
 			key, ok := vars[i].(string)
 			if !ok {
 				r.Builder.Logger.Errorf("dict keys must be strings in module: %s", mod)
-				return ""
+				return "", fmt.Errorf("dict keys must be strings in module: %s", mod)
 			}
 
 			// checks for deepvariables, passes all the way down values from dinghyFile to module inside module
@@ -103,9 +103,10 @@ func (r *DinghyfileParser) moduleFunc(org, branch string, deps map[string]bool, 
 
 		result, err := r.Parse(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, branch, append([]VarMap{newVars}, allVars...))
 		if err != nil {
-			r.Builder.Logger.Errorf("Error rendering imported module '%s': %s", mod, err.Error())
+			r.Builder.Logger.Errorf("error rendering imported module '%s': %s", mod, err.Error())
+			return "", fmt.Errorf("error rendering imported module '%s': %s", mod, err.Error())
 		}
-		return result.String()
+		return result.String(), nil
 	}
 }
 
