@@ -42,7 +42,7 @@ type Status struct {
 func (p *Push) SetCommitStatus(status git.Status) {
 	for _, c := range p.Commits {
 		s := newStatus(status, p.DeckBaseURL)
-		if err := p.GitHub.CreateStatus(s, p.Org(), p.Repo(), c.ID); err != nil {
+		if err := p.Config.CreateStatus(s, p.Org(), p.Repo(), c.ID); err != nil {
 			p.Logger.Error(err)
 			return
 		}

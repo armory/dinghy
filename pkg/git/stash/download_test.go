@@ -42,7 +42,9 @@ func TestEncodeUrl(t *testing.T) {
 
 	for _, c := range cases {
 		downloader := &FileService{
-			StashEndpoint: c.endpoint,
+			Config: Config{
+				Endpoint: c.endpoint,
+			},
 		}
 		url := downloader.EncodeURL(c.owner, c.repo, c.path, c.branch)
 
@@ -71,7 +73,9 @@ func TestDecodeUrl(t *testing.T) {
 
 	for _, c := range cases {
 		downloader := &FileService{
-			StashEndpoint: c.endpoint,
+			Config: Config{
+				Endpoint: c.endpoint,
+			},
 		}
 		org, repo, path, branch := downloader.DecodeURL(c.url)
 

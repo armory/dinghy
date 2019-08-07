@@ -17,8 +17,9 @@
 package bbcloud
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEncodeUrl(t *testing.T) {
@@ -42,7 +43,9 @@ func TestEncodeUrl(t *testing.T) {
 
 	for _, c := range cases {
 		downloader := &FileService{
-			BbcloudEndpoint: c.endpoint,
+			Config: Config{
+				Endpoint: c.endpoint,
+			},
 		}
 		url := downloader.EncodeURL(c.owner, c.repo, c.path, c.branch)
 
@@ -72,7 +75,9 @@ func TestDecodeUrl(t *testing.T) {
 
 	for _, c := range cases {
 		downloader := &FileService{
-			BbcloudEndpoint: c.endpoint,
+			Config: Config{
+				Endpoint: c.endpoint,
+			},
 		}
 		org, repo, path, branch := downloader.DecodeURL(c.url)
 

@@ -26,7 +26,7 @@ type Push struct {
 	Commits     []Commit   `json:"commits"`
 	Repository  Repository `json:"repository"`
 	Ref         string     `json:"ref"`
-	GitHub      GitHub
+	Config      Config
 	DeckBaseURL string
 	Logger      logrus.FieldLogger
 }
