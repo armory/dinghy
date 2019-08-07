@@ -41,7 +41,7 @@ func TestSetCommitStatusSuccessfully(t *testing.T) {
 	defer ts.Close()
 	// TODO: Do not use global variable. This will lead to side-effects.
 	p := Push{
-		GitHub: GitHub{
+		Config: Config{
 			Endpoint: ts.URL,
 		},
 		Repository: Repository{Organization: "armory", Name: "dinghy"},
@@ -66,7 +66,7 @@ func TestSetCommitStatusFails(t *testing.T) {
 
 	// TODO: Do not use global variable. This will lead to side-effects.
 	p := Push{
-		GitHub: GitHub{
+		Config: Config{
 			Endpoint: "invalid-url",
 		},
 		Repository: Repository{Organization: "armory", Name: "dinghy"},
