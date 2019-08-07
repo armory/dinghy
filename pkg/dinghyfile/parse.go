@@ -66,6 +66,11 @@ func (r *DinghyfileParser) parseValue(val interface{}) interface{} {
 // TODO: this function errors, it should be returning the error to the caller to be handled
 func (r *DinghyfileParser) moduleFunc(org, branch string, deps map[string]bool, allVars []VarMap) interface{} {
 	return func(mod string, vars ...interface{}) (string, error) {
+		// Don't bother if the TemplateOrg isn't set.
+		if r.Builder.TemplateOrg == "" {
+			return "", fmt.Errorf("Cannot load module %s; templateOrg not configured", mod)
+		}
+
 		// Record the dependency.
 		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod, branch)
 		if _, exists := deps[child]; !exists {
@@ -197,19 +202,20 @@ func (r *DinghyfileParser) makeSlice(args ...interface{}) []interface{} {
 func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) (*bytes.Buffer, error) {
 	module := true
 	event := &events.Event{
-		Start: time.Now().UTC().Unix(),
-		Org:   org,
-		Repo:  repo,
-		Path:  path,
+		Start:  time.Now().UTC().Unix(),
+		Org:    org,
+		Repo:   repo,
+		Path:   path,
 		Branch: branch,
-		End: time.Now().UTC().Unix(),
+		End:    time.Now().UTC().Unix(),
 	}
 
 	gitInfo := struct {
-			RawData map[string]interface{}
-			Org, Repo, Path, Branch string }{
-				r.Builder.PushRaw,
-				org, repo, path, branch,
+		RawData                 map[string]interface{}
+		Org, Repo, Path, Branch string
+	}{
+		r.Builder.PushRaw,
+		org, repo, path, branch,
 	}
 
 	deps := make(map[string]bool)
