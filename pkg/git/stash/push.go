@@ -141,7 +141,7 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 	return
 }
 
-type StashConfig struct {
+type Config struct {
 	Username string
 	Token    string
 	Endpoint string
@@ -150,7 +150,7 @@ type StashConfig struct {
 }
 
 // NewPush creates a new Push
-func NewPush(payload WebhookPayload, cfg StashConfig) (*Push, error) {
+func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
 	p := &Push{
 		Payload:      payload,
 		ChangedFiles: make([]string, 0),

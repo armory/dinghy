@@ -166,8 +166,8 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: we're assigning config in two places here, we should refactor this
-	gh := github.GitHub{Endpoint: wa.Config.GithubEndpoint, Token: wa.Config.GitHubToken}
-	p.GitHub = gh
+	gh := github.Config{Endpoint: wa.Config.GithubEndpoint, Token: wa.Config.GitHubToken}
+	p.Config = gh
 	p.DeckBaseURL = wa.Config.Deck.BaseURL
 	fileService := github.FileService{GitHub: &gh, Logger: wa.Logger}
 
@@ -193,7 +193,7 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload.IsOldStash = true
-	stashConfig := stash.StashConfig{
+	stashConfig := stash.Config{
 		Endpoint: wa.Config.StashEndpoint,
 		Username: wa.Config.StashUsername,
 		Token:    wa.Config.StashToken,
@@ -211,10 +211,8 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	// the receiver on the buildPipelines. We don't need to reassign the values to
 	// fileService here.
 	fileService := stash.FileService{
-		StashToken:    wa.Config.StashToken,
-		StashUsername: wa.Config.StashUsername,
-		StashEndpoint: wa.Config.StashEndpoint,
-		Logger:        wa.Logger,
+		Config: stashConfig,
+		Logger: wa.Logger,
 	}
 	wa.Logger.Infof("Building pipeslines from Stash webhook")
 	wa.buildPipelines(p, body, &fileService, w)
@@ -273,10 +271,8 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		// the receiver on buildPipelines. We don't need to reassign the values to
 		// fileService here.
 		fileService := bbcloud.FileService{
-			BbcloudEndpoint: wa.Config.StashEndpoint,
-			BbcloudUsername: wa.Config.StashUsername,
-			BbcloudToken:    wa.Config.StashToken,
-			Logger:          wa.Logger,
+			Config: bbcloudConfig,
+			Logger: wa.Logger,
 		}
 
 		wa.buildPipelines(p, body, &fileService, w)
@@ -306,12 +302,12 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		}
 
 		payload.IsOldStash = false
-		stashConfig := stash.StashConfig{
+		stashConfig := stash.Config{
 			Endpoint: wa.Config.StashEndpoint,
 			Username: wa.Config.StashUsername,
 			Token:    wa.Config.StashToken,
 
-			Logger:   wa.Logger,
+			Logger: wa.Logger,
 		}
 		p, err := stash.NewPush(payload, stashConfig)
 		if err != nil {
@@ -323,10 +319,8 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		// the receiver on buildPipelines. We don't need to reassign the values to
 		// fileService here.
 		fileService := stash.FileService{
-			StashToken:    wa.Config.StashToken,
-			StashUsername: wa.Config.StashUsername,
-			StashEndpoint: wa.Config.StashEndpoint,
-			Logger:        wa.Logger,
+			Config: stashConfig,
+			Logger: wa.Logger,
 		}
 
 		wa.buildPipelines(p, body, &fileService, w)

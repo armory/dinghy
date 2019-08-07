@@ -28,11 +28,9 @@ import (
 
 // FileService is for working with repositories
 type FileService struct {
-	cache           local.Cache
-	BbcloudEndpoint string
-	BbcloudToken    string
-	BbcloudUsername string
-	Logger          logrus.FieldLogger
+	cache  local.Cache
+	Config Config
+	Logger logrus.FieldLogger
 }
 
 // Download downloads a file from Bitbucket Cloud.
@@ -51,7 +49,7 @@ func (f *FileService) Download(org, repo, path, branch string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.SetBasicAuth(f.BbcloudUsername, f.BbcloudToken)
+	req.SetBasicAuth(f.Config.Username, f.Config.Token)
 	resp, err := http.DefaultClient.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
@@ -77,7 +75,7 @@ func (f *FileService) Download(org, repo, path, branch string) (string, error) {
 
 // EncodeURL returns the git url for a given org, repo, path and branch
 func (f *FileService) EncodeURL(org, repo, path, branch string) string {
-	return fmt.Sprintf(`%s/repositories/%s/%s/src/%s/%s?raw`, f.BbcloudEndpoint, org, repo, branch, path)
+	return fmt.Sprintf(`%s/repositories/%s/%s/src/%s/%s?raw`, f.Config.Endpoint, org, repo, branch, path)
 }
 
 // DecodeURL takes a url and returns the org, repo, path and branch
