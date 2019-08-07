@@ -195,7 +195,7 @@ var fileService = dummy.FileService{
 		]
 		{{ end }}
     }`,
-    "range_test": `{
+	"range_test": `{
 		"stages": [
 			{{ $mods := makeSlice "mod1" "mod2" }}
 			{{ range $mods }}
@@ -662,18 +662,27 @@ func TestMissingModule(t *testing.T) {
 	assert.Nil(t, buf)
 }
 
+func TestUnconfiguredTemplateOrg(t *testing.T) {
+	r := testDinghyfileParser()
+	r.Builder.TemplateOrg = ""
+	buf, err := r.Parse("org", "repo", "missing_module_test", "branch", nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Cannot load module missing; templateOrg not configured")
+	assert.Nil(t, buf)
+}
+
 func TestIfConditionEmpty(t *testing.T) {
 	r := testDinghyfileParser()
 
 	// if we don't match the if condition this should be blank
-	buf , _ := r.Parse("org", "repo", "if_test", "testing", nil)
+	buf, _ := r.Parse("org", "repo", "if_test", "testing", nil)
 	expected := `{}`
 	exp := strings.Join(strings.Fields(expected), "")
 	actual := strings.Join(strings.Fields(buf.String()), "")
 	assert.Equal(t, exp, actual)
 
 	// if we do match the if condition, we should see some stage data
-	buf , _ = r.Parse("foo", "repo", "if_test", "master", nil)
+	buf, _ = r.Parse("foo", "repo", "if_test", "master", nil)
 	expected = `{"stages":[{"foo":"bar","type":"deploy"},{"type":"jenkins"}]}`
 	exp = strings.Join(strings.Fields(expected), "")
 	actual = strings.Join(strings.Fields(buf.String()), "")
@@ -687,7 +696,7 @@ func TestConditionalExtraDataFromGit(t *testing.T) {
 	assert.Nil(t, err)
 	r.Builder.PushRaw = d
 
-	buf , _ := r.Parse("org", "repo", "extra_data_test", "testing", nil)
+	buf, _ := r.Parse("org", "repo", "extra_data_test", "testing", nil)
 	expected := `{"application":"myfancyapplication(author:Codertocat)","pipelines":["stages":[{"foo":"bar","type":"deploy"}{"type":"jenkins"}]{"parameterConfig":[{"description":"ServiceName","name":"service","required":true,{"parameterConfig":[{"artifact":artifact11,}}",{"parameterConfig":[{"artifact":artifact22,}}",}}]}`
 	exp := strings.Join(strings.Fields(expected), "")
 	actual := strings.Join(strings.Fields(buf.String()), "")
@@ -696,7 +705,7 @@ func TestConditionalExtraDataFromGit(t *testing.T) {
 
 func TestRangeSyntax(t *testing.T) {
 	r := testDinghyfileParser()
-	buf , _ := r.Parse("org", "repo", "range_test", "testing", nil)
+	buf, _ := r.Parse("org", "repo", "range_test", "testing", nil)
 
 	const expected = `{"stages":[{"foo":"bar","type":"deploy"}{"type":"jenkins"}]}`
 	exp := strings.Join(strings.Fields(expected), "")

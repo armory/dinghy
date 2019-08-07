@@ -51,6 +51,7 @@ func testBasePipelineBuilder() *PipelineBuilder {
 		EventClient: &EventsTestClient{},
 		Logger:      logrus.New(),
 		Ums:         []Unmarshaller{&DinghyJsonUnmarshaller{}},
+		TemplateOrg: "armory",
 	}
 }
 
