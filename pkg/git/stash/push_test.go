@@ -17,6 +17,9 @@
 package stash
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -27,4 +30,43 @@ func TestContainsFile(t *testing.T) {
 	assert.True(t, push.ContainsFile("Dinghyfile"))
 	assert.True(t, push.ContainsFile("SubdirDinghyfile"))
 	assert.False(t, push.ContainsFile("dinghyfile"))
+}
+
+func TestIsBranch(t *testing.T) {
+	testCases := map[string]struct {
+		webhookBranchName         string
+		configBranchName        string
+		expected    bool
+	}{
+		"true": {
+			webhookBranchName: "refs/heads/some_branch",
+			configBranchName: "some_branch",
+			expected: true,
+		},
+		"true again": {
+			webhookBranchName: "refs/heads/some_branch",
+			configBranchName: "refs/heads/some_branch",
+			expected: true,
+		},
+		"false": {
+			webhookBranchName: "refs/heads/some_branch",
+			configBranchName: "meh",
+			expected: false,
+		},
+	}
+
+	for desc, tc := range testCases {
+		t.Run(desc, func(t *testing.T) {
+			payload :=  fmt.Sprintf(`{"changes": [{"refId": "%s"}]}`, tc.webhookBranchName)
+			webhookPayload := WebhookPayload{}
+			if err := json.NewDecoder(bytes.NewBufferString(payload)).Decode(&webhookPayload); err != nil {
+				t.Fatalf(err.Error())
+			}
+
+			p := &Push{Payload: webhookPayload}
+
+			actual := p.IsBranch(tc.configBranchName)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
 }

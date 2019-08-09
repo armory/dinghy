@@ -47,6 +47,7 @@ type Push interface {
 	Repo() string
 	Org() string
 	Branch() string
+	IsBranch(string) bool
 	IsMaster() bool
 	SetCommitStatus(s git.Status)
 	Name() string
@@ -376,7 +377,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	// see if we have any configurations for this repo.
 	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
 	if rc := wa.Config.GetRepoConfig(p.Name(), p.Repo()); rc != nil {
-		if rc.Branch != p.Branch() {
+		if p.IsBranch(rc.Branch) {
 			wa.Logger.Infof("Received request from branch %s. Does not match configured branch %s. Skipping.", p.Branch(), rc.Branch)
 			return
 		}
