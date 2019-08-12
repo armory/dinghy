@@ -211,6 +211,12 @@ func (p *Push) Branch() string {
 	return ""
 }
 
+func (p *Push) IsBranch(branchToTry string) bool {
+	// our configuration only requires the branch name, but the branch comes
+	// from the webhook as "refs/heads/branch"
+	return strings.Replace(p.Branch(), "refs/heads/", "", 1) == strings.Replace(branchToTry, "refs/heads/", "", 1)
+}
+
 func (p *Push) changes() []WebhookChange {
 	if p.Payload.IsOldStash {
 		return p.Payload.StashChanges
