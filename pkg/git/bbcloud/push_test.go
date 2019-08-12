@@ -269,3 +269,53 @@ func contains(files []string, file string) bool {
 	}
 	return false
 }
+
+func TestIsBranch(t *testing.T) {
+	testCases := map[string]struct {
+		webhookBranchName         string
+		configBranchName        string
+		expected    bool
+	}{
+		"true": {
+			webhookBranchName: "refs/heads/some_branch",
+			configBranchName: "some_branch",
+			expected: true,
+		},
+		"true again": {
+			webhookBranchName: "refs/heads/some_branch",
+			configBranchName: "refs/heads/some_branch",
+			expected: true,
+		},
+		"false": {
+			webhookBranchName: "refs/heads/some_branch",
+			configBranchName: "meh",
+			expected: false,
+		},
+	}
+
+	for desc, tc := range testCases {
+		t.Run(desc, func(t *testing.T) {
+			webhookPayload := WebhookPayload{}
+			payloadString := fmt.Sprintf(webhookPayloadOneChange, tc.webhookBranchName, tc.webhookBranchName)
+			if err := json.NewDecoder(bytes.NewBufferString(payloadString)).Decode(&webhookPayload); err != nil {
+				t.Fatalf(err.Error())
+			}
+			diffStatResponse := fmt.Sprintf(diffstatResponseOneFile, "dinghyfile_bkp", "dinghyfile", 1, 1)
+
+			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+				if _, err := res.Write([]byte(diffStatResponse)); err != nil {
+					t.Fatalf(err.Error())
+				}
+			}))
+			defer func() { testServer.Close() }()
+
+			push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL})
+			if err != nil {
+				t.Fatalf(err.Error())
+			}
+
+			actual := push.IsBranch(tc.configBranchName)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
