@@ -55,6 +55,11 @@ func (p *Push) Branch() string {
 	return "branch_name"
 }
 
+// IsBranch returns a boolean value indicating if the provided value matches the branch on the current request
+func (p* Push) IsBranch(branchToTry string) bool {
+	return true
+}
+
 // SetCommitStatus sets a commit status
 func (p *Push) SetCommitStatus(s git.Status) {
 	// Do nothing

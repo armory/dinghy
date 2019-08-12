@@ -90,9 +90,6 @@ func (f *FileService) downloadLines(url string, start int) (lines []string, next
 // Download downloads a file from Stash.
 // Stash's API returns the file's contents as a paginated list of lines
 func (f *FileService) Download(org, repo, path, branch string) (string, error) {
-	// bitbucket server & stash require the full path to the branch name
-	branch = fmt.Sprintf("refs/heads/%s", branch)
-
 	url := f.EncodeURL(org, repo, path, branch)
 	body := f.cache.Get(url)
 	if body != "" {
