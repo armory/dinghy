@@ -18,7 +18,6 @@ package plank
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -27,6 +26,14 @@ import (
 	"runtime"
 	"time"
 )
+
+type ErrUnsupportedStatusCode struct {
+	Code int
+}
+
+func (e *ErrUnsupportedStatusCode) Error() string {
+	return fmt.Sprintf("unsupported status code: %d", e.Code)
+}
 
 // Client for working with API servers that accept and return JSON payloads.
 type Client struct {
@@ -170,7 +177,7 @@ func (c *Client) Get(url string, dest interface{}) error {
 		}
 		return nil
 	}
-	return errors.New(fmt.Sprintf("Unsupported status code: %d", resp.StatusCode))
+	return &ErrUnsupportedStatusCode{Code:resp.StatusCode}
 }
 
 func (c *Client) GetWithRetry(url string, dest interface{}) error {
@@ -221,7 +228,7 @@ func (c *Client) Post(url string, contentType ContentType, body interface{}, des
 			return nil
 		}
 	}
-	return errors.New(fmt.Sprintf("Unsupported status code: %d", resp.StatusCode))
+	return &ErrUnsupportedStatusCode{Code:resp.StatusCode}
 }
 
 func (c *Client) PostWithRetry(url string, contentType ContentType, body interface{}, dest interface{}) error {
@@ -270,7 +277,7 @@ func (c *Client) Put(url string, contentType ContentType, body interface{}, dest
 			return nil
 		}
 	}
-	return errors.New(fmt.Sprintf("Unsupported status code: %d", resp.StatusCode))
+	return &ErrUnsupportedStatusCode{Code:resp.StatusCode}
 }
 
 func (c *Client) PutWithRetry(url string, contentType ContentType, body interface{}, dest interface{}) error {
@@ -293,7 +300,7 @@ func (c *Client) Delete(url string) error {
 		// There is no support for receiving a payload back from a DELETE...
 		return nil
 	}
-	return errors.New(fmt.Sprintf("Unsupported status code: %d", resp.StatusCode))
+	return &ErrUnsupportedStatusCode{Code:resp.StatusCode}
 }
 
 func (c *Client) DeleteWithRetry(url string) error {
