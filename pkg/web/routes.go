@@ -135,8 +135,9 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
-	fileService["dinghyfile"] = buf.String()
-	wa.Logger.Infof("Received payload: %s", fileService["dinghyfile"])
+	fileService["master"] = make(map[string]string)
+	fileService["master"]["dinghyfile"] = buf.String()
+	wa.Logger.Infof("Received payload: %s", fileService["master"]["dinghyfile"])
 
 	if err := builder.ProcessDinghyfile("", "", "dinghyfile", ""); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
