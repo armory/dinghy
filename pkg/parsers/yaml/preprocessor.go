@@ -56,7 +56,7 @@ func cleanupMapValue(v interface{}) interface{} {
 // **** End shameless yaml to map[string]interface{} conversion
 
 func dummySubstitute(args ...interface{}) string {
-	return `a: b`
+	return `# a: b`
 }
 
 func dummyKV(args ...interface{}) string {
@@ -93,7 +93,6 @@ func removeModules(input string) string {
 	return buf.String()
 }
 
-
 // ParseGlobalVars returns the map of global variables in the dinghyfile
 func ParseGlobalVars(input string) (interface{}, error) {
 
@@ -105,7 +104,9 @@ func ParseGlobalVars(input string) (interface{}, error) {
 	}
 	data, ok := d.(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("unable to serialize yaml to map")
+		// Return an empty map here -- we may want to ignore this error, or just
+		// warn on it instead.
+		return make(map[string]interface{}), fmt.Errorf("unable to serialize yaml to map")
 	}
 
 	if val, ok := data["globals"]; ok {

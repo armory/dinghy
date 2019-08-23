@@ -2,7 +2,6 @@ package yaml
 
 import (
 	"errors"
-	"fmt"
 	"github.com/armory/dinghy/pkg/cache"
 	"github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/armory/dinghy/pkg/git/dummy"
@@ -232,6 +231,20 @@ waitForCompletion: true`,
 
 	// DictKeysError
 	"dict_keys_error": "",
+
+	// Inserting entire pipeline
+	"pipeline_insert_base": `
+application: "foo"
+pipelines:
+- application: "foo"
+  name: "bar"
+  stages:
+{{ module "pipeline_insert_mod" }}
+  triggers: []
+`,
+
+	"pipeline_insert_mod": `  - name: "stage"
+    type: wait`,
 }
 
 // This returns a test PipelineBuilder object.
@@ -579,8 +592,6 @@ pipelines:
 - parameterConfig:
   - artifact: artifact22
 `
-	fmt.Println(buf.String())
-
 	// strip whitespace from both strings for assertion
 	exp := strings.Join(strings.Fields(expected), "")
 	actual := strings.Join(strings.Fields(buf.String()), "")
@@ -655,7 +666,8 @@ func TestVarParams(t *testing.T) {
 
 	buf, err := r.Parse("org", "repo", "var_params.outer", "branch", nil)
 	// Unfortunately, we don't currently catch this failure here.
-	assert.Nil(t, err)
+	require.Nil(t, err)
+	require.NotNil(t, buf)
 
 	var actual interface{}
 	err = yaml.Unmarshal(buf.Bytes(), &actual)
@@ -679,3 +691,24 @@ func TestVarParams(t *testing.T) {
 	*/
 }
 
+func TestPipelineSub(t *testing.T) {
+	r := testDinghyfileParser()
+	r.Builder.DinghyfileName = "pipeline_insert_base"
+	r.Builder.TemplateOrg = "org"
+	r.Builder.TemplateRepo = "repo"
+
+	const expected = `
+application: "foo"
+pipelines:
+- application: "foo"
+  name: "bar"
+  stages:
+  - name: "stage"
+    type: wait
+  triggers: []
+`
+
+	buf, err := r.Parse("org", "repo", "pipeline_insert_base", "branch", nil)
+	require.Nil(t, err)
+	assert.Equal(t, expected, buf.String())
+}

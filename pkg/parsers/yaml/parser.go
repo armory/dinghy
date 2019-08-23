@@ -228,8 +228,11 @@ func (r *DinghyfileYamlParser) Parse(org, repo, path, branch string, vars []ding
 		//module = false
 		gvs, err := ParseGlobalVars(contents)
 		if err != nil {
-			r.Builder.Logger.Errorf("Failed to parse global vars: %s", err.Error())
-			return nil, err
+			if gvs == nil {
+				r.Builder.Logger.Errorf("Failed to parse global vars: %s", err.Error())
+				return nil, err
+			}
+			r.Builder.Logger.Warnf("Failed to parse global vars, but continuing anyway: %s", err.Error())
 		}
 
 		gvMap, ok := gvs.(map[string]interface{})
