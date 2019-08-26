@@ -261,9 +261,15 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		}
 	}
 
+	// NOTE:  I don't think moduleFunc needs to take branch argument;
+	// moduleFunc should be able to figure out the branch needed from the
+	// configuration (since it has to have access to TemplateOrg and TemplateRepo
+	// anyway.  But MAYBE we want to actually figure that out here where we
+	// have an application in context?  So for now, hardcoding module branch
+	// to "master"
 	funcMap := template.FuncMap{
-		"module":     r.moduleFunc(org, branch, deps, vars),
-		"appModule":  r.moduleFunc(org, branch, deps, vars),
+		"module":     r.moduleFunc(org, "master", deps, vars),
+		"appModule":  r.moduleFunc(org, "master", deps, vars),
 		"pipelineID": r.pipelineIDFunc(vars),
 		"var":        r.varFunc(vars),
 		"makeSlice":  r.makeSlice,
