@@ -145,8 +145,10 @@ const mod2 = `{
 }`
 
 var fileService = dummy.FileService{
-	"mod1": mod1,
-	"mod2": mod2,
+	"master": {
+		"mod1": mod1,
+		"mod2": mod2,
+	},
 }
 
 // TestSpinnakerPipelineUpdate tests pipeline update in spinnaker

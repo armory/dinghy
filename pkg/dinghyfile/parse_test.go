@@ -171,8 +171,9 @@ var githubPayloadtest = `
 `
 
 var fileService = dummy.FileService{
-	"missing_module_test": `{ {{ module "missing" }} }`,
-	"extra_data_test": `{
+	"master": {
+		"missing_module_test": `{ {{ module "missing" }} }`,
+		"extra_data_test": `{
 		"application": "my fancy application (author: {{ .RawData.pusher.name }})",
 		"pipelines": [
 			"stages": [
@@ -187,7 +188,7 @@ var fileService = dummy.FileService{
 			}}
 		]
 	}`,
-	"if_test": `{
+		"if_test": `{
 		{{ if eq .Branch "master" }}
 		"stages": [
 			{{ module "mod1" }},
@@ -195,7 +196,7 @@ var fileService = dummy.FileService{
 		]
 		{{ end }}
     }`,
-	"range_test": `{
+		"range_test": `{
 		"stages": [
 			{{ $mods := makeSlice "mod1" "mod2" }}
 			{{ range $mods }}
@@ -203,25 +204,25 @@ var fileService = dummy.FileService{
 			{{ end }}
 		]
 	}`,
-	"df": `{
+		"df": `{
 		"stages": [
 			{{ module "mod1" }},
 			{{ module "mod2" }}
 		]
 	}`,
-	"df2": `{{ module "mod4" "foo" "baz" "waitTime" 100 }}`,
-	"df3": `{
+		"df2": `{{ module "mod4" "foo" "baz" "waitTime" 100 }}`,
+		"df3": `{
 		"stages": [
 			{{ module "mod6" "waitTime" 10 "refId" { "c": "d" } "requisiteStageRefIds" ["1", "2", "3"] }}
 		]
 	}`,
-	"df4": `{{ module "mod3" "foo" "" }}`,
-	"df_bad": `{
+		"df4": `{{ module "mod3" "foo" "" }}`,
+		"df_bad": `{
 		"stages": [
 			{{ module "mod1" }
 		]
 	}`,
-	"df_global": `{
+		"df_global": `{
 		"application": "search",
 		"globals": {
 			"type": "foo"
@@ -231,7 +232,7 @@ var fileService = dummy.FileService{
 			{{ module "mod2" "type" "foobar" }}
 			]
 	}`,
-	"df_spec": `{
+		"df_spec": `{
 		"spec": {
 			"name": "search",
 			"email": "unknown@unknown.com",
@@ -248,7 +249,7 @@ var fileService = dummy.FileService{
 			{{ module "mod2" "type" "foobar" }}
 			]
 	}`,
-	"df_app_global": `{
+		"df_app_global": `{
 		"application": "search",
 		{{ appModule "appmod" }},
 		"globals": {
@@ -259,7 +260,7 @@ var fileService = dummy.FileService{
 			{{ module "mod2" "type" "foobar" }}
 			]
 	}`,
-	"df_global/nested": `{
+		"df_global/nested": `{
 		"application": "search",
 		"globals": {
 			"type": "foo"
@@ -269,27 +270,27 @@ var fileService = dummy.FileService{
 			{{ module "mod2" "type" "foobar" }}
 			]
 	}`,
-	"appmod": `"description": "description"`,
-	"mod1": `{
+		"appmod": `"description": "description"`,
+		"mod1": `{
 		"foo": "bar",
 		"type": "{{ var "type" ?: "deploy" }}"
 	}`,
-	"mod2": `{
+		"mod2": `{
 		"type": "{{ var "type" ?: "jenkins" }}"
 	}`,
-	"mod3": `{"foo": "{{ var "foo" ?: "baz" }}"}`,
+		"mod3": `{"foo": "{{ var "foo" ?: "baz" }}"}`,
 
-	"mod4": `{
+		"mod4": `{
 		"foo": "{{ var "foo" "baz" }}",
 		"a": "{{ var "nonexistent" "b" }}",
 		"nested": {{ module "mod5" }}
 	}`,
 
-	"mod5": `{
+		"mod5": `{
 		"waitTime": {{ var "waitTime" 1000 }}
 	}`,
 
-	"mod6": `{
+		"mod6": `{
 		"name": "Wait",
 		"refId": {{ var "refId" {} }},
 		"requisiteStageRefIds": {{ var "requisiteStageRefIds" [] }},
@@ -297,7 +298,7 @@ var fileService = dummy.FileService{
 		"waitTime": {{ var "waitTime" 12044 }}
 	}`,
 
-	"nested_var_df": `{
+		"nested_var_df": `{
 		"application": "dinernotifications",
 		"globals": {
 			 "application": "dinernotifications"
@@ -307,7 +308,7 @@ var fileService = dummy.FileService{
 		]
 	}`,
 
-	"preprod_teardown.pipeline.module": `{
+		"preprod_teardown.pipeline.module": `{
 		"parameterConfig": [
 			{
 				"default": "{{ var "discovery-service-name" ?: "@application" }}",
@@ -317,7 +318,7 @@ var fileService = dummy.FileService{
 			}
 		}`,
 
-	"deep_var_df": `{
+		"deep_var_df": `{
 		"application": "dinernotifications",
 		"globals": {
 			 "application": "dinernotifications"
@@ -330,7 +331,7 @@ var fileService = dummy.FileService{
 		]
 	}`,
 
-	"deep.pipeline.module": `{
+		"deep.pipeline.module": `{
 		"parameterConfig": [
 			{
 				"description": "Service Name",
@@ -345,21 +346,21 @@ var fileService = dummy.FileService{
 			}
 		}`,
 
-	"deep.stage.module": `{
+		"deep.stage.module": `{
 		"parameterConfig": [
 			{
 				"artifact": {{ var "artifact" }},
 			}
 		}`,
 
-	"empty_default_variables": `{
+		"empty_default_variables": `{
 		"application": "dinernotifications",
 		"pipelines": [
 			{{ module "empty_default_variables.pipeline.module" }}
 		]
 	}`,
 
-	"empty_default_variables.pipeline.module": `{
+		"empty_default_variables.pipeline.module": `{
 		"parameterConfig": [
 			{
 				"default": "{{ var "discovery-service-name" ?: "" }}",
@@ -369,25 +370,25 @@ var fileService = dummy.FileService{
 			}
 		}`,
 
-	// if_params reproduced/resolved an issue Giphy had where they were trying to use an
-	// if conditional inside a {{ module }} call.
-	"if_params.dinghyfile": `{
+		// if_params reproduced/resolved an issue Giphy had where they were trying to use an
+		// if conditional inside a {{ module }} call.
+		"if_params.dinghyfile": `{
 		"test": "if_params",
 		"result": {{ module "if_params.midmodule"
 								 "straightvar" "foo"
 								 "condvar" true }}
 	}`,
-	// NOTE:  This next example is a _functional_ way to do conditional arguments to a module.
-	// This is the result of trying to debug why this markup didn't work properly:
-	//    {{ module "if_params.bottom"
-	//              "foo" "bar"
-	//              {{ if var "condvar" }}
-	//              "extra" ["foo", "bar"]
-	//              {{ end }}
-	//   }}
-	// The reason is that nested template markup isn't evaluated inside-out, so the argument
-	// to "module" is actually the string "{{ if var "condvar" }}"
-	"if_params.midmodule": `
+		// NOTE:  This next example is a _functional_ way to do conditional arguments to a module.
+		// This is the result of trying to debug why this markup didn't work properly:
+		//    {{ module "if_params.bottom"
+		//              "foo" "bar"
+		//              {{ if var "condvar" }}
+		//              "extra" ["foo", "bar"]
+		//              {{ end }}
+		//   }}
+		// The reason is that nested template markup isn't evaluated inside-out, so the argument
+		// to "module" is actually the string "{{ if var "condvar" }}"
+		"if_params.midmodule": `
 		{{ if var "condvar" }}
 		{{ module "if_params.bottom"
 								 "foo" "bar"
@@ -397,27 +398,27 @@ var fileService = dummy.FileService{
 		{{ module "if_params.bottom" "foo" "bar" }}
 		{{ end }}
 	`,
-	"if_params.bottom": `{
+		"if_params.bottom": `{
 		"foo": "{{ var "foo" ?: "default" }}",
 		"biff": {{ var "extra" ?: ["NotSet"] }}
 	}`,
 
-	// var_params tests whether or not you can reference a variable inside a value
-	// being sent to a module.  The answer is "no"; and this will result in invalid JSON.
-	"var_params.outer": `
+		// var_params tests whether or not you can reference a variable inside a value
+		// being sent to a module.  The answer is "no"; and this will result in invalid JSON.
+		"var_params.outer": `
 		{{ module "var_params.middle" "myvar" "success" }}
 	`,
-	"var_params.middle": `
+		"var_params.middle": `
 		{{ module "var_params.inner"
 							"foo" [ { "bar": {{ var "myvar" ?: "failure"}} } ]
 		}}
 	`,
-	"var_params.inner": `{
+		"var_params.inner": `{
 		"foo": {{ var "foo" }}
 	}`,
 
-	// Testing the pipelineID function
-	"pipelineIDTest": `{
+		// Testing the pipelineID function
+		"pipelineIDTest": `{
 		"application": "pipelineidexample",
 		"failPipeline": true,
 		"name": "Pipeline",
@@ -428,41 +429,57 @@ var fileService = dummy.FileService{
 		"waitForCompletion": true
 	}`,
 
-	// RenderPreprocessFail
-	"preprocess_fail": `{
+		// RenderPreprocessFail
+		"preprocess_fail": `{
 		{{ 
 	}`,
 
-	// RenderParseGlobalVarsFail
-	"global_vars_parse_fail": `
+		// RenderParseGlobalVarsFail
+		"global_vars_parse_fail": `
 		["foo", "bar"]
 	`,
 
-	// RenderGlobalVarsExtractFail
-	"global_vars_extract_fail": `{
+		// RenderGlobalVarsExtractFail
+		"global_vars_extract_fail": `{
 		"globals": 42
 	}`,
 
-	// VarFuncNotDefined
-	"varfunc_not_defined": `{
+		// VarFuncNotDefined
+		"varfunc_not_defined": `{
 	  "test": {{ var "biff" }}
 	}`,
 
-	// TemplateParseFail
-	"template_parse_fail": `{
+		// TemplateParseFail
+		"template_parse_fail": `{
 	  "test": {{ nope "biff" }}
 	}`,
 
-	// TemplateBufferFail
-	"template_buffer_fail": `{
+		// TemplateBufferFail
+		"template_buffer_fail": `{
 	  "test": {{ if 4 gt 3 }} "biff" {{ end }}
 	}`,
 
-	// OddParamsError
-	"odd_params_error": "",
+		// OddParamsError
+		"odd_params_error": "",
 
-	// DictKeysError
-	"dict_keys_error": "",
+		// DictKeysError
+		"dict_keys_error": "",
+	},
+	"branch": {
+		"if_test": `{
+		{{ if eq .Branch "master" }}
+		"stages": [
+			{{ module "mod1" }},
+			{{ module "mod2" }}
+		]
+		{{ end }}
+    }`,
+		"different_branch": `{
+		"stages: [
+		  {{ module "mod1" }}
+		]
+		}`,
+	},
 }
 
 // This returns a test PipelineBuilder object.
@@ -480,7 +497,7 @@ func testDinghyfileParser() *DinghyfileParser {
 
 func TestGracefulErrorHandling(t *testing.T) {
 	builder := testDinghyfileParser()
-	_, err := builder.Parse("org", "repo", "df_bad", "branch", nil)
+	_, err := builder.Parse("org", "repo", "df_bad", "master", nil)
 	assert.NotNil(t, err, "Got non-nil output for mal-formed template action in df_bad")
 }
 
@@ -489,7 +506,7 @@ func TestNestedVars(t *testing.T) {
 	r.Builder.DinghyfileName = "nested_var_df"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, _ := r.Parse("org", "repo", "nested_var_df", "branch", nil)
+	buf, _ := r.Parse("org", "repo", "nested_var_df", "master", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -608,7 +625,7 @@ func TestGlobalVars(t *testing.T) {
 			r := testDinghyfileParser()
 			r.Builder.DinghyfileName = filepath.Base(c.filename)
 
-			buf, _ := r.Parse("org", "repo", c.filename, "branch", nil)
+			buf, _ := r.Parse("org", "repo", c.filename, "master", nil)
 			exp := strings.Join(strings.Fields(c.expected), "")
 			actual := strings.Join(strings.Fields(buf.String()), "")
 			assert.Equal(t, exp, actual)
@@ -618,7 +635,7 @@ func TestGlobalVars(t *testing.T) {
 
 func TestSimpleWaitStage(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, _ := r.Parse("org", "repo", "df3", "branch", nil)
+	buf, _ := r.Parse("org", "repo", "df3", "master", nil)
 
 	const expected = `{
 		"stages": [
@@ -640,7 +657,7 @@ func TestSimpleWaitStage(t *testing.T) {
 
 func TestSpillover(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, _ := r.Parse("org", "repo", "df", "branch", nil)
+	buf, _ := r.Parse("org", "repo", "df", "master", nil)
 
 	const expected = `{
 		"stages": [
@@ -657,7 +674,7 @@ func TestSpillover(t *testing.T) {
 
 func TestMissingModule(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, err := r.Parse("org", "repo", "missing_module_test", "branch", nil)
+	buf, err := r.Parse("org", "repo", "missing_module_test", "master", nil)
 	assert.Error(t, err)
 	assert.Nil(t, buf)
 }
@@ -665,7 +682,7 @@ func TestMissingModule(t *testing.T) {
 func TestUnconfiguredTemplateOrg(t *testing.T) {
 	r := testDinghyfileParser()
 	r.Builder.TemplateOrg = ""
-	buf, err := r.Parse("org", "repo", "missing_module_test", "branch", nil)
+	buf, err := r.Parse("org", "repo", "missing_module_test", "master", nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Cannot load module missing; templateOrg not configured")
 	assert.Nil(t, buf)
@@ -675,14 +692,16 @@ func TestIfConditionEmpty(t *testing.T) {
 	r := testDinghyfileParser()
 
 	// if we don't match the if condition this should be blank
-	buf, _ := r.Parse("org", "repo", "if_test", "testing", nil)
+	buf, err := r.Parse("org", "repo", "if_test", "branch", nil)
+	require.Nil(t, err)
 	expected := `{}`
 	exp := strings.Join(strings.Fields(expected), "")
 	actual := strings.Join(strings.Fields(buf.String()), "")
 	assert.Equal(t, exp, actual)
 
 	// if we do match the if condition, we should see some stage data
-	buf, _ = r.Parse("foo", "repo", "if_test", "master", nil)
+	buf, err = r.Parse("foo", "repo", "if_test", "master", nil)
+	require.Nil(t, err)
 	expected = `{"stages":[{"foo":"bar","type":"deploy"},{"type":"jenkins"}]}`
 	exp = strings.Join(strings.Fields(expected), "")
 	actual = strings.Join(strings.Fields(buf.String()), "")
@@ -696,7 +715,7 @@ func TestConditionalExtraDataFromGit(t *testing.T) {
 	assert.Nil(t, err)
 	r.Builder.PushRaw = d
 
-	buf, _ := r.Parse("org", "repo", "extra_data_test", "testing", nil)
+	buf, _ := r.Parse("org", "repo", "extra_data_test", "master", nil)
 	expected := `{"application":"myfancyapplication(author:Codertocat)","pipelines":["stages":[{"foo":"bar","type":"deploy"}{"type":"jenkins"}]{"parameterConfig":[{"description":"ServiceName","name":"service","required":true,{"parameterConfig":[{"artifact":artifact11,}}",{"parameterConfig":[{"artifact":artifact22,}}",}}]}`
 	exp := strings.Join(strings.Fields(expected), "")
 	actual := strings.Join(strings.Fields(buf.String()), "")
@@ -705,7 +724,8 @@ func TestConditionalExtraDataFromGit(t *testing.T) {
 
 func TestRangeSyntax(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, _ := r.Parse("org", "repo", "range_test", "testing", nil)
+	buf, err := r.Parse("org", "repo", "range_test", "master", nil)
+	require.Nil(t, err)
 
 	const expected = `{"stages":[{"foo":"bar","type":"deploy"}{"type":"jenkins"}]}`
 	exp := strings.Join(strings.Fields(expected), "")
@@ -724,7 +744,7 @@ type testStruct struct {
 func TestModuleVariableSubstitution(t *testing.T) {
 	r := testDinghyfileParser()
 	ts := testStruct{}
-	ret, err := r.Parse("org", "repo", "df2", "branch", nil)
+	ret, err := r.Parse("org", "repo", "df2", "master", nil)
 	err = json.Unmarshal(ret.Bytes(), &ts)
 	assert.Equal(t, nil, err)
 
@@ -788,14 +808,14 @@ func TestPipelineIDRender(t *testing.T) {
 		"waitForCompletion": true
 	}`
 
-	ret, err := r.Parse("org", "repo", "pipelineIDTest", "branch", nil)
+	ret, err := r.Parse("org", "repo", "pipelineIDTest", "master", nil)
 	assert.Nil(t, err)
 	assert.Equal(t, expected, ret.String())
 }
 
 func TestModuleEmptyString(t *testing.T) {
 	r := testDinghyfileParser()
-	ret, _ := r.Parse("org", "repo", "df4", "branch", nil)
+	ret, _ := r.Parse("org", "repo", "df4", "master", nil)
 	assert.Equal(t, `{"foo": ""}`, ret.String())
 }
 
@@ -804,7 +824,7 @@ func TestDeepVars(t *testing.T) {
 	r.Builder.DinghyfileName = "deep_var_df"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, _ := r.Parse("org", "repo", "deep_var_df", "branch", nil)
+	buf, _ := r.Parse("org", "repo", "deep_var_df", "master", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -846,7 +866,7 @@ func TestEmptyDefaultVar(t *testing.T) {
 	r.Builder.DinghyfileName = "deep_var_df"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, _ := r.Parse("org", "repo", "empty_default_variables", "branch", nil)
+	buf, _ := r.Parse("org", "repo", "empty_default_variables", "master", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -873,7 +893,7 @@ func TestConditionalArgs(t *testing.T) {
 	r.Builder.DinghyfileName = "if_params.dinghyfile"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, err := r.Parse("org", "repo", "if_params.dinghyfile", "branch", nil)
+	buf, err := r.Parse("org", "repo", "if_params.dinghyfile", "master", nil)
 	require.Nil(t, err)
 
 	const raw = `{
@@ -919,7 +939,7 @@ func TestVarParams(t *testing.T) {
 	logger.EXPECT().Error(gomock.Any()).Times(0)
 	logger.EXPECT().Info(gomock.Eq("No global vars found in dinghyfile")).Times(1)
 
-	buf, err := r.Parse("org", "repo", "var_params.outer", "branch", nil)
+	buf, err := r.Parse("org", "repo", "var_params.outer", "master", nil)
 	// Unfortunately, we don't currently catch this failure here.
 	assert.Nil(t, err)
 
@@ -954,7 +974,7 @@ func TestRenderPreprocessFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to preprocess:\n %s"), gomock.Any()).Times(1)
 
-	_, err := r.Parse("org", "repo", "preprocess_fail", "branch", nil)
+	_, err := r.Parse("org", "repo", "preprocess_fail", "master", nil)
 	assert.NotNil(t, err)
 }
 
@@ -967,7 +987,7 @@ func TestRenderParseGlobalVarsFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to parse global vars:\n %s"), gomock.Any()).Times(1)
 
-	_, err := r.Parse("org", "repo", "global_vars_parse_fail", "branch", nil)
+	_, err := r.Parse("org", "repo", "global_vars_parse_fail", "master", nil)
 	assert.NotNil(t, err)
 }
 
@@ -975,7 +995,7 @@ func TestRenderGlobalVarsExtractFail(t *testing.T) {
 	r := testDinghyfileParser()
 	r.Builder.DinghyfileName = "global_vars_extract_fail"
 
-	_, err := r.Parse("org", "repo", "global_vars_extract_fail", "branch", nil)
+	_, err := r.Parse("org", "repo", "global_vars_extract_fail", "master", nil)
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "could not extract global vars from:\n {\n\t\t\"globals\": 42\n\t}")
 }
@@ -984,7 +1004,7 @@ func TestRenderVarFuncNotDefined(t *testing.T) {
 	r := testDinghyfileParser()
 	r.Builder.DinghyfileName = "varfunc_not_defined"
 
-	buf, err := r.Parse("org", "repo", "varfunc_not_defined", "branch", nil)
+	buf, err := r.Parse("org", "repo", "varfunc_not_defined", "master", nil)
 	require.Nil(t, err)
 
 	var actual interface{}
@@ -1002,7 +1022,7 @@ func TestRenderDownloadFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to download %s/%s/%s/%s"), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
-	_, err := r.Parse("org", "repo", "nonexistentfile", "branch", nil)
+	_, err := r.Parse("org", "repo", "nonexistentfile", "master", nil)
 	require.NotNil(t, err)
 	require.Equal(t, "File not found", err.Error())
 }
@@ -1015,7 +1035,7 @@ func TestRenderTemplateParseFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to parse template:\n %s"), gomock.Any()).Times(1)
 
-	_, err := r.Parse("org", "repo", "template_parse_fail", "branch", nil)
+	_, err := r.Parse("org", "repo", "template_parse_fail", "master", nil)
 	require.NotNil(t, err)
 	require.Equal(t, "template: dinghy-render:2: function \"nope\" not defined", err.Error())
 }
@@ -1028,7 +1048,7 @@ func TestRenderTemplateBufferFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to execute buffer:\n %s\nError: %s"), gomock.Any(), gomock.Any()).Times(1)
 
-	_, err := r.Parse("org", "repo", "template_buffer_fail", "branch", nil)
+	_, err := r.Parse("org", "repo", "template_buffer_fail", "master", nil)
 	require.NotNil(t, err)
 	require.Equal(t, "template: dinghy-render:2:17: executing \"dinghy-render\" at <4>: can't give argument to non-function 4", err.Error())
 }
@@ -1072,7 +1092,7 @@ func TestModuleFuncOddParamsError(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Warnf(gomock.Eq("odd number of parameters received to module %s"), gomock.Eq(test_key)).Times(1)
 
-	modFunc := r.moduleFunc("org", "branch", map[string]bool{}, []VarMap{})
+	modFunc := r.moduleFunc("org", "master", map[string]bool{}, []VarMap{})
 	res, _ := modFunc.(func(string, ...interface{}) (string, error))(test_key, "biff")
 	assert.Equal(t, "", res)
 }
@@ -1086,7 +1106,23 @@ func TestModuleFuncDictKeysError(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("dict keys must be strings in module: %s"), gomock.Eq(test_key)).Times(1)
 
-	modFunc := r.moduleFunc("org", "branch", map[string]bool{}, []VarMap{})
+	modFunc := r.moduleFunc("org", "master", map[string]bool{}, []VarMap{})
 	res, _ := modFunc.(func(string, ...interface{}) (string, error))(test_key, 42, "foo")
 	assert.Equal(t, "", res)
+}
+
+func TestDifferentTemplateBranch(t *testing.T) {
+	r := testDinghyfileParser()
+
+	//  This pulls in "mod1" but "mod1" is only on "master", not on "branch".
+	buf, err := r.Parse("org", "repo", "different_branch", "branch", nil)
+	require.Nil(t, err)
+	expected := `{
+		"stages: [{
+		  "foo": "bar",
+		  "type": "deploy"
+		}]}`
+	exp := strings.Join(strings.Fields(expected), "")
+	actual := strings.Join(strings.Fields(buf.String()), "")
+	assert.Equal(t, exp, actual)
 }
