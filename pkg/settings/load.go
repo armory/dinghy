@@ -30,6 +30,7 @@ import (
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/go-yaml-tools/pkg/spring"
 	"github.com/imdario/mergo"
+	"github.com/jinzhu/copier"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -67,11 +68,11 @@ func NewDefaultSettings() Settings {
 			},
 			Redis: Redis{
 				BaseURL:  util.GetenvOrDefault("REDIS_HOST", "redis:6379"),
-				Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
+				Password: util.GetenvOrDefaultRedact("REDIS_PASSWORD", ""),
 			},
 		},
 		ParserFormat: "json",
-		RepoConfig: []RepoConfig{},
+		RepoConfig:   []RepoConfig{},
 	}
 }
 
@@ -146,7 +147,21 @@ func configureSettings(defaultSettings, overrides Settings) (*Settings, error) {
 		defaultSettings.ParserFormat = "json"
 	}
 
-	c, _ := json.Marshal(defaultSettings)
+	redactedSettings := &Settings{}
+	copier.Copy(&redactedSettings, &defaultSettings)
+	if redactedSettings.GitHubToken != "" {
+		redactedSettings.GitHubToken = "**REDACTED**"
+	}
+	if redactedSettings.StashToken != "" {
+		redactedSettings.StashToken = "**REDACTED**"
+	}
+	if redactedSettings.Secrets.Vault.Token != "" {
+		redactedSettings.Secrets.Vault.Token = "**REDACTED**"
+	}
+	if redactedSettings.spinnakerSupplied.Redis.Password != "" {
+		redactedSettings.spinnakerSupplied.Redis.Password = "**REDACTED**"
+	}
+	c, _ := json.Marshal(redactedSettings)
 	log.Infof("The following settings have been loaded: %v", string(c))
 
 	return &defaultSettings, nil
