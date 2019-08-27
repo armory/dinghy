@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package util
 
@@ -30,5 +30,25 @@ func GetenvOrDefault(envVar, defaultVal string) string {
 		return val
 	}
 	log.Infof("Checking ENV for %s...  Using default \"%s\"", envVar, defaultVal)
+	return defaultVal
+}
+
+// GetenvOrDefaultRedact will return the value of the given enrvironment
+// variable, or, if it's blank, will return the defaultVal.  Will redact any
+// value found in the log output
+func GetenvOrDefaultRedact(envVar, defaultVal string) string {
+	if val, found := os.LookupEnv(envVar); found {
+		redacted := val
+		if redacted != "" {
+			redacted = "**REDACTED**"
+		}
+		log.Infof("Checking ENV for %s...  Found: \"%s\"", envVar, redacted)
+		return val
+	}
+	redacted := defaultVal
+	if redacted != "" {
+		redacted = "**REDACTED**"
+	}
+	log.Infof("Checking ENV for %s...  Using default \"%s\"", envVar, redacted)
 	return defaultVal
 }
