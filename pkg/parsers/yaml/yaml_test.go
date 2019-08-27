@@ -18,22 +18,23 @@ import (
 )
 
 var fileService = dummy.FileService{
-	"df": `
+	"branch": {
+		"df": `
 stages:
 - {{ module "mod1" }}
 - {{ module "mod2" }}`,
-	"df2": `{{ module "mod4" "foo" "baz" "waitTime" 100 }}`,
-	"df3": `
+		"df2": `{{ module "mod4" "foo" "baz" "waitTime" 100 }}`,
+		"df3": `
 stages:
 - {{ module "mod6" "waitTime" 10 "refId" "c:d" "requisiteStageRefIds" ["1", "2", "3"] }}
     `,
-	"df4": `{{ module "mod3" "foo" "" }}`,
-	"df_bad": `{
+		"df4": `{{ module "mod3" "foo" "" }}`,
+		"df_bad": `{
 		"stages": [
 			{{ module "mod1" }
 		]
 	}`,
-	"df_global": `
+		"df_global": `
 application: search
 globals:
   type: foo
@@ -41,7 +42,7 @@ pipelines:
 - {{ module "mod1" }}
 - {{ module "mod2" "type" "foobar" }}`,
 
-	"df_spec": `
+		"df_spec": `
 spec:
   name: search
   email: unknown@unknown.com
@@ -55,7 +56,7 @@ pipelines:
 - {{ module "mod1" }}
 - {{ module "mod2" "type" "foobar" }}
     `,
-	"df_app_global": `
+		"df_app_global": `
 application: search
 {{ appModule "appmod" }}
 globals:
@@ -63,7 +64,7 @@ globals:
 pipelines:
 - {{ module "mod1" }}
 - {{ module "mod2" "type" "foobar" }}`,
-	"df_global/nested": `
+		"df_global/nested": `
 application: search
 globals:
   type: foo
@@ -71,24 +72,24 @@ pipelines:
 - {{ module "mod1" }}
 - {{ module "mod2" "type" "foobar" }}
 `,
-	"appmod": `description: description`,
-	"mod1": `
+		"appmod": `description: description`,
+		"mod1": `
 		foo: bar
 		type: {{ var "type" ?: "deploy" }}`,
-	"mod2": `type: {{ var "type" ?: "jenkins" }}`,
-	"mod3": `foo: "{{ var "foo" ?: "baz" }}"`,
+		"mod2": `type: {{ var "type" ?: "jenkins" }}`,
+		"mod3": `foo: "{{ var "foo" ?: "baz" }}"`,
 
-	"mod4": `{
+		"mod4": `{
 		"foo": "{{ var "foo" "baz" }}",
 		"a": "{{ var "nonexistent" "b" }}",
 		"nested": {{ module "mod5" }}
 	}`,
 
-	"mod5": `{
+		"mod5": `{
 		"waitTime": {{ var "waitTime" 1000 }}
 	}`,
 
-	"mod6": `
+		"mod6": `
 name: Wait
 refId: {{ var "refId" {} }}
 requisiteStageRefIds: {{ var "requisiteStageRefIds" [] }}
@@ -96,7 +97,7 @@ type: wait
 waitTime: {{ var "waitTime" 12044 }}
 `,
 
-	"nested_var_df": `
+		"nested_var_df": `
 ---
 application: dinernotifications
 globals:
@@ -104,21 +105,21 @@ globals:
 pipelines:
 - {{ module "preprod_teardown.pipeline.module" }}`,
 
-	"preprod_teardown.pipeline.module": `
+		"preprod_teardown.pipeline.module": `
 parameterConfig:
 - default: {{ var "discovery-service-name" ?: "@application" }}
   description: Service Name
   name: service
   required: true`,
 
-	"deep_var_df": `
+		"deep_var_df": `
 application: dinernotifications
 globals:
   application: dinernotifications
 pipelines:
 {{ module "deep.pipeline.module" "artifact" "artifact11" "artifact2" "artifact22" }}`,
 
-	"deep.pipeline.module": `
+		"deep.pipeline.module": `
 - parameterConfig:
   - description: Service Name
     name: service
@@ -127,18 +128,18 @@ pipelines:
     {{ module "deep.stage.module" "artifact" {{var artifact2}} }}
 `,
 
-	"deep.stage.module": `
+		"deep.stage.module": `
 - parameterConfig:
   - artifact: {{ var "artifact" }}
 `,
 
-	"empty_default_variables": `
+		"empty_default_variables": `
 application: dinernotifications
 pipelines:
 {{ module "empty_default_variables.pipeline.module" }}
 `,
 
-	"empty_default_variables.pipeline.module": `
+		"empty_default_variables.pipeline.module": `
 - parameterConfig:
   - default: "{{ var "discovery-service-name" ?: "" }}"
     description: Service Name
@@ -146,47 +147,47 @@ pipelines:
     required: true
 `,
 
-	// if_params reproduced/resolved an issue Giphy had where they were trying to use an
-	// if conditional inside a {{ module }} call.
-	"if_params.dinghyfile": `
+		// if_params reproduced/resolved an issue Giphy had where they were trying to use an
+		// if conditional inside a {{ module }} call.
+		"if_params.dinghyfile": `
 test: if_params
 result:
 {{ module "if_params.midmodule"
 						 "straightvar" "foo"
 						 "condvar" true }}`,
-	// NOTE:  This next example is a _functional_ way to do conditional arguments to a module.
-	// This is the result of trying to debug why this markup didn't work properly:
-	//    {{ module "if_params.bottom"
-	//              "foo" "bar"
-	//              {{ if var "condvar" }}
-	//              "extra" ["foo", "bar"]
-	//              {{ end }}
-	//   }}
-	// The reason is that nested template markup isn't evaluated inside-out, so the argument
-	// to "module" is actually the string "{{ if var "condvar" }}"
-	"if_params.midmodule": `
+		// NOTE:  This next example is a _functional_ way to do conditional arguments to a module.
+		// This is the result of trying to debug why this markup didn't work properly:
+		//    {{ module "if_params.bottom"
+		//              "foo" "bar"
+		//              {{ if var "condvar" }}
+		//              "extra" ["foo", "bar"]
+		//              {{ end }}
+		//   }}
+		// The reason is that nested template markup isn't evaluated inside-out, so the argument
+		// to "module" is actually the string "{{ if var "condvar" }}"
+		"if_params.midmodule": `
 {{ if var "condvar" }}
 {{ module "if_params.bottom" "foo" "bar" "extra" [ "foo", "bar" ] }}
 {{ else }}
 {{ module "if_params.bottom" "foo" "bar" }}
 {{ end }}`,
-	"if_params.bottom": `
+		"if_params.bottom": `
 - foo: {{ var "foo" ?: "default" }}
   biff: {{ var "extra" ?: ["NotSet"] }}
 `,
 
-	// var_params tests whether or not you can reference a variable inside a value
-	// being sent to a module.  The answer is "no"; and this will result in invalid JSON.
-	"var_params.outer": `{{ module "var_params.middle" "myvar" "success" }}`,
-	"var_params.middle": `
+		// var_params tests whether or not you can reference a variable inside a value
+		// being sent to a module.  The answer is "no"; and this will result in invalid JSON.
+		"var_params.outer": `{{ module "var_params.middle" "myvar" "success" }}`,
+		"var_params.middle": `
 		{{ module "var_params.inner"
 							"foo" [ bar: {{ var "myvar" ?: "failure"}} ]
 		}}
 	`,
-	"var_params.inner": `foo: {{ var "foo" }}`,
+		"var_params.inner": `foo: {{ var "foo" }}`,
 
-	// Testing the pipelineID function
-	"pipelineIDTest": `
+		// Testing the pipelineID function
+		"pipelineIDTest": `
 application: pipelineidexample
 failPipeline: true
 name: Pipeline
@@ -196,44 +197,44 @@ requisiteStageRefIds: []
 type: pipeline
 waitForCompletion: true`,
 
-	// RenderPreprocessFail
-	"preprocess_fail": `{
+		// RenderPreprocessFail
+		"preprocess_fail": `{
 		{{ 
 	}`,
 
-	// RenderParseGlobalVarsFail
-	"global_vars_parse_fail": `
+		// RenderParseGlobalVarsFail
+		"global_vars_parse_fail": `
 		["foo", "bar"]
 	`,
 
-	// RenderGlobalVarsExtractFail
-	"global_vars_extract_fail": `{
+		// RenderGlobalVarsExtractFail
+		"global_vars_extract_fail": `{
 		"globals": 42
 	}`,
 
-	// VarFuncNotDefined
-	"varfunc_not_defined": `{
+		// VarFuncNotDefined
+		"varfunc_not_defined": `{
 	  "test": {{ var "biff" }}
 	}`,
 
-	// TemplateParseFail
-	"template_parse_fail": `{
+		// TemplateParseFail
+		"template_parse_fail": `{
 	  "test": {{ nope "biff" }}
 	}`,
 
-	// TemplateBufferFail
-	"template_buffer_fail": `{
+		// TemplateBufferFail
+		"template_buffer_fail": `{
 	  "test": {{ if 4 gt 3 }} "biff" {{ end }}
 	}`,
 
-	// OddParamsError
-	"odd_params_error": "",
+		// OddParamsError
+		"odd_params_error": "",
 
-	// DictKeysError
-	"dict_keys_error": "",
+		// DictKeysError
+		"dict_keys_error": "",
 
-	// Inserting entire pipeline
-	"pipeline_insert_base": `
+		// Inserting entire pipeline
+		"pipeline_insert_base": `
 application: "foo"
 pipelines:
 - application: "foo"
@@ -243,8 +244,9 @@ pipelines:
   triggers: []
 `,
 
-	"pipeline_insert_mod": `  - name: "stage"
+		"pipeline_insert_mod": `  - name: "stage"
     type: wait`,
+	},
 }
 
 // This returns a test PipelineBuilder object.
