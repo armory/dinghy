@@ -18,5 +18,6 @@ require (
 	github.com/sirupsen/logrus v1.4.1
 	github.com/spf13/afero v1.1.2 // indirect
 	github.com/stretchr/testify v1.3.0
+	github.com/xanzy/go-gitlab v0.20.1
 	golang.org/x/oauth2 v0.0.0-20190319182350-c85d3e98c914
 )

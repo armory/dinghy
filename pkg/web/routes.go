@@ -34,6 +34,7 @@ import (
 	"github.com/armory/dinghy/pkg/git"
 	"github.com/armory/dinghy/pkg/git/dummy"
 	"github.com/armory/dinghy/pkg/git/github"
+	"github.com/armory/dinghy/pkg/git/gitlab"
 	"github.com/armory/dinghy/pkg/git/stash"
 	"github.com/armory/dinghy/pkg/notifiers"
 	"github.com/armory/dinghy/pkg/settings"
@@ -99,6 +100,7 @@ func (wa *WebAPI) Router() *mux.Router {
 	r.HandleFunc("/health", wa.healthcheck)
 	r.HandleFunc("/healthcheck", wa.healthcheck)
 	r.HandleFunc("/v1/webhooks/github", wa.githubWebhookHandler).Methods("POST")
+	r.HandleFunc("/v1/webhooks/gitlab", wa.gitlabWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/stash", wa.stashWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/bitbucket", wa.bitbucketWebhookHandler).Methods("POST")
 	// all of the bitbucket webhooks come through this one handler, this is being left for backwards compatibility
@@ -148,12 +150,12 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p := github.Push{Logger: wa.Logger}
 
 	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
 	if err != nil {
 		wa.Logger.Errorf("failed to read body in github webhook handler: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	defer r.Body.Close()
 	wa.Logger.Infof("Received payload: %s", string(body))
 	if err := json.Unmarshal(body, &p); err != nil {
 		wa.Logger.Errorf("failed to decode github webhook: %s", err.Error())
@@ -173,6 +175,32 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p.DeckBaseURL = wa.Config.Deck.BaseURL
 	fileService := github.FileService{GitHub: &gh, Logger: wa.Logger}
 
+	wa.buildPipelines(&p, body, &fileService, w)
+}
+
+func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
+	p := gitlab.Push{Logger: wa.Logger}
+
+	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		wa.Logger.Errorf("failed to read body in gitlab webhook handler: %s", err.Error())
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	wa.Logger.Infof("Received payload: %s", string(body))
+
+	fileService, err := p.ParseWebhook(body)
+	event, err := gitlab.ParseWebhook(gitlab.EventTypePush, body)
+	if err != nil {
+		if strings.Contains(err.Error(), "unexpected event type") {
+			wa.Logger.Infof("Non-Push gitlab notification (%s)", strings.SplitN(err.Error(), ":", 2))
+			return
+		}
+		wa.Logger.Errorf("failed to parse gitlab webhook: %s", err.Error())
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 	wa.buildPipelines(&p, body, &fileService, w)
 }
 

@@ -127,6 +127,8 @@ github.com/spf13/afero/mem
 # github.com/stretchr/testify v1.3.0
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
+# github.com/xanzy/go-gitlab v0.20.1
+github.com/xanzy/go-gitlab
 # golang.org/x/net v0.0.0-20190327214358-63eda1eb0650
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
