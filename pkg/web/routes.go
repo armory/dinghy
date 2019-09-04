@@ -190,7 +190,7 @@ func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	wa.Logger.Infof("Received payload: %s", string(body))
 
-	fileService, err := p.ParseWebhook(body)
+	fileService, err := p.ParseWebhook(wa.Config, body)
 	if err != nil {
 		if strings.Contains(err.Error(), "unexpected event type") {
 			wa.Logger.Infof("Non-Push gitlab notification (%s)", strings.SplitN(err.Error(), ":", 2))

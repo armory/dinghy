@@ -17,6 +17,7 @@
 package gitlab
 
 import (
+	"github.com/armory/dinghy/pkg/settings"
 	"github.com/sirupsen/logrus"
 	gitlab "github.com/xanzy/go-gitlab"
 	"strings"
@@ -100,8 +101,19 @@ func (p *Push) Name() string {
 
 // ParseWebhook parses the webhook into the struct and returns a file service
 // instance (and error)
-func (p *Push) ParseWebhook(body []byte) (FileService, error) {
-	fs := FileService{Logger: p.Logger}
+func (p *Push) ParseWebhook(cfg *settings.Settings, body []byte) (FileService, error) {
+	fs := FileService{
+		Logger: p.Logger,
+		Client: gitlab.NewClient(nil, cfg.GitLabToken),
+	}
+
+	// Note:  SetBaseURL will ensure a trailing slash as needed.
+	err := fs.Client.SetBaseURL(cfg.GitLabEndpoint)
+	if err != nil {
+		return fs, err
+	}
+
+	// Let go-gitlab do all the work.
 	event, err := gitlab.ParseWebhook(gitlab.EventTypePush, body)
 	if err != nil {
 		return fs, err

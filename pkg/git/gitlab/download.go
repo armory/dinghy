@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/armory/dinghy/pkg/cache/local"
 	"github.com/sirupsen/logrus"
+	gitlab "github.com/xanzy/go-gitlab"
 	"regexp"
 	"strings"
 )
@@ -33,7 +34,7 @@ type GitLabClient interface {
 // FileService is for working with repositories
 type FileService struct {
 	cache  local.Cache
-	GitLab GitLabClient
+	Client *gitlab.Client
 	Logger logrus.FieldLogger
 }
 
@@ -41,38 +42,41 @@ type FileService struct {
 // note that "path" is the full path relative to the repo root
 // eg: src/foo/bar/filename
 func (f *FileService) Download(org, repo, path, branch string) (string, error) {
+
+	// Note:  We're really only using EncodeURL here for caching.  The go-gitlab
+	// client knows how to create the URL internally.
+	branch = strings.Replace(branch, "refs/heads/", "", 1)
 	url := f.EncodeURL(org, repo, path, branch)
 	body := f.cache.Get(url)
 	if body != "" {
 		return body, nil
 	}
 
-	// The endpoint used by the Github lib (https://raw.githubusercontent.com/) does not
-	// accept branch names such as refs/heads/master, but only the name of the branch.
-	// Need to strip that if it exists. Can't use split here either, because '/' is allowed
-	// in branch names
-	branch = strings.Replace(branch, "refs/heads/", "", 1)
+	// go-gitlab uses a "pid" which is the org/repo combo. Done here for
+	// clarity
+	pid := fmt.Sprintf("%s/%s", org, repo)
 
-	contents, err := f.GitLab.DownloadContents(org, repo, path, branch)
+	contents, _, err := f.Client.RepositoryFiles.GetRawFile(pid, path, &gitlab.GetRawFileOptions{Ref: &branch})
 	if err != nil {
 		f.Logger.Error(err)
 		return "", err
 	}
 
-	f.cache.Add(url, contents)
+	str := string(contents)
+	f.cache.Add(url, str)
 
-	return contents, nil
+	return str, nil
 }
 
 // EncodeURL returns the git url for a given org, repo, path and branch
 func (f *FileService) EncodeURL(org, repo, path, branch string) string {
 	// this is only used for caching purposes
-	return fmt.Sprintf(`%s/repos/%s/%s/contents/%s?ref=%s`, f.GitLab.GetEndpoint(), org, repo, path, branch)
+	return fmt.Sprintf(`%s/projects/%s/%s/repository/files/%s?ref=%s`, f.Client.BaseURL(), org, repo, path, branch)
 }
 
 // DecodeURL takes a url and returns the org, repo, path and branch
 func (f *FileService) DecodeURL(url string) (org, repo, path, branch string) {
-	targetExpression := fmt.Sprintf(`%s/repos/(.+)/(.+)/contents/(.+)\?ref=(.+)`, f.GitLab.GetEndpoint())
+	targetExpression := fmt.Sprintf(`%s/projects/(.+)/(.+)/repository/files/(.+)\?ref=(.+)`, f.Client.BaseURL())
 	r, _ := regexp.Compile(targetExpression)
 	match := r.FindStringSubmatch(url)
 	org = match[1]
