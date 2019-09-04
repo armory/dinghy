@@ -30,7 +30,6 @@ import (
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/go-yaml-tools/pkg/spring"
 	"github.com/imdario/mergo"
-	"github.com/jinzhu/copier"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -147,21 +146,7 @@ func configureSettings(defaultSettings, overrides Settings) (*Settings, error) {
 		defaultSettings.ParserFormat = "json"
 	}
 
-	redactedSettings := &Settings{}
-	copier.Copy(&redactedSettings, &defaultSettings)
-	if redactedSettings.GitHubToken != "" {
-		redactedSettings.GitHubToken = "**REDACTED**"
-	}
-	if redactedSettings.StashToken != "" {
-		redactedSettings.StashToken = "**REDACTED**"
-	}
-	if redactedSettings.Secrets.Vault.Token != "" {
-		redactedSettings.Secrets.Vault.Token = "**REDACTED**"
-	}
-	if redactedSettings.spinnakerSupplied.Redis.Password != "" {
-		redactedSettings.spinnakerSupplied.Redis.Password = "**REDACTED**"
-	}
-	c, _ := json.Marshal(redactedSettings)
+	c, _ := json.Marshal(defaultSettings.Redacted())
 	log.Infof("The following settings have been loaded: %v", string(c))
 
 	return &defaultSettings, nil

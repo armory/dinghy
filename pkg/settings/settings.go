@@ -17,7 +17,10 @@
 // Package settings is a single place to put all of the application settings.
 package settings
 
-import "github.com/armory/go-yaml-tools/pkg/secrets"
+import (
+	"github.com/armory/go-yaml-tools/pkg/secrets"
+	"github.com/jinzhu/copier"
+)
 
 // Settings contains all information needed to startup and run the dinghy service
 type Settings struct {
@@ -29,6 +32,8 @@ type Settings struct {
 	GitHubCredsPath   string       `json:"githubCredsPath,omitempty" yaml:"githubCredsPath"`
 	GitHubToken       string       `json:"githubToken,omitempty" yaml:"githubToken"`
 	GithubEndpoint    string       `json:"githubEndpoint,omitempty" yaml:"githubEndpoint"`
+	GitLabToken       string       `json:"gitlabToken,omitempty" yaml:"gitlabToken"`
+	GitLabEndpoint    string       `json:"gitlabEndpoint,omitempty" yaml:"gitlabEndpoint"`
 	StashCredsPath    string       `json:"stashCredsPath,omitempty" yaml:"stashCredsPath"`
 	StashUsername     string       `json:"stashUsername,omitempty" yaml:"stashUsername"`
 	StashToken        string       `json:"stashToken,omitempty" yaml:"stashToken"`
@@ -96,4 +101,28 @@ func (s *Settings) GetRepoConfig(provider, repo string) *RepoConfig {
 		}
 	}
 	return nil
+}
+
+// Redacted returns a copy of the Settings object with all the sensitive
+// fields **REDACTED**.
+func (s *Settings) Redacted() *Settings {
+	redacted := &Settings{}
+	copier.Copy(&redacted, s)
+
+	if redacted.GitHubToken != "" {
+		redacted.GitHubToken = "**REDACTED**"
+	}
+	if redacted.GitLabToken != "" {
+		redacted.GitLabToken = "**REDACTED**"
+	}
+	if redacted.StashToken != "" {
+		redacted.StashToken = "**REDACTED**"
+	}
+	if redacted.Secrets.Vault.Token != "" {
+		redacted.Secrets.Vault.Token = "**REDACTED**"
+	}
+	if redacted.spinnakerSupplied.Redis.Password != "" {
+		redacted.spinnakerSupplied.Redis.Password = "**REDACTED**"
+	}
+	return redacted
 }

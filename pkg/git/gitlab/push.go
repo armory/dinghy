@@ -24,7 +24,7 @@ import (
 
 // Push is the payload received from a GitHub webhook.
 type Push struct {
-	Event      gitlab.PushEvent
+	Event      *gitlab.PushEvent
 	Commits    []Commit   `json:"commits"`
 	Repository Repository `json:"repository"`
 	Ref        string     `json:"ref"`
@@ -132,6 +132,6 @@ func (p *Push) ParseWebhook(body []byte) (FileService, error) {
 	if err != nil {
 		return fs, err
 	}
-	p.Event = event.(gitlab.PushEvent)
+	p.Event = event.(*gitlab.PushEvent)
 	return fs, nil
 }
