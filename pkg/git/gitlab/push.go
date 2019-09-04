@@ -24,31 +24,9 @@ import (
 
 // Push is the payload received from a GitHub webhook.
 type Push struct {
-	Event      *gitlab.PushEvent
-	Commits    []Commit   `json:"commits"`
-	Repository Repository `json:"repository"`
-	Ref        string     `json:"ref"`
-	// Config      Config
+	Event       *gitlab.PushEvent
 	DeckBaseURL string
 	Logger      logrus.FieldLogger
-}
-
-// Commit is a commit received from Github webhook
-type Commit struct {
-	ID       string   `json:"id"`
-	Added    []string `json:"added"`
-	Modified []string `json:"modified"`
-}
-
-// Repository is a repo received from Github webhook
-type Repository struct {
-	Name         string          `json:"name"`
-	Organization string          `json:"organization"`
-	Owner        RepositoryOwner `json:"owner"`
-}
-
-type RepositoryOwner struct {
-	Login string `json:"login"`
 }
 
 func inSlice(arr []string, val string) bool {
@@ -65,10 +43,10 @@ func inSlice(arr []string, val string) bool {
 
 // ContainsFile checks to see if a given file is in the push.
 func (p *Push) ContainsFile(file string) bool {
-	if p.Commits == nil {
+	if p.Event.Commits == nil {
 		return false
 	}
-	for _, c := range p.Commits {
+	for _, c := range p.Event.Commits {
 		if inSlice(c.Added, file) || inSlice(c.Modified, file) {
 			return true
 		}
@@ -79,10 +57,10 @@ func (p *Push) ContainsFile(file string) bool {
 // Files returns a slice containing filenames that were added/modified
 func (p *Push) Files() []string {
 	ret := make([]string, 0, 0)
-	if p.Commits == nil {
+	if p.Event.Commits == nil {
 		return ret
 	}
-	for _, c := range p.Commits {
+	for _, c := range p.Event.Commits {
 		ret = append(ret, c.Added...)
 		ret = append(ret, c.Modified...)
 	}
@@ -91,21 +69,17 @@ func (p *Push) Files() []string {
 
 // Repo returns the name of the repo.
 func (p *Push) Repo() string {
-	return p.Repository.Name
+	return p.Event.Project.Name
 }
 
 // Org returns the organization of the push
 func (p *Push) Org() string {
-	if p.Repository.Organization != "" {
-		return p.Repository.Organization
-	}
-
-	return p.Repository.Owner.Login
+	return strings.SplitN(p.Event.Project.PathWithNamespace, "/", 2)[0]
 }
 
 // Branch returns the branch of the push
 func (p *Push) Branch() string {
-	return p.Ref
+	return p.Event.Ref
 }
 
 func (p *Push) IsBranch(branchToTry string) bool {
@@ -116,7 +90,7 @@ func (p *Push) IsBranch(branchToTry string) bool {
 
 // IsMaster detects if the branch is master.
 func (p *Push) IsMaster() bool {
-	return p.Ref == "refs/heads/master"
+	return p.Event.Ref == "refs/heads/master"
 }
 
 // Name returns the name of the provider to be used in configuration

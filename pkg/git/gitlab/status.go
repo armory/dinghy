@@ -40,7 +40,7 @@ type Status struct {
 // TODO: this function needs to return an error but it's currently attached to an interface that does not
 // and changes will affect other types
 func (p *Push) SetCommitStatus(status git.Status) {
-	for _ = range p.Commits {
+	for _ = range p.Event.Commits {
 		_ = newStatus(status, p.DeckBaseURL)
 		/*
 			if err := p.Config.CreateStatus(s, p.Org(), p.Repo(), c.ID); err != nil {
