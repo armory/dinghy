@@ -106,8 +106,6 @@ github.com/jinzhu/copier
 github.com/jmespath/go-jmespath
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/minio/minio v0.0.0-20190401191952-023866642ce3
-github.com/minio/minio/pkg/wildcard
 # github.com/mitchellh/go-homedir v1.1.0
 github.com/mitchellh/go-homedir
 # github.com/mitchellh/mapstructure v1.0.0
