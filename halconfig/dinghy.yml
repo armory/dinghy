@@ -15,8 +15,5 @@ fiat:
   enabled: ${services.fiat.enabled}
   baseUrl: ${services.fiat.baseUrl}
 
-deck:
-  baseUrl: ${services.deck.baseUrl}
-
 echo:
   baseURL: ${services.echo.baseUrl}
