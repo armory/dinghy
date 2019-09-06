@@ -12,14 +12,13 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package util
 
 import (
 	"fmt"
-
-	"github.com/minio/minio/pkg/wildcard"
+	"regexp"
 )
 
 type GithubRateLimitErr struct {
@@ -38,8 +37,13 @@ type GitHubFileNotFoundErr struct {
 }
 
 func IsGitHubFileNotFoundErr(errString string) bool {
-	pattern := "No file named * found in *"
-	return wildcard.Match(pattern, errString)
+	pattern := `No file named .* found in .*`
+	matched, err := regexp.Match(pattern, []byte(errString))
+	if err != nil {
+		// TODO:  We should probably figure out how to log/return any errors...
+		return false
+	}
+	return matched
 }
 
 func (e *GitHubFileNotFoundErr) Error() string {
