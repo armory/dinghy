@@ -17,107 +17,99 @@
 package gitlab
 
 import (
-	"errors"
-	"testing"
-
-	"github.com/sirupsen/logrus"
+	"bytes"
+	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/xanzy/go-gitlab"
+	"io/ioutil"
+	"net/http"
+	"testing"
 )
 
-type GitLabTest struct {
-	contents string
-	endpoint string
-	err      error
+type RoundTripFunc func(req *http.Request) *http.Response
+
+func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req), nil
 }
 
-func (g *GitLabTest) DownloadContents(org, repo, path, branch string) (string, error) {
-	return g.contents, g.err
+func NewRoundTripTestClient(fn RoundTripFunc) *http.Client {
+	return &http.Client{
+		Transport: fn,
+	}
 }
 
-func (g *GitLabTest) CreateStatus(status *Status, org, repo, ref string) error {
-	return g.err
-}
+func NewTestClient(statusCode int, contents string) *gitlab.Client {
+	httpClient := NewRoundTripTestClient(func(req *http.Request) *http.Response {
+		return &http.Response{
+			StatusCode: statusCode,
+			Body:       ioutil.NopCloser(bytes.NewBufferString(contents)),
+			Header:     make(http.Header),
+		}
+	})
 
-func (g *GitLabTest) GetEndpoint() string {
-	return g.endpoint
+	return gitlab.NewClient(httpClient, "token")
 }
 
 func TestEncodeUrl(t *testing.T) {
-	cases := []struct {
-		endpoint string
+	client := NewTestClient(200, "")
+
+	testCases := map[string]struct {
 		owner    string
 		repo     string
 		path     string
 		branch   string
 		expected string
 	}{
-		{
-			endpoint: "https://api.github.com",
+		"success": {
 			owner:    "armory",
 			repo:     "armory",
 			path:     "my/path.yml",
 			branch:   "mybranch",
-			expected: "https://api.github.com/repos/armory/armory/contents/my/path.yml?ref=mybranch",
-		},
-		{
-			endpoint: "https://mygithub.com",
-			owner:    "armory",
-			repo:     "armory",
-			path:     "my/path.yml",
-			branch:   "mybranch",
-			expected: "https://mygithub.com/repos/armory/armory/contents/my/path.yml?ref=mybranch",
+			expected: fmt.Sprintf("%sprojects/armory/armory/repository/files/my/path.yml?ref=mybranch", client.BaseURL()),
 		},
 	}
 
-	for _, c := range cases {
-		downloader := &FileService{
-			GitLab: &GitLabTest{
-				endpoint: c.endpoint,
-			},
-		}
-		actual := downloader.EncodeURL(c.owner, c.repo, c.path, c.branch)
-		assert.Equal(t, c.expected, actual)
+	for desc, tc := range testCases {
+		t.Run(desc, func(t *testing.T) {
+			downloader := &FileService{
+				Client: client,
+			}
+			actual := downloader.EncodeURL(tc.owner, tc.repo, tc.path, tc.branch)
+			assert.Equal(t, tc.expected, actual)
+		})
 	}
 }
 
 func TestDecodeUrl(t *testing.T) {
-	cases := []struct {
-		endpoint string
-		owner    string
-		repo     string
-		path     string
-		branch   string
-		url      string
+	client := NewTestClient(200, "")
+
+	testCases := map[string]struct {
+		owner  string
+		repo   string
+		path   string
+		branch string
+		url    string
 	}{
-		{
-			endpoint: "https://api.github.com",
-			owner:    "armory",
-			repo:     "armory",
-			path:     "my/path.yml",
-			branch:   "mybranch",
-			url:      "https://api.github.com/repos/armory/armory/contents/my/path.yml?ref=mybranch",
-		},
-		{
-			endpoint: "https://mygithub.com",
-			owner:    "armory",
-			repo:     "armory",
-			path:     "my/path.yml",
-			branch:   "mybranch",
-			url:      "https://mygithub.com/repos/armory/armory/contents/my/path.yml?ref=mybranch",
+		"success": {
+			owner:  "armory",
+			repo:   "armory",
+			path:   "my/path.yml",
+			branch: "mybranch",
+			url:    fmt.Sprintf("%sprojects/armory/armory/repository/files/my/path.yml?ref=mybranch", client.BaseURL()),
 		},
 	}
 
-	for _, c := range cases {
-		downloader := &FileService{
-			GitLab: &GitLabTest{
-				endpoint: c.endpoint,
-			},
-		}
-		org, repo, path, branch := downloader.DecodeURL(c.url)
-		assert.Equal(t, c.owner, org)
-		assert.Equal(t, c.repo, repo)
-		assert.Equal(t, c.path, path)
-		assert.Equal(t, c.branch, branch)
+	for desc, tc := range testCases {
+		t.Run(desc, func(t *testing.T) {
+			downloader := &FileService{
+				Client: client,
+			}
+			org, repo, path, branch := downloader.DecodeURL(tc.url)
+			assert.Equal(t, tc.owner, org)
+			assert.Equal(t, tc.repo, repo)
+			assert.Equal(t, tc.path, path)
+			assert.Equal(t, tc.branch, branch)
+		})
 	}
 }
 
@@ -137,26 +129,10 @@ func TestDownload(t *testing.T) {
 			path:   "path",
 			branch: "branch",
 			fs: &FileService{
-				GitLab: &GitLabTest{contents: "file contents"},
-				Logger: logrus.New(),
+				Client: NewTestClient(200,"file contents"),
 			},
 			expected:    "file contents",
 			expectedErr: nil,
-		},
-		"error": {
-			org:    "org",
-			repo:   "repo",
-			path:   "path",
-			branch: "branch",
-			fs: &FileService{
-				GitLab: &GitLabTest{
-					contents: "",
-					err:      errors.New("fail"),
-				},
-				Logger: logrus.New(),
-			},
-			expected:    "",
-			expectedErr: errors.New("fail"),
 		},
 	}
 
@@ -171,7 +147,7 @@ func TestDownload(t *testing.T) {
 			}
 
 			// test caching
-			v := tc.fs.cache.Get(tc.fs.EncodeURL("org", "repo", "path", "branch"))
+			v := tc.fs.cache.Get(tc.fs.EncodeURL(tc.org, tc.repo, tc.path, tc.branch))
 			assert.Equal(t, tc.expected, v)
 		})
 	}
