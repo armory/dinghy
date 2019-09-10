@@ -58,7 +58,6 @@ require (
 	github.com/golang/mock v1.1.1
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/go-github v17.0.0+incompatible
-	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190309154008-847fc94819f9 // indirect
 	github.com/gorhill/cronexpr v0.0.0-20180427100037-88b0669f7d75 // indirect
@@ -142,14 +141,13 @@ require (
 	github.com/streadway/amqp v0.0.0-20160311215503-2e25825abdbd // indirect
 	github.com/stretchr/testify v1.3.0
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
-	github.com/ugorji/go v0.0.0-20180628102755-7d51bbe6161d // indirect
+	github.com/ugorji/go/codec v1.1.7 // indirect
+	github.com/xanzy/go-gitlab v0.20.1
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
-	go.etcd.io/bbolt v1.3.2 // indirect
-	go.uber.org/atomic v1.3.2 // indirect
+	go.etcd.io/bbolt v1.3.3 // indirect
+	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
-	go.uber.org/zap v1.9.1 // indirect
-	golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c // indirect
-	golang.org/x/net v0.0.0-20190327214358-63eda1eb0650 // indirect
+	go.uber.org/zap v1.10.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20190319182350-c85d3e98c914
 	golang.org/x/sys v0.0.0-20190322080309-f49334f85ddc // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
