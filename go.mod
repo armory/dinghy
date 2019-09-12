@@ -141,7 +141,7 @@ require (
 	github.com/streadway/amqp v0.0.0-20160311215503-2e25825abdbd // indirect
 	github.com/stretchr/testify v1.3.0
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
-	github.com/ugorji/go/codec v1.1.7 // indirect
+	github.com/ugorji/go v1.1.7 // indirect
 	github.com/xanzy/go-gitlab v0.20.1
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	go.etcd.io/bbolt v1.3.3 // indirect
@@ -168,3 +168,5 @@ require (
 	layeh.com/radius v0.0.0-20190118135028-0f678f039617 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
+
+replace git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
