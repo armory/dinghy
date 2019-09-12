@@ -26,6 +26,7 @@ github.com/SermoDigital/jose v0.9.1/go.mod h1:ARgCUhI1MHQH+ONky/PAtmVHQrP5JlGY0F
 github.com/TV4/logrus-stackdriver-formatter v0.1.0/go.mod h1:wwS7hOiBvP6SBD0UXCa767+VhHkaXrfX0MzUojYcN0Q=
 github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190315122603-6f9e54af456e h1:YzotKd+gUHEK6v3WEVQUT/UbZdqJJ4Nlqtk/xyhd/q4=
 github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190315122603-6f9e54af456e/go.mod h1:T9M45xf79ahXVelWoOBmH0y4aC1t5kXO5BxwyakgIGA=
+github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/araddon/gou v0.0.0-20190110011759-c797efecbb61 h1:Xz25cuW4REGC5W5UtpMU3QItMIImag615HiQcRbxqKQ=
 github.com/araddon/gou v0.0.0-20190110011759-c797efecbb61/go.mod h1:ikc1XA58M+Rx7SEbf0bLJCfBkwayZ8T5jBo5FXK8Uz8=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
