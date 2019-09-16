@@ -188,6 +188,10 @@ func dummyVar(args ...interface{}) string {
 	return "1"
 }
 
+func dummySlice(args ...interface{}) []string {
+	return make([]string, 0)
+}
+
 // removeModules replaces all template function calls ({{ ... }}) in the dinghyfile with
 // the JSON: { "a": "b" } so that we can extract the global vars using JSON.Unmarshal
 func removeModules(input string) string {
@@ -197,6 +201,7 @@ func removeModules(input string) string {
 		"appModule":  dummyKV,
 		"var":        dummyVar,
 		"pipelineID": dummyVar,
+		"makeSlice":  dummySlice,
 	}
 
 	tmpl, err := template.New("blank-out").Funcs(funcMap).Parse(input)
