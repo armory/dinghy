@@ -67,11 +67,11 @@ func NewDefaultSettings() Settings {
 			},
 			Redis: Redis{
 				BaseURL:  util.GetenvOrDefault("REDIS_HOST", "redis:6379"),
-				Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
+				Password: util.GetenvOrDefaultRedact("REDIS_PASSWORD", ""),
 			},
 		},
 		ParserFormat: "json",
-		RepoConfig: []RepoConfig{},
+		RepoConfig:   []RepoConfig{},
 	}
 }
 
@@ -146,7 +146,7 @@ func configureSettings(defaultSettings, overrides Settings) (*Settings, error) {
 		defaultSettings.ParserFormat = "json"
 	}
 
-	c, _ := json.Marshal(defaultSettings)
+	c, _ := json.Marshal(defaultSettings.Redacted())
 	log.Infof("The following settings have been loaded: %v", string(c))
 
 	return &defaultSettings, nil

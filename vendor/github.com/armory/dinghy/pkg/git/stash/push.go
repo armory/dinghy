@@ -141,7 +141,7 @@ func (p *Push) getFilesChanged(fromCommitHash, toCommitHash string, start int) (
 	return
 }
 
-type StashConfig struct {
+type Config struct {
 	Username string
 	Token    string
 	Endpoint string
@@ -150,7 +150,7 @@ type StashConfig struct {
 }
 
 // NewPush creates a new Push
-func NewPush(payload WebhookPayload, cfg StashConfig) (*Push, error) {
+func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
 	p := &Push{
 		Payload:      payload,
 		ChangedFiles: make([]string, 0),
@@ -209,6 +209,12 @@ func (p *Push) Branch() string {
 		}
 	}
 	return ""
+}
+
+func (p *Push) IsBranch(branchToTry string) bool {
+	// our configuration only requires the branch name, but the branch comes
+	// from the webhook as "refs/heads/branch"
+	return strings.Replace(p.Branch(), "refs/heads/", "", 1) == strings.Replace(branchToTry, "refs/heads/", "", 1)
 }
 
 func (p *Push) changes() []WebhookChange {

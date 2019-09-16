@@ -63,6 +63,10 @@ func dummyKV(args ...interface{}) string {
 	return `a: b`
 }
 
+func dummySlice(args ...interface{}) []string {
+	return make([]string, 0)
+}
+
 // since {{ var ... }} can be a string or an int!
 func dummyVar(args ...interface{}) string {
 	return "1"
@@ -77,6 +81,7 @@ func removeModules(input string) string {
 		"appModule":  dummyKV,
 		"var":        dummyVar,
 		"pipelineID": dummyVar,
+		"makeSlice":  dummySlice,
 	}
 
 	tmpl, err := template.New("blank-out").Funcs(funcMap).Parse(input)

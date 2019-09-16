@@ -24,7 +24,7 @@ package dinghyfile
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -65,7 +65,12 @@ func (r *DinghyfileParser) parseValue(val interface{}) interface{} {
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
 func (r *DinghyfileParser) moduleFunc(org, branch string, deps map[string]bool, allVars []VarMap) interface{} {
-	return func(mod string, vars ...interface{}) string {
+	return func(mod string, vars ...interface{}) (string, error) {
+		// Don't bother if the TemplateOrg isn't set.
+		if r.Builder.TemplateOrg == "" {
+			return "", fmt.Errorf("Cannot load module %s; templateOrg not configured", mod)
+		}
+
 		// Record the dependency.
 		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod, branch)
 		if _, exists := deps[child]; !exists {
@@ -83,7 +88,7 @@ func (r *DinghyfileParser) moduleFunc(org, branch string, deps map[string]bool, 
 			key, ok := vars[i].(string)
 			if !ok {
 				r.Builder.Logger.Errorf("dict keys must be strings in module: %s", mod)
-				return ""
+				return "", fmt.Errorf("dict keys must be strings in module: %s", mod)
 			}
 
 			// checks for deepvariables, passes all the way down values from dinghyFile to module inside module
@@ -103,9 +108,10 @@ func (r *DinghyfileParser) moduleFunc(org, branch string, deps map[string]bool, 
 
 		result, err := r.Parse(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, branch, append([]VarMap{newVars}, allVars...))
 		if err != nil {
-			r.Builder.Logger.Errorf("Error rendering imported module '%s': %s", mod, err.Error())
+			r.Builder.Logger.Errorf("error rendering imported module '%s': %s", mod, err.Error())
+			return "", fmt.Errorf("error rendering imported module '%s': %s", mod, err.Error())
 		}
-		return result.String()
+		return result.String(), nil
 	}
 }
 
@@ -188,15 +194,28 @@ func (r *DinghyfileParser) varFunc(vars []VarMap) interface{} {
 	}
 }
 
+func (r *DinghyfileParser) makeSlice(args ...interface{}) []interface{} {
+	return args
+}
+
 // Parse parses the template
 func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) (*bytes.Buffer, error) {
 	module := true
 	event := &events.Event{
-		Start: time.Now().UTC().Unix(),
-		Org:   org,
-		Repo:  repo,
-		Path:  path,
+		Start:  time.Now().UTC().Unix(),
+		Org:    org,
+		Repo:   repo,
+		Path:   path,
 		Branch: branch,
+		End:    time.Now().UTC().Unix(),
+	}
+
+	gitInfo := struct {
+		RawData                 map[string]interface{}
+		Org, Repo, Path, Branch string
+	}{
+		r.Builder.PushRaw,
+		org, repo, path, branch,
 	}
 
 	deps := make(map[string]bool)
@@ -204,14 +223,18 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// Download the template being parsed.
 	contents, err := r.Builder.Downloader.Download(org, repo, path, branch)
 	if err != nil {
-		r.Builder.Logger.Error("Failed to download")
+		r.Builder.Logger.Errorf("Failed to download %s/%s/%s/%s", org, repo, path, branch)
+		// we don't actually have a dinghyfile we can send at this point
+		r.Builder.EventClient.SendEvent("parse-err-download", event)
 		return nil, err
 	}
 
 	// Preprocess to stringify any json args in calls to modules.
 	contents, err = preprocessor.Preprocess(contents)
 	if err != nil {
-		r.Builder.Logger.Error("Failed to preprocess")
+		r.Builder.Logger.Errorf("Failed to preprocess:\n %s", contents)
+		event.Dinghyfile = contents
+		r.Builder.EventClient.SendEvent("parse-err-preprocess", event)
 		return nil, err
 	}
 
@@ -220,13 +243,17 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		module = false
 		gvs, err := preprocessor.ParseGlobalVars(contents)
 		if err != nil {
-			r.Builder.Logger.Error("Failed to parse global vars")
+			r.Builder.Logger.Errorf("Failed to parse global vars:\n %s", contents)
+			event.Dinghyfile = contents
+			r.Builder.EventClient.SendEvent("parse-err-globalvar", event)
 			return nil, err
 		}
 
 		gvMap, ok := gvs.(map[string]interface{})
 		if !ok {
-			return nil, errors.New("Could not extract global vars")
+			event.Dinghyfile = contents
+			r.Builder.EventClient.SendEvent("parse-err-globalvar", event)
+			return nil, fmt.Errorf("could not extract global vars from:\n %s", contents)
 		} else if len(gvMap) > 0 {
 			vars = append(vars, gvMap)
 		} else {
@@ -234,25 +261,36 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		}
 	}
 
+	// NOTE:  I don't think moduleFunc needs to take branch argument;
+	// moduleFunc should be able to figure out the branch needed from the
+	// configuration (since it has to have access to TemplateOrg and TemplateRepo
+	// anyway.  But MAYBE we want to actually figure that out here where we
+	// have an application in context?  So for now, hardcoding module branch
+	// to "master"
 	funcMap := template.FuncMap{
-		"module":     r.moduleFunc(org, branch, deps, vars),
-		"appModule":  r.moduleFunc(org, branch, deps, vars),
+		"module":     r.moduleFunc(org, "master", deps, vars),
+		"appModule":  r.moduleFunc(org, "master", deps, vars),
 		"pipelineID": r.pipelineIDFunc(vars),
 		"var":        r.varFunc(vars),
+		"makeSlice":  r.makeSlice,
 	}
 
 	// Parse the downloaded template.
 	tmpl, err := template.New("dinghy-render").Funcs(funcMap).Parse(contents)
 	if err != nil {
-		r.Builder.Logger.Error("Failed to parse template")
+		r.Builder.Logger.Errorf("Failed to parse template:\n %s", contents)
+		event.Dinghyfile = contents
+		r.Builder.EventClient.SendEvent("parse-err-gotemplate-funcs", event)
 		return nil, err
 	}
 
 	// Run the template to verify the output.
 	buf := new(bytes.Buffer)
-	err = tmpl.Execute(buf, "")
+	err = tmpl.Execute(buf, gitInfo)
 	if err != nil {
-		r.Builder.Logger.Error("Failed to execute buffer")
+		r.Builder.Logger.Errorf("Failed to execute buffer:\n %s\nError: %s", contents, err.Error())
+		event.Dinghyfile = contents
+		r.Builder.EventClient.SendEvent("parse-err-bytebuffer", event)
 		return nil, err
 	}
 
@@ -263,11 +301,9 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	}
 	r.Builder.Depman.SetDeps(r.Builder.Downloader.EncodeURL(org, repo, path, branch), depUrls)
 
-	event.End = time.Now().UTC().Unix()
-	eventType := "render"
 	event.Dinghyfile = buf.String()
 	event.Module = module
-	r.Builder.EventClient.SendEvent(eventType, event)
+	r.Builder.EventClient.SendEvent("parse", event)
 
 	return buf, nil
 }

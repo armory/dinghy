@@ -1,7 +1,7 @@
 module github.com/armory-io/dinghy
 
 require (
-	github.com/armory/dinghy v1.0.2-0.20190827171047-d62dc4a9ba55
+	github.com/armory/dinghy v1.0.2-0.20190912200507-278b9e3df9c0
 	github.com/armory/go-yaml-tools v0.0.0-20190802212505-df014e75df27
 	github.com/armory/plank v1.2.2-0.20190814000943-6317f9d5d508
 	github.com/ghodss/yaml v1.0.0

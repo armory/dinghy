@@ -24,6 +24,7 @@ import (
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/plank"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 type VarMap map[string]interface{}
@@ -48,6 +49,7 @@ type PipelineBuilder struct {
 	Logger               log.FieldLogger
 	Ums                  []Unmarshaller
 	Notifiers            []notifiers.Notifier
+	PushRaw              map[string]interface{}
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -108,8 +110,21 @@ func (b *PipelineBuilder) UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error
 			continue
 		}
 	}
+	event := &events.Event{
+		Start:      time.Now().UTC().Unix(),
+		End:        time.Now().UTC().Unix(),
+		Org:        "",
+		Repo:       "",
+		Path:       "",
+		Branch:     "",
+		Dinghyfile: string(dinghyfile),
+		Module:     false,
+	}
+
 	// we weren't lucky, all the parsers failed
 	if parseErrs == len(b.Ums) {
+		b.Logger.Errorf("update-dinghyfile-unmarshal-err: %s", string(dinghyfile))
+		b.EventClient.SendEvent("update-dinghyfile-unmarshal-err", event)
 		return d, ErrMalformedJSON
 	}
 	b.Logger.Infof("Unmarshalled: %v", d)
@@ -199,11 +214,21 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []plank.Pipeline, deleteStale bool, autoLock string) error {
 	_, err := b.Client.GetApplication(app.Name)
 	if err != nil {
-		// Likely just not there...
-		b.Logger.Infof("Creating application '%s'...", app.Name)
-		if err := b.Client.CreateApplication(app); err != nil {
+		errunsup, ok := err.(*plank.ErrUnsupportedStatusCode)
+		if !ok {
 			b.Logger.Errorf("Failed to create application (%s)", err.Error())
 			return err
+		}
+		if errunsup.Code == 404 {
+			// Likely just not there...
+			b.Logger.Infof("Creating application '%s'...", app.Name)
+			if err := b.Client.CreateApplication(app); err != nil {
+				b.Logger.Errorf("Failed to create application (%s)", err.Error())
+				return err
+			}
+		} else {
+			b.Logger.Errorf("Failed to create application (%s)", errunsup.Error())
+			return errunsup
 		}
 	}
 

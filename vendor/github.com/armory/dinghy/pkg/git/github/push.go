@@ -26,7 +26,7 @@ type Push struct {
 	Commits     []Commit   `json:"commits"`
 	Repository  Repository `json:"repository"`
 	Ref         string     `json:"ref"`
-	GitHub      GitHub
+	Config      Config
 	DeckBaseURL string
 	Logger      logrus.FieldLogger
 }
@@ -104,6 +104,12 @@ func (p *Push) Org() string {
 // Branch returns the branch of the push
 func (p *Push) Branch() string {
 	return p.Ref
+}
+
+func (p *Push) IsBranch(branchToTry string) bool {
+	// our configuration only requires the branch name, but the branch comes
+	// from the webhook as "refs/heads/branch"
+	return strings.Replace(p.Branch(), "refs/heads/", "", 1) == strings.Replace(branchToTry, "refs/heads/", "", 1)
 }
 
 // IsMaster detects if the branch is master.

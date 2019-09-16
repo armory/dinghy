@@ -34,6 +34,7 @@ import (
 	"github.com/armory/dinghy/pkg/git"
 	"github.com/armory/dinghy/pkg/git/dummy"
 	"github.com/armory/dinghy/pkg/git/github"
+	"github.com/armory/dinghy/pkg/git/gitlab"
 	"github.com/armory/dinghy/pkg/git/stash"
 	"github.com/armory/dinghy/pkg/notifiers"
 	"github.com/armory/dinghy/pkg/settings"
@@ -47,6 +48,7 @@ type Push interface {
 	Repo() string
 	Org() string
 	Branch() string
+	IsBranch(string) bool
 	IsMaster() bool
 	SetCommitStatus(s git.Status)
 	Name() string
@@ -98,6 +100,7 @@ func (wa *WebAPI) Router() *mux.Router {
 	r.HandleFunc("/health", wa.healthcheck)
 	r.HandleFunc("/healthcheck", wa.healthcheck)
 	r.HandleFunc("/v1/webhooks/github", wa.githubWebhookHandler).Methods("POST")
+	r.HandleFunc("/v1/webhooks/gitlab", wa.gitlabWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/stash", wa.stashWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/bitbucket", wa.bitbucketWebhookHandler).Methods("POST")
 	// all of the bitbucket webhooks come through this one handler, this is being left for backwards compatibility
@@ -134,8 +137,9 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
-	fileService["dinghyfile"] = buf.String()
-	wa.Logger.Infof("Received payload: %s", fileService["dinghyfile"])
+	fileService["master"] = make(map[string]string)
+	fileService["master"]["dinghyfile"] = buf.String()
+	wa.Logger.Infof("Received payload: %s", fileService["master"]["dinghyfile"])
 
 	if err := builder.ProcessDinghyfile("", "", "dinghyfile", ""); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
@@ -146,12 +150,12 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p := github.Push{Logger: wa.Logger}
 
 	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
 	if err != nil {
 		wa.Logger.Errorf("failed to read body in github webhook handler: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	defer r.Body.Close()
 	wa.Logger.Infof("Received payload: %s", string(body))
 	if err := json.Unmarshal(body, &p); err != nil {
 		wa.Logger.Errorf("failed to decode github webhook: %s", err.Error())
@@ -166,12 +170,37 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: we're assigning config in two places here, we should refactor this
-	gh := github.GitHub{Endpoint: wa.Config.GithubEndpoint, Token: wa.Config.GitHubToken}
-	p.GitHub = gh
+	gh := github.Config{Endpoint: wa.Config.GithubEndpoint, Token: wa.Config.GitHubToken}
+	p.Config = gh
 	p.DeckBaseURL = wa.Config.Deck.BaseURL
 	fileService := github.FileService{GitHub: &gh, Logger: wa.Logger}
 
-	wa.buildPipelines(&p, &fileService, w)
+	wa.buildPipelines(&p, body, &fileService, w)
+}
+
+func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
+	p := gitlab.Push{Logger: wa.Logger}
+
+	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		wa.Logger.Errorf("failed to read body in gitlab webhook handler: %s", err.Error())
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	wa.Logger.Infof("Received payload: %s", string(body))
+
+	fileService, err := p.ParseWebhook(wa.Config, body)
+	if err != nil {
+		if strings.Contains(err.Error(), "unexpected event type") {
+			wa.Logger.Infof("Non-Push gitlab notification (%s)", strings.SplitN(err.Error(), ":", 2))
+			return
+		}
+		wa.Logger.Errorf("failed to parse gitlab webhook: %s", err.Error())
+		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	wa.buildPipelines(&p, body, &fileService, w)
 }
 
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +222,7 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload.IsOldStash = true
-	stashConfig := stash.StashConfig{
+	stashConfig := stash.Config{
 		Endpoint: wa.Config.StashEndpoint,
 		Username: wa.Config.StashUsername,
 		Token:    wa.Config.StashToken,
@@ -211,13 +240,11 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	// the receiver on the buildPipelines. We don't need to reassign the values to
 	// fileService here.
 	fileService := stash.FileService{
-		StashToken:    wa.Config.StashToken,
-		StashUsername: wa.Config.StashUsername,
-		StashEndpoint: wa.Config.StashEndpoint,
-		Logger:        wa.Logger,
+		Config: stashConfig,
+		Logger: wa.Logger,
 	}
 	wa.Logger.Infof("Building pipeslines from Stash webhook")
-	wa.buildPipelines(p, &fileService, w)
+	wa.buildPipelines(p, body, &fileService, w)
 }
 
 func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -273,13 +300,11 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		// the receiver on buildPipelines. We don't need to reassign the values to
 		// fileService here.
 		fileService := bbcloud.FileService{
-			BbcloudEndpoint: wa.Config.StashEndpoint,
-			BbcloudUsername: wa.Config.StashUsername,
-			BbcloudToken:    wa.Config.StashToken,
-			Logger:          wa.Logger,
+			Config: bbcloudConfig,
+			Logger: wa.Logger,
 		}
 
-		wa.buildPipelines(p, &fileService, w)
+		wa.buildPipelines(p, body, &fileService, w)
 
 	case "repo:refs_changed", "pr:merged":
 		wa.Logger.Info("Processing bitbucket-server webhook")
@@ -306,12 +331,12 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		}
 
 		payload.IsOldStash = false
-		stashConfig := stash.StashConfig{
+		stashConfig := stash.Config{
 			Endpoint: wa.Config.StashEndpoint,
 			Username: wa.Config.StashUsername,
 			Token:    wa.Config.StashToken,
 
-			Logger:   wa.Logger,
+			Logger: wa.Logger,
 		}
 		p, err := stash.NewPush(payload, stashConfig)
 		if err != nil {
@@ -323,13 +348,11 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		// the receiver on buildPipelines. We don't need to reassign the values to
 		// fileService here.
 		fileService := stash.FileService{
-			StashToken:    wa.Config.StashToken,
-			StashUsername: wa.Config.StashUsername,
-			StashEndpoint: wa.Config.StashEndpoint,
-			Logger:        wa.Logger,
+			Config: stashConfig,
+			Logger: wa.Logger,
 		}
 
-		wa.buildPipelines(p, &fileService, w)
+		wa.buildPipelines(p, body, &fileService, w)
 
 	default:
 		util.WriteHTTPError(w, http.StatusInternalServerError, errors.New("Unknown bitbucket event type"))
@@ -378,11 +401,11 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 
 // TODO: this func should return an error and allow the handlers to return the http response. Additionally,
 // it probably doesn't belong in this file once refactored.
-func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.ResponseWriter) {
+func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader, w http.ResponseWriter) {
 	// see if we have any configurations for this repo.
 	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
 	if rc := wa.Config.GetRepoConfig(p.Name(), p.Repo()); rc != nil {
-		if rc.Branch != p.Branch() {
+		if p.IsBranch(rc.Branch) {
 			wa.Logger.Infof("Received request from branch %s. Does not match configured branch %s. Skipping.", p.Branch(), rc.Branch)
 			return
 		}
@@ -396,6 +419,12 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 	}
 
 	wa.Logger.Infof("Processing request for branch: %s", p.Branch())
+
+	// deserialze push data to a map.  used in template logic later
+	rawPushData := make(map[string]interface{})
+	if err := json.Unmarshal(rawPush, &rawPushData); err != nil {
+		wa.Logger.Errorf("unable to deserialze raw data to map")
+	}
 
 	// Construct a pipeline builder using provided downloader
 	builder := &dinghyfile.PipelineBuilder{
@@ -411,6 +440,7 @@ func (wa *WebAPI) buildPipelines(p Push, f dinghyfile.Downloader, w http.Respons
 		Logger:               wa.Logger,
 		Ums:                  wa.Ums,
 		Notifiers:            wa.Notifiers,
+		PushRaw:              rawPushData,
 	}
 
 	builder.Parser = wa.Parser

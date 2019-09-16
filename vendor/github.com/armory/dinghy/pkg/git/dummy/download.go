@@ -23,12 +23,14 @@ import (
 )
 
 // FileService serves a map[string]string of files -> file contents
-type FileService map[string]string
+type FileService map[string]map[string]string
 
 // Download returns a file from the map
 func (f FileService) Download(org, repo, file, branch string) (string, error) {
-	if ret, exists := f[file]; exists {
-		return ret, nil
+	if _, exists := f[branch]; exists {
+		if ret, exists := (f[branch])[file]; exists {
+			return ret, nil
+		}
 	}
 	return "", errors.New("File not found")
 }

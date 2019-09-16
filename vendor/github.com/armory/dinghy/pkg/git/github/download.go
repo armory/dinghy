@@ -63,6 +63,7 @@ func (f *FileService) EncodeURL(org, repo, path, branch string) string {
 	// this is only used for caching purposes
 	return fmt.Sprintf(`%s/repos/%s/%s/contents/%s?ref=%s`, f.GitHub.GetEndpoint(), org, repo, path, branch)
 }
+
 // DecodeURL takes a url and returns the org, repo, path and branch
 func (f *FileService) DecodeURL(url string) (org, repo, path, branch string) {
 	targetExpression := fmt.Sprintf(`%s/repos/(.+)/(.+)/contents/(.+)\?ref=(.+)`, f.GitHub.GetEndpoint())

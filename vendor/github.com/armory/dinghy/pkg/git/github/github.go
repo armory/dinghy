@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
@@ -31,7 +32,7 @@ type GitHubClient interface {
 	GetEndpoint() string
 }
 
-type GitHub struct {
+type Config struct {
 	Endpoint string
 	Token    string
 }
@@ -49,7 +50,7 @@ func newGitHubClient(ctx context.Context, endpoint, token string) (*github.Clien
 	return client, nil
 }
 
-func (g *GitHub) DownloadContents(org, repo, path, branch string) (string, error) {
+func (g *Config) DownloadContents(org, repo, path, branch string) (string, error) {
 	ctx := context.Background()
 	client, err := newGitHubClient(ctx, g.Endpoint, g.Token)
 	if err != nil {
@@ -75,7 +76,7 @@ func (g *GitHub) DownloadContents(org, repo, path, branch string) (string, error
 	return b.String(), nil
 }
 
-func (g *GitHub) CreateStatus(status *Status, org, repo, ref string) error {
+func (g *Config) CreateStatus(status *Status, org, repo, ref string) error {
 	repoStatus := &github.RepoStatus{
 		State:       &status.State,
 		TargetURL:   &status.DeckBaseURL,
@@ -99,6 +100,6 @@ func (g *GitHub) CreateStatus(status *Status, org, repo, ref string) error {
 	return nil
 }
 
-func (g *GitHub) GetEndpoint() string {
+func (g *Config) GetEndpoint() string {
 	return g.Endpoint
 }

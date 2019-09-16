@@ -31,11 +31,9 @@ import (
 
 // FileService is for working with repositories
 type FileService struct {
-	cache         local.Cache
-	StashEndpoint string
-	StashToken    string
-	StashUsername string
-	Logger        logrus.FieldLogger
+	cache  local.Cache
+	Config Config
+	Logger logrus.FieldLogger
 }
 
 // FileContentsResponse contains response from Stash when you fetch a file
@@ -55,7 +53,7 @@ func (f *FileService) downloadLines(url string, start int) (lines []string, next
 		query.Add("start", strconv.Itoa(start))
 		req.URL.RawQuery = query.Encode()
 	}
-	req.SetBasicAuth(f.StashUsername, f.StashToken)
+	req.SetBasicAuth(f.Config.Username, f.Config.Token)
 	resp, err := http.DefaultClient.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
@@ -114,7 +112,7 @@ func (f *FileService) Download(org, repo, path, branch string) (string, error) {
 
 // EncodeURL returns the git url for a given org, repo, path and branch
 func (f *FileService) EncodeURL(org, repo, path, branch string) string {
-	return fmt.Sprintf(`%s/projects/%s/repos/%s/browse/%s?at=%s&raw`, f.StashEndpoint, org, repo, path, branch)
+	return fmt.Sprintf(`%s/projects/%s/repos/%s/browse/%s?at=%s&raw`, f.Config.Endpoint, org, repo, path, branch)
 }
 
 // DecodeURL takes a url and returns the org, repo, path and branch
