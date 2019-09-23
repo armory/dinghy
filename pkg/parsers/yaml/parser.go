@@ -195,6 +195,10 @@ func (r *DinghyfileYamlParser) moduleFunc(org, branch string, deps map[string]bo
 	}
 }
 
+func (r *DinghyfileYamlParser) makeSlice(args ...interface{}) []interface{} {
+	return args
+}
+
 func (r *DinghyfileYamlParser) Parse(org, repo, path, branch string, vars []dinghyfile.VarMap) (*bytes.Buffer, error) {
 	module := true
 	event := &events.Event{
@@ -250,6 +254,7 @@ func (r *DinghyfileYamlParser) Parse(org, repo, path, branch string, vars []ding
 		"appModule":  r.moduleFunc(org, branch, deps, vars),
 		"pipelineID": r.pipelineIDFunc(vars),
 		"var":        r.varFunc(vars),
+		"makeSlice":  r.makeSlice,
 	}
 
 	// Parse the downloaded template.

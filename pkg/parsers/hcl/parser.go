@@ -123,6 +123,10 @@ func (r *DinghyfileHclParser) moduleFunc(org, branch string, deps map[string]boo
 	}
 }
 
+func (r *DinghyfileHclParser) makeSlice(args ...interface{}) []interface{} {
+	return args
+}
+
 func (r *DinghyfileHclParser) Parse(org, repo, path, branch string, vars []dinghyfile.VarMap) (*bytes.Buffer, error) {
 	module := true
 	event := &events.Event{
@@ -175,6 +179,7 @@ func (r *DinghyfileHclParser) Parse(org, repo, path, branch string, vars []dingh
 		"appModule":  r.moduleFunc(org, branch, deps, vars),
 		"pipelineID": r.pipelineIDFunc(vars),
 		"var":        r.varFunc(vars),
+		"makeSlice":  r.makeSlice,
 	}
 
 	// Parse the downloaded template.
