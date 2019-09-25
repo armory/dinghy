@@ -112,7 +112,7 @@ func Setup() (*logr.Logger,*web.WebAPI) {
 
 	redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)
 	if _, err := redisClient.Client.Ping().Result(); err != nil {
-		log.Fatalf("Redis Server at %s could not be contacted", config.Redis.BaseURL)
+		log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
 	}
 	api := web.NewWebAPI(config, redisClient, client, ec, log)
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
