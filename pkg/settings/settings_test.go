@@ -23,13 +23,10 @@ import (
 )
 
 func TestConfigureSettings(t *testing.T) {
-	defaultsWithOverridesExpected := NewDefaultSettings()
-	defaultsWithOverridesExpected.Redis.BaseURL = "12345:6789"
-
 	cases := map[string]struct {
 		defaults     Settings
 		overrides    Settings
-		expected     Settings
+		expected     func(*testing.T, *Settings)
 		expectsError bool
 	}{
 		"happy path": {
@@ -39,15 +36,19 @@ func TestConfigureSettings(t *testing.T) {
 			overrides: Settings{
 				GitHubToken: "45678",
 			},
-			expected: Settings{
-				ParserFormat: "json",
-				GitHubToken:  "45678",
+			expected: func(t *testing.T, settings *Settings) {
+				assert.Equal(t, settings, &Settings{
+					ParserFormat: "json",
+					GitHubToken:  "45678",
+				})
 			},
 		},
 		"defaults no overrides": {
 			defaults:  NewDefaultSettings(),
 			overrides: Settings{},
-			expected:  NewDefaultSettings(),
+			expected: func(t *testing.T, settings *Settings) {
+				assert.NotEmpty(t, settings)
+			},
 		},
 		"defaults with spinnaker settings overridden": {
 			defaults: NewDefaultSettings(),
@@ -59,18 +60,20 @@ func TestConfigureSettings(t *testing.T) {
 					},
 				},
 			},
-			expected: defaultsWithOverridesExpected,
+			expected: func(t *testing.T, settings *Settings) {
+				assert.Equal(t, "12345:6789", settings.Redis.BaseURL)
+				assert.Empty(t, settings.Redis.Password)
+			},
 		},
 	}
 
 	for testName, c := range cases {
 		t.Run(testName, func(t *testing.T) {
 			s, err := configureSettings(c.defaults, c.overrides)
-			if c.expectsError {
-				assert.NotNil(t, err)
+			if !assert.Equal(t, c.expectsError, err != nil) {
 				return
 			}
-			assert.Equal(t, c.expected, *s)
+			c.expected(t, s)
 		})
 	}
 }
