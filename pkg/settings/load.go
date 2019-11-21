@@ -18,6 +18,7 @@
 package settings
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/armory/go-yaml-tools/pkg/secrets"
@@ -184,27 +185,32 @@ func loadProfiles() (Settings, error) {
 		}
 	}
 
-	if err = decryptSecrets(&config); err != nil {
+	if err = decryptSecrets(context.TODO(), &config); err != nil {
 		log.Fatalf("failed to decrypt secrets: %s", err)
 	}
 
 	return config, nil
 }
 
-func decryptSecrets(config *Settings) error {
-	decrypter := secrets.NewDecrypter(config.GitHubToken)
+func decryptSecrets(ctx context.Context, config *Settings) error {
+	decrypter, err := secrets.NewDecrypter(ctx, config.GitHubToken)
+	if err != nil {
+		return err
+	}
 	secret, err := decrypter.Decrypt()
 	if err != nil {
 		return err
 	}
 	config.GitHubToken = secret
 
-	decrypter = secrets.NewDecrypter(config.StashToken)
+	decrypter, err = secrets.NewDecrypter(ctx, config.StashToken)
+	if err != nil {
+		return err
+	}
 	secret, err = decrypter.Decrypt()
 	if err != nil {
 		return err
 	}
 	config.StashToken = secret
-
 	return nil
 }
