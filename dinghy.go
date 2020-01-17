@@ -53,5 +53,5 @@ func main() {
 	}
 
 	api.Client.EnableArmoryEndpoints()
-	dinghy.Start(log, api)
+	dinghy.Start(log, api, api.Config)
 }

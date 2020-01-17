@@ -1,4 +1,4 @@
-FROM golang:1.12.1-alpine3.9 as builder
+FROM golang:1.13.4-alpine3.10 as builder
 
 # vendor flags conflict with `go get`
 # so we fetch golint before running make
@@ -13,7 +13,7 @@ ARG OCDINGHY_HASH
 ENV OCDINGHY_HASH=$OCDINGHY_HASH
 RUN make
 
-FROM alpine:3.9.3
+FROM alpine:3.10
 
 EXPOSE 8081
 WORKDIR /opt/armory/bin/

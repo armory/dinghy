@@ -19,6 +19,7 @@ package settings
 
 import (
 	"github.com/armory/go-yaml-tools/pkg/secrets"
+	"github.com/armory/go-yaml-tools/pkg/server"
 	"github.com/jinzhu/copier"
 )
 
@@ -44,6 +45,7 @@ type Settings struct {
 	ParserFormat      string       `json:"parserFormat,omitempty" yaml:"parserFormat"`
 	RepoConfig        []RepoConfig `json:"repoConfig,omitempty" yaml:"repoConfig"`
 	spinnakerSupplied `mapstructure:",squash"`
+	Server            server.ServerConfig `json:"server" yaml:"server"`
 }
 
 type spinnakerSupplied struct {
