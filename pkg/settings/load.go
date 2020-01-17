@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/armory/go-yaml-tools/pkg/secrets"
+	"github.com/armory/go-yaml-tools/pkg/server"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -73,6 +74,9 @@ func NewDefaultSettings() Settings {
 		},
 		ParserFormat: "json",
 		RepoConfig:   []RepoConfig{},
+		Server: server.ServerConfig{
+			Port: 8081,
+		},
 	}
 }
 

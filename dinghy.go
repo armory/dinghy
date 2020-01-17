@@ -18,9 +18,11 @@ package main
 
 import (
 	"github.com/armory/dinghy/cmd"
+	"github.com/armory/dinghy/pkg/settings"
 )
 
 func main() {
 	log, d := dinghy.Setup()
-	dinghy.Start(log, d)
+	config := settings.NewDefaultSettings()
+	dinghy.Start(log, d, &config)
 }
