@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/armory/dinghy/pkg/dinghyfile"
-	"net/http"
+	"github.com/armory/go-yaml-tools/pkg/server"
 	"os"
 	"os/signal"
 	"strings"
@@ -51,7 +51,7 @@ func newRedisOptions(redisOptions settings.Redis) *redis.Options {
 	}
 }
 
-func Setup() (*logr.Logger,*web.WebAPI) {
+func Setup() (*logr.Logger, *web.WebAPI) {
 	log := logr.New()
 	config, err := settings.LoadSettings()
 	if err != nil {
@@ -126,9 +126,11 @@ func AddUnmarshaller(u dinghyfile.DinghyJsonUnmarshaller, api *web.WebAPI) {
 	api.AddDinghyfileUnmarshaller(u)
 }
 
-func Start(log *logr.Logger, api *web.WebAPI) {
-	log.Info("Dinghy started.")
-	log.Info(http.ListenAndServe(":8081", api.Router()))
+func Start(log *logr.Logger, api *web.WebAPI, settings2 *settings.Settings) {
+	log.Infof("Dinghy starting on %s", settings2.Server.GetAddr())
+	if err := server.NewServer(&settings2.Server).Start(api.Router()); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func setupRemoteLogging(l *logr.Logger, loggingConfig settings.Logging) error {
