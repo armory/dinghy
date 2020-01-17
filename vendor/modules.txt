@@ -13,8 +13,9 @@ github.com/BurntSushi/toml
 # github.com/armory-io/monitoring v0.0.7
 github.com/armory-io/monitoring/log/formatters
 github.com/armory-io/monitoring/log/hooks
-# github.com/armory/go-yaml-tools v0.0.0-20191120233933-0620b6b7ea86
+# github.com/armory/go-yaml-tools v0.0.0-20200117023812-8d4231ac6a03
 github.com/armory/go-yaml-tools/pkg/secrets
+github.com/armory/go-yaml-tools/pkg/server
 github.com/armory/go-yaml-tools/pkg/spring
 github.com/armory/go-yaml-tools/pkg/yaml
 # github.com/armory/plank v1.2.2-0.20190814000943-6317f9d5d508
