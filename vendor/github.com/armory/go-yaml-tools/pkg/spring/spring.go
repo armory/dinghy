@@ -65,10 +65,10 @@ func loadConfig(configFile string) map[interface{}]interface{} {
 //
 //Usage:
 //  If you want to load the following files:
-//    - spinnaker.yml
-//    - spinnaker-local.yml
-//    - gate-local.yml
-//    - gate-armory.yml
+//    - spinnaker.yml/yaml
+//    - spinnaker-local.yml/yaml
+//    - gate-local.yml/yaml
+//    - gate-armory.yml/yaml
 // Then For propNames you would give:
 //	  ["spinnaker", "gate"]
 // and you'll need to make sure your envKeyPairs has the following key pair as one of it's variables
@@ -132,10 +132,19 @@ func configDirectory() string {
 
 func loadProperties(propNames []string, confDir string, profiles []string, envMap map[string]string) (map[string]interface{}, error) {
 	propMaps := []map[interface{}]interface{}{}
-	//first load the main props, i.e. gate.yaml with no profile extensions
+	//first load the main props, i.e. gate.yml/yaml with no profile extensions
 	for _, prop := range propNames {
-		filePath := fmt.Sprintf("%s/%s.yml", confDir, prop)
-		propMaps = append(propMaps, loadConfig(filePath))
+		// yaml is "official"
+		filePath := fmt.Sprintf("%s/%s.yaml", confDir, prop)
+		config := loadConfig(filePath)
+
+		// but people also use "yml" too, if we don't get anything let's try this
+		if len(config) == 0 {
+			filePath = fmt.Sprintf("%s/%s.yml", confDir, prop)
+			config = loadConfig(filePath)
+		}
+
+		propMaps = append(propMaps, config)
 	}
 
 	for _, prop := range propNames {
