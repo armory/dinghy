@@ -19,7 +19,8 @@ package settings
 
 import (
 	"github.com/armory/go-yaml-tools/pkg/secrets"
-	"github.com/armory/go-yaml-tools/pkg/server"
+	"github.com/armory/go-yaml-tools/pkg/tls/client"
+	"github.com/armory/go-yaml-tools/pkg/tls/server"
 	"github.com/jinzhu/copier"
 )
 
@@ -46,6 +47,7 @@ type Settings struct {
 	RepoConfig        []RepoConfig `json:"repoConfig,omitempty" yaml:"repoConfig"`
 	spinnakerSupplied `mapstructure:",squash"`
 	Server            server.ServerConfig `json:"server" yaml:"server"`
+	Http              client.Config       `json:"http" yaml:"http"`
 }
 
 type spinnakerSupplied struct {

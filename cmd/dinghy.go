@@ -20,7 +20,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/armory/dinghy/pkg/dinghyfile"
-	"github.com/armory/go-yaml-tools/pkg/server"
+	"github.com/armory/go-yaml-tools/pkg/tls/server"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -83,17 +84,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		}
 	}
 
-	var client *plank.Client
-	client = plank.New(plank.WithFiatUser(config.Fiat.AuthUser))
-
-	if logLevel == logr.DebugLevel {
-		client = plank.New(plank.WithClient(debug.NewInterceptorHttpClient(log, true)),
-			plank.WithFiatUser(config.Fiat.AuthUser))
-	}
-
-	// Update the base URLs based on config
-	client.URLs["orca"] = config.Orca.BaseURL
-	client.URLs["front50"] = config.Front50.BaseURL
+	client := setupPlankClient(config, log)
 
 	// Create the EventClient
 	ctx, cancel := context.WithCancel(context.Background())
@@ -120,6 +111,22 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		api.SetDinghyfileParser(dinghyfile.NewDinghyfileParser(&dinghyfile.PipelineBuilder{}))
 	}
 	return log, api
+}
+
+func setupPlankClient(settings *settings.Settings, log *logr.Logger) *plank.Client {
+	var httpClient *http.Client
+	if log.Level == logr.DebugLevel {
+		httpClient = debug.NewInterceptorHttpClient(log, &settings.Http, true)
+	} else {
+		httpClient = settings.Http.NewClient()
+	}
+	client := plank.New(plank.WithClient(httpClient),
+		plank.WithFiatUser(settings.Fiat.AuthUser))
+
+	// Update the base URLs based on config
+	client.URLs["orca"] = settings.Orca.BaseURL
+	client.URLs["front50"] = settings.Front50.BaseURL
+	return client
 }
 
 func AddUnmarshaller(u dinghyfile.DinghyJsonUnmarshaller, api *web.WebAPI) {

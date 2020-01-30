@@ -3,6 +3,7 @@ package debug
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/armory/go-yaml-tools/pkg/tls/client"
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -62,13 +63,21 @@ func (l *LogrusDebugLogger) LogResponse(msg string, args ...interface{}) {
 	}
 }
 
-func NewInterceptorHttpClient(logger *logrus.Logger, insecure bool) *http.Client {
-
+func NewInterceptorHttpClient(logger *logrus.Logger, httpOptions *client.Config, insecure bool) *http.Client {
 	log := NewLogrusDebugLogger(logger)
 	transport := cleanhttp.DefaultPooledTransport()
-	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: insecure}
+	transport.TLSClientConfig = getInterceptorTlsConfig(httpOptions, insecure)
 	client := &http.Client{
 		Transport: NewInterceptorLogger(transport, log),
 	}
 	return client
+}
+
+func getInterceptorTlsConfig(httpOptions *client.Config, insecure bool) *tls.Config {
+	tlsCfg := httpOptions.GetTlsConfig()
+	if tlsCfg == nil {
+		tlsCfg = &tls.Config{}
+	}
+	tlsCfg.InsecureSkipVerify = insecure
+	return tlsCfg
 }

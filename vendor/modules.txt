@@ -13,15 +13,19 @@ github.com/BurntSushi/toml
 # github.com/armory-io/monitoring v0.0.7
 github.com/armory-io/monitoring/log/formatters
 github.com/armory-io/monitoring/log/hooks
-# github.com/armory/go-yaml-tools v0.0.0-20200117023812-8d4231ac6a03
+# github.com/armory/go-yaml-tools v0.0.0-20200130015602-cab75bf9201e
 github.com/armory/go-yaml-tools/pkg/secrets
-github.com/armory/go-yaml-tools/pkg/server
 github.com/armory/go-yaml-tools/pkg/spring
+github.com/armory/go-yaml-tools/pkg/tls
+github.com/armory/go-yaml-tools/pkg/tls/client
+github.com/armory/go-yaml-tools/pkg/tls/server
 github.com/armory/go-yaml-tools/pkg/yaml
 # github.com/armory/plank v1.2.2-0.20190814000943-6317f9d5d508
 github.com/armory/plank
-# github.com/aws/aws-sdk-go v1.25.8
+github.com/armory/plank/config
+# github.com/aws/aws-sdk-go v1.28.9
 github.com/aws/aws-sdk-go/aws
+github.com/aws/aws-sdk-go/aws/arn
 github.com/aws/aws-sdk-go/aws/awserr
 github.com/aws/aws-sdk-go/aws/awsutil
 github.com/aws/aws-sdk-go/aws/client
@@ -46,6 +50,7 @@ github.com/aws/aws-sdk-go/internal/sdkmath
 github.com/aws/aws-sdk-go/internal/sdkrand
 github.com/aws/aws-sdk-go/internal/sdkuri
 github.com/aws/aws-sdk-go/internal/shareddefaults
+github.com/aws/aws-sdk-go/internal/strings
 github.com/aws/aws-sdk-go/private/protocol
 github.com/aws/aws-sdk-go/private/protocol/eventstream
 github.com/aws/aws-sdk-go/private/protocol/eventstream/eventstreamapi
@@ -56,6 +61,7 @@ github.com/aws/aws-sdk-go/private/protocol/rest
 github.com/aws/aws-sdk-go/private/protocol/restxml
 github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
 github.com/aws/aws-sdk-go/service/s3
+github.com/aws/aws-sdk-go/service/s3/internal/arn
 github.com/aws/aws-sdk-go/service/s3/s3iface
 github.com/aws/aws-sdk-go/service/s3/s3manager
 github.com/aws/aws-sdk-go/service/sts
