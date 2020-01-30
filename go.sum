@@ -29,12 +29,12 @@ github.com/armory-io/monitoring v0.0.7 h1:IVVhiqhavr+yH2IXlMZMyqjhBb9Ms9L6qmKswL
 github.com/armory-io/monitoring v0.0.7/go.mod h1:EqWc/9ldt7teZxnS2xnAMJsthM7ldI4ArLnjBRGCYSo=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e h1:d7XSZxwhDUIMoFHVq2bVTsZLdN6KGDyASfdEJ+8WQHM=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
-github.com/armory/go-yaml-tools v0.0.0-20200117023812-8d4231ac6a03 h1:fKSJazwpe6wpXWbp5zcfiSeKBzh0XBMxan6Sc8F7SXU=
-github.com/armory/go-yaml-tools v0.0.0-20200117023812-8d4231ac6a03/go.mod h1:xwVm5fsX+KogAY8C0DBdKo3IW/vR3jq33G2rY9mw2fg=
+github.com/armory/go-yaml-tools v0.0.0-20200130015602-cab75bf9201e h1:qxBpQdfQfyjpvLXSXWCTxjRExhNYjiLx6fUQmGjPJnY=
+github.com/armory/go-yaml-tools v0.0.0-20200130015602-cab75bf9201e/go.mod h1:+TUNfrWw4Te/2ad54ld9IlhvNA5Sn/nU7UQo7dIvtHk=
 github.com/armory/plank v1.2.2-0.20190814000943-6317f9d5d508 h1:8WgDq0wxDWnZeYMlz4Ch6QHEpt2+YAlulSNY2ivfSyA=
 github.com/armory/plank v1.2.2-0.20190814000943-6317f9d5d508/go.mod h1:HZRBezMqPh1sZtVdR3SjTRq3loINO7xdf+0ZpzfVeKY=
-github.com/aws/aws-sdk-go v1.25.8 h1:n7I+HUUXjun2CsX7JK+1hpRIkZrlKhd3nayeb+Xmavs=
-github.com/aws/aws-sdk-go v1.25.8/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
+github.com/aws/aws-sdk-go v1.28.9 h1:grIuBQc+p3dTRXerh5+2OxSuWFi0iXuxbFdTSg0jaW0=
+github.com/aws/aws-sdk-go v1.28.9/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
