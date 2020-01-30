@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/armory/go-yaml-tools/pkg/secrets"
-	"github.com/armory/go-yaml-tools/pkg/server"
+	"github.com/armory/go-yaml-tools/pkg/tls/server"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -89,6 +89,9 @@ func LoadSettings() (*Settings, error) {
 	}
 	settings, err := configureSettings(NewDefaultSettings(), springConfig)
 	if err != nil {
+		return nil, err
+	}
+	if err = settings.Http.Init(); err != nil {
 		return nil, err
 	}
 	return settings, nil
