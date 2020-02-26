@@ -38,6 +38,8 @@ github.com/armory/dinghy v1.0.2-0.20200117042130-7dfd930b1bf2 h1:Fx/UZ6fw1+2St0M
 github.com/armory/dinghy v1.0.2-0.20200117042130-7dfd930b1bf2/go.mod h1:i3fbfy8w/+cskrnT5gKvlQMDGh8A17KvMUwxyiVCpJg=
 github.com/armory/dinghy v1.0.2-0.20200130030530-60cb2f53db7d h1:AZSY6gDAiOgQ9mGCkZWJr0+SECJ7ePX/cAtYcoBqP7g=
 github.com/armory/dinghy v1.0.2-0.20200130030530-60cb2f53db7d/go.mod h1:APDNy7kR9+2nZ3kkaVqo4wDMzqAGoMSUhLW9QufhVZM=
+github.com/armory/dinghy v1.0.2-0.20200226154024-3b0247ed0f41 h1:XGiaJjIFYECJKVv8Mrzj9KM36gwsGBK7RY+LUM00pDQ=
+github.com/armory/dinghy v1.0.2-0.20200226154024-3b0247ed0f41/go.mod h1:09ShER33Gds2INHSdCbNf5sNp6QiAC1V/XOuy2lu8GU=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
 github.com/armory/go-yaml-tools v0.0.0-20200117023812-8d4231ac6a03 h1:fKSJazwpe6wpXWbp5zcfiSeKBzh0XBMxan6Sc8F7SXU=
 github.com/armory/go-yaml-tools v0.0.0-20200117023812-8d4231ac6a03/go.mod h1:xwVm5fsX+KogAY8C0DBdKo3IW/vR3jq33G2rY9mw2fg=
@@ -45,6 +47,8 @@ github.com/armory/go-yaml-tools v0.0.0-20200130015602-cab75bf9201e h1:qxBpQdfQfy
 github.com/armory/go-yaml-tools v0.0.0-20200130015602-cab75bf9201e/go.mod h1:+TUNfrWw4Te/2ad54ld9IlhvNA5Sn/nU7UQo7dIvtHk=
 github.com/armory/plank v1.2.2-0.20190814000943-6317f9d5d508 h1:8WgDq0wxDWnZeYMlz4Ch6QHEpt2+YAlulSNY2ivfSyA=
 github.com/armory/plank v1.2.2-0.20190814000943-6317f9d5d508/go.mod h1:HZRBezMqPh1sZtVdR3SjTRq3loINO7xdf+0ZpzfVeKY=
+github.com/armory/plank v1.3.0 h1:6Wr57fNrGXBfi/gx9qYkNnvui7WNg/fOxbxEKJeQumA=
+github.com/armory/plank v1.3.0/go.mod h1:e92pyeAmWYNGVf0ziQ/SPmD+G4Nw79xXQztSr1SSMzM=
 github.com/aws/aws-sdk-go v1.25.8 h1:n7I+HUUXjun2CsX7JK+1hpRIkZrlKhd3nayeb+Xmavs=
 github.com/aws/aws-sdk-go v1.25.8/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go v1.28.9 h1:grIuBQc+p3dTRXerh5+2OxSuWFi0iXuxbFdTSg0jaW0=

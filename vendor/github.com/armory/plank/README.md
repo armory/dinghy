@@ -47,4 +47,25 @@ pipelines, err := client.GetPipelines(app.Name)
 // etc...
 ```
 
+## Development
 
+Build the project:
+
+```
+$ go build
+```
+
+Test the project:
+
+```
+$ go test
+```
+
+### Cutting a New Release
+
+1. Update the [CHANGELOG.md]'s `##Unreleased` section with the next version and
+today's date in `YYYY-MM-DD` format.
+  - Don't forget to update the release URL so that it's easy to diff what was
+  changed (look at the bottom of the CHANGELOG for existing examples).
+1. `git tag vx.x.x` where `x.x.x` is the version you're releasing,
+and `git push --tags` to make sure it's persisted to the project.
