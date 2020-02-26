@@ -35,17 +35,17 @@ type FileService struct {
 // note that "path" is the full path relative to the repo root
 // eg: src/foo/bar/filename
 func (f *FileService) Download(org, repo, path, branch string) (string, error) {
-	url := f.EncodeURL(org, repo, path, branch)
-	body := f.cache.Get(url)
-	if body != "" {
-		return body, nil
-	}
-
 	// The endpoint used by the Github lib (https://raw.githubusercontent.com/) does not
 	// accept branch names such as refs/heads/master, but only the name of the branch.
 	// Need to strip that if it exists. Can't use split here either, because '/' is allowed
 	// in branch names
 	branch = strings.Replace(branch, "refs/heads/", "", 1)
+
+	url := f.EncodeURL(org, repo, path, branch)
+	body := f.cache.Get(url)
+	if body != "" {
+		return body, nil
+	}
 
 	contents, err := f.GitHub.DownloadContents(org, repo, path, branch)
 	if err != nil {
