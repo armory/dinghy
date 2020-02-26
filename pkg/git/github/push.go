@@ -114,7 +114,7 @@ func (p *Push) IsBranch(branchToTry string) bool {
 
 // IsMaster detects if the branch is master.
 func (p *Push) IsMaster() bool {
-	return p.Ref == "refs/heads/master"
+	return p.Ref == "master" || p.Ref == "refs/heads/master"
 }
 
 // Name returns the name of the provider to be used in configuration
