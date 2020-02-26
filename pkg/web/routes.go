@@ -169,7 +169,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p.Ref = "master"
+	p.Ref = strings.Replace(p.Ref, "refs/heads/", "", 1)
 
 	// TODO: we're assigning config in two places here, we should refactor this
 	gh := github.Config{Endpoint: wa.Config.GithubEndpoint, Token: wa.Config.GitHubToken}
