@@ -73,11 +73,11 @@ func (c *Client) UpsertPipeline(p Pipeline, id string) error {
 	var unused interface{}
 	if id == "" {
 		if err := c.PostWithRetry(c.pipelinesURL(), ApplicationJson, p, &unused); err != nil {
-			return fmt.Errorf("could not create pipeline '%s' in app '%s' - %v", p.Name, p.Application, err)
+			return fmt.Errorf("could not create pipeline '%s' in app '%s': %w", p.Name, p.Application, err)
 		}
 	} else {
 		if err := c.PutWithRetry(fmt.Sprintf("%s/%s", c.pipelinesURL(), id), ApplicationJson, p, &unused); err != nil {
-			return fmt.Errorf("could not update pipeline '%s' in app '%s' - %v", p.Name, p.Application, err)
+			return fmt.Errorf("could not update pipeline '%s' in app '%s': %w", p.Name, p.Application, err)
 		}
 	}
 	return nil

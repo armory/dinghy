@@ -18,13 +18,16 @@ package dinghyfile
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"time"
+
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/notifiers"
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/plank"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 type VarMap map[string]interface{}
@@ -182,6 +185,32 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 	return nil
 }
 
+func unwrapFront50Error(err error) error {
+	// Front50/OPA errors are in the form {"error": "BadRequest", "message": "foo"}
+	// So let's attempt to destructure that value and report it downstream so
+	// users have a nicer error message. If we can't parse the message for
+	// whatever reason, then we'll just end up returning the previous error instead.
+	var fr *plank.FailedResponse
+	if errors.As(err, &fr) {
+		var bre Front50BadRequestError
+		if jsonErr := json.Unmarshal(fr.Response, &bre); jsonErr == nil {
+			return &bre // Make sure this is the error that gets persisted now
+		}
+	}
+
+	return err
+}
+
+// Front50BadRequestError represents a 4xx response from Front50
+type Front50BadRequestError struct {
+	Type   string `json:"error"`
+	Reason string `json:"message"`
+}
+
+func (e *Front50BadRequestError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Type, e.Reason)
+}
+
 // RebuildModuleRoots rebuilds all dinghyfiles which are roots of the specified file
 func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) error {
 	errEncountered := false
@@ -258,6 +287,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			p.Lock()
 		}
 		if err := b.Client.UpsertPipeline(p, p.ID); err != nil {
+			err = unwrapFront50Error(err)
 			b.Logger.Errorf("Upsert failed: %s", err.Error())
 			return err
 		}
@@ -316,6 +346,7 @@ func (b *PipelineBuilder) GetPipelineByID(app, pipelineName string) (string, err
 		Name:        pipelineName,
 	}, "")
 	if err != nil {
+		err = unwrapFront50Error(err)
 		b.Logger.Errorf("Failed to UpsertPipeline for %s (%s): %s", pipelineName, app, err.Error())
 		return "", err
 	}
