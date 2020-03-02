@@ -251,9 +251,11 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		if errunsup.Code == 404 {
 			// Likely just not there...
 			b.Logger.Infof("Creating application '%s'...", app.Name)
-			if err := b.Client.CreateApplication(app); err != nil {
+			if err = b.Client.CreateApplication(app); err != nil {
 				b.Logger.Errorf("Failed to create application (%s)", err.Error())
 				return err
+			} else {
+				err = nil
 			}
 		} else {
 			b.Logger.Errorf("Failed to create application (%s)", errunsup.Error())
@@ -286,6 +288,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			b.Logger.Debug("Locking pipeline ", p.Name)
 			p.Lock()
 		}
+		
 		if err := b.Client.UpsertPipeline(p, p.ID); err != nil {
 			err = unwrapFront50Error(err)
 			b.Logger.Errorf("Upsert failed: %s", err.Error())
