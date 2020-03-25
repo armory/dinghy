@@ -210,7 +210,7 @@ golang.org/x/crypto/pbkdf2
 # golang.org/x/exp v0.0.0-20200119233911-0405dc783f0a
 golang.org/x/exp/apidiff
 golang.org/x/exp/cmd/apidiff
-# golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f
+# golang.org/x/lint v0.0.0-20200130185559-910be7a94367
 golang.org/x/lint
 golang.org/x/lint/golint
 # golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa

@@ -27,9 +27,9 @@ require (
 	github.com/xanzy/go-gitlab v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20200128174031-69ecbb4d6d5d // indirect
 	golang.org/x/exp v0.0.0-20200119233911-0405dc783f0a // indirect
+	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
 	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	golang.org/x/tools v0.0.0-20200130002326-2f3ba24bd6e7 // indirect
 	google.golang.org/genproto v0.0.0-20200128133413-58ce757ed39b // indirect
 	google.golang.org/grpc v1.27.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.4.1 // indirect

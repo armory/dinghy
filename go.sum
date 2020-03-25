@@ -34,15 +34,11 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/armory-io/monitoring v0.0.7 h1:IVVhiqhavr+yH2IXlMZMyqjhBb9Ms9L6qmKswLh+ODQ=
 github.com/armory-io/monitoring v0.0.7/go.mod h1:EqWc/9ldt7teZxnS2xnAMJsthM7ldI4ArLnjBRGCYSo=
-github.com/armory/dinghy v1.0.2-0.20200117042130-7dfd930b1bf2 h1:Fx/UZ6fw1+2St0MEpGHtlkR4bn+wlPP4DWsshy2d0Mk=
-github.com/armory/dinghy v1.0.2-0.20200117042130-7dfd930b1bf2/go.mod h1:i3fbfy8w/+cskrnT5gKvlQMDGh8A17KvMUwxyiVCpJg=
 github.com/armory/dinghy v1.0.2-0.20200130030530-60cb2f53db7d h1:AZSY6gDAiOgQ9mGCkZWJr0+SECJ7ePX/cAtYcoBqP7g=
 github.com/armory/dinghy v1.0.2-0.20200130030530-60cb2f53db7d/go.mod h1:APDNy7kR9+2nZ3kkaVqo4wDMzqAGoMSUhLW9QufhVZM=
 github.com/armory/dinghy v1.0.2-0.20200226154024-3b0247ed0f41 h1:XGiaJjIFYECJKVv8Mrzj9KM36gwsGBK7RY+LUM00pDQ=
 github.com/armory/dinghy v1.0.2-0.20200226154024-3b0247ed0f41/go.mod h1:09ShER33Gds2INHSdCbNf5sNp6QiAC1V/XOuy2lu8GU=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
-github.com/armory/go-yaml-tools v0.0.0-20200117023812-8d4231ac6a03 h1:fKSJazwpe6wpXWbp5zcfiSeKBzh0XBMxan6Sc8F7SXU=
-github.com/armory/go-yaml-tools v0.0.0-20200117023812-8d4231ac6a03/go.mod h1:xwVm5fsX+KogAY8C0DBdKo3IW/vR3jq33G2rY9mw2fg=
 github.com/armory/go-yaml-tools v0.0.0-20200130015602-cab75bf9201e h1:qxBpQdfQfyjpvLXSXWCTxjRExhNYjiLx6fUQmGjPJnY=
 github.com/armory/go-yaml-tools v0.0.0-20200130015602-cab75bf9201e/go.mod h1:+TUNfrWw4Te/2ad54ld9IlhvNA5Sn/nU7UQo7dIvtHk=
 github.com/armory/plank v1.2.2-0.20190814000943-6317f9d5d508 h1:8WgDq0wxDWnZeYMlz4Ch6QHEpt2+YAlulSNY2ivfSyA=
@@ -299,6 +295,8 @@ golang.org/x/lint v0.0.0-20190930215403-16217165b5de h1:5hukYrvBGR8/eNkX5mdUezrA
 golang.org/x/lint v0.0.0-20190930215403-16217165b5de/go.mod h1:6SW0HCj/g11FgYtHlgUYUwCkIfeOF89ocIRzGO/8vkc=
 golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f h1:J5lckAjkw6qYlOZNj90mLYNTEKDvWeuc1yieZ8qUzUE=
 golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f/go.mod h1:5qLYkcX4OjUUV8bRuDixDT3tpyyb+LUpUlRWLxfhWrs=
+golang.org/x/lint v0.0.0-20200130185559-910be7a94367 h1:0IiAsCRByjO2QjX7ZPkw5oU9x+n1YqRL802rjC0c3Aw=
+golang.org/x/lint v0.0.0-20200130185559-910be7a94367/go.mod h1:3xt1FjdF8hUf6vQPIChWIBhFzV8gjjsPE/fR3IyQdNY=
 golang.org/x/mobile v0.0.0-20190312151609-d3739f865fa6/go.mod h1:z+o9i4GpDbdi3rU15maQ/Ox0txvL9dWGYEHz965HBQE=
 golang.org/x/mobile v0.0.0-20190719004257-d2bd2a29d028/go.mod h1:E/iHnbuqvinMTCcRqshq8CkpyQDoeVncDDYHnLhea+o=
 golang.org/x/mod v0.0.0-20190513183733-4bf6d317e70e/go.mod h1:mXi4GBBbnImb6dmsKGUJ2LatrhH/nqhxcFungHvyanc=

@@ -75,13 +75,11 @@ integration: dependencies
 	    go test -c -o ${BUILD_DIR}/tests/$$EXENAME $$TESTPKG ; \
 	done
 
-GOLINT=$(GOPATH)/bin/golint
-
-$(GOLINT):
+golint:
 	go get -v golang.org/x/lint/golint
 
-lint: $(GOLINT)
-	@$(GOLINT) $(PKGS)
+lint: golint
+	@golint $(PKGS)
 
 vet:
 	cd ${PROJECT_DIR}; \
