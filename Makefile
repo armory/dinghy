@@ -26,13 +26,10 @@ ifeq ($(UNAME_S),Linux)
 	LDFLAGS = -ldflags "-X main.COMMIT=${COMMIT} -X main.BRANCH=${BRANCH} -linkmode external -extldflags -static -s -w"
 endif
 
-ifeq ($(OCDINGHY_HASH),)
-	OCDINGHY_HASH = master
-endif
-
+OCDINGHY_HASH = master
 
 # Build the project
-all: clean dependencies lint test vet build
+all: clean dependencies test vet build
 
 dependencies:
 	@echo "Setting Open Core Dinghy to ${OCDINGHY_HASH}..."
@@ -105,6 +102,16 @@ dep:
 	$(eval CURR_BRANCH := $(shell git rev-parse --abbrev-ref HEAD))
 	sed -i -e 's/$(dep) $(OLD_VERSION)/$(dep) $(version)/g' go.mod
 	go mod vendor
+
+docker:
+	rm -fr build/docker ; \
+	mkdir -p build ; \
+	ln -sf $(shell pwd) $(shell pwd)/build/docker ; \
+	./gradlew devSnapshot docker --info -x dockerClean -x dockerPrepare -x artifactoryDeploy -x dockerPush
+
+docker-push:
+	[[ -f build/docker-labels.json ]] || (echo 'You must run make docker, before running make docker-push' && exit 1) ; \
+	docker push $$(cat build/docker-labels.json | jq -r ".name")
 
 .PHONY: lint linux darwin test vet fmt clean run
 

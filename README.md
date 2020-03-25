@@ -4,6 +4,28 @@ _A little boat to take you to the big boat_ - Miker
 
 Note: This is a prototype.
 
+## Developing
+
+### Docker
+
+You can make the docker image locally.
+
+```bash
+make docker
+```
+
+And push it to Artifactory for use with Halyard
+
+```bash
+make docker-push
+``` 
+
+You can of course combine these steps into a single action
+
+```bash
+make docker docker-push
+```
+
 ## Yo, but what do it do?
 
 Users should be able to specify a pipeline in code in their GitHub repo. Dinghy should keep the pipeline in Spinnaker in sync with what is in the GitHub repo. Also, users should be able to make a pipeline by composing other pipelines, stages, or tasks and templating certain values.
