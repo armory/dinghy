@@ -21,11 +21,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/armory/go-yaml-tools/pkg/secrets"
-	"github.com/armory/go-yaml-tools/pkg/tls/server"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
+
+	"github.com/armory/go-yaml-tools/pkg/secrets"
+	"github.com/armory/go-yaml-tools/pkg/tls/server"
 
 	"github.com/mitchellh/mapstructure"
 
@@ -35,7 +37,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	// DefaultDinghyPort is the default port that Dinghy will listen on.
+	DefaultDinghyPort = 8081
+)
+
 func NewDefaultSettings() Settings {
+	dinghyPort, err := strconv.ParseUint(util.GetenvOrDefault("DINGHY_PORT", string(DefaultDinghyPort)), 10, 32)
+
+	if err != nil {
+		dinghyPort = DefaultDinghyPort
+	}
+
 	return Settings{
 		DinghyFilename:    "dinghyfile",
 		TemplateRepo:      "dinghy-templates",
@@ -75,7 +88,7 @@ func NewDefaultSettings() Settings {
 		ParserFormat: "json",
 		RepoConfig:   []RepoConfig{},
 		Server: server.ServerConfig{
-			Port: 8081,
+			Port: uint32(dinghyPort),
 		},
 	}
 }
