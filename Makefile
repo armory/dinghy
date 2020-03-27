@@ -2,6 +2,14 @@
 # https://github.com/silven/go-example/blob/master/Makefile
 # https://vic.demuzere.be/articles/golang-makefile-crosscompile/
 
+# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
+ifeq (,$(shell go env GOBIN))
+GOBIN=$(shell go env GOPATH)/bin
+else
+GOBIN=$(shell go env GOBIN)
+endif
+
+
 BINARY = dinghy
 VET_REPORT = vet.report
 TEST_REPORT = tests.xml
@@ -14,10 +22,7 @@ REPO=$(shell basename $(shell git rev-parse --show-toplevel))
 PKGS := $(shell go list ./... | grep -v -e /integration -e /vendor)
 INTEGRATION_PKGS := $(shell go list ./... | grep /integration)
 ORG=armory-io
-PROJECT_DIR=${GOPATH}/src/github.com/${ORG}/${REPO}
 BUILD_DIR=$(shell pwd)/build
-CURRENT_DIR=$(shell pwd)
-PROJECT_DIR_LINK=$(shell readlink ${PROJECT_DIR})
 
 # Setup the -ldflags option for go build here, interpolate the variable values
 LDFLAGS = -ldflags "-X main.COMMIT=${COMMIT} -X main.BRANCH=${BRANCH}"
@@ -26,14 +31,10 @@ ifeq ($(UNAME_S),Linux)
 	LDFLAGS = -ldflags "-X main.COMMIT=${COMMIT} -X main.BRANCH=${BRANCH} -linkmode external -extldflags -static -s -w"
 endif
 
-OCDINGHY_HASH = master
-
 # Build the project
 all: clean dependencies test vet build
 
 dependencies:
-	@echo "Setting Open Core Dinghy to ${OCDINGHY_HASH}..."
-	go mod edit -require=github.com/armory/dinghy@${OCDINGHY_HASH} && \
 	go mod tidy && \
 	go mod vendor
 
@@ -56,7 +57,6 @@ test: dependencies
 # it in a browser:
 #   go tool cover -html build/coverage/coverage.out
 coverage: clean dependencies
-	cd ${PROJECT_DIR} ; \
 	mkdir -p ${BUILD_DIR}/coverage ; \
 	echo 'mode: set' > ${BUILD_DIR}/coverage/coverage.out ; \
 	for TESTPKG in $(PKGS); do \
@@ -68,7 +68,6 @@ coverage: clean dependencies
 	done
 
 integration: dependencies
-	cd ${PROJECT_DIR} ; \
 	mkdir -p ${BUILD_DIR}/tests ; \
 	for TESTPKG in $(INTEGRATION_PKGS); do \
 	    EXENAME=$$(echo "$$TESTPKG" | tr / _) ; \
@@ -82,11 +81,9 @@ lint: golint
 	@golint $(PKGS)
 
 vet:
-	cd ${PROJECT_DIR}; \
 	go vet -v ./...
 
 fmt:
-	cd ${PROJECT_DIR}; \
 	go fmt $$(go list ./... | grep -v /vendor/) ; \
 
 clean:

@@ -268,7 +268,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// have an application in context?  So for now, hardcoding module branch
 	// to "master"
 	funcMap := template.FuncMap{
-		"module":     r.moduleFunc(org, "master", deps, vars),
+		"module":     r.moduleFunc(r.Builder.TemplateOrg, "master", deps, vars),
 		"appModule":  r.moduleFunc(org, "master", deps, vars),
 		"pipelineID": r.pipelineIDFunc(vars),
 		"var":        r.varFunc(vars),

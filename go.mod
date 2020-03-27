@@ -3,7 +3,7 @@ module github.com/armory-io/dinghy
 require (
 	cloud.google.com/go v0.52.0 // indirect
 	cloud.google.com/go/storage v1.5.0 // indirect
-	github.com/armory/dinghy v1.0.2-0.20200226154024-3b0247ed0f41
+	github.com/armory/dinghy v1.0.2-0.20200327172436-4f4989c920df
 	github.com/armory/go-yaml-tools v0.0.0-20200130015602-cab75bf9201e
 	github.com/armory/plank v1.3.0
 	github.com/ghodss/yaml v1.0.0
