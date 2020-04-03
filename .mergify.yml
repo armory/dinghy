@@ -1,0 +1,45 @@
+pull_request_rules:
+  - name: Automatically merge into master after build and review
+    conditions:
+      - base=master
+      - status-success=main
+      - "#approved-reviews-by>=1"
+    actions:
+      merge:
+        method: squash
+        strict: smart
+      label:
+        add: ["auto merged"]
+  - name: Automatically merge on into release after build and approval
+    conditions:
+      - base~=^release-
+      - status-success=main
+      - "#approved-reviews-by>=1"
+    actions:
+      merge:
+        method: squash
+        strict: smart
+      label:
+        add: ["auto merged"]
+  - name: Automatically merge backport into release branches
+    conditions:
+      - head~=mergify/bp
+      - author~=mergify
+      - base~=^release-
+      - status-success=main
+      - title~=^fix
+    actions:
+      merge:
+        method: squash
+        strict: smart
+      label:
+        add: ["auto merged"]
+  - name: automatic merge on changes to gradle.properties
+    conditions:
+      - "status-success=main"
+      - files=gradle.properties
+      - "#files=1"
+    actions:
+      merge:
+        method: merge
+        strict: smart
