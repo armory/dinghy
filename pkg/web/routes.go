@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -167,6 +168,25 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		// Unmarshal failed, might be a non-Push notification. Log event and return
 		wa.Logger.Info("Possibly a non-Push notification received (blank ref)")
 		return
+	}
+
+	m := make(map[string]interface{})
+	errbody := json.Unmarshal(body, &m)
+	if errbody != nil {
+		log.Fatal(err)
+	}
+
+	if wa.Config.WebhookSecretEnabled == "true" {
+		if wa.Config.WebhookSecret == "" {
+			log.Error("webhookSecretEnabled functionality is enabled but no webhookSecret is present, " +
+				"webhook validation will not be done until webhookSecret is set.")
+		} else {
+			validSignature := github.IsValidSignature([]byte(fmt.Sprintf("%v",m["raw_payload"])), r,wa.Config.WebhookSecret)
+			if !validSignature {
+				wa.Logger.Error("Invalid webhook secret signature")
+				return
+			}
+		}
 	}
 
 	p.Ref = strings.Replace(p.Ref, "refs/heads/", "", 1)

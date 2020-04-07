@@ -40,6 +40,8 @@ type Settings struct {
 	StashUsername     string       `json:"stashUsername,omitempty" yaml:"stashUsername"`
 	StashToken        string       `json:"stashToken,omitempty" yaml:"stashToken"`
 	StashEndpoint     string       `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
+	WebhookSecret     string       `json:"webhookSecret,omitempty" yaml:"webhookSecret"`
+	WebhookSecretEnabled     	string       `json:"webhookSecretEnabled,omitempty" yaml:"webhookSecretEnabled"`
 	FiatUser          string       `json:"fiatUser,omitempty" yaml:"fiatUser"`
 	Logging           Logging      `json:"logging,omitempty" yaml:"logging"`
 	Secrets           Secrets      `json:"secrets,omitempty" yaml:"secrets"`
