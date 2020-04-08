@@ -172,13 +172,13 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 	if wa.Config.WebhookSecretEnabled == "true" {
 		if wa.Config.WebhookSecret == "" {
-			log.Error("webhookSecretEnabled functionality is enabled but no webhookSecret is present, " +
-				"webhook validation will not be done until webhookSecret is set, please add it as: " +
-				"hal armory dinghy edit --webhook-secret \"secret\" --webhook-secret-enabled")
+			log.Error("webhookSecretEnabled functionality is enabled but no webhookSecret value is present, " +
+				"webhook validation will not be done until webhookSecret is set, please add it following " +
+				"instructions from https://docs.armory.io/spinnaker/install_dinghy/")
 		} else {
 			webhookSecret := getWebhookSecret(r)
 			if webhookSecret == "" {
-				log.Error("Webhook secret is empty, please enable this functionality." )
+				log.Error("Webhook secret from repo is empty, please add it to the repo pushing the code." )
 				return
 			}
 			rawPayload := getRawPayload(body)
