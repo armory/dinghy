@@ -170,20 +170,21 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m := make(map[string]interface{})
-	errbody := json.Unmarshal(body, &m)
-	if errbody != nil {
-		log.Fatal(err)
-	}
-
 	if wa.Config.WebhookSecretEnabled == "true" {
 		if wa.Config.WebhookSecret == "" {
 			log.Error("webhookSecretEnabled functionality is enabled but no webhookSecret is present, " +
-				"webhook validation will not be done until webhookSecret is set.")
+				"webhook validation will not be done until webhookSecret is set, please add it as: " +
+				"hal armory dinghy edit --webhook-secret \"secret\" --webhook-secret-enabled")
 		} else {
-			validSignature := github.IsValidSignature([]byte(fmt.Sprintf("%v",m["raw_payload"])), r,wa.Config.WebhookSecret)
+			webhookSecret := getWebhookSecret(r)
+			if webhookSecret == "" {
+				log.Error("Webhook secret is empty, please enable this functionality." )
+				return
+			}
+			rawPayload := getRawPayload(body)
+			validSignature := github.IsValidSignature([]byte(rawPayload), webhookSecret ,wa.Config.WebhookSecret)
 			if !validSignature {
-				wa.Logger.Error("Invalid webhook secret signature")
+				wa.Logger.Error("Invalid webhook secret signature" )
 				return
 			}
 		}
@@ -198,6 +199,25 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	fileService := github.FileService{GitHub: &gh, Logger: wa.Logger}
 
 	wa.buildPipelines(&p, body, &fileService, w)
+}
+
+func getRawPayload(body []byte) string {
+	m := make(map[string]interface{})
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		log.Error("Failed to parse body json.")
+	}
+
+	attributeValue :="raw_payload"
+	if m[attributeValue] != nil {
+		return fmt.Sprintf("%v",m[attributeValue])
+	}
+	return ""
+}
+
+func getWebhookSecret(r *http.Request) string {
+	//X-Hub-Signature is the original header from github, but since this message is from echo we receive webhook-secret
+	return r.Header.Get("webhook-secret")
 }
 
 func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {

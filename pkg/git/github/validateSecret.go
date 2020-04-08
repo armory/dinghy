@@ -4,26 +4,15 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/hex"
-	"log"
-	"net/http"
+	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
 
-func IsValidSignature(rawpayload []byte, r *http.Request, key string) bool {
-	//X-Hub-Signature is the original header from github, but since this message is from echo we receive Webhook-secret
-	gotHash := strings.SplitN(r.Header.Get("webhook-secret"), "=", 2)
-	secretHeaderExists := true
-	validKey := key != ""
+func IsValidSignature(rawpayload []byte, webhookSecret string, key string) bool {
+	gotHash := strings.SplitN(webhookSecret, "=", 2)
 	if gotHash[0] != "sha1" {
-		secretHeaderExists = false
-	}
-
-	// If there's a key and no header or viceversa then fail, if there is no header and no key then pass
-	if (validKey && !secretHeaderExists)  || (secretHeaderExists && !validKey){
-		return false
-	} else if !validKey && !secretHeaderExists {
-		return true
+		log.Error("Invalid webhook value")
 	}
 
 	hash := hmac.New(sha1.New, []byte(key))
@@ -33,6 +22,6 @@ func IsValidSignature(rawpayload []byte, r *http.Request, key string) bool {
 	}
 
 	expectedHash := hex.EncodeToString(hash.Sum(nil))
-	log.Println("EXPECTED HASH:", expectedHash)
+	log.Printf("Expected hash: %v and got %v from github", expectedHash, gotHash[1])
 	return gotHash[1] == expectedHash
 }
