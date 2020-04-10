@@ -2,7 +2,7 @@ module github.com/armory/dinghy
 
 require (
 	github.com/armory-io/monitoring v0.0.7
-	github.com/armory/go-yaml-tools v0.0.0-20200130015602-cab75bf9201e
+	github.com/armory/go-yaml-tools v0.0.0-20200316192928-75770481ad01
 	github.com/armory/plank v1.3.0
 	github.com/go-redis/redis v6.14.1+incompatible
 	github.com/golang/mock v1.3.1
@@ -18,7 +18,7 @@ require (
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/afero v1.1.2 // indirect
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.4.0
 	github.com/xanzy/go-gitlab v0.20.1
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 )
