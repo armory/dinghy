@@ -269,7 +269,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// to "master"
 	funcMap := template.FuncMap{
 		"module":     r.moduleFunc(r.Builder.TemplateOrg, "master", deps, vars),
-		"appModule":  r.moduleFunc(org, "master", deps, vars),
+		"appModule":  r.moduleFunc(r.Builder.TemplateOrg, "master", deps, vars),
 		"pipelineID": r.pipelineIDFunc(vars),
 		"var":        r.varFunc(vars),
 		"makeSlice":  r.makeSlice,
