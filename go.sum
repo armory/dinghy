@@ -29,8 +29,8 @@ github.com/armory-io/monitoring v0.0.7 h1:IVVhiqhavr+yH2IXlMZMyqjhBb9Ms9L6qmKswL
 github.com/armory-io/monitoring v0.0.7/go.mod h1:EqWc/9ldt7teZxnS2xnAMJsthM7ldI4ArLnjBRGCYSo=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e h1:d7XSZxwhDUIMoFHVq2bVTsZLdN6KGDyASfdEJ+8WQHM=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
-github.com/armory/go-yaml-tools v0.0.0-20200130015602-cab75bf9201e h1:qxBpQdfQfyjpvLXSXWCTxjRExhNYjiLx6fUQmGjPJnY=
-github.com/armory/go-yaml-tools v0.0.0-20200130015602-cab75bf9201e/go.mod h1:+TUNfrWw4Te/2ad54ld9IlhvNA5Sn/nU7UQo7dIvtHk=
+github.com/armory/go-yaml-tools v0.0.0-20200316192928-75770481ad01 h1:Rei8EOlDdpBEA8xIf61c1HT8OpcpREYEJJXLSfRHqMc=
+github.com/armory/go-yaml-tools v0.0.0-20200316192928-75770481ad01/go.mod h1:QreIYVxaLk2qi8gRBvBBDVEWIL84lTVpqTohrmQEuA4=
 github.com/armory/plank v1.3.0 h1:6Wr57fNrGXBfi/gx9qYkNnvui7WNg/fOxbxEKJeQumA=
 github.com/armory/plank v1.3.0/go.mod h1:e92pyeAmWYNGVf0ziQ/SPmD+G4Nw79xXQztSr1SSMzM=
 github.com/aws/aws-sdk-go v1.28.9 h1:grIuBQc+p3dTRXerh5+2OxSuWFi0iXuxbFdTSg0jaW0=
@@ -213,6 +213,8 @@ github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
+github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
+github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/xanzy/go-gitlab v0.20.1 h1:+1BWDry84G5PzsnzG9DI4YjPbHeWKyouM0q0gfDPKgY=
 github.com/xanzy/go-gitlab v0.20.1/go.mod h1:LSfUQ9OPDnwRqulJk2HcWaAiFfCzaknyeGvjQI67MbE=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
