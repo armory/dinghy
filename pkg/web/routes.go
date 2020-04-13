@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -169,6 +170,14 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	repo := p.Repository.Name
+	org := p.Repository.Organization
+	provider := "github"
+	whvalidations := wa.Config.WebhookValidations
+	if !validateWebhookSignature(whvalidations, repo, org, provider, body, r, wa) {
+		return
+	}
+
 	p.Ref = strings.Replace(p.Ref, "refs/heads/", "", 1)
 
 	// TODO: we're assigning config in two places here, we should refactor this
@@ -178,6 +187,56 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	fileService := github.FileService{GitHub: &gh, Logger: wa.Logger}
 
 	wa.buildPipelines(&p, body, &fileService, w)
+}
+
+func validateWebhookSignature(whvalidations []settings.WebhookValidation, repo string, org string, provider string, body []byte, r *http.Request, wa *WebAPI) bool {
+	if found,whval := findWebhookValidation(whvalidations, repo, org, provider); found {
+		rawPayload := getRawPayload(body)
+		whsecret := getWebhookSecret(r)
+		if rawPayload != "" && whsecret != "" {
+			//Validate in webhook and raw_payload and webhook secret is present.
+			if !github.IsValidSignature([]byte(rawPayload), getWebhookSecret(r), whval.Secret){
+				wa.Logger.Error("Invalid webhook secret signature")
+				return false
+			}
+		} else {
+			wa.Logger.Error("There is a webhook validation registered in dinghy but the webhook is not configured in github side")
+			return false
+		}
+	}
+	//There is no webhook validation registered so it passes
+	return true
+}
+
+func findWebhookValidation(whvalidations []settings.WebhookValidation, repo string, org string, provider string) (bool, *settings.WebhookValidation) {
+	if whvalidations != nil && len(whvalidations) > 0 {
+		for i := range whvalidations {
+			whval := whvalidations[i]
+			if whval.Enabled == true && whval.Repo == repo && whval.Organization == org && whval.VersionControlProvider == provider {
+				return true, &whval
+			}
+		}
+	}
+	return false, nil
+}
+
+func getRawPayload(body []byte) string {
+	m := make(map[string]interface{})
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		log.Error("Failed to parse body json.")
+	}
+
+	attributeValue :="raw_payload"
+	if m[attributeValue] != nil {
+		return fmt.Sprintf("%v",m[attributeValue])
+	}
+	return ""
+}
+
+func getWebhookSecret(r *http.Request) string {
+	//X-Hub-Signature is the original header from github, but since this message is from echo we receive webhook-secret
+	return r.Header.Get("webhook-secret")
 }
 
 func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
