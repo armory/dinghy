@@ -170,24 +170,12 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if wa.Config.WebhookSecretEnabled == "true" {
-		if wa.Config.WebhookSecret == "" {
-			log.Error("webhookSecretEnabled functionality is enabled but no webhookSecret value is present, " +
-				"webhook validation will not be done until webhookSecret is set, please add it following " +
-				"instructions from https://docs.armory.io/spinnaker/install_dinghy/")
-		} else {
-			webhookSecret := getWebhookSecret(r)
-			if webhookSecret == "" {
-				log.Error("Webhook secret from repo is empty, please add it to the repo pushing the code." )
-				return
-			}
-			rawPayload := getRawPayload(body)
-			validSignature := github.IsValidSignature([]byte(rawPayload), webhookSecret ,wa.Config.WebhookSecret)
-			if !validSignature {
-				wa.Logger.Error("Invalid webhook secret signature" )
-				return
-			}
-		}
+	repo := p.Repository.Name
+	org := p.Repository.Organization
+	provider := "github"
+	whvalidations := wa.Config.WebhookValidations
+	if !validateWebhookSignature(whvalidations, repo, org, provider, body, r, wa) {
+		return
 	}
 
 	p.Ref = strings.Replace(p.Ref, "refs/heads/", "", 1)
@@ -199,6 +187,37 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	fileService := github.FileService{GitHub: &gh, Logger: wa.Logger}
 
 	wa.buildPipelines(&p, body, &fileService, w)
+}
+
+func validateWebhookSignature(whvalidations []settings.WebhookValidation, repo string, org string, provider string, body []byte, r *http.Request, wa *WebAPI) bool {
+	if found,whval := findWebhookValidation(whvalidations, repo, org, provider); found {
+		rawPayload := getRawPayload(body)
+		whsecret := getWebhookSecret(r)
+		if rawPayload != "" && whsecret != "" {
+			//Validate in webhook and raw_payload and webhook secret is present.
+			if !github.IsValidSignature([]byte(rawPayload), getWebhookSecret(r), whval.Secret){
+				wa.Logger.Error("Invalid webhook secret signature")
+				return false
+			}
+		} else {
+			wa.Logger.Error("There is a webhook validation registered in dinghy but the webhook is not configured in github side")
+			return false
+		}
+	}
+	//There is no webhook validation registered so it passes
+	return true
+}
+
+func findWebhookValidation(whvalidations []settings.WebhookValidation, repo string, org string, provider string) (bool, *settings.WebhookValidation) {
+	if whvalidations != nil && len(whvalidations) > 0 {
+		for i := range whvalidations {
+			whval := whvalidations[i]
+			if whval.Enabled == true && whval.Repo == repo && whval.Organization == org && whval.VersionControlProvider == provider {
+				return true, &whval
+			}
+		}
+	}
+	return false, nil
 }
 
 func getRawPayload(body []byte) string {

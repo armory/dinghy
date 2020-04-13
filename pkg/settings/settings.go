@@ -40,8 +40,7 @@ type Settings struct {
 	StashUsername     string       `json:"stashUsername,omitempty" yaml:"stashUsername"`
 	StashToken        string       `json:"stashToken,omitempty" yaml:"stashToken"`
 	StashEndpoint     string       `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
-	WebhookSecret     string       `json:"webhookSecret,omitempty" yaml:"webhookSecret"`
-	WebhookSecretEnabled     	string       `json:"webhookSecretEnabled,omitempty" yaml:"webhookSecretEnabled"`
+	WebhookValidations []WebhookValidation `json:"webhookValidations,omitempty" yaml:"webhookValidations"`
 	FiatUser          string       `json:"fiatUser,omitempty" yaml:"fiatUser"`
 	Logging           Logging      `json:"logging,omitempty" yaml:"logging"`
 	Secrets           Secrets      `json:"secrets,omitempty" yaml:"secrets"`
@@ -51,6 +50,16 @@ type Settings struct {
 	Server            server.ServerConfig `json:"server" yaml:"server"`
 	Http              client.Config       `json:"http" yaml:"http"`
 }
+
+type WebhookValidation struct {
+	Enabled 				bool	`json:"enabled,omitempty" yaml:"enabled"`
+	VersionControlProvider 	string	`json:"versionControlProvider,omitempty" yaml:"versionControlProvider"`
+	Organization 			string	`json:"organization,omitempty" yaml:"organization"`
+	Repo	 				string	`json:"repo,omitempty" yaml:"repo"`
+	Secret 					string	`json:"secret,omitempty" yaml:"secret"`
+}
+
+
 
 type spinnakerSupplied struct {
 	Orca    spinnakerService `json:"orca,omitempty" yaml:"orca"`
