@@ -22,6 +22,7 @@ func IsValidSignature(rawpayload []byte, webhookSecret string, key string) bool 
 	}
 
 	expectedHash := hex.EncodeToString(hash.Sum(nil))
-	log.Printf("Expected hash: %v and got %v from github", expectedHash, gotHash[1])
-	return gotHash[1] == expectedHash
+	validation := gotHash[1] == expectedHash
+	log.Printf("Result from hash validation was: %v", validation)
+	return validation
 }
