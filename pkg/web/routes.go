@@ -170,12 +170,18 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repo := p.Repository.Name
-	org := p.Repository.Organization
 	provider := "github"
-	whvalidations := wa.Config.WebhookValidations
-	if !validateWebhookSignature(whvalidations, repo, org, provider, body, r, wa) {
-		return
+	enabled := contains(wa.Config.WebhookValidationEnabledProviders, provider)
+
+	if enabled {
+		repo := p.Repository.Name
+		org := p.Repository.Organization
+		whvalidations := wa.Config.WebhookValidations
+		if whvalidations != nil && len(whvalidations) > 0 {
+			if !validateWebhookSignature(whvalidations, repo, org, provider, body, r, wa) {
+				return
+			}
+		}
 	}
 
 	p.Ref = strings.Replace(p.Ref, "refs/heads/", "", 1)
@@ -189,30 +195,59 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	wa.buildPipelines(&p, body, &fileService, w)
 }
 
+func contains(whvalidations []string, provider string) bool {
+	if whvalidations == nil {
+		return false
+	}
+	for _, val := range whvalidations  {
+		if val == provider {
+			return true
+		}
+	}
+	return false
+}
+
 func validateWebhookSignature(whvalidations []settings.WebhookValidation, repo string, org string, provider string, body []byte, r *http.Request, wa *WebAPI) bool {
+	whcurrentvalidation := settings.WebhookValidation{}
 	if found,whval := findWebhookValidation(whvalidations, repo, org, provider); found {
-		rawPayload := getRawPayload(body)
-		whsecret := getWebhookSecret(r)
-		if rawPayload != "" && whsecret != "" {
-			//Validate in webhook and raw_payload and webhook secret is present.
-			if !github.IsValidSignature([]byte(rawPayload), getWebhookSecret(r), whval.Secret){
-				wa.Logger.Error("Invalid webhook secret signature")
+		//If record is found and validation is disabled then just return true
+		if whval.Enabled == false {
+			wa.Logger.Infof("Webhook validation for %v/%v is disabled so validation will by bypassed", org, repo)
+			return true
+		}
+		whcurrentvalidation = *whval
+	} else {
+		wa.Logger.Infof("Webhook validation for %v/%v was not found, searching for default-webhook-secret", org, repo)
+		if foundDefault, whvalDefault := findWebhookValidation(whvalidations, "default-webhook-secret", org, provider); foundDefault{
+			if whvalDefault.Enabled == true {
+				whcurrentvalidation = *whvalDefault
+				wa.Logger.Infof("Webhook default secret was found for org: %v", org)
+			} else {
+				wa.Logger.Infof("Webhook default secret for org: %v is disabled", org)
 				return false
 			}
 		} else {
-			wa.Logger.Error("There is a webhook validation registered in dinghy but the webhook is not configured in github side")
+			wa.Logger.Infof("Webhook validation for %v/%v and default-webhook-secret were not found", org, repo)
 			return false
 		}
 	}
-	//There is no webhook validation registered so it passes
-	return true
+	rawPayload := getRawPayload(body)
+	whsecret := getWebhookSecret(r)
+
+	if rawPayload == "" || whsecret == "" {
+		//Validate in webhook and raw_payload and webhook secret is present.
+		wa.Logger.Error("There is a webhook validation registered in dinghy but the webhook is not configured in github side")
+		return false
+	}
+
+	return github.IsValidSignature([]byte(rawPayload), getWebhookSecret(r), whcurrentvalidation.Secret, wa.Logger)
 }
 
 func findWebhookValidation(whvalidations []settings.WebhookValidation, repo string, org string, provider string) (bool, *settings.WebhookValidation) {
 	if whvalidations != nil && len(whvalidations) > 0 {
 		for i := range whvalidations {
 			whval := whvalidations[i]
-			if whval.Enabled == true && whval.Repo == repo && whval.Organization == org && whval.VersionControlProvider == provider {
+			if whval.Repo == repo && whval.Organization == org && whval.VersionControlProvider == provider {
 				return true, &whval
 			}
 		}
