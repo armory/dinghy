@@ -1115,14 +1115,9 @@ func TestDifferentTemplateBranch(t *testing.T) {
 	r := testDinghyfileParser()
 
 	//  This pulls in "mod1" but "mod1" is only on "master", not on "branch".
-	buf, err := r.Parse("org", "repo", "different_branch", "branch", nil)
-	require.Nil(t, err)
-	expected := `{
-		"stages: [{
-		  "foo": "bar",
-		  "type": "deploy"
-		}]}`
-	exp := strings.Join(strings.Fields(expected), "")
-	actual := strings.Join(strings.Fields(buf.String()), "")
-	assert.Equal(t, exp, actual)
+	_, err := r.Parse("org", "repo", "different_branch", "branch", nil)
+
+	expected := `template: dinghy-render:3:7: executing "dinghy-render" at <module "mod1">: error calling module: error rendering imported module 'mod1': File not found`
+	assert.Equal(t, expected, err.Error())
+
 }
