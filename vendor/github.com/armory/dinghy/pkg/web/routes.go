@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -169,6 +170,20 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	provider := "github"
+	enabled := contains(wa.Config.WebhookValidationEnabledProviders, provider)
+
+	if enabled {
+		repo := p.Repository.Name
+		org := p.Repository.Organization
+		whvalidations := wa.Config.WebhookValidations
+		if whvalidations != nil && len(whvalidations) > 0 {
+			if !validateWebhookSignature(whvalidations, repo, org, provider, body, r, wa) {
+				return
+			}
+		}
+	}
+
 	p.Ref = strings.Replace(p.Ref, "refs/heads/", "", 1)
 
 	// TODO: we're assigning config in two places here, we should refactor this
@@ -178,6 +193,85 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	fileService := github.FileService{GitHub: &gh, Logger: wa.Logger}
 
 	wa.buildPipelines(&p, body, &fileService, w)
+}
+
+func contains(whvalidations []string, provider string) bool {
+	if whvalidations == nil {
+		return false
+	}
+	for _, val := range whvalidations  {
+		if val == provider {
+			return true
+		}
+	}
+	return false
+}
+
+func validateWebhookSignature(whvalidations []settings.WebhookValidation, repo string, org string, provider string, body []byte, r *http.Request, wa *WebAPI) bool {
+	whcurrentvalidation := settings.WebhookValidation{}
+	if found,whval := findWebhookValidation(whvalidations, repo, org, provider); found {
+		//If record is found and validation is disabled then just return true
+		if whval.Enabled == false {
+			wa.Logger.Infof("Webhook validation for %v/%v is disabled so validation will by bypassed", org, repo)
+			return true
+		}
+		whcurrentvalidation = *whval
+	} else {
+		wa.Logger.Infof("Webhook validation for %v/%v was not found, searching for default-webhook-secret", org, repo)
+		if foundDefault, whvalDefault := findWebhookValidation(whvalidations, "default-webhook-secret", org, provider); foundDefault{
+			if whvalDefault.Enabled == true {
+				whcurrentvalidation = *whvalDefault
+				wa.Logger.Infof("Webhook default secret was found for org: %v", org)
+			} else {
+				wa.Logger.Infof("Webhook default secret for org: %v is disabled", org)
+				return false
+			}
+		} else {
+			wa.Logger.Infof("Webhook validation for %v/%v and default-webhook-secret were not found", org, repo)
+			return false
+		}
+	}
+	rawPayload := getRawPayload(body)
+	whsecret := getWebhookSecret(r)
+
+	if rawPayload == "" || whsecret == "" {
+		//Validate in webhook and raw_payload and webhook secret is present.
+		wa.Logger.Error("There is a webhook validation registered in dinghy but the webhook is not configured in github side")
+		return false
+	}
+
+	return github.IsValidSignature([]byte(rawPayload), getWebhookSecret(r), whcurrentvalidation.Secret, wa.Logger)
+}
+
+func findWebhookValidation(whvalidations []settings.WebhookValidation, repo string, org string, provider string) (bool, *settings.WebhookValidation) {
+	if whvalidations != nil && len(whvalidations) > 0 {
+		for i := range whvalidations {
+			whval := whvalidations[i]
+			if whval.Repo == repo && whval.Organization == org && whval.VersionControlProvider == provider {
+				return true, &whval
+			}
+		}
+	}
+	return false, nil
+}
+
+func getRawPayload(body []byte) string {
+	m := make(map[string]interface{})
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		log.Error("Failed to parse body json.")
+	}
+
+	attributeValue :="raw_payload"
+	if m[attributeValue] != nil {
+		return fmt.Sprintf("%v",m[attributeValue])
+	}
+	return ""
+}
+
+func getWebhookSecret(r *http.Request) string {
+	//X-Hub-Signature is the original header from github, but since this message is from echo we receive webhook-secret
+	return r.Header.Get("webhook-secret")
 }
 
 func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {

@@ -48,7 +48,19 @@ type Settings struct {
 	spinnakerSupplied `mapstructure:",squash"`
 	Server            server.ServerConfig `json:"server" yaml:"server"`
 	Http              client.Config       `json:"http" yaml:"http"`
+	WebhookValidations []WebhookValidation `json:"webhookValidations,omitempty" yaml:"webhookValidations"`
+	WebhookValidationEnabledProviders []string `json:"webhookValidationEnabledProviders,omitempty" yaml:"webhookValidationEnabledProviders"`
 }
+
+type WebhookValidation struct {
+	Enabled 				bool	`json:"enabled,omitempty" yaml:"enabled"`
+	VersionControlProvider 	string	`json:"versionControlProvider,omitempty" yaml:"versionControlProvider"`
+	Organization 			string	`json:"organization,omitempty" yaml:"organization"`
+	Repo	 				string	`json:"repo,omitempty" yaml:"repo"`
+	Secret 					string	`json:"secret,omitempty" yaml:"secret"`
+}
+
+
 
 type spinnakerSupplied struct {
 	Orca    spinnakerService `json:"orca,omitempty" yaml:"orca"`

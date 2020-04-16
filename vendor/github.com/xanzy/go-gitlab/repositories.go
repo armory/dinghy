@@ -266,11 +266,7 @@ func (c Contributor) String() string {
 // ListContributorsOptions represents the available ListContributors() options.
 //
 // GitLab API docs: https://docs.gitlab.com/ce/api/repositories.html#contributors
-type ListContributorsOptions struct {
-	ListOptions
-	OrderBy *string `url:"order_by,omitempty" json:"order_by,omitempty"`
-	Sort    *string `url:"sort,omitempty" json:"sort,omitempty"`
-}
+type ListContributorsOptions ListOptions
 
 // Contributors gets the repository contributors list.
 //
