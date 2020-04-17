@@ -27,7 +27,6 @@ pull_request_rules:
       - author~=mergify
       - base~=^release-
       - status-success=main
-      - title~=^fix
     actions:
       merge:
         method: squash
@@ -43,3 +42,13 @@ pull_request_rules:
       merge:
         method: merge
         strict: smart
+  - name: Automatically mergify-yaml changes to master
+    conditions:
+      - base=master
+      - title~=^fix(mergify)
+    actions:
+      merge:
+        method: squash
+        strict: smart
+      label:
+        add: ["auto merged"]
