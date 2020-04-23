@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/armory/dinghy/pkg/git"
 	"strconv"
 	"strings"
 	"text/template"
@@ -161,10 +162,10 @@ func Preprocess(text string) (string, error) {
 }
 
 // ParseGlobalVars returns the map of global variables in the dinghyfile
-func ParseGlobalVars(input string) (interface{}, error) {
+func ParseGlobalVars(input string, gitInfo git.GitInfo) (interface{}, error) {
 
 	d := make(map[string]interface{})
-	input = removeModules(input)
+	input = removeModules(input, gitInfo)
 	err := json.Unmarshal([]byte(input), &d)
 	if err != nil {
 		return nil, err
@@ -194,7 +195,7 @@ func dummySlice(args ...interface{}) []string {
 
 // removeModules replaces all template function calls ({{ ... }}) in the dinghyfile with
 // the JSON: { "a": "b" } so that we can extract the global vars using JSON.Unmarshal
-func removeModules(input string) string {
+func removeModules(input string, gitInfo git.GitInfo) string {
 
 	funcMap := template.FuncMap{
 		"module":     dummySubstitute,
@@ -202,6 +203,7 @@ func removeModules(input string) string {
 		"var":        dummyVar,
 		"pipelineID": dummyVar,
 		"makeSlice":  dummySlice,
+		"if":         dummySlice,
 	}
 
 	tmpl, err := template.New("blank-out").Funcs(funcMap).Parse(input)
@@ -210,7 +212,7 @@ func removeModules(input string) string {
 	}
 
 	buf := new(bytes.Buffer)
-	err = tmpl.Execute(buf, "")
+	err = tmpl.Execute(buf, gitInfo)
 	if err != nil {
 		return input
 	}
