@@ -17,6 +17,7 @@
 package preprocessor
 
 import (
+	"github.com/armory/dinghy/pkg/git"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -95,7 +96,7 @@ func TestPreprocessingGlobalVars(t *testing.T) {
 	    ]
 	  }`
 
-	out, err := ParseGlobalVars(input)
+	out, err := ParseGlobalVars(input, git.GitInfo{})
 	gvMap, ok := out.(map[string]interface{})
 	assert.True(t, ok, "Something went wrong while extracting global vars")
 	assert.Contains(t, gvMap, "system")
