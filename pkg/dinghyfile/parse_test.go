@@ -378,6 +378,35 @@ var fileService = dummy.FileService{
 								 "straightvar" "foo"
 								 "condvar" true }}
 	}`,
+	//This is for one dinghy file having an if-else conditional and being true
+		"if_params_indinghyfiletrue.dinghyfile": `{
+		  {{ if eq "test" "test" }}
+		  "test": "true"
+		  {{ else }}
+		  "test": "false"
+		  {{ end }}
+	}`,
+		//This is for one dinghy file having an if-else conditional and being false
+		"if_params_indinghyfilefalse.dinghyfile": `{
+		  {{ if eq "teste" "test" }}
+		  "test": "true"
+		  {{ else }}
+		  "test": "false"
+		  {{ end }}
+	}`,
+		//Test RawData and a conditional of it with test pusher name
+		"rawData.dinghyfile": `{
+		  "testprint" : "{{ .RawData.pusher.name }}",
+		  {{ if eq .RawData.pusher.name "Codertocat" }}
+			"test": "true"
+		  {{ else }}
+			"test": "false"
+		  {{ end }}
+	}`,
+		//Test no space parsing in dinghyfile
+		"no_space.dinghyfile": `{
+  "testprint" : "{{.RawData.pusher.name}}"
+}`,
 		// NOTE:  This next example is a _functional_ way to do conditional arguments to a module.
 		// This is the result of trying to debug why this markup didn't work properly:
 		//    {{ module "if_params.bottom"
@@ -903,6 +932,123 @@ func TestConditionalArgs(t *testing.T) {
 			 "biff": ["foo", "bar"]
 		 }
 	}`
+	var expected interface{}
+	err = json.Unmarshal([]byte(raw), &expected)
+	require.Nil(t, err)
+	expected_str, err := json.Marshal(expected)
+	require.Nil(t, err)
+
+	var actual interface{}
+	err = json.Unmarshal(buf.Bytes(), &actual)
+	require.Nil(t, err)
+	actual_str, err := json.Marshal(actual)
+	require.Nil(t, err)
+
+	require.Equal(t, string(expected_str), string(actual_str))
+}
+
+func TestConditionalArgsInDinghyfileTrue(t *testing.T) {
+	r := testDinghyfileParser()
+	r.Builder.DinghyfileName = "if_params_indinghyfiletrue.dinghyfile"
+	r.Builder.TemplateOrg = "org"
+	r.Builder.TemplateRepo = "repo"
+	buf, err := r.Parse("org", "repo", "if_params_indinghyfiletrue.dinghyfile", "master", nil)
+	require.Nil(t, err)
+
+	const raw = `{
+  "test": "true"
+}`
+	var expected interface{}
+	err = json.Unmarshal([]byte(raw), &expected)
+	require.Nil(t, err)
+	expected_str, err := json.Marshal(expected)
+	require.Nil(t, err)
+
+	var actual interface{}
+	err = json.Unmarshal(buf.Bytes(), &actual)
+	require.Nil(t, err)
+	actual_str, err := json.Marshal(actual)
+	require.Nil(t, err)
+
+	require.Equal(t, string(expected_str), string(actual_str))
+}
+
+func TestConditionalArgsInDinghyfileFalse(t *testing.T) {
+	r := testDinghyfileParser()
+	r.Builder.DinghyfileName = "if_params_indinghyfilefalse.dinghyfile"
+	r.Builder.TemplateOrg = "org"
+	r.Builder.TemplateRepo = "repo"
+	buf, err := r.Parse("org", "repo", "if_params_indinghyfilefalse.dinghyfile", "master", nil)
+	require.Nil(t, err)
+
+	const raw = `{
+  "test": "false"
+}`
+	var expected interface{}
+	err = json.Unmarshal([]byte(raw), &expected)
+	require.Nil(t, err)
+	expected_str, err := json.Marshal(expected)
+	require.Nil(t, err)
+
+	var actual interface{}
+	err = json.Unmarshal(buf.Bytes(), &actual)
+	require.Nil(t, err)
+	actual_str, err := json.Marshal(actual)
+	require.Nil(t, err)
+
+	require.Equal(t, string(expected_str), string(actual_str))
+}
+
+func TestNoSpaceBeforeCurlyBrackets(t *testing.T) {
+	// deserialze push data to a map.  used in template logic later
+	rawPushData := make(map[string]interface{})
+	err := json.Unmarshal([]byte(githubPayloadtest), &rawPushData)
+	require.Nil(t, err)
+
+	r := testDinghyfileParser()
+	r.Builder.DinghyfileName = "no_space.dinghyfile"
+	r.Builder.TemplateOrg = "org"
+	r.Builder.TemplateRepo = "repo"
+	r.Builder.PushRaw = rawPushData
+	buf, err := r.Parse("org", "repo", "no_space.dinghyfile", "master", nil )
+	require.Nil(t, err)
+
+	const raw = `{
+  "testprint" : "Codertocat"
+}`
+	var expected interface{}
+	err = json.Unmarshal([]byte(raw), &expected)
+	require.Nil(t, err)
+	expected_str, err := json.Marshal(expected)
+	require.Nil(t, err)
+
+	var actual interface{}
+	err = json.Unmarshal(buf.Bytes(), &actual)
+	require.Nil(t, err)
+	actual_str, err := json.Marshal(actual)
+	require.Nil(t, err)
+
+	require.Equal(t, string(expected_str), string(actual_str))
+}
+
+func TestRawDataInDinghyfile(t *testing.T) {
+	// deserialze push data to a map.  used in template logic later
+	rawPushData := make(map[string]interface{})
+	err := json.Unmarshal([]byte(githubPayloadtest), &rawPushData)
+	require.Nil(t, err)
+
+	r := testDinghyfileParser()
+	r.Builder.DinghyfileName = "rawData.dinghyfile"
+	r.Builder.TemplateOrg = "org"
+	r.Builder.TemplateRepo = "repo"
+	r.Builder.PushRaw = rawPushData
+	buf, err := r.Parse("org", "repo", "rawData.dinghyfile", "master", nil)
+	require.Nil(t, err)
+
+	const raw = `{
+  "testprint" : "Codertocat",
+  "test": "true"
+}`
 	var expected interface{}
 	err = json.Unmarshal([]byte(raw), &expected)
 	require.Nil(t, err)

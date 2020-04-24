@@ -25,6 +25,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/armory/dinghy/pkg/git"
 	"path/filepath"
 	"time"
 
@@ -210,10 +211,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		End:    time.Now().UTC().Unix(),
 	}
 
-	gitInfo := struct {
-		RawData                 map[string]interface{}
-		Org, Repo, Path, Branch string
-	}{
+	gitInfo := git.GitInfo{
 		r.Builder.PushRaw,
 		org, repo, path, branch,
 	}
@@ -241,7 +239,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// Extract global vars if we're processing a dinghyfile (and not a module)
 	if filepath.Base(path) == r.Builder.DinghyfileName {
 		module = false
-		gvs, err := preprocessor.ParseGlobalVars(contents)
+		gvs, err := preprocessor.ParseGlobalVars(contents, gitInfo)
 		if err != nil {
 			r.Builder.Logger.Errorf("Failed to parse global vars:\n %s", contents)
 			event.Dinghyfile = contents
