@@ -403,6 +403,10 @@ var fileService = dummy.FileService{
 			"test": "false"
 		  {{ end }}
 	}`,
+		//Test no space parsing in dinghyfile
+		"no_space.dinghyfile": `{
+  "testprint" : "{{.RawData.pusher.name}}"
+}`,
 		// NOTE:  This next example is a _functional_ way to do conditional arguments to a module.
 		// This is the result of trying to debug why this markup didn't work properly:
 		//    {{ module "if_params.bottom"
@@ -979,6 +983,38 @@ func TestConditionalArgsInDinghyfileFalse(t *testing.T) {
 
 	const raw = `{
   "test": "false"
+}`
+	var expected interface{}
+	err = json.Unmarshal([]byte(raw), &expected)
+	require.Nil(t, err)
+	expected_str, err := json.Marshal(expected)
+	require.Nil(t, err)
+
+	var actual interface{}
+	err = json.Unmarshal(buf.Bytes(), &actual)
+	require.Nil(t, err)
+	actual_str, err := json.Marshal(actual)
+	require.Nil(t, err)
+
+	require.Equal(t, string(expected_str), string(actual_str))
+}
+
+func TestNoSpaceBeforeCurlyBrackets(t *testing.T) {
+	// deserialze push data to a map.  used in template logic later
+	rawPushData := make(map[string]interface{})
+	err := json.Unmarshal([]byte(githubPayloadtest), &rawPushData)
+	require.Nil(t, err)
+
+	r := testDinghyfileParser()
+	r.Builder.DinghyfileName = "no_space.dinghyfile"
+	r.Builder.TemplateOrg = "org"
+	r.Builder.TemplateRepo = "repo"
+	r.Builder.PushRaw = rawPushData
+	buf, err := r.Parse("org", "repo", "no_space.dinghyfile", "master", nil )
+	require.Nil(t, err)
+
+	const raw = `{
+  "testprint" : "Codertocat"
 }`
 	var expected interface{}
 	err = json.Unmarshal([]byte(raw), &expected)

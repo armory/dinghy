@@ -49,7 +49,13 @@ func parseString(it *iterator) string {
 
 func parseToken(it *iterator) string {
 	begin := it.pos
+	var prevstr string
 	for !it.end() && !unicode.IsSpace(it.get()) {
+		if prevstr + string(it.get()) == "}}" {
+			it.pos--
+			break
+		}
+		prevstr = string(it.get())
 		it.pos++
 	}
 	return it.slice(begin)
