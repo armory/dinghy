@@ -61,6 +61,7 @@ func (f *FileService) Download(org, repo, path, branch string) (string, error) {
 // EncodeURL returns the git url for a given org, repo, path and branch
 func (f *FileService) EncodeURL(org, repo, path, branch string) string {
 	// this is only used for caching purposes
+	path = strings.Trim(path, "/")
 	return fmt.Sprintf(`%s/repos/%s/%s/contents/%s?ref=%s`, f.GitHub.GetEndpoint(), org, repo, path, branch)
 }
 
