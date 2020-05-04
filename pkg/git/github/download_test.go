@@ -62,6 +62,44 @@ func TestEncodeUrl(t *testing.T) {
 	}
 }
 
+func TestEncodeUrlWithLeadingSlashs(t *testing.T) {
+	cases := []struct {
+		endpoint string
+		owner    string
+		repo     string
+		path     string
+		branch   string
+		expected string
+	}{
+		{
+			endpoint: "https://api.github.com",
+			owner:    "armory",
+			repo:     "armory",
+			path:     "/my/path.yml",
+			branch:   "mybranch",
+			expected: "https://api.github.com/repos/armory/armory/contents/my/path.yml?ref=mybranch",
+		},
+		{
+			endpoint: "https://mygithub.com",
+			owner:    "armory",
+			repo:     "armory",
+			path:     "my/path.yml",
+			branch:   "mybranch",
+			expected: "https://mygithub.com/repos/armory/armory/contents/my/path.yml?ref=mybranch",
+		},
+	}
+
+	for _, c := range cases {
+		downloader := &FileService{
+			GitHub: &GitHubTest{
+				endpoint: c.endpoint,
+			},
+		}
+		actual := downloader.EncodeURL(c.owner, c.repo, c.path, c.branch)
+		assert.Equal(t, c.expected, actual)
+	}
+}
+
 func TestDecodeUrl(t *testing.T) {
 	cases := []struct {
 		endpoint string
