@@ -1,4 +1,4 @@
-FROM golang:1.13.4-alpine3.10 as builder
+FROM golang:1.13.10-alpine3.11 as builder
 
 # vendor flags conflict with `go get`
 # so we fetch golint before running make
@@ -12,7 +12,7 @@ ADD ./ /opt/armory/build/
 
 RUN make
 
-FROM alpine:3.10
+FROM alpine:3.11
 
 EXPOSE 8081
 WORKDIR /opt/armory/bin/
