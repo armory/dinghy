@@ -8,7 +8,6 @@ jobs:
       BASE_PROJECT: dinghy
       GRGIT_USER: GitHub
       GRGIT_PASS: ${{ secrets.GITHUB_TOKEN }}
-      JFROG_ARGS: --url https://armory.jfrog.io/armory/ --user ${{secrets.ARTIFACTORY_USER}} --password ${{secrets.ARTIFACTORY_PASSWORD}}
       GRADLE_ARGS: -Partifactory_user=${{secrets.ARTIFACTORY_USER}} -Partifactory_password=${{secrets.ARTIFACTORY_PASSWORD}} --info -x dockerClean -x dockerPrepare
     runs-on: ubuntu-latest
     steps:
@@ -22,11 +21,6 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-
-      - name: setup JFROG Cli
-        uses: jfrog/setup-jfrog-cli@v1
-        with:
-          version: 1.32.4
 
       - name: Login to Artifactory
         run: |
@@ -57,17 +51,11 @@ jobs:
           ./gradlew final docker dockerPush $GRADLE_ARGS
           echo "::set-env name=BUILD_NUMBER::$(./gradlew -Prelease.useLastTag=true $GRADLE_ARGS  printVersion|grep VERSION|awk -F: '{print $2}')"
 
-      - name: Run Xray Scan
-        if: startsWith(github.ref, 'refs/heads/release-') || github.ref == 'refs/heads/master'
-        run: |
-          jfrog rt docker-push armory-docker-local.jfrog.io/armory/$BASE_PROJECT:$BUILD_NUMBER docker-local --build-name=$BASE_PROJECT-armory --build-number=$BUILD_NUMBER $JFROG_ARGS
-          jfrog rt build-publish $BASE_PROJECT-armory $BUILD_NUMBER $JFROG_ARGS
-          jfrog rt build-scan $BASE_PROJECT-armory $BUILD_NUMBER $JFROG_ARGS
-          sleep 30
-          jfrog rt build-scan $BASE_PROJECT-armory $BUILD_NUMBER $JFROG_ARGS
-
-      - name: Scan Using Aquasec
-        if: startsWith(github.ref, 'refs/heads/release-') || github.ref == 'refs/heads/master'
-        uses: docker://docker.io/aquasec/trivy:0.2.1
+      - name: Run Security Scan
+        uses: armory-io/aquasec-scan-action@v0.0.8
         with:
-          args: --cache-dir /var/lib/trivy --exit-code 1 --no-progress armory-docker-local.jfrog.io/armory/${{env.BASE_PROJECT}}:${{env.BUILD_NUMBER}}
+          username: ${{ secrets.AQUA_USER }}
+          password: ${{ secrets.AQUA_PASSWORD }}
+          url: https://aquasec.armory.io
+          image: armory/${{ env.BASE_PROJECT }}:${{ env.BUILD_NUMBER }}
+          registry: Artifactory
