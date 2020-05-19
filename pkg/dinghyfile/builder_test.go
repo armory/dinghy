@@ -135,6 +135,72 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	assert.Equal(t, "boom", res.Error())
 }
 
+func TestProcessDinghyfileFailedValidation(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	rendered := `{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"type": "manualJudgment"
+							},
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`
+
+	renderer := NewMockParser(ctrl)
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to validate stage refs for pipeline: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("validate-pipelines-stagerefs-err: %s"), rendered)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to validate pipelines %s"), gomock.Eq("the/full/path")).Times(1)
+	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
+
+	client := NewMockPlankClient(ctrl)
+
+	pb := testPipelineBuilder()
+	pb.Logger = logger
+	pb.Parser = renderer
+	pb.Client = client
+	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	assert.NotNil(t, res)
+	assert.Equal(t, "Duplicate stage refId mj2 field found", res.Error())
+}
+
 // TestUpdateDinghyfile ONLY tests the function "updateDinghyfile" which,
 // despite its name, doesn't really update anything, it just unmarshals
 // the payload into the Dinghyfile{} struct.
