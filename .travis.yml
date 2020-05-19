@@ -4,6 +4,10 @@ go:
   - 1.13.10
   - 1.14
   - tip
+jobs:
+  allow_failures:
+  # Tip is allowed to fail
+  - go: tip
 env: GO111MODULE=on
 install: true
 script: go test -v -mod=vendor ./...
