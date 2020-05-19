@@ -1,6 +1,9 @@
 language: go
 sudo: false
-go: tip
+go:
+  - 1.13.10
+  - 1.14
+  - tip
 env: GO111MODULE=on
 install: true
 script: go test -v -mod=vendor ./...
