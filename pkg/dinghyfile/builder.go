@@ -143,6 +143,39 @@ func (b *PipelineBuilder) UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error
 	return d, nil
 }
 
+// We will validate using plank refs at this moment
+func (b *PipelineBuilder) ValidatePipelines(d Dinghyfile, dinghyfile []byte) error {
+
+	event := &events.Event{
+		Start:      time.Now().UTC().Unix(),
+		End:        time.Now().UTC().Unix(),
+		Org:        "",
+		Repo:       "",
+		Path:       "",
+		Branch:     "",
+		Dinghyfile: string(dinghyfile),
+		Module:     false,
+	}
+
+	var lastErr error
+	for _, pipeline := range d.Pipelines{
+		validateResult := pipeline.ValidateRefIds()
+		for _, stageWarning := range validateResult.Warnings {
+			b.Logger.Warnf("Failed to validate stage refs for pipeline: %s", stageWarning)
+		}
+		for _, stageError := range validateResult.Errors {
+			lastErr = stageError
+			b.Logger.Errorf("Failed to validate stage refs for pipeline: %s", stageError.Error())
+		}
+	}
+	if lastErr != nil {
+		b.Logger.Errorf("validate-pipelines-stagerefs-err: %s", string(dinghyfile))
+		b.EventClient.SendEvent("update-dinghyfile-unmarshal-err", event)
+		return lastErr
+	}
+	return nil
+}
+
 // DetermineParser currently only returns a DinghyfileParser; it could
 // return other types of parsers in the future (for example, MPTv2)
 // If we can't discern the types based on the path passed here, we may need
@@ -174,6 +207,14 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 	}
 	b.Logger.Infof("Updated: %s", buf.String())
 	b.Logger.Infof("Dinghyfile struct: %v", d)
+
+	err = b.ValidatePipelines(d, buf.Bytes())
+	if err != nil {
+		b.Logger.Errorf("Failed to validate pipelines %s", path)
+		b.NotifyFailure(org, repo, path, err)
+		return err
+	}
+	b.Logger.Info("Validations for stage refs were successful")
 
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 		b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())

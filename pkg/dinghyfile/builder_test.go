@@ -53,6 +53,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Updated: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Compiled: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Looking up existing pipelines")).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Validations for stage refs were successful")).Times(1)
 
 	// Because we've set the renderer, we should NOT get this message...
 	logger.EXPECT().Info(gomock.Eq("Calling DetermineRenderer")).Times(0)
@@ -118,6 +119,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Creating application '%s'..."), gomock.Eq("testapp")).Times(1)
 	logger.EXPECT().Errorf("Failed to create application (%s)", gomock.Any())
 	logger.EXPECT().Errorf(gomock.Eq("Failed to update Pipelines for %s: %s"), gomock.Eq("the/full/path")).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Validations for stage refs were successful")).Times(1)
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
@@ -294,6 +296,245 @@ func TestUpdateDinghyfile(t *testing.T) {
 		})
 	}
 }
+
+
+func TestValidatePipelines(t *testing.T) {
+	b := testPipelineBuilder()
+
+	fullCases := map[string]struct {
+		dinghyRaw    []byte
+		result       error
+	}{
+		"dinghyraw_fail_no_refids": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`),
+			result: errors.New("Required refId field not found"),
+		},
+		"dinghyraw_fail_circular_reference": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"requisiteStageRefIds": [
+									"mj2"
+								],
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`),
+			result: errors.New("mj2 refers to itself. Circular references are not supported"),
+		},
+		"dinghyraw_passes_no_stages": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						]
+					}
+				]
+			}`),
+			result: nil,
+		},
+		"dinghyraw_passes_all_stages_in_order": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "1",
+								"requisiteStageRefIds": [
+								],
+								"type": "manualJudgment"
+							},
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "2",
+								"requisiteStageRefIds": [
+									"1"
+								],
+								"type": "manualJudgment"
+							},
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"requisiteStageRefIds": [
+									"2","1"
+								],
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`),
+			result: nil,
+		},
+		"dinghyraw_fails_duplicated": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"type": "manualJudgment"
+							},
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`),
+			result: errors.New("Duplicate stage refId mj2 field found"),
+		},
+
+	}
+
+	for testName, c := range fullCases {
+		t.Run(testName, func(t *testing.T) {
+			d := NewDinghyfile()
+			// try every parser, maybe we'll get lucky
+			parseErrs := 0
+			for _, ums := range b.Ums {
+				if err := ums.Unmarshal(c.dinghyRaw, &d); err != nil {
+					b.Logger.Error("Dinghyfile malformed syntax: %s", err.Error())
+					parseErrs++
+					continue
+				}
+			}
+			//Log parsing issues as an error in test
+			if parseErrs != 0{
+				assert.True(t, true, false)
+			} else {
+				err := b.ValidatePipelines( d, c.dinghyRaw)
+				assert.Equal(t, c.result, err)
+			}
+		})
+	}
+}
+
 
 func TestUpdateDinghyfileMalformed(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -521,6 +762,7 @@ func TestUpdatePipelinesRespectsAutoLockOff(t *testing.T) {
 	err := b.updatePipelines(testapp, []plank.Pipeline{newPipeline}, false, "")
 	assert.Nil(t, err)
 }
+
 
 func TestRebuildModuleRoots(t *testing.T) {
 	ctrl := gomock.NewController(t)
