@@ -25,7 +25,7 @@ import (
 	"encoding/json"
 
 	"github.com/armory/dinghy/pkg/git/dummy"
-	"github.com/armory/plank"
+	"github.com/armory/plank/v3"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

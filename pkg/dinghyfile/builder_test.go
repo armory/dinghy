@@ -26,7 +26,7 @@ import (
 	"github.com/jinzhu/copier"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/armory/plank"
+	"github.com/armory/plank/v3"
 
 	"github.com/armory/dinghy/pkg/mock"
 	"github.com/armory/dinghy/pkg/notifiers"
@@ -53,6 +53,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Updated: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Compiled: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Looking up existing pipelines")).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Validations for stage refs were successful")).Times(1)
 
 	// Because we've set the renderer, we should NOT get this message...
 	logger.EXPECT().Info(gomock.Eq("Calling DetermineRenderer")).Times(0)
@@ -118,6 +119,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Creating application '%s'..."), gomock.Eq("testapp")).Times(1)
 	logger.EXPECT().Errorf("Failed to create application (%s)", gomock.Any())
 	logger.EXPECT().Errorf(gomock.Eq("Failed to update Pipelines for %s: %s"), gomock.Eq("the/full/path")).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Validations for stage refs were successful")).Times(1)
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
@@ -131,6 +133,72 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
 	assert.NotNil(t, res)
 	assert.Equal(t, "boom", res.Error())
+}
+
+func TestProcessDinghyfileFailedValidation(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	rendered := `{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"type": "manualJudgment"
+							},
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`
+
+	renderer := NewMockParser(ctrl)
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to validate stage refs for pipeline: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("validate-pipelines-stagerefs-err: %s"), rendered)
+	logger.EXPECT().Errorf(gomock.Eq("Failed to validate pipelines %s"), gomock.Eq("the/full/path")).Times(1)
+	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
+
+	client := NewMockPlankClient(ctrl)
+
+	pb := testPipelineBuilder()
+	pb.Logger = logger
+	pb.Parser = renderer
+	pb.Client = client
+	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	assert.NotNil(t, res)
+	assert.Equal(t, "Duplicate stage refId mj2 field found", res.Error())
 }
 
 // TestUpdateDinghyfile ONLY tests the function "updateDinghyfile" which,
@@ -150,7 +218,7 @@ func TestUpdateDinghyfile(t *testing.T) {
 			spec: plank.Application{
 				Name:  "application",
 				Email: DefaultEmail,
-				DataSources: plank.DataSourcesType{
+				DataSources: &plank.DataSourcesType{
 					Enabled:  []string{},
 					Disabled: []string{},
 				},
@@ -166,7 +234,7 @@ func TestUpdateDinghyfile(t *testing.T) {
 			spec: plank.Application{
 				Name:  "specname",
 				Email: DefaultEmail,
-				DataSources: plank.DataSourcesType{
+				DataSources: &plank.DataSourcesType{
 					Enabled:  []string{},
 					Disabled: []string{},
 				},
@@ -183,7 +251,7 @@ func TestUpdateDinghyfile(t *testing.T) {
 			spec: plank.Application{
 				Name:  "specname",
 				Email: "somebody@email.com",
-				DataSources: plank.DataSourcesType{
+				DataSources: &plank.DataSourcesType{
 					Enabled:  []string{},
 					Disabled: []string{},
 				},
@@ -204,7 +272,7 @@ func TestUpdateDinghyfile(t *testing.T) {
 			spec: plank.Application{
 				Name:  "specname",
 				Email: "somebody@email.com",
-				DataSources: plank.DataSourcesType{
+				DataSources: &plank.DataSourcesType{
 					Enabled:  []string{"canaryConfigs"},
 					Disabled: []string{},
 				},
@@ -259,7 +327,7 @@ func TestUpdateDinghyfile(t *testing.T) {
 				ApplicationSpec: plank.Application{
 					Name:  "foo",
 					Email: "foo@test.com",
-					DataSources: plank.DataSourcesType{
+					DataSources: &plank.DataSourcesType{
 						Enabled:  []string{},
 						Disabled: []string{},
 					},
@@ -294,6 +362,245 @@ func TestUpdateDinghyfile(t *testing.T) {
 		})
 	}
 }
+
+
+func TestValidatePipelines(t *testing.T) {
+	b := testPipelineBuilder()
+
+	fullCases := map[string]struct {
+		dinghyRaw    []byte
+		result       error
+	}{
+		"dinghyraw_fail_no_refids": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`),
+			result: errors.New("Required refId field not found"),
+		},
+		"dinghyraw_fail_circular_reference": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"requisiteStageRefIds": [
+									"mj2"
+								],
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`),
+			result: errors.New("mj2 refers to itself. Circular references are not supported"),
+		},
+		"dinghyraw_passes_no_stages": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						]
+					}
+				]
+			}`),
+			result: nil,
+		},
+		"dinghyraw_passes_all_stages_in_order": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "1",
+								"requisiteStageRefIds": [
+								],
+								"type": "manualJudgment"
+							},
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "2",
+								"requisiteStageRefIds": [
+									"1"
+								],
+								"type": "manualJudgment"
+							},
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"requisiteStageRefIds": [
+									"2","1"
+								],
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`),
+			result: nil,
+		},
+		"dinghyraw_fails_duplicated": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"type": "manualJudgment"
+							},
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`),
+			result: errors.New("Duplicate stage refId mj2 field found"),
+		},
+
+	}
+
+	for testName, c := range fullCases {
+		t.Run(testName, func(t *testing.T) {
+			d := NewDinghyfile()
+			// try every parser, maybe we'll get lucky
+			parseErrs := 0
+			for _, ums := range b.Ums {
+				if err := ums.Unmarshal(c.dinghyRaw, &d); err != nil {
+					b.Logger.Error("Dinghyfile malformed syntax: %s", err.Error())
+					parseErrs++
+					continue
+				}
+			}
+			//Log parsing issues as an error in test
+			if parseErrs != 0{
+				assert.True(t, true, false)
+			} else {
+				err := b.ValidatePipelines( d, c.dinghyRaw)
+				assert.Equal(t, c.result, err)
+			}
+		})
+	}
+}
+
 
 func TestUpdateDinghyfileMalformed(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -362,9 +669,9 @@ func TestUpdatePipelinesDeleteStaleWithExisting(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: plank.PipelineLockType{true, true}}
+	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: &plank.PipelineLockType{true, true}}
 	deletedPipeline := plank.Pipeline{Name: "DeletedPipeline", ID: "DeletedID", Application: "testapp"}
-	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: plank.PipelineLockType{true, true}}
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: &plank.PipelineLockType{true, true}}
 
 	existing := []plank.Pipeline{existingPipeline, deletedPipeline}
 	newPipelines := []plank.Pipeline{existingPipeline, newPipeline}
@@ -391,9 +698,9 @@ func TestUpdatePipelinesNoDeleteStaleWithExisting(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: plank.PipelineLockType{true, true}}
+	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: &plank.PipelineLockType{true, true}}
 	deletedPipeline := plank.Pipeline{Name: "DeletedPipeline", ID: "DeletedID", Application: "testapp"}
-	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: plank.PipelineLockType{true, true}}
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: &plank.PipelineLockType{true, true}}
 
 	existing := []plank.Pipeline{existingPipeline, deletedPipeline}
 	newPipelines := []plank.Pipeline{existingPipeline, newPipeline}
@@ -418,9 +725,9 @@ func TestUpdatePipelinesDeleteStaleWithFailure(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: plank.PipelineLockType{true, true}}
+	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: &plank.PipelineLockType{true, true}}
 	deletedPipeline := plank.Pipeline{Name: "DeletedPipeline", ID: "DeletedID", Application: "testapp"}
-	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: plank.PipelineLockType{true, true}}
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: &plank.PipelineLockType{true, true}}
 
 	existing := []plank.Pipeline{existingPipeline, deletedPipeline}
 	newPipelines := []plank.Pipeline{existingPipeline, newPipeline}
@@ -447,9 +754,9 @@ func TestUpdatePipelinesUpsertFail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: plank.PipelineLockType{true, true}}
+	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: &plank.PipelineLockType{true, true}}
 	deletedPipeline := plank.Pipeline{Name: "DeletedPipeline", ID: "DeletedID", Application: "testapp"}
-	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: plank.PipelineLockType{true, true}}
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: &plank.PipelineLockType{true, true}}
 
 	existing := []plank.Pipeline{existingPipeline, deletedPipeline}
 	newPipelines := []plank.Pipeline{existingPipeline, newPipeline}
@@ -477,11 +784,11 @@ func TestUpdatePipelinesRespectsAutoLockOn(t *testing.T) {
 	defer ctrl.Finish()
 
 	// New pipeline from file has locks "false"
-	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: plank.PipelineLockType{false, false}}
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: &plank.PipelineLockType{false, false}}
 	expectedPipeline := plank.Pipeline{}
 	copier.Copy(&expectedPipeline, &newPipeline)
 	// Expect to upsert with locks "true"
-	expectedPipeline.Locked = plank.PipelineLockType{true, true}
+	expectedPipeline.Locked = &plank.PipelineLockType{true, true}
 
 	testapp := &plank.Application{Name: "testapp"}
 
@@ -502,11 +809,11 @@ func TestUpdatePipelinesRespectsAutoLockOff(t *testing.T) {
 	defer ctrl.Finish()
 
 	// New pipeline from file has locks "false"
-	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: plank.PipelineLockType{false, false}}
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: &plank.PipelineLockType{false, false}}
 	expectedPipeline := plank.Pipeline{}
 	copier.Copy(&expectedPipeline, &newPipeline)
 	// Expect to upsert with locks "true"
-	expectedPipeline.Locked = plank.PipelineLockType{false, false}
+	expectedPipeline.Locked = &plank.PipelineLockType{false, false}
 
 	testapp := &plank.Application{Name: "testapp"}
 
@@ -521,6 +828,7 @@ func TestUpdatePipelinesRespectsAutoLockOff(t *testing.T) {
 	err := b.updatePipelines(testapp, []plank.Pipeline{newPipeline}, false, "")
 	assert.Nil(t, err)
 }
+
 
 func TestRebuildModuleRoots(t *testing.T) {
 	ctrl := gomock.NewController(t)
