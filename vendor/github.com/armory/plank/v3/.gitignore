@@ -13,6 +13,9 @@
 
 vendor/
 
+# IntelliJ
+.idea
+
 # vim temp files
 *.swp 
 
