@@ -26,7 +26,7 @@ import (
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/notifiers"
 	"github.com/armory/dinghy/pkg/util"
-	"github.com/armory/plank"
+	"github.com/armory/plank/v3"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -85,7 +85,7 @@ func NewDinghyfile() Dinghyfile {
 		// enabled/disabled are initilzed slices
 		// https://danott.co/posts/json-marshalling-empty-slices-to-empty-arrays-in-go.html
 		ApplicationSpec: plank.Application{
-			DataSources: plank.DataSourcesType{
+			DataSources: &plank.DataSourcesType{
 				Enabled:  []string{},
 				Disabled: []string{},
 			},
