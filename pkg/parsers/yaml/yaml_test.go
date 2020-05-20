@@ -6,7 +6,7 @@ import (
 	"github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/armory/dinghy/pkg/git/dummy"
 	"github.com/armory/dinghy/pkg/preprocessor"
-	"github.com/armory/plank"
+	"github.com/armory/plank/v3"
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"

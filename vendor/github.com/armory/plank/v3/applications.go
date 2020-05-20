@@ -44,12 +44,12 @@ type PermissionsType struct {
 
 // Application as returned from the Spinnaker API.
 type Application struct {
-	Name        string          `json:"name" mapstructure:"name" yaml:"name" hcl:"name"`
-	Email       string          `json:"email" mapstructure:"email" yaml:"email" hcl:"email"`
-	Description string          `json:"description,omitempty" mapstructure:"description" yaml:"description,omitempty" hcl:"description,omitempty"`
-	User        string          `json:"user,omitempty" mapstructure:"user" yaml:"user,omitempty" hcl:"user,omitempty"`
-	DataSources DataSourcesType `json:"dataSources,omitempty" mapstructure:"dataSources" yaml:"datasources,omitempty" hcl:"datasources,omitempty"`
-	Permissions PermissionsType `json:"permissions,omitempty" mapstructure:"permissions" yaml:"permissions,omitempty" hcl:"permissions,omitempty"`
+	Name        string           `json:"name" mapstructure:"name" yaml:"name" hcl:"name"`
+	Email       string           `json:"email" mapstructure:"email" yaml:"email" hcl:"email"`
+	Description string           `json:"description,omitempty" mapstructure:"description" yaml:"description,omitempty" hcl:"description,omitempty"`
+	User        string           `json:"user,omitempty" mapstructure:"user" yaml:"user,omitempty" hcl:"user,omitempty"`
+	DataSources *DataSourcesType `json:"dataSources,omitempty" mapstructure:"dataSources" yaml:"datasources,omitempty" hcl:"datasources,omitempty"`
+	Permissions *PermissionsType `json:"permissions,omitempty" mapstructure:"permissions" yaml:"permissions,omitempty" hcl:"permissions,omitempty"`
 }
 
 // GetApplication returns the Application data struct for the
@@ -69,6 +69,20 @@ func (c *Client) GetApplications() (*[]Application, error) {
 		return nil, err
 	}
 	return &apps, nil
+}
+
+// DeleteApplication deletes an application from the configured front50 store.
+func (c *Client) DeleteApplication(name string) error {
+	return c.Delete(fmt.Sprintf("%s/v2/applications/%s", c.URLs["front50"], name))
+}
+
+// UpdateApplication updates an application in the configured front50 store.
+func (c *Client) UpdateApplication(app Application) error {
+	var unused interface{}
+	if err := c.PatchWithRetry(fmt.Sprintf("%s/v2/applications/%s", c.URLs["front50"], app.Name), ApplicationJson, app, &unused); err != nil {
+		return fmt.Errorf("could not update application %q: %w", app.Name, err)
+	}
+	return nil
 }
 
 type createApplicationTask struct {

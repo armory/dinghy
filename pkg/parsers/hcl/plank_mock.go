@@ -5,7 +5,7 @@
 package hcl
 
 import (
-	plank "github.com/armory/plank"
+	plank "github.com/armory/plank/v3"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )

@@ -1,7 +1,7 @@
 package util
 
 import (
-	"github.com/armory/plank"
+	"github.com/armory/plank/v3"
 )
 
 type PlankClient interface {

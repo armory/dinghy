@@ -1,4 +1,4 @@
-module github.com/armory/plank
+module github.com/armory/plank/v3
 
 require (
 	github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e
