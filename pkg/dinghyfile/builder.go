@@ -171,7 +171,6 @@ func (b *PipelineBuilder) ValidatePipelines(d Dinghyfile, dinghyfile []byte) err
 		}
 	}
 	if warning {
-		b.Logger.Warnf("validate-pipelines-stagerefs-warn: %s", string(dinghyfile))
 		b.EventClient.SendEvent("validate-pipelines-stagerefs-warn", event)
 	}
 	if lastErr != nil {
