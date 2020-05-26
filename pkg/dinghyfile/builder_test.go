@@ -404,7 +404,7 @@ func TestValidatePipelines(t *testing.T) {
 					}
 				]
 			}`),
-			result: errors.New("Required refId field not found"),
+			result: nil,
 		},
 		"dinghyraw_fail_circular_reference": {
 			dinghyRaw: []byte(`{
