@@ -252,7 +252,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			// Likely just not there...
 			b.Logger.Infof("Creating application '%s'...", app.Name)
 			if errCreating := b.Client.CreateApplication(app); errCreating != nil {
-				b.Logger.Errorf("Failed to create application (%s)", err.Error())
+				b.Logger.Errorf("Failed to create application (%s)", errCreating.Error())
 				return errCreating
 			}
 		} else {
