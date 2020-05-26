@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"github.com/armory/dinghy/pkg/git"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"text/template"
@@ -65,15 +66,15 @@ func (r *DinghyfileParser) parseValue(val interface{}) interface{} {
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func (r *DinghyfileParser) moduleFunc(org, branch string, deps map[string]bool, allVars []VarMap) interface{} {
+func (r *DinghyfileParser) moduleFunc(org string, repo string, branch string, deps map[string]bool, allVars []VarMap) interface{} {
 	return func(mod string, vars ...interface{}) (string, error) {
 		// Don't bother if the TemplateOrg isn't set.
-		if r.Builder.TemplateOrg == "" {
+		if org == "" {
 			return "", fmt.Errorf("Cannot load module %s; templateOrg not configured", mod)
 		}
 
 		// Record the dependency.
-		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod, branch)
+		child := r.Builder.Downloader.EncodeURL(org, repo, mod, branch)
 		if _, exists := deps[child]; !exists {
 			deps[child] = true
 		}
@@ -107,7 +108,7 @@ func (r *DinghyfileParser) moduleFunc(org, branch string, deps map[string]bool, 
 			newVars[key] = r.parseValue(vars[i+1])
 		}
 
-		result, err := r.Parse(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, branch, append([]VarMap{newVars}, allVars...))
+		result, err := r.Parse(org, repo, mod, branch, append([]VarMap{newVars}, allVars...))
 		if err != nil {
 			r.Builder.Logger.Errorf("error rendering imported module '%s': %s", mod, err.Error())
 			return "", fmt.Errorf("error rendering imported module '%s': %s", mod, err.Error())
@@ -266,11 +267,20 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// have an application in context?  So for now, hardcoding module branch
 	// to "master"
 	funcMap := template.FuncMap{
-		"module":     r.moduleFunc(r.Builder.TemplateOrg, branch, deps, vars),
-		"appModule":  r.moduleFunc(r.Builder.TemplateOrg, branch, deps, vars),
+		"module":     r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, branch, deps, vars),
+		"appModule":  r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, branch, deps, vars),
 		"pipelineID": r.pipelineIDFunc(vars),
 		"var":        r.varFunc(vars),
 		"makeSlice":  r.makeSlice,
+	}
+	for _, currentVarMap:= range vars{
+		if currentValue, foundVal := currentVarMap["dinghylocalmodule"]; foundVal {
+			localmodule, err := strconv.ParseBool(fmt.Sprintf("%v",currentValue))
+			if err == nil && localmodule {
+				funcMap["module"] = r.moduleFunc(org, repo, branch, deps, vars)
+				funcMap["appModule"] = r.moduleFunc(org, repo, branch, deps, vars)
+			}
+		}
 	}
 
 	// Parse the downloaded template.
