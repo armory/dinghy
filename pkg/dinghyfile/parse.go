@@ -273,14 +273,12 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		"var":        r.varFunc(vars),
 		"makeSlice":  r.makeSlice,
 	}
-	for _, varSlice:= range vars{
-		for key,val := range varSlice {
-			if key == "dinghylocalmodule"  {
-				localmodule, err := strconv.ParseBool(fmt.Sprintf("%v",val))
-				if err == nil && localmodule {
-					funcMap["module"] = r.moduleFunc(org, repo, branch, deps, vars)
-					funcMap["appModule"] = r.moduleFunc(org, repo, branch, deps, vars)
-				}
+	for _, currentVarMap:= range vars{
+		if currentValue, foundVal := currentVarMap["dinghylocalmodule"]; foundVal {
+			localmodule, err := strconv.ParseBool(fmt.Sprintf("%v",currentValue))
+			if err == nil && localmodule {
+				funcMap["module"] = r.moduleFunc(org, repo, branch, deps, vars)
+				funcMap["appModule"] = r.moduleFunc(org, repo, branch, deps, vars)
 			}
 		}
 	}
