@@ -314,7 +314,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 func (r *DinghyfileParser) localModuleFunc(org string, repo string, branch string, deps map[string]bool, allVars []VarMap) interface{} {
 	return func(mod string, vars ...interface{}) (string, error) {
 		if r.Builder.TemplateOrg == org && r.Builder.TemplateRepo == repo {
-			return "", fmt.Errorf("Cannot call %v from TempateRepo modules", mod)
+			return "", fmt.Errorf("%v is a local_module, calling local_module from a module is not allowed", mod)
 		} else {
 			return moduleFunction(org, mod, r, repo, branch, deps, vars, allVars)
 		}
