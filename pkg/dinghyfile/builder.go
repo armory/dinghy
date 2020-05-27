@@ -254,8 +254,6 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			if err = b.Client.CreateApplication(app); err != nil {
 				b.Logger.Errorf("Failed to create application (%s)", err.Error())
 				return err
-			} else {
-				err = nil
 			}
 		} else {
 			b.Logger.Errorf("Failed to create application (%s)", errunsup.Error())
