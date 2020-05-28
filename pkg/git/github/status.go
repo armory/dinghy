@@ -51,7 +51,7 @@ func (p *Push) SetCommitStatus(status git.Status, description string) {
 
 func newStatus(s git.Status, deckURL string, additionalDescription string) *Status {
 	state := string(s)
-	context := "continuous-deployment/dinghy"
+	context := "dinghy"
 	description := ""
 	switch s {
 	case git.StatusSuccess:
