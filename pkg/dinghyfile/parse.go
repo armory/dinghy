@@ -24,7 +24,6 @@ package dinghyfile
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/armory/dinghy/pkg/git"
 	"path/filepath"
