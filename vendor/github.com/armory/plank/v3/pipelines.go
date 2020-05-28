@@ -77,7 +77,8 @@ func (p *Pipeline) ValidateRefIds() ValidationResult {
 			if _, exists := stageMap["refId"]; !exists {
 				// Separate this validation as per comment in: https://github.com/armory/plank/pull/69
 				// Card created: ENG-5293
-				validationResult.Errors = append(validationResult.Errors, errors.New("Required refId field not found"))
+				//validationResult.Errors = append(validationResult.Errors, errors.New("Required refId field not found"))
+				validationResult.Warnings = append(validationResult.Warnings, "RefId field not found in stage")
 			} else {
 				refId = stageMap["refId"].(string)
 				if _,exists := refidsSet[refId]; exists {

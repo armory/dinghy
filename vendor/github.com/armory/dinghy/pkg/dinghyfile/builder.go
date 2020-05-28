@@ -158,19 +158,24 @@ func (b *PipelineBuilder) ValidatePipelines(d Dinghyfile, dinghyfile []byte) err
 	}
 
 	var lastErr error
+	var warning bool
 	for _, pipeline := range d.Pipelines{
 		validateResult := pipeline.ValidateRefIds()
 		for _, stageWarning := range validateResult.Warnings {
-			b.Logger.Warnf("Failed to validate stage refs for pipeline: %s", stageWarning)
+			warning = true
+			b.Logger.Warnf("There are some concerns validating stage refs for pipeline: %s", stageWarning)
 		}
 		for _, stageError := range validateResult.Errors {
 			lastErr = stageError
 			b.Logger.Errorf("Failed to validate stage refs for pipeline: %s", stageError.Error())
 		}
 	}
+	if warning {
+		b.EventClient.SendEvent("validate-pipelines-stagerefs-warn", event)
+	}
 	if lastErr != nil {
 		b.Logger.Errorf("validate-pipelines-stagerefs-err: %s", string(dinghyfile))
-		b.EventClient.SendEvent("update-dinghyfile-unmarshal-err", event)
+		b.EventClient.SendEvent("validate-pipelines-stagerefs-err", event)
 		return lastErr
 	}
 	return nil
@@ -292,7 +297,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		if errunsup.Code == 404 {
 			// Likely just not there...
 			b.Logger.Infof("Creating application '%s'...", app.Name)
-			if err := b.Client.CreateApplication(app); err != nil {
+			if err = b.Client.CreateApplication(app); err != nil {
 				b.Logger.Errorf("Failed to create application (%s)", err.Error())
 				return err
 			}
@@ -327,6 +332,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			b.Logger.Debug("Locking pipeline ", p.Name)
 			p.Lock()
 		}
+		
 		if err := b.Client.UpsertPipeline(p, p.ID); err != nil {
 			err = unwrapFront50Error(err)
 			b.Logger.Errorf("Upsert failed: %s", err.Error())

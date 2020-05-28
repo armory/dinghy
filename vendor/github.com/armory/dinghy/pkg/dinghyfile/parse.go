@@ -65,55 +65,59 @@ func (r *DinghyfileParser) parseValue(val interface{}) interface{} {
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
-func (r *DinghyfileParser) moduleFunc(org, branch string, deps map[string]bool, allVars []VarMap) interface{} {
+func (r *DinghyfileParser) moduleFunc(org string, repo string, branch string, deps map[string]bool, allVars []VarMap) interface{} {
 	return func(mod string, vars ...interface{}) (string, error) {
-		// Don't bother if the TemplateOrg isn't set.
-		if r.Builder.TemplateOrg == "" {
-			return "", fmt.Errorf("Cannot load module %s; templateOrg not configured", mod)
+		return moduleFunction(org, mod, r, repo, branch, deps, vars, allVars)
+	}
+}
+
+func moduleFunction(org string, mod string, r *DinghyfileParser, repo string, branch string, deps map[string]bool, vars []interface{}, allVars []VarMap) (string, error) {
+	// Don't bother if the TemplateOrg isn't set.
+	if org == "" {
+		return "", fmt.Errorf("Cannot load module %s; templateOrg not configured", mod)
+	}
+
+	// Record the dependency.
+	child := r.Builder.Downloader.EncodeURL(org, repo, mod, branch)
+	if _, exists := deps[child]; !exists {
+		deps[child] = true
+	}
+
+	length := len(vars)
+	if length%2 != 0 {
+		r.Builder.Logger.Warnf("odd number of parameters received to module %s", mod)
+	}
+
+	// Convert module argument pairs to key/value map
+	newVars := make(VarMap)
+	for i := 0; i+1 < length; i += 2 {
+		key, ok := vars[i].(string)
+		if !ok {
+			r.Builder.Logger.Errorf("dict keys must be strings in module: %s", mod)
+			return "", fmt.Errorf("dict keys must be strings in module: %s", mod)
 		}
 
-		// Record the dependency.
-		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod, branch)
-		if _, exists := deps[child]; !exists {
-			deps[child] = true
-		}
-
-		length := len(vars)
-		if length%2 != 0 {
-			r.Builder.Logger.Warnf("odd number of parameters received to module %s", mod)
-		}
-
-		// Convert module argument pairs to key/value map
-		newVars := make(VarMap)
-		for i := 0; i+1 < length; i += 2 {
-			key, ok := vars[i].(string)
-			if !ok {
-				r.Builder.Logger.Errorf("dict keys must be strings in module: %s", mod)
-				return "", fmt.Errorf("dict keys must be strings in module: %s", mod)
-			}
-
-			// checks for deepvariables, passes all the way down values from dinghyFile to module inside module
-			deepVariable, ok := vars[i+1].(string)
-			if ok && len(deepVariable) > 6 {
-				if deepVariable[0:5] == "{{var" {
-					for _, vm := range allVars {
-						if val, exists := vm[deepVariable[6:len(deepVariable)-2]]; exists {
-							r.Builder.Logger.Info("Substituting deepvariable ", vars[i], " : old value : ", deepVariable, " for new value: ", r.renderValue(val).(string))
-							vars[i+1] = r.parseValue(val)
-						}
+		// checks for deepvariables, passes all the way down values from dinghyFile to module inside module
+		deepVariable, ok := vars[i+1].(string)
+		if ok && len(deepVariable) > 6 {
+			if deepVariable[0:5] == "{{var" {
+				for _, vm := range allVars {
+					if val, exists := vm[deepVariable[6:len(deepVariable)-2]]; exists {
+						r.Builder.Logger.Info("Substituting deepvariable ", vars[i], " : old value : ", deepVariable, " for new value: ", r.renderValue(val).(string))
+						vars[i+1] = r.parseValue(val)
 					}
 				}
 			}
-			newVars[key] = r.parseValue(vars[i+1])
 		}
-
-		result, err := r.Parse(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, branch, append([]VarMap{newVars}, allVars...))
-		if err != nil {
-			r.Builder.Logger.Errorf("error rendering imported module '%s': %s", mod, err.Error())
-			return "", fmt.Errorf("error rendering imported module '%s': %s", mod, err.Error())
-		}
-		return result.String(), nil
+		newVars[key] = r.parseValue(vars[i+1])
 	}
+
+	result, err := r.Parse(org, repo, mod, branch, append([]VarMap{newVars}, allVars...))
+	if err != nil {
+		r.Builder.Logger.Errorf("error rendering imported module '%s': %s", mod, err.Error())
+		return "", fmt.Errorf("error rendering imported module '%s': %s", mod, err.Error())
+	}
+	return result.String(), nil
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
@@ -266,11 +270,12 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// have an application in context?  So for now, hardcoding module branch
 	// to "master"
 	funcMap := template.FuncMap{
-		"module":     r.moduleFunc(r.Builder.TemplateOrg, branch, deps, vars),
-		"appModule":  r.moduleFunc(r.Builder.TemplateOrg, branch, deps, vars),
-		"pipelineID": r.pipelineIDFunc(vars),
-		"var":        r.varFunc(vars),
-		"makeSlice":  r.makeSlice,
+		"module":        r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, branch, deps, vars),
+		"local_module":  r.localModuleFunc(org, repo, branch, deps, vars),
+		"appModule":     r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, branch, deps, vars),
+		"pipelineID":    r.pipelineIDFunc(vars),
+		"var":           r.varFunc(vars),
+		"makeSlice":     r.makeSlice,
 	}
 
 	// Parse the downloaded template.
@@ -304,4 +309,14 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	r.Builder.EventClient.SendEvent("parse", event)
 
 	return buf, nil
+}
+
+func (r *DinghyfileParser) localModuleFunc(org string, repo string, branch string, deps map[string]bool, allVars []VarMap) interface{} {
+	return func(mod string, vars ...interface{}) (string, error) {
+		if r.Builder.TemplateOrg == org && r.Builder.TemplateRepo == repo {
+			return "", fmt.Errorf("%v is a local_module, calling local_module from a module is not allowed", mod)
+		} else {
+			return moduleFunction(org, mod, r, repo, branch, deps, vars, allVars)
+		}
+	}
 }

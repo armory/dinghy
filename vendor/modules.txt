@@ -13,7 +13,7 @@ github.com/BurntSushi/toml
 # github.com/armory-io/monitoring v0.0.7
 github.com/armory-io/monitoring/log/formatters
 github.com/armory-io/monitoring/log/hooks
-# github.com/armory/dinghy v1.0.2-0.20200519224408-16269a7cd9c2
+# github.com/armory/dinghy v1.0.2-0.20200528002014-d1a0c9eb1f86
 github.com/armory/dinghy/cmd
 github.com/armory/dinghy/pkg/cache
 github.com/armory/dinghy/pkg/cache/local
@@ -39,7 +39,7 @@ github.com/armory/go-yaml-tools/pkg/tls
 github.com/armory/go-yaml-tools/pkg/tls/client
 github.com/armory/go-yaml-tools/pkg/tls/server
 github.com/armory/go-yaml-tools/pkg/yaml
-# github.com/armory/plank/v3 v3.0.0
+# github.com/armory/plank/v3 v3.1.0
 github.com/armory/plank/v3
 # github.com/aws/aws-sdk-go v1.30.7
 github.com/aws/aws-sdk-go/aws
