@@ -569,7 +569,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 				default:
 					util.WriteHTTPError(w, http.StatusInternalServerError, err)
 				}
-				p.SetCommitStatus(git.StatusError,fmt.Sprintf("Rebuilding dependent dinghyfiles Failed: %s", err.Error()))
+				p.SetCommitStatus(git.StatusError,"Rebuilding dependent dinghyfiles Failed")
 				wa.Logger.Errorf("RebuildModuleRoots Failed: %s", err.Error())
 				return
 			}
