@@ -260,6 +260,13 @@ var fileService = dummy.FileService{
 			{{ module "mod2" "type" "foobar" }}
 			]
 	}`,
+		"df_local_module": `{
+		"application": "search",
+		"pipelines": [
+			{{ local_module "mod1" }},
+			{{ module "mod2" "type" "foobar" }}
+		]
+	}`,
 		"df_global/nested": `{
 		"application": "search",
 		"globals": {
@@ -846,6 +853,24 @@ func TestModuleEmptyString(t *testing.T) {
 	r := testDinghyfileParser()
 	ret, _ := r.Parse("org", "repo", "df4", "master", nil)
 	assert.Equal(t, `{"foo": ""}`, ret.String())
+}
+
+func TestLocalModule(t *testing.T) {
+	r := testDinghyfileParser()
+	expected := `{
+		"application": "search",
+		"pipelines": [
+			{
+		"foo": "bar",
+		"type": "deploy"
+	},
+			{
+		"type": "foobar"
+	}
+		]
+	}`
+	ret, _ := r.Parse("org", "repo", "df_local_module", "master", nil)
+	assert.Equal(t, expected, ret.String())
 }
 
 func TestDeepVars(t *testing.T) {
