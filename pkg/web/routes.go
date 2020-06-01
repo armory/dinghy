@@ -485,7 +485,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 					p.SetCommitStatus(git.StatusFailure, "Error processing Dinghyfile (malformed JSON)" )
 				} else {
 					wa.Logger.Errorf("Error processing Dinghyfile: %s", err.Error())
-					p.SetCommitStatus(git.StatusError, fmt.Sprintf("Error processing Dinghyfile: %s", err.Error()))
+					p.SetCommitStatus(git.StatusError, fmt.Sprintf("%s", err.Error()))
 				}
 				return err
 			}
