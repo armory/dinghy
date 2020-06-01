@@ -53,19 +53,6 @@ func newStatus(s git.Status, deckURL string, description string) *Status {
 	state := string(s)
 	context := "dinghy"
 
-	if description == "" {
-		switch s {
-		case git.StatusSuccess:
-			description = "Pipeline definitions updated!"
-		case git.StatusError:
-			description = "Error updating pipeline definitions!"
-		case git.StatusFailure:
-			description = "Failed to update pipeline definitions!"
-		case git.StatusPending:
-			description = "Updating pipeline definitions..."
-		}
-	}
-
 	if len(description) > 140 {
 		description = description[0:136] + "..."
 	}

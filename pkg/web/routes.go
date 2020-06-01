@@ -471,7 +471,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	wa.Logger.Info("Dinghyfile found in commit for repo " + p.Repo())
 
 	// Set commit status to the pending yellow dot.
-	p.SetCommitStatus(git.StatusPending, "")
+	p.SetCommitStatus(git.StatusPending, git.DefaultPendingMessage)
 
 	for _, filePath := range p.Files() {
 		components := strings.Split(filePath, "/")
@@ -489,7 +489,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 				}
 				return err
 			}
-			p.SetCommitStatus(git.StatusSuccess,"")
+			p.SetCommitStatus(git.StatusSuccess, git.DefaultSuccessMessage)
 		}
 	}
 	return nil
@@ -558,7 +558,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	// Check if we're in a template repo
 	if p.Repo() == wa.Config.TemplateRepo {
 		// Set status to pending while we process modules
-		p.SetCommitStatus(git.StatusPending,"")
+		p.SetCommitStatus(git.StatusPending, git.DefaultPendingMessage)
 
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
@@ -574,7 +574,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 				return
 			}
 		}
-		p.SetCommitStatus(git.StatusSuccess,"")
+		p.SetCommitStatus(git.StatusSuccess, git.DefaultSuccessMessage)
 	}
 
 	w.Write([]byte(`{"status":"accepted"}`))
