@@ -23,6 +23,6 @@ import (
 // SetCommitStatus sets the commit status
 // TODO: this function needs to return an error but it's currently attached to an interface that does not
 // and changes will affect other types
-func (p *Push) SetCommitStatus(status git.Status) {
+func (p *Push) SetCommitStatus(status git.Status, description string) {
 	// no-op for GitLab
 }

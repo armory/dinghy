@@ -21,8 +21,10 @@ type Status string
 
 // Status types
 const (
-	StatusPending Status = "pending"
-	StatusError          = "error"
-	StatusSuccess        = "success"
-	StatusFailure        = "failure"
+	StatusPending         Status = "pending"
+	StatusError                  = "error"
+	StatusSuccess                = "success"
+	StatusFailure                = "failure"
+	DefaultPendingMessage string = "Updating pipeline definitions..."
+	DefaultSuccessMessage string = "Pipeline definitions updated!"
 )

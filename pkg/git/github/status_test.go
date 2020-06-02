@@ -54,7 +54,7 @@ func TestSetCommitStatusSuccessfully(t *testing.T) {
 	}
 
 	// This shouldn't throw exceptions/panics
-	p.SetCommitStatus(git.StatusPending)
+	p.SetCommitStatus(git.StatusPending, git.DefaultPendingMessage)
 }
 
 func TestSetCommitStatusFails(t *testing.T) {
@@ -80,5 +80,5 @@ func TestSetCommitStatusFails(t *testing.T) {
 
 	// TODO: this doesn't actually test anything
 	// This shouldn't throw exceptions/panics
-	p.SetCommitStatus(git.StatusPending)
+	p.SetCommitStatus(git.StatusPending, git.DefaultPendingMessage)
 }

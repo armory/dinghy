@@ -287,7 +287,7 @@ func (p *Push) IsMaster() bool {
 }
 
 // SetCommitStatus sets a commit status
-func (p *Push) SetCommitStatus(s git.Status) {}
+func (p *Push) SetCommitStatus(s git.Status, description string) {}
 
 // Name returns the name of the provider to be used in configuration
 func (p *Push) Name() string {
