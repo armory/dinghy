@@ -1,5 +1,4 @@
-on:
-  push:
+on: [push, pull_request]
 
 name: Build
 
@@ -8,17 +7,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.13', '1.14', "tip" ]
-    name: Buil wirh Go ${{ matrix.go }}
+        go: [ '1.13', '1.14', 'tip' ]
+    name: Build with Go ${{ matrix.go }}
     steps:
     - name: Get the version
       id:   get_version
       run:  echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v1
       with:
-        go-version: ${{ matrix.go }}
+        go-version: ^${{ matrix.go }}
       id: go
 
     - name: Cache Build Dependencies  # Speeds up subsquent builds
