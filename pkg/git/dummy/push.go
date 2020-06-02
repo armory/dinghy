@@ -61,7 +61,7 @@ func (p* Push) IsBranch(branchToTry string) bool {
 }
 
 // SetCommitStatus sets a commit status
-func (p *Push) SetCommitStatus(s git.Status) {
+func (p *Push) SetCommitStatus(s git.Status, description string) {
 	// Do nothing
 }
 
