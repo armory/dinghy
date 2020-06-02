@@ -5,12 +5,11 @@ name: Build
 
 jobs:
   build:
-    name: Build
     runs-on: ubuntu-latest
     strategy:
       matrix:
         go: [ '1.13', '1.14', "tip" ]
-    name: Go ${{ matrix.go }} sample
+    name: Buil wirh Go ${{ matrix.go }}
     steps:
     - name: Get the version
       id:   get_version
