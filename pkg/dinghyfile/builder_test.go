@@ -123,7 +123,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
+	client.EXPECT().GetApplication(gomock.Eq("testapp")).Return(nil, &plank.ErrUnsupportedStatusCode{Code:404}).Times(1)
 	client.EXPECT().CreateApplication(gomock.Any()).Return(errors.New("boom")).Times(1)
 
 	pb := testPipelineBuilder()
