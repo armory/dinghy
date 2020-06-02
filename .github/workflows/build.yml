@@ -17,7 +17,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v1
       with:
-        go-version: ^${{ matrix.go }}
+        go-version: ${{ matrix.go }}
       id: go
 
     - name: Cache Build Dependencies  # Speeds up subsquent builds
