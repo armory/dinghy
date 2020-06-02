@@ -51,7 +51,7 @@ type Push interface {
 	Branch() string
 	IsBranch(string) bool
 	IsMaster() bool
-	SetCommitStatus(s git.Status)
+	SetCommitStatus(s git.Status, description string)
 	Name() string
 }
 
@@ -471,7 +471,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	wa.Logger.Info("Dinghyfile found in commit for repo " + p.Repo())
 
 	// Set commit status to the pending yellow dot.
-	p.SetCommitStatus(git.StatusPending)
+	p.SetCommitStatus(git.StatusPending, git.DefaultPendingMessage)
 
 	for _, filePath := range p.Files() {
 		components := strings.Split(filePath, "/")
@@ -482,14 +482,14 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 			if err != nil {
 				if err == dinghyfile.ErrMalformedJSON {
 					wa.Logger.Errorf("Error processing Dinghyfile (malformed JSON): %s", err.Error())
-					p.SetCommitStatus(git.StatusFailure)
+					p.SetCommitStatus(git.StatusFailure, "Error processing Dinghyfile (malformed JSON)" )
 				} else {
 					wa.Logger.Errorf("Error processing Dinghyfile: %s", err.Error())
-					p.SetCommitStatus(git.StatusError)
+					p.SetCommitStatus(git.StatusError, fmt.Sprintf("%s", err.Error()))
 				}
 				return err
 			}
-			p.SetCommitStatus(git.StatusSuccess)
+			p.SetCommitStatus(git.StatusSuccess, git.DefaultSuccessMessage)
 		}
 	}
 	return nil
@@ -558,7 +558,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	// Check if we're in a template repo
 	if p.Repo() == wa.Config.TemplateRepo {
 		// Set status to pending while we process modules
-		p.SetCommitStatus(git.StatusPending)
+		p.SetCommitStatus(git.StatusPending, git.DefaultPendingMessage)
 
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
@@ -569,12 +569,12 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 				default:
 					util.WriteHTTPError(w, http.StatusInternalServerError, err)
 				}
-				p.SetCommitStatus(git.StatusError)
+				p.SetCommitStatus(git.StatusError,"Rebuilding dependent dinghyfiles Failed")
 				wa.Logger.Errorf("RebuildModuleRoots Failed: %s", err.Error())
 				return
 			}
 		}
-		p.SetCommitStatus(git.StatusSuccess)
+		p.SetCommitStatus(git.StatusSuccess, git.DefaultSuccessMessage)
 	}
 
 	w.Write([]byte(`{"status":"accepted"}`))

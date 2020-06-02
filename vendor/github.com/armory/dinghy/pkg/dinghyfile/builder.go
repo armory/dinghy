@@ -289,12 +289,12 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []plank.Pipeline, deleteStale bool, autoLock string) error {
 	_, err := b.Client.GetApplication(app.Name)
 	if err != nil {
-		errunsup, ok := err.(*plank.ErrUnsupportedStatusCode)
+		failedResponse, ok := err.(*plank.FailedResponse)
 		if !ok {
 			b.Logger.Errorf("Failed to create application (%s)", err.Error())
 			return err
 		}
-		if errunsup.Code == 404 {
+		if failedResponse.StatusCode == 404 {
 			// Likely just not there...
 			b.Logger.Infof("Creating application '%s'...", app.Name)
 			if err = b.Client.CreateApplication(app); err != nil {
@@ -302,8 +302,8 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 				return err
 			}
 		} else {
-			b.Logger.Errorf("Failed to create application (%s)", errunsup.Error())
-			return errunsup
+			b.Logger.Errorf("Failed to create application (%s)", err.Error())
+			return err
 		}
 	}
 
