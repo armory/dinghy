@@ -305,6 +305,12 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			b.Logger.Errorf("Failed to create application (%s)", err.Error())
 			return err
 		}
+	} else {
+		errUpdating := b.Client.UpdateApplication(app)
+		if errUpdating != nil {
+			b.Logger.Errorf("Failed to update application (%s)", errUpdating.Error())
+			return errUpdating
+		}
 	}
 
 	ids, _ := b.PipelineIDs(app.Name)
