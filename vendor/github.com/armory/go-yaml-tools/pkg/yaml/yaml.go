@@ -24,6 +24,15 @@ func Resolve(ymlTemplates []map[interface{}]interface{}, envKeyPairs map[string]
 			log.Error(err)
 		}
 	}
+
+	// unlike other secret engines, the vault config needs to be registered before it can decrypt anything
+	vaultCfg := extractVaultConfig(mergedMap)
+	if vaultCfg != nil && (secrets.VaultConfig{}) != *vaultCfg {
+		if err := secrets.RegisterVaultConfig(*vaultCfg); err != nil {
+			log.Errorf("Error registering vault config: %v", err)
+		}
+	}
+
 	stringMap := convertToStringMap(mergedMap)
 
 	err := subValues(stringMap, stringMap, envKeyPairs)
@@ -33,6 +42,20 @@ func Resolve(ymlTemplates []map[interface{}]interface{}, envKeyPairs map[string]
 	}
 
 	return stringMap, nil
+}
+
+func extractVaultConfig(m map[interface{}]interface{})  *secrets.VaultConfig {
+	if secretsMap, ok := m["secrets"].(map[interface{}]interface{}); ok {
+		if vaultmap, ok := secretsMap["vault"].(map[interface{}]interface{}); ok {
+			cfg, err := secrets.DecodeVaultConfig(vaultmap)
+			if err != nil {
+				log.Errorf("Error decoding vault config: %v", err)
+				return nil
+			}
+			return cfg
+		}
+	}
+	return nil
 }
 
 func convertToStringMap(m map[interface{}]interface{}) map[string]interface{} {
