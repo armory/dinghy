@@ -3,6 +3,7 @@ package secrets
 import (
 	"context"
 	"fmt"
+	"github.com/mitchellh/mapstructure"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -240,4 +241,21 @@ func (decrypter *VaultDecrypter) fetchSecret() (string, error) {
 	}
 
 	return "", nil
+}
+
+func DecodeVaultConfig(vaultYaml map[interface{}]interface{}) (*VaultConfig, error) {
+	var cfg VaultConfig
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		Result:           &cfg,
+		WeaklyTypedInput: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := decoder.Decode(vaultYaml); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
