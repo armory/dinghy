@@ -306,11 +306,16 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			return err
 		}
 	} else {
-		errUpdating := b.Client.UpdateApplication(app)
+		errUpdating := b.Client.UpdateApplication(*app)
 		if errUpdating != nil {
 			b.Logger.Errorf("Failed to update application (%s)", errUpdating.Error())
 			return errUpdating
 		}
+	}
+
+	errNotif := b.Client.UpdateApplicationNotifications(*app.Notifications, app.Name)
+	if errNotif != nil {
+		b.Logger.Errorf("Failed to update notifications: (%s)", errNotif.Error())
 	}
 
 	ids, _ := b.PipelineIDs(app.Name)
