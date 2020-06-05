@@ -199,31 +199,36 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 	}
 	buf, err := b.Parser.Parse(org, repo, path, branch, nil)
 	if err != nil {
+		buf, errDownload := b.Downloader.Download(org, repo, path, branch)
+		if errDownload == nil {
+			b.NotifyFailure(org, repo, path, err, buf )
+		} else {
+			b.NotifyFailure(org, repo, path, err, "")
+		}
 		b.Logger.Errorf("Failed to parse dinghyfile %s: %s", path, err.Error())
-		b.NotifyFailure(org, repo, path, err)
 		return err
 	}
-	b.Logger.Infof("Compiled: %s", buf.String())
+	b.Logger.Infof("Compiled: %s", &buf)
 	d, err := b.UpdateDinghyfile(buf.Bytes())
 	if err != nil {
 		b.Logger.Errorf("Failed to update dinghyfile %s: %s", path, err.Error())
-		b.NotifyFailure(org, repo, path, err)
+		b.NotifyFailure(org, repo, path, err, buf.String())
 		return err
 	}
-	b.Logger.Infof("Updated: %s", buf.String())
+	b.Logger.Infof("Updated: %s", &buf)
 	b.Logger.Infof("Dinghyfile struct: %v", d)
 
 	err = b.ValidatePipelines(d, buf.Bytes())
 	if err != nil {
 		b.Logger.Errorf("Failed to validate pipelines %s", path)
-		b.NotifyFailure(org, repo, path, err)
+		b.NotifyFailure(org, repo, path, err, buf.String())
 		return err
 	}
 	b.Logger.Info("Validations for stage refs were successful")
 
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 		b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
-		b.NotifyFailure(org, repo, path, err)
+		b.NotifyFailure(org, repo, path, err, buf.String())
 		return err
 	}
 
@@ -421,8 +426,8 @@ func (b *PipelineBuilder) NotifySuccess(org, repo, path string) {
 	}
 }
 
-func (b *PipelineBuilder) NotifyFailure(org, repo, path string, err error) {
+func (b *PipelineBuilder) NotifyFailure(org, repo, path string, err error, dinghyfile string) {
 	for _, n := range b.Notifiers {
-		n.SendFailure(org, repo, path, err)
+		n.SendFailure(org, repo, path, err, dinghyfile)
 	}
 }

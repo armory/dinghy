@@ -46,6 +46,11 @@ func TestProcessDinghyfile(t *testing.T) {
 	client.EXPECT().GetApplication(gomock.Eq("biff")).Return(&plank.Application{}, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("biff")).Return([]plank.Pipeline{}, nil).Times(1)
 
+	var app = plank.Application{Name: "biff", Email: "unknown@unknown.com", DataSources: &plank.DataSourcesType{Enabled:  []string{}, Disabled: []string{},}}
+	client.EXPECT().UpdateApplication(gomock.Eq(app)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplicationNotifications(nil, gomock.Eq(app.Name)).Return(nil).Times(1)
+
+
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Unmarshalled: %v"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Found pipelines for %v: %v"), gomock.Any()).Times(1)
@@ -908,7 +913,7 @@ type mockNotifier struct {
 func (m *mockNotifier) SendSuccess(org, repo, path string) {
 	m.SuccessCalls = m.SuccessCalls + 1
 }
-func (m *mockNotifier) SendFailure(org, repo, path string, err error) {
+func (m *mockNotifier) SendFailure(org, repo, path string, err error, dinghyfile string) {
 	m.FailureCalls = m.FailureCalls + 1
 	m.LastError = err
 }
@@ -926,7 +931,7 @@ func TestFailureNotifier(t *testing.T) {
 	b := testPipelineBuilder()
 	n := mockNotifier{}
 	b.Notifiers = []notifiers.Notifier{&n}
-	b.NotifyFailure("foo", "bar", "biff", errors.New("foo"))
+	b.NotifyFailure("foo", "bar", "biff", errors.New("foo"), "")
 	assert.Equal(t, n.SuccessCalls, 0)
 	assert.Equal(t, n.FailureCalls, 1)
 	assert.Equal(t, n.LastError.Error(), "foo")
