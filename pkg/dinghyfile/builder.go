@@ -208,14 +208,14 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 		b.Logger.Errorf("Failed to parse dinghyfile %s: %s", path, err.Error())
 		return err
 	}
-	b.Logger.Infof("Compiled: %s", &buf)
+	b.Logger.Infof("Compiled: %s", buf.String())
 	d, err := b.UpdateDinghyfile(buf.Bytes())
 	if err != nil {
 		b.Logger.Errorf("Failed to update dinghyfile %s: %s", path, err.Error())
 		b.NotifyFailure(org, repo, path, err, buf.String())
 		return err
 	}
-	b.Logger.Infof("Updated: %s", &buf)
+	b.Logger.Infof("Updated: %s", buf.String())
 	b.Logger.Infof("Dinghyfile struct: %v", d)
 
 	err = b.ValidatePipelines(d, buf.Bytes())

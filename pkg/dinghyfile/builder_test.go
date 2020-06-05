@@ -58,6 +58,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Compiled: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Looking up existing pipelines")).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Validations for stage refs were successful")).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Updating notifications: %s"), gomock.Any()).Times(1)
 
 	// Because we've set the renderer, we should NOT get this message...
 	logger.EXPECT().Info(gomock.Eq("Calling DetermineRenderer")).Times(0)
