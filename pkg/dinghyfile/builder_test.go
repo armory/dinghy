@@ -130,6 +130,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
 	client.EXPECT().CreateApplication(gomock.Any()).Return(errors.New("boom")).Times(1)
+	client.EXPECT().GetApplicationNotifications(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
@@ -196,6 +197,7 @@ func TestProcessDinghyfileFailedValidation(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplicationNotifications(gomock.Eq("foo")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
@@ -928,10 +930,10 @@ type mockNotifier struct {
 	LastError    error
 }
 
-func (m *mockNotifier) SendSuccess(org, repo, path string) {
+func (m *mockNotifier) SendSuccess(org, repo, path string, notificationsType plank.NotificationsType) {
 	m.SuccessCalls = m.SuccessCalls + 1
 }
-func (m *mockNotifier) SendFailure(org, repo, path string, err error, dinghyfile string) {
+func (m *mockNotifier) SendFailure(org, repo, path string, err error, notificationsType plank.NotificationsType) {
 	m.FailureCalls = m.FailureCalls + 1
 	m.LastError = err
 }
@@ -940,7 +942,7 @@ func TestSuccessNotifier(t *testing.T) {
 	b := testPipelineBuilder()
 	n := mockNotifier{}
 	b.Notifiers = []notifiers.Notifier{&n}
-	b.NotifySuccess("foo", "bar", "biff")
+	b.NotifySuccess("foo", "bar", "biff", nil)
 	assert.Equal(t, n.SuccessCalls, 1)
 	assert.Equal(t, n.FailureCalls, 0)
 }
@@ -953,4 +955,65 @@ func TestFailureNotifier(t *testing.T) {
 	assert.Equal(t, n.SuccessCalls, 0)
 	assert.Equal(t, n.FailureCalls, 1)
 	assert.Equal(t, n.LastError.Error(), "foo")
+}
+
+func Test_extractApplicationName(t *testing.T) {
+	tests := []struct {
+		name    string
+		dinghyfile    string
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "json_test",
+			dinghyfile: `{"application": "test_app_name"}`,
+			want: "test_app_name",
+			wantErr: false,
+		},
+		{
+			name: "yaml_test",
+			dinghyfile: `application: "my-awesome-application"
+# You can do inline comments now
+globals:
+  waitTime: 42
+  retries: 5
+pipelines:
+- application: "my-awesome-application"
+  name: "My cool pipeline"
+  appConfig: {}
+  keepWaitingPipelines: false
+  limitConcurrent: true
+  stages:
+  - name: Wait For It...
+    refId: '1'
+    requisiteStageRefIds: []
+    type: wait
+    waitTime: 4
+  {{ module "some.stage.module" "something" }}
+  triggers: []`,
+			want: "my-awesome-application",
+			wantErr: false,
+		},
+		{
+			name: "hcl_test",
+			dinghyfile: `"application" = "some-app"
+"globals" = {
+    "waitTime" = 42
+}`,
+			want: "some-app",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := extractApplicationName(tt.dinghyfile)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("extractApplicationName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("extractApplicationName() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

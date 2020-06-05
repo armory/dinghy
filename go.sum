@@ -31,12 +31,6 @@ github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e h1:d7XSZxwhDU
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
 github.com/armory/go-yaml-tools v0.0.0-20200316192928-75770481ad01 h1:Rei8EOlDdpBEA8xIf61c1HT8OpcpREYEJJXLSfRHqMc=
 github.com/armory/go-yaml-tools v0.0.0-20200316192928-75770481ad01/go.mod h1:QreIYVxaLk2qi8gRBvBBDVEWIL84lTVpqTohrmQEuA4=
-github.com/armory/plank/v3 v3.1.1-0.20200603235739-543f815736b8 h1:jZPPlsNhqB7TblYt9Pip6qEnKyJgtVAvIRWYN7XukD4=
-github.com/armory/plank/v3 v3.1.1-0.20200603235739-543f815736b8/go.mod h1:8M359Bf4VNI2NVlgy8PG5+KpyVB8+0DaVI8KqNSpLcQ=
-github.com/armory/plank/v3 v3.1.1-0.20200605000958-214fcf011a62 h1:wOrd5xtFcKZTeh2YGbbYZMEpQCw0bG5TPsGkLPFZyac=
-github.com/armory/plank/v3 v3.1.1-0.20200605000958-214fcf011a62/go.mod h1:8M359Bf4VNI2NVlgy8PG5+KpyVB8+0DaVI8KqNSpLcQ=
-github.com/armory/plank/v3 v3.1.1-0.20200605011417-ca4f5d2b70ff h1:CirhWC44TI+wPa62oJGiSxZIwLLe+4HNyiLLvKN4lOQ=
-github.com/armory/plank/v3 v3.1.1-0.20200605011417-ca4f5d2b70ff/go.mod h1:8M359Bf4VNI2NVlgy8PG5+KpyVB8+0DaVI8KqNSpLcQ=
 github.com/armory/plank/v3 v3.1.1-0.20200605013528-235af7d5dc82 h1:ivFqFWdb7UyGDyAvmeLkuMOTAdVxaIATsaaN1hMJ9iU=
 github.com/armory/plank/v3 v3.1.1-0.20200605013528-235af7d5dc82/go.mod h1:8M359Bf4VNI2NVlgy8PG5+KpyVB8+0DaVI8KqNSpLcQ=
 github.com/aws/aws-sdk-go v1.28.9 h1:grIuBQc+p3dTRXerh5+2OxSuWFi0iXuxbFdTSg0jaW0=

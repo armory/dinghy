@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/armory/dinghy/pkg/events"
@@ -228,11 +229,11 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 		b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
-		b.NotifyFailure(org, repo, path, err, buf.String())
+		b.NotifyFailure(org, repo, path, err, buf.String() )
 		return err
 	}
 
-	b.NotifySuccess(org, repo, path)
+	b.NotifySuccess(org, repo, path, d.ApplicationSpec.Notifications)
 	return nil
 }
 
@@ -421,14 +422,45 @@ func (b *PipelineBuilder) AddUnmarshaller(u Unmarshaller) {
 	b.Ums = append(b.Ums, u)
 }
 
-func (b *PipelineBuilder) NotifySuccess(org, repo, path string) {
+func (b *PipelineBuilder) NotifySuccess(org, repo, path string, notifications plank.NotificationsType) {
 	for _, n := range b.Notifiers {
-		n.SendSuccess(org, repo, path)
+		n.SendSuccess(org, repo, path, notifications)
 	}
 }
 
 func (b *PipelineBuilder) NotifyFailure(org, repo, path string, err error, dinghyfile string) {
-	for _, n := range b.Notifiers {
-		n.SendFailure(org, repo, path, err, dinghyfile)
+	var notifications plank.NotificationsType
+	if appName, err := extractApplicationName(dinghyfile); err == nil {
+		if foundNotifications, errGetApp := b.Client.GetApplicationNotifications(appName); errGetApp == nil {
+			notifications = *foundNotifications
+		}
 	}
+	for _, n := range b.Notifiers {
+		n.SendFailure(org, repo, path, err, notifications )
+	}
+}
+
+func extractApplicationName(dinghyfile string) (string, error) {
+	// Groups name of the application, valid values are application: appname  "application":"appname" and 'application': 'appname'
+	regex := `["']?application["']?\s*[:=]\s*["']?(?P<applicationName>[\w-]*)["']?`
+	params := getParams(regex, dinghyfile)
+	if val, ok := params["applicationName"]; ok {
+		return val, nil
+	}
+	return "", errors.New("application name not found in dinghyfile")
+}
+
+// This function returns a map of strings for matches
+func getParams(regEx, url string) (paramsMap map[string]string) {
+
+	var compRegEx = regexp.MustCompile(regEx)
+	match := compRegEx.FindStringSubmatch(url)
+
+	paramsMap = make(map[string]string)
+	for i, name := range compRegEx.SubexpNames() {
+		if i > 0 && i <= len(match) {
+			paramsMap[name] = match[i]
+		}
+	}
+	return paramsMap
 }
