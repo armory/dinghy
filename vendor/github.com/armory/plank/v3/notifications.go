@@ -28,7 +28,6 @@ func (notifications *NotificationsType) FillAppNotificationFields(appName string
 				}
 			}
 		}
-
 	}
 	notificationsMap["application"] = appName
 }
@@ -45,6 +44,9 @@ func (c *Client) GetApplicationNotifications(appName string) (*NotificationsType
 
 // UpdateApplicationNotifications updates notifications in the configured front50 store.
 func (c *Client) UpdateApplicationNotifications(notifications NotificationsType, appName string) error {
+	if notifications == nil {
+		notifications = make(NotificationsType)
+	}
 	notifications.FillAppNotificationFields(appName)
 	var unused interface{}
 	if err := c.Post(fmt.Sprintf("%s/notifications/application/%s", c.URLs["front50"], appName), ApplicationJson, notifications , &unused); err != nil {

@@ -20,7 +20,7 @@ github.com/armory/go-yaml-tools/pkg/tls
 github.com/armory/go-yaml-tools/pkg/tls/client
 github.com/armory/go-yaml-tools/pkg/tls/server
 github.com/armory/go-yaml-tools/pkg/yaml
-# github.com/armory/plank/v3 v3.1.1-0.20200603235739-543f815736b8
+# github.com/armory/plank/v3 v3.1.1-0.20200605013528-235af7d5dc82
 github.com/armory/plank/v3
 # github.com/aws/aws-sdk-go v1.28.9
 github.com/aws/aws-sdk-go/aws

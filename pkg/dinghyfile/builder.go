@@ -318,7 +318,8 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		}
 	}
 
-	errNotif := b.Client.UpdateApplicationNotifications(*app.Notifications, app.Name)
+	b.Logger.Infof("Updating notifications: %s", app.Notifications)
+	errNotif := b.Client.UpdateApplicationNotifications(app.Notifications, app.Name)
 	if errNotif != nil {
 		b.Logger.Errorf("Failed to update notifications: (%s)", errNotif.Error())
 	}
