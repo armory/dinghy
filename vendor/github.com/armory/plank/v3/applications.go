@@ -42,10 +42,7 @@ type PermissionsType struct {
 	Execute []string `json:"EXECUTE" mapstructure:"EXECUTE" yaml:"EXECUTE" hcl:"EXECUTE"`
 }
 
-type NotificationsType map[string]Notification
-
-type Notification interface {
-}
+type NotificationsType map[string]interface{}
 
 // Application as returned from the Spinnaker API.
 type Application struct {
