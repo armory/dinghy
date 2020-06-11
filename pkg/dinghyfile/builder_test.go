@@ -58,6 +58,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Compiled: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Looking up existing pipelines")).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Validations for stage refs were successful")).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Validations for app notifications were successful")).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Updating notifications: %s"), gomock.Any()).Times(1)
 
 	// Because we've set the renderer, we should NOT get this message...
@@ -125,6 +126,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	logger.EXPECT().Errorf("Failed to create application (%s)", gomock.Any())
 	logger.EXPECT().Errorf(gomock.Eq("Failed to update Pipelines for %s: %s"), gomock.Eq("the/full/path")).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Validations for stage refs were successful")).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Validations for app notifications were successful")).Times(1)
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
@@ -602,6 +604,150 @@ func TestValidatePipelines(t *testing.T) {
 				assert.True(t, true, false)
 			} else {
 				err := b.ValidatePipelines( d, c.dinghyRaw)
+				assert.Equal(t, c.result, err)
+			}
+		})
+	}
+}
+
+func TestValidateAppNotifications(t *testing.T) {
+	b := testPipelineBuilder()
+
+	fullCases := map[string]struct {
+		dinghyRaw    []byte
+		result       error
+	}{
+		"dinghyraw_pass_empty": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`),
+			result: nil,
+		},
+		"dinghyraw_fail_no_slice_notif": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					},
+					"notifications" : {
+						"slack": [{
+							"when": [ "pipeline.complete", "pipeline.failed" ],
+							"address": "slack-channel"
+						}],
+						"email": {
+							"when": [ "pipeline.complete", "pipeline.failed" ],
+							"address": "email-address"
+						}
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"requisiteStageRefIds": [
+									"mj2"
+								],
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`),
+			result: errors.New("application notifications format is invalid."),
+		},
+		"dinghyraw_passes_arrays" : {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					},
+					"notifications" : {
+						"slack": [{
+							"when": [ "pipeline.complete", "pipeline.failed" ],
+							"address": "slack-channel"
+						}],
+						"email": [{
+							"when": [ "pipeline.complete", "pipeline.failed" ],
+							"address": "email-address"
+						}]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						]
+					}
+				]
+			}`),
+			result: nil,
+		},
+	}
+
+	for testName, c := range fullCases {
+		t.Run(testName, func(t *testing.T) {
+			d := NewDinghyfile()
+			// try every parser, maybe we'll get lucky
+			parseErrs := 0
+			for _, ums := range b.Ums {
+				if err := ums.Unmarshal(c.dinghyRaw, &d); err != nil {
+					b.Logger.Error("Dinghyfile malformed syntax: %s", err.Error())
+					parseErrs++
+					continue
+				}
+			}
+			//Log parsing issues as an error in test
+			if parseErrs != 0{
+				assert.True(t, true, false)
+			} else {
+				err := b.ValidateAppNotifications( d, c.dinghyRaw)
 				assert.Equal(t, c.result, err)
 			}
 		})

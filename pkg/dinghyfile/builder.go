@@ -182,6 +182,29 @@ func (b *PipelineBuilder) ValidatePipelines(d Dinghyfile, dinghyfile []byte) err
 	return nil
 }
 
+// We will validate app notifications struc at this moment
+func (b *PipelineBuilder) ValidateAppNotifications(d Dinghyfile, dinghyfile []byte) error {
+
+	event := &events.Event{
+		Start:      time.Now().UTC().Unix(),
+		End:        time.Now().UTC().Unix(),
+		Org:        "",
+		Repo:       "",
+		Path:       "",
+		Branch:     "",
+		Dinghyfile: string(dinghyfile),
+		Module:     false,
+	}
+
+	err := d.ApplicationSpec.Notifications.ValidateAppNotification()
+	if err != nil {
+		b.Logger.Errorf("validate-app-notifications-err: %s", string(dinghyfile))
+		b.EventClient.SendEvent("validate-app-notifications-err", event)
+		return err
+	}
+	return nil
+}
+
 // DetermineParser currently only returns a DinghyfileParser; it could
 // return other types of parsers in the future (for example, MPTv2)
 // If we can't discern the types based on the path passed here, we may need
@@ -226,6 +249,14 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 		return err
 	}
 	b.Logger.Info("Validations for stage refs were successful")
+
+	err = b.ValidateAppNotifications(d, buf.Bytes())
+	if err != nil {
+		b.Logger.Errorf("Failed to validate application notifications %s", d.ApplicationSpec.Notifications)
+		b.NotifyFailure(org, repo, path, err, buf.String())
+		return err
+	}
+	b.Logger.Info("Validations for app notifications were successful")
 
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 		b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
