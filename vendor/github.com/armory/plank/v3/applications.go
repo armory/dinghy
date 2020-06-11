@@ -42,14 +42,17 @@ type PermissionsType struct {
 	Execute []string `json:"EXECUTE" mapstructure:"EXECUTE" yaml:"EXECUTE" hcl:"EXECUTE"`
 }
 
+type NotificationsType map[string]interface{}
+
 // Application as returned from the Spinnaker API.
 type Application struct {
-	Name        string           `json:"name" mapstructure:"name" yaml:"name" hcl:"name"`
-	Email       string           `json:"email" mapstructure:"email" yaml:"email" hcl:"email"`
-	Description string           `json:"description,omitempty" mapstructure:"description" yaml:"description,omitempty" hcl:"description,omitempty"`
-	User        string           `json:"user,omitempty" mapstructure:"user" yaml:"user,omitempty" hcl:"user,omitempty"`
-	DataSources *DataSourcesType `json:"dataSources,omitempty" mapstructure:"dataSources" yaml:"datasources,omitempty" hcl:"datasources,omitempty"`
-	Permissions *PermissionsType `json:"permissions,omitempty" mapstructure:"permissions" yaml:"permissions,omitempty" hcl:"permissions,omitempty"`
+	Name          string             `json:"name" mapstructure:"name" yaml:"name" hcl:"name"`
+	Email         string             `json:"email" mapstructure:"email" yaml:"email" hcl:"email"`
+	Description   string             `json:"description,omitempty" mapstructure:"description" yaml:"description,omitempty" hcl:"description,omitempty"`
+	User          string             `json:"user,omitempty" mapstructure:"user" yaml:"user,omitempty" hcl:"user,omitempty"`
+	DataSources   *DataSourcesType   `json:"dataSources,omitempty" mapstructure:"dataSources" yaml:"datasources,omitempty" hcl:"datasources,omitempty"`
+	Permissions   *PermissionsType   `json:"permissions,omitempty" mapstructure:"permissions" yaml:"permissions,omitempty" hcl:"permissions,omitempty"`
+	Notifications NotificationsType  `json:"notifications,omitempty" mapstructure:"notifications" yaml:"notifications,omitempty" hcl:"notifications,omitempty"`
 }
 
 // GetApplication returns the Application data struct for the
