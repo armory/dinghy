@@ -691,7 +691,7 @@ func TestValidateAppNotifications(t *testing.T) {
 					}
 				]
 			}`),
-			result: errors.New("application notifications format is invalid."),
+			result: errors.New("application notifications format is invalid for email"),
 		},
 		"dinghyraw_passes_arrays" : {
 			dinghyRaw: []byte(`{
