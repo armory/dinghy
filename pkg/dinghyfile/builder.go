@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/armory/dinghy/pkg/events"
@@ -181,6 +182,29 @@ func (b *PipelineBuilder) ValidatePipelines(d Dinghyfile, dinghyfile []byte) err
 	return nil
 }
 
+// We will validate app notifications struc at this moment
+func (b *PipelineBuilder) ValidateAppNotifications(d Dinghyfile, dinghyfile []byte) error {
+
+	event := &events.Event{
+		Start:      time.Now().UTC().Unix(),
+		End:        time.Now().UTC().Unix(),
+		Org:        "",
+		Repo:       "",
+		Path:       "",
+		Branch:     "",
+		Dinghyfile: string(dinghyfile),
+		Module:     false,
+	}
+
+	err := d.ApplicationSpec.Notifications.ValidateAppNotification()
+	if err != nil {
+		b.Logger.Errorf("validate-app-notifications-err: %s", string(dinghyfile))
+		b.EventClient.SendEvent("validate-app-notifications-err", event)
+		return err
+	}
+	return nil
+}
+
 // DetermineParser currently only returns a DinghyfileParser; it could
 // return other types of parsers in the future (for example, MPTv2)
 // If we can't discern the types based on the path passed here, we may need
@@ -199,15 +223,20 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 	}
 	buf, err := b.Parser.Parse(org, repo, path, branch, nil)
 	if err != nil {
+		buf, errDownload := b.Downloader.Download(org, repo, path, branch)
+		if errDownload == nil {
+			b.NotifyFailure(org, repo, path, err, buf )
+		} else {
+			b.NotifyFailure(org, repo, path, err, "")
+		}
 		b.Logger.Errorf("Failed to parse dinghyfile %s: %s", path, err.Error())
-		b.NotifyFailure(org, repo, path, err)
 		return err
 	}
 	b.Logger.Infof("Compiled: %s", buf.String())
 	d, err := b.UpdateDinghyfile(buf.Bytes())
 	if err != nil {
 		b.Logger.Errorf("Failed to update dinghyfile %s: %s", path, err.Error())
-		b.NotifyFailure(org, repo, path, err)
+		b.NotifyFailure(org, repo, path, err, buf.String())
 		return err
 	}
 	b.Logger.Infof("Updated: %s", buf.String())
@@ -216,18 +245,26 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 	err = b.ValidatePipelines(d, buf.Bytes())
 	if err != nil {
 		b.Logger.Errorf("Failed to validate pipelines %s", path)
-		b.NotifyFailure(org, repo, path, err)
+		b.NotifyFailure(org, repo, path, err, buf.String())
 		return err
 	}
 	b.Logger.Info("Validations for stage refs were successful")
 
+	err = b.ValidateAppNotifications(d, buf.Bytes())
+	if err != nil {
+		b.Logger.Errorf("Failed to validate application notifications %s", d.ApplicationSpec.Notifications)
+		b.NotifyFailure(org, repo, path, err, buf.String())
+		return err
+	}
+	b.Logger.Info("Validations for app notifications were successful")
+
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 		b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
-		b.NotifyFailure(org, repo, path, err)
+		b.NotifyFailure(org, repo, path, err, buf.String() )
 		return err
 	}
 
-	b.NotifySuccess(org, repo, path)
+	b.NotifySuccess(org, repo, path, d.ApplicationSpec.Notifications)
 	return nil
 }
 
@@ -298,13 +335,25 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			// Likely just not there...
 			b.Logger.Infof("Creating application '%s'...", app.Name)
 			if err = b.Client.CreateApplication(app); err != nil {
-				b.Logger.Errorf("Failed to create application (%s)", err.Error())
+				b.Logger.Errorf("Failed to create application (%s)", failedResponse.Error())
 				return err
 			}
 		} else {
-			b.Logger.Errorf("Failed to create application (%s)", err.Error())
+			b.Logger.Errorf("Failed to create application (%s)", failedResponse.Error())
 			return err
 		}
+	} else {
+		errUpdating := b.Client.UpdateApplication(*app)
+		if errUpdating != nil {
+			b.Logger.Errorf("Failed to update application (%s)", errUpdating.Error())
+			return errUpdating
+		}
+	}
+
+	b.Logger.Infof("Updating notifications: %s", app.Notifications)
+	errNotif := b.Client.UpdateApplicationNotifications(app.Notifications, app.Name)
+	if errNotif != nil {
+		b.Logger.Errorf("Failed to update notifications: (%s)", errNotif.Error())
 	}
 
 	ids, _ := b.PipelineIDs(app.Name)
@@ -404,14 +453,45 @@ func (b *PipelineBuilder) AddUnmarshaller(u Unmarshaller) {
 	b.Ums = append(b.Ums, u)
 }
 
-func (b *PipelineBuilder) NotifySuccess(org, repo, path string) {
+func (b *PipelineBuilder) NotifySuccess(org, repo, path string, notifications plank.NotificationsType) {
 	for _, n := range b.Notifiers {
-		n.SendSuccess(org, repo, path)
+		n.SendSuccess(org, repo, path, notifications)
 	}
 }
 
-func (b *PipelineBuilder) NotifyFailure(org, repo, path string, err error) {
-	for _, n := range b.Notifiers {
-		n.SendFailure(org, repo, path, err)
+func (b *PipelineBuilder) NotifyFailure(org, repo, path string, err error, dinghyfile string) {
+	var notifications plank.NotificationsType
+	if appName, err := extractApplicationName(dinghyfile); err == nil {
+		if foundNotifications, errGetApp := b.Client.GetApplicationNotifications(appName); errGetApp == nil {
+			notifications = *foundNotifications
+		}
 	}
+	for _, n := range b.Notifiers {
+		n.SendFailure(org, repo, path, err, notifications )
+	}
+}
+
+func extractApplicationName(dinghyfile string) (string, error) {
+	// Groups name of the application, valid values are application: appname  "application":"appname" and 'application': 'appname'
+	regex := `["']?application["']?\s*[:=]\s*["']?(?P<applicationName>[\w-]*)["']?`
+	params := getParams(regex, dinghyfile)
+	if val, ok := params["applicationName"]; ok {
+		return val, nil
+	}
+	return "", errors.New("application name not found in dinghyfile")
+}
+
+// This function returns a map of strings for matches
+func getParams(regEx, url string) (paramsMap map[string]string) {
+
+	var compRegEx = regexp.MustCompile(regEx)
+	match := compRegEx.FindStringSubmatch(url)
+
+	paramsMap = make(map[string]string)
+	for i, name := range compRegEx.SubexpNames() {
+		if i > 0 && i <= len(match) {
+			paramsMap[name] = match[i]
+		}
+	}
+	return paramsMap
 }

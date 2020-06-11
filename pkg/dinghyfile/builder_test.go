@@ -46,6 +46,10 @@ func TestProcessDinghyfile(t *testing.T) {
 	client.EXPECT().GetApplication(gomock.Eq("biff")).Return(&plank.Application{}, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("biff")).Return([]plank.Pipeline{}, nil).Times(1)
 
+	var app = plank.Application{Name: "biff", Email: "unknown@unknown.com", DataSources: &plank.DataSourcesType{Enabled:  []string{}, Disabled: []string{},},}
+	client.EXPECT().UpdateApplication(gomock.Eq(app)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(app.Notifications), gomock.Eq(app.Name)).Return(nil).Times(1)
+
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Unmarshalled: %v"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Found pipelines for %v: %v"), gomock.Any()).Times(1)
@@ -54,6 +58,8 @@ func TestProcessDinghyfile(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Compiled: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Looking up existing pipelines")).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Validations for stage refs were successful")).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Validations for app notifications were successful")).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Updating notifications: %s"), gomock.Any()).Times(1)
 
 	// Because we've set the renderer, we should NOT get this message...
 	logger.EXPECT().Info(gomock.Eq("Calling DetermineRenderer")).Times(0)
@@ -120,11 +126,13 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	logger.EXPECT().Errorf("Failed to create application (%s)", gomock.Any())
 	logger.EXPECT().Errorf(gomock.Eq("Failed to update Pipelines for %s: %s"), gomock.Eq("the/full/path")).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Validations for stage refs were successful")).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Validations for app notifications were successful")).Times(1)
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
 	client.EXPECT().CreateApplication(gomock.Any()).Return(errors.New("boom")).Times(1)
+	client.EXPECT().GetApplicationNotifications(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
@@ -191,6 +199,7 @@ func TestProcessDinghyfileFailedValidation(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplicationNotifications(gomock.Eq("foo")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
@@ -601,6 +610,150 @@ func TestValidatePipelines(t *testing.T) {
 	}
 }
 
+func TestValidateAppNotifications(t *testing.T) {
+	b := testPipelineBuilder()
+
+	fullCases := map[string]struct {
+		dinghyRaw    []byte
+		result       error
+	}{
+		"dinghyraw_pass_empty": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`),
+			result: nil,
+		},
+		"dinghyraw_fail_no_slice_notif": {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					},
+					"notifications" : {
+						"slack": [{
+							"when": [ "pipeline.complete", "pipeline.failed" ],
+							"address": "slack-channel"
+						}],
+						"email": {
+							"when": [ "pipeline.complete", "pipeline.failed" ],
+							"address": "email-address"
+						}
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						],
+						"stages": [
+							{
+								"failPipeline": true,
+								"judgmentInputs": [],
+								"name": "Manual Judgment 2",
+								"notifications": [],
+								"refId": "mj2",
+								"requisiteStageRefIds": [
+									"mj2"
+								],
+								"type": "manualJudgment"
+							}
+						]
+					}
+				]
+			}`),
+			result: errors.New("application notifications format is invalid for email"),
+		},
+		"dinghyraw_passes_arrays" : {
+			dinghyRaw: []byte(`{
+				"application": "foo",
+				"spec": {
+					"name": "foo",
+					"email": "foo@test.com",
+					"dataSources": {
+						"disabled":[],
+						"enabled":[]
+					},
+					"notifications" : {
+						"slack": [{
+							"when": [ "pipeline.complete", "pipeline.failed" ],
+							"address": "slack-channel"
+						}],
+						"email": [{
+							"when": [ "pipeline.complete", "pipeline.failed" ],
+							"address": "email-address"
+						}]
+					}
+				},
+				"pipelines": [
+					{
+						"name": "test",
+						"expectedArtifacts": [
+							{
+								"foo": {
+									"bar": "baz"
+								}
+							}
+						]
+					}
+				]
+			}`),
+			result: nil,
+		},
+	}
+
+	for testName, c := range fullCases {
+		t.Run(testName, func(t *testing.T) {
+			d := NewDinghyfile()
+			// try every parser, maybe we'll get lucky
+			parseErrs := 0
+			for _, ums := range b.Ums {
+				if err := ums.Unmarshal(c.dinghyRaw, &d); err != nil {
+					b.Logger.Error("Dinghyfile malformed syntax: %s", err.Error())
+					parseErrs++
+					continue
+				}
+			}
+			//Log parsing issues as an error in test
+			if parseErrs != 0{
+				assert.True(t, true, false)
+			} else {
+				err := b.ValidateAppNotifications( d, c.dinghyRaw)
+				assert.Equal(t, c.result, err)
+			}
+		})
+	}
+}
+
 
 func TestUpdateDinghyfileMalformed(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -686,6 +839,8 @@ func TestUpdatePipelinesDeleteStaleWithExisting(t *testing.T) {
 	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
 	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
 	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Return(errors.New("fake delete failure")).Times(1)
+	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -713,6 +868,8 @@ func TestUpdatePipelinesNoDeleteStaleWithExisting(t *testing.T) {
 	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
 	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
 	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Return(errors.New("fake delete failure")).Times(0)
+	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -742,6 +899,8 @@ func TestUpdatePipelinesDeleteStaleWithFailure(t *testing.T) {
 	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
 	// Should not be called because we couldn't re-retrieve the combined list.
 	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Return(errors.New("fake delete failure")).Times(0)
+	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -770,6 +929,8 @@ func TestUpdatePipelinesUpsertFail(t *testing.T) {
 	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(errors.New("upsert fail test")).Times(1)
 	// Should not get called at all, because of earlier error
 	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Times(0)
+	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -796,6 +957,8 @@ func TestUpdatePipelinesRespectsAutoLockOn(t *testing.T) {
 	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return([]plank.Pipeline{}, nil).Times(1)
 	client.EXPECT().UpsertPipeline(gomock.Eq(expectedPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -821,6 +984,8 @@ func TestUpdatePipelinesRespectsAutoLockOff(t *testing.T) {
 	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return([]plank.Pipeline{}, nil).Times(1)
 	client.EXPECT().UpsertPipeline(gomock.Eq(expectedPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -834,7 +999,7 @@ func TestRebuildModuleRoots(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	jsonOne := `{ "application": "testone" }`
+	jsonOne := `{ "application": "testone"}`
 
 	roots := []string{
 		"https://github.com/repos/org/repo/contents/foo?ref=branch",
@@ -854,6 +1019,9 @@ func TestRebuildModuleRoots(t *testing.T) {
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("testone")).Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
+	var app = plank.Application{Name: "testone", Email: "unknown@unknown.com", DataSources: &plank.DataSourcesType{Enabled:  []string{}, Disabled: []string{},},}
+	client.EXPECT().UpdateApplication(gomock.Eq(app)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(app.Notifications), gomock.Eq(app.Name)).Return(nil).Times(1)
 	b.Client = client
 
 	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
@@ -864,7 +1032,7 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	jsonTwo := `{ "application": "testtwo" }`
+	jsonTwo := `{ "application": "testtwo"}`
 
 	roots := []string{
 		"https://github.com/repos/org/repo/contents/foo?ref=branch",
@@ -886,6 +1054,9 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("testtwo")).Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testtwo")).Return([]plank.Pipeline{}, nil).Times(1)
+	var app = plank.Application{Name: "testtwo", Email: "unknown@unknown.com", DataSources: &plank.DataSourcesType{Enabled:  []string{}, Disabled: []string{},},}
+	client.EXPECT().UpdateApplication(gomock.Eq(app)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(app.Notifications), gomock.Eq(app.Name)).Return(nil).Times(1)
 	b.Client = client
 
 	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
@@ -905,10 +1076,10 @@ type mockNotifier struct {
 	LastError    error
 }
 
-func (m *mockNotifier) SendSuccess(org, repo, path string) {
+func (m *mockNotifier) SendSuccess(org, repo, path string, notificationsType plank.NotificationsType) {
 	m.SuccessCalls = m.SuccessCalls + 1
 }
-func (m *mockNotifier) SendFailure(org, repo, path string, err error) {
+func (m *mockNotifier) SendFailure(org, repo, path string, err error, notificationsType plank.NotificationsType) {
 	m.FailureCalls = m.FailureCalls + 1
 	m.LastError = err
 }
@@ -917,7 +1088,7 @@ func TestSuccessNotifier(t *testing.T) {
 	b := testPipelineBuilder()
 	n := mockNotifier{}
 	b.Notifiers = []notifiers.Notifier{&n}
-	b.NotifySuccess("foo", "bar", "biff")
+	b.NotifySuccess("foo", "bar", "biff", nil)
 	assert.Equal(t, n.SuccessCalls, 1)
 	assert.Equal(t, n.FailureCalls, 0)
 }
@@ -926,8 +1097,69 @@ func TestFailureNotifier(t *testing.T) {
 	b := testPipelineBuilder()
 	n := mockNotifier{}
 	b.Notifiers = []notifiers.Notifier{&n}
-	b.NotifyFailure("foo", "bar", "biff", errors.New("foo"))
+	b.NotifyFailure("foo", "bar", "biff", errors.New("foo"), "")
 	assert.Equal(t, n.SuccessCalls, 0)
 	assert.Equal(t, n.FailureCalls, 1)
 	assert.Equal(t, n.LastError.Error(), "foo")
+}
+
+func Test_extractApplicationName(t *testing.T) {
+	tests := []struct {
+		name    string
+		dinghyfile    string
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "json_test",
+			dinghyfile: `{"application": "test_app_name"}`,
+			want: "test_app_name",
+			wantErr: false,
+		},
+		{
+			name: "yaml_test",
+			dinghyfile: `application: "my-awesome-application"
+# You can do inline comments now
+globals:
+  waitTime: 42
+  retries: 5
+pipelines:
+- application: "my-awesome-application"
+  name: "My cool pipeline"
+  appConfig: {}
+  keepWaitingPipelines: false
+  limitConcurrent: true
+  stages:
+  - name: Wait For It...
+    refId: '1'
+    requisiteStageRefIds: []
+    type: wait
+    waitTime: 4
+  {{ module "some.stage.module" "something" }}
+  triggers: []`,
+			want: "my-awesome-application",
+			wantErr: false,
+		},
+		{
+			name: "hcl_test",
+			dinghyfile: `"application" = "some-app"
+"globals" = {
+    "waitTime" = 42
+}`,
+			want: "some-app",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := extractApplicationName(tt.dinghyfile)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("extractApplicationName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("extractApplicationName() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
