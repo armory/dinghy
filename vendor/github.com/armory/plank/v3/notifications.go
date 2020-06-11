@@ -16,7 +16,6 @@
 package plank
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -40,7 +39,7 @@ func (notifications *NotificationsType) ValidateAppNotification() error {
 	for key, sliceOfNotifications := range notificationsMap{
 		if key != "application" {
 			if _, ok := sliceOfNotifications.([]interface{}); !ok {
-				return errors.New("application notifications format is invalid.")
+				return fmt.Errorf("application notifications format is invalid for %v", key)
 			}
 		}
 	}
