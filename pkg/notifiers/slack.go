@@ -3,6 +3,7 @@ package notifiers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/armory/plank/v3"
 	"net/http"
 
 	"github.com/armory-io/dinghy/pkg/settings"
@@ -23,6 +24,16 @@ import (
  * }
  */
 
+type SlackNotificationValues struct {
+	When    	[]string  `json:"when" yaml:"when" mapstructure:"when"`
+	Address 	string    `json:"address" yaml:"address" mapstructure:"address"`
+	Level	 	string    `json:"level" yaml:"level" mapstructure:"level"`
+}
+
+type SlackNotifications struct {
+	SlackValues []SlackNotificationValues  `json:"slack" yaml:"slack" mapstructure:"slack"`
+}
+
 type SlackNotification struct {
 	Type    int      `json:"notificationType" yaml:"notificationType"`
 	To      []string `json:"to" yaml:"to"`
@@ -37,6 +48,18 @@ type context struct {
 type SlackNotifier struct {
 	Echo    string
 	Channel string
+}
+
+func (s *SlackNotificationValues) GetWhen() []string {
+	return s.When
+}
+
+func (s *SlackNotificationValues) GetLevel() string {
+	return s.Level
+}
+
+func (s *SlackNotificationValues) GetAddress() string {
+	return s.Address
 }
 
 func newSlackNotification(to, body string) *SlackNotification {
@@ -57,12 +80,60 @@ func NewSlackNotifier(s *settings.ExtSettings) *SlackNotifier {
 	}
 }
 
-func (sn *SlackNotifier) SendSuccess(org, repo, path string) {
+func (sn *SlackNotifier) SendSuccess(org, repo, path string, notificationsType plank.NotificationsType) {
+	// If convertion to ApplicationNotification is fine then filter and send the notifications to the respective channels
+	if appNotifications, errorConverting :=  ToNotifications(notificationsType); errorConverting == nil {
+		slackNotifToSend := filterApplicationNotificationsChannels(appNotifications, []string{"pipeline.complete"})
+		for _, sendNotif := range slackNotifToSend {
+			sn.sendToEcho(newSlackNotification(sendNotif, fmt.Sprintf("Dinghy Successful Update: %s/%s/%s", org, repo, path)))
+		}
+	}
 	sn.sendToEcho(newSlackNotification(sn.Channel, fmt.Sprintf("Dinghy Successful Update: %s/%s/%s", org, repo, path)))
 }
 
-func (sn *SlackNotifier) SendFailure(org, repo, path string, err error) {
-	sn.sendToEcho(newSlackNotification(sn.Channel, fmt.Sprintf("Dinghy Failed Update: %s/%s/%s (%s)", org, repo, path, err.Error())))
+func filterApplicationNotificationsChannels(notifications []ApplicationNotification, whenValues []string) []string {
+	// Simulates a set, adding channels depending on whenValues
+	var resultMap = make(map[string]bool)
+	for _, val := range notifications {
+		if notif, ok := val.(*SlackNotificationValues); ok{
+			for _, when := range notif.GetWhen() {
+				if contains(whenValues, when) {
+					resultMap[notif.GetAddress()] = true
+					break
+				}
+			}
+		}
+	}
+
+	// Return from set just the slice with channels
+	keys := make([]string, 0, len(resultMap))
+	for k := range resultMap {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func contains(genericSlice []string, value string) bool {
+	if genericSlice == nil {
+		return false
+	}
+	for _, val := range genericSlice  {
+		if val == value {
+			return true
+		}
+	}
+	return false
+}
+
+func (sn *SlackNotifier) SendFailure(org, repo, path string, errorDinghy error, notificationsType plank.NotificationsType) {
+	// If convertion to ApplicationNotification is fine then filter and send the notifications to the respective channels
+	if appNotifications, errorConverting  :=  ToNotifications(notificationsType); errorConverting == nil {
+		slackNotifToSend := filterApplicationNotificationsChannels(appNotifications, []string{"pipeline.failed"})
+		for _, sendNotif := range slackNotifToSend {
+			sn.sendToEcho(newSlackNotification(sendNotif, fmt.Sprintf("Dinghy Failed Update: %s/%s/%s (%s)", org, repo, path, errorDinghy.Error())))
+		}
+	}
+	sn.sendToEcho(newSlackNotification(sn.Channel, fmt.Sprintf("Dinghy Failed Update: %s/%s/%s (%s)", org, repo, path, errorDinghy.Error())))
 }
 
 // Actually ships the notification off to the echo endpoint.

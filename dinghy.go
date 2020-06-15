@@ -34,11 +34,9 @@ func main() {
 	}
 	if moreConfig.Notifiers.Slack.IsEnabled() {
 		log.Infof("Slack notifications enabled, sending to %s", moreConfig.Notifiers.Slack.Channel)
+		api.AddNotifier(notifiers.NewSlackNotifier(moreConfig))
 	} else {
 		log.Info("Slack notifications disabled/not configured")
-	}
-	if moreConfig.Notifiers.Slack.IsEnabled() {
-		api.AddNotifier(notifiers.NewSlackNotifier(moreConfig))
 	}
 
 	switch moreConfig.Settings.ParserFormat {

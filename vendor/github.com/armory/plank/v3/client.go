@@ -212,6 +212,9 @@ func (c *Client) request(method Method, url string, contentType ContentType, bod
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		if string(b) == "" {
+			return json.Unmarshal([]byte("{}"), dest)
+		}
 		return json.Unmarshal(b, dest)
 	} else if resp.StatusCode >= 400 && resp.StatusCode < 600 {
 		return &FailedResponse{StatusCode: resp.StatusCode, Response: b}
