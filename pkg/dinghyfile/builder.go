@@ -54,6 +54,7 @@ type PipelineBuilder struct {
 	Ums                  []Unmarshaller
 	Notifiers            []notifiers.Notifier
 	PushRaw              map[string]interface{}
+	GlobalVariablesMap   map[string]interface{}
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -324,8 +325,10 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 
 // This is the bit that actually updates the pipeline(s) in Spinnaker
 func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []plank.Pipeline, deleteStale bool, autoLock string) error {
+	var newapp = false
 	_, err := b.Client.GetApplication(app.Name)
 	if err != nil {
+		newapp = true
 		failedResponse, ok := err.(*plank.FailedResponse)
 		if !ok {
 			b.Logger.Errorf("Failed to create application (%s)", err.Error())
@@ -343,17 +346,21 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			return err
 		}
 	} else {
-		errUpdating := b.Client.UpdateApplication(*app)
-		if errUpdating != nil {
-			b.Logger.Errorf("Failed to update application (%s)", errUpdating.Error())
-			return errUpdating
+		if val, found := b.GlobalVariablesMap["save_app_on_update"]; found && val == true {
+			errUpdating := b.Client.UpdateApplication(*app)
+			if errUpdating != nil {
+				b.Logger.Errorf("Failed to update application (%s)", errUpdating.Error())
+				return errUpdating
+			}
 		}
 	}
 
-	b.Logger.Infof("Updating notifications: %s", app.Notifications)
-	errNotif := b.Client.UpdateApplicationNotifications(app.Notifications, app.Name)
-	if errNotif != nil {
-		b.Logger.Errorf("Failed to update notifications: (%s)", errNotif.Error())
+	if val, found := b.GlobalVariablesMap["save_app_on_update"]; (found && val == true) || newapp {
+		b.Logger.Infof("Updating notifications: %s", app.Notifications)
+		errNotif := b.Client.UpdateApplicationNotifications(app.Notifications, app.Name)
+		if errNotif != nil {
+			b.Logger.Errorf("Failed to update notifications: (%s)", errNotif.Error())
+		}
 	}
 
 	ids, _ := b.PipelineIDs(app.Name)
