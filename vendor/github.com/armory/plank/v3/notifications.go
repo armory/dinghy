@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Armory, Inc.
+ * Copyright 2020 Armory, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
  */
 package plank
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func (notifications *NotificationsType) FillAppNotificationFields(appName string) {
 	notificationsMap := *notifications
@@ -32,6 +34,17 @@ func (notifications *NotificationsType) FillAppNotificationFields(appName string
 	notificationsMap["application"] = appName
 }
 
+func (notifications *NotificationsType) ValidateAppNotification() error {
+	notificationsMap := *notifications
+	for key, sliceOfNotifications := range notificationsMap{
+		if key != "application" {
+			if _, ok := sliceOfNotifications.([]interface{}); !ok {
+				return fmt.Errorf("application notifications format is invalid for %v", key)
+			}
+		}
+	}
+	return nil
+}
 
 // GetApplicationNotifications returns all application notifications
 func (c *Client) GetApplicationNotifications(appName string) (*NotificationsType, error) {
@@ -46,6 +59,9 @@ func (c *Client) GetApplicationNotifications(appName string) (*NotificationsType
 func (c *Client) UpdateApplicationNotifications(notifications NotificationsType, appName string) error {
 	if notifications == nil {
 		notifications = make(NotificationsType)
+	}
+	if errval := notifications.ValidateAppNotification(); errval != nil {
+		return fmt.Errorf("error validating application notifications format %q: %w", notifications, errval)
 	}
 	notifications.FillAppNotificationFields(appName)
 	var unused interface{}

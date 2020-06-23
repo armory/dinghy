@@ -5,13 +5,71 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 ### Added
+
+### Fixed
+
+### Removed
+
+## [3.4.1] 2020-06-10
+### Added
+
+### Changed
+- Added more descriptive error message to `plank.ValidateAppNotification`
+
+### Fixed
+
+### Removed
+
+## [3.4.0] 2020-06-10
+### Added
+- Added support for Application Notifications with object `plank.NotificationsType` 
+  - `plank.UpdateApplicationNotifications` to create, update app notifications 
+  - `plank.GetApplicationNotifications` to read app notifications
+  - `plank.FillAppNotificationFields` to fill default values for them
+  - `plank.ValidateAppNotification` to validate struct
 
 ### Changed
 
 ### Fixed
 
 ### Removed
+## [3.3.0] 2020-06-08
+
+### Added
+- Improved Fiat client interface
+    - Changed ReadPermissable methods to getters
+    - Added support for passing in plank client options
+
+## [3.2.0] 2020-06-04
+### Added
+
+- FiatPermissionsEvaluator for determining authorization based on User roles with Fiat
+
+```go
+// example usage
+objs := []Foo{
+	{name: "foo1", permisisons: []string{"engineering", "core-eng"}},
+	{name: "foo2", permisisons: []string{"ico-team", "spin-team"}},
+	{name: "foo3", permisisons: []string{"engineering"}},
+}
+
+evaluator := plank.NewFiatPermissionEvaluator(plank.WithOrMode(true))
+
+user := "ethanfrogers"
+
+for _, o := range objs {
+	allowed, err := evaluator.HasReadPermission(user, o)
+	if err != nil {
+		fmt.Printf("error encountered: %s", err.Error())
+		os.Exit(1)
+	}
+	if allowed {
+		fmt.Printf("obj %s allowed\n", o.Name())
+	}
+}
+```
 
 ## [3.1.0] 2020-05-25
 ### Added
@@ -96,6 +154,10 @@ paylods from 4xx and 5xx responses in the `plank.FailedResponse` struct.
   struct makes sense for the context.
 
 [Unreleased]: https://github.com/armory/plank/compare/v1.3.0...HEAD
+[3.4.1]: https://github.com/armory/plank/compare/v3.4.0...v3.4.1
+[3.4.0]: https://github.com/armory/plank/compare/v3.3.0...v3.4.0
+[3.3.0]: https://github.com/armory/plank/compare/v3.2.0...v3.3.0
+[3.2.0]: https://github.com/armory/plank/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/armory/plank/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/armory/plank/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/armory/plank/compare/v2.0.0...v2.1.0

@@ -54,6 +54,7 @@ type PipelineBuilder struct {
 	Ums                  []Unmarshaller
 	Notifiers            []notifiers.Notifier
 	PushRaw              map[string]interface{}
+	GlobalVariablesMap   map[string]interface{}
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -182,6 +183,29 @@ func (b *PipelineBuilder) ValidatePipelines(d Dinghyfile, dinghyfile []byte) err
 	return nil
 }
 
+// We will validate app notifications struc at this moment
+func (b *PipelineBuilder) ValidateAppNotifications(d Dinghyfile, dinghyfile []byte) error {
+
+	event := &events.Event{
+		Start:      time.Now().UTC().Unix(),
+		End:        time.Now().UTC().Unix(),
+		Org:        "",
+		Repo:       "",
+		Path:       "",
+		Branch:     "",
+		Dinghyfile: string(dinghyfile),
+		Module:     false,
+	}
+
+	err := d.ApplicationSpec.Notifications.ValidateAppNotification()
+	if err != nil {
+		b.Logger.Errorf("validate-app-notifications-err: %s", string(dinghyfile))
+		b.EventClient.SendEvent("validate-app-notifications-err", event)
+		return err
+	}
+	return nil
+}
+
 // DetermineParser currently only returns a DinghyfileParser; it could
 // return other types of parsers in the future (for example, MPTv2)
 // If we can't discern the types based on the path passed here, we may need
@@ -226,6 +250,14 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 		return err
 	}
 	b.Logger.Info("Validations for stage refs were successful")
+
+	err = b.ValidateAppNotifications(d, buf.Bytes())
+	if err != nil {
+		b.Logger.Errorf("Failed to validate application notifications %s", d.ApplicationSpec.Notifications)
+		b.NotifyFailure(org, repo, path, err, buf.String())
+		return err
+	}
+	b.Logger.Info("Validations for app notifications were successful")
 
 	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 		b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
@@ -293,8 +325,10 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 
 // This is the bit that actually updates the pipeline(s) in Spinnaker
 func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []plank.Pipeline, deleteStale bool, autoLock string) error {
+	var newapp = false
 	_, err := b.Client.GetApplication(app.Name)
 	if err != nil {
+		newapp = true
 		failedResponse, ok := err.(*plank.FailedResponse)
 		if !ok {
 			b.Logger.Errorf("Failed to create application (%s)", err.Error())
@@ -312,17 +346,21 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			return err
 		}
 	} else {
-		errUpdating := b.Client.UpdateApplication(*app)
-		if errUpdating != nil {
-			b.Logger.Errorf("Failed to update application (%s)", errUpdating.Error())
-			return errUpdating
+		if val, found := b.GlobalVariablesMap["save_app_on_update"]; found && val == true {
+			errUpdating := b.Client.UpdateApplication(*app)
+			if errUpdating != nil {
+				b.Logger.Errorf("Failed to update application (%s)", errUpdating.Error())
+				return errUpdating
+			}
 		}
 	}
 
-	b.Logger.Infof("Updating notifications: %s", app.Notifications)
-	errNotif := b.Client.UpdateApplicationNotifications(app.Notifications, app.Name)
-	if errNotif != nil {
-		b.Logger.Errorf("Failed to update notifications: (%s)", errNotif.Error())
+	if val, found := b.GlobalVariablesMap["save_app_on_update"]; (found && val == true) || newapp {
+		b.Logger.Infof("Updating notifications: %s", app.Notifications)
+		errNotif := b.Client.UpdateApplicationNotifications(app.Notifications, app.Name)
+		if errNotif != nil {
+			b.Logger.Errorf("Failed to update notifications: (%s)", errNotif.Error())
+		}
 	}
 
 	ids, _ := b.PipelineIDs(app.Name)
