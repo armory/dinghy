@@ -261,6 +261,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		} else {
 			r.Builder.Logger.Info("No global vars found in dinghyfile")
 		}
+		r.Builder.GlobalVariablesMap = gvMap
 	}
 
 	// NOTE:  I don't think moduleFunc needs to take branch argument;
