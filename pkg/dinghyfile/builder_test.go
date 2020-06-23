@@ -46,10 +46,6 @@ func TestProcessDinghyfile(t *testing.T) {
 	client.EXPECT().GetApplication(gomock.Eq("biff")).Return(&plank.Application{}, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("biff")).Return([]plank.Pipeline{}, nil).Times(1)
 
-	var app = plank.Application{Name: "biff", Email: "unknown@unknown.com", DataSources: &plank.DataSourcesType{Enabled:  []string{}, Disabled: []string{},},}
-	client.EXPECT().UpdateApplication(gomock.Eq(app)).Return(nil).Times(1)
-	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(app.Notifications), gomock.Eq(app.Name)).Return(nil).Times(1)
-
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Unmarshalled: %v"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Found pipelines for %v: %v"), gomock.Any()).Times(1)
@@ -59,7 +55,6 @@ func TestProcessDinghyfile(t *testing.T) {
 	logger.EXPECT().Info(gomock.Eq("Looking up existing pipelines")).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Validations for stage refs were successful")).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Validations for app notifications were successful")).Times(1)
-	logger.EXPECT().Infof(gomock.Eq("Updating notifications: %s"), gomock.Any()).Times(1)
 
 	// Because we've set the renderer, we should NOT get this message...
 	logger.EXPECT().Info(gomock.Eq("Calling DetermineRenderer")).Times(0)
@@ -71,6 +66,42 @@ func TestProcessDinghyfile(t *testing.T) {
 	pb.Client = client
 	pb.Logger = logger
 	assert.Nil(t, pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch"))
+}
+
+// Test updateapp
+func TestUpdateApplication(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	existingPipeline := plank.Pipeline{Name: "ExistingPipeline", ID: "ExistingID", Application: "testapp", Locked: &plank.PipelineLockType{true, true}}
+	deletedPipeline := plank.Pipeline{Name: "DeletedPipeline", ID: "DeletedID", Application: "testapp"}
+	newPipeline := plank.Pipeline{Name: "NewPipeline", ID: "NewID", Locked: &plank.PipelineLockType{true, true}}
+
+	existing := []plank.Pipeline{existingPipeline, deletedPipeline}
+	newPipelines := []plank.Pipeline{existingPipeline, newPipeline}
+
+	testapp := &plank.Application{Name: "testapp"}
+
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(existing, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(errors.New("upsert fail test")).Times(1)
+	// Should not get called at all, because of earlier error
+	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Times(0)
+	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
+	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
+
+	b := testPipelineBuilder()
+	var gvMap = make(map[string]interface{})
+	gvMap["save_app_on_update"] = true
+	b.GlobalVariablesMap = gvMap
+	b.Client = client
+
+	err := b.updatePipelines(testapp, newPipelines, true, "true")
+	assert.NotNil(t, err)
+	assert.Equal(t, "upsert fail test", err.Error())
 }
 
 // Note: This ALSO tests the error case where the renderer fails (in this
@@ -839,8 +870,6 @@ func TestUpdatePipelinesDeleteStaleWithExisting(t *testing.T) {
 	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
 	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
 	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Return(errors.New("fake delete failure")).Times(1)
-	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
-	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -868,8 +897,6 @@ func TestUpdatePipelinesNoDeleteStaleWithExisting(t *testing.T) {
 	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
 	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
 	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Return(errors.New("fake delete failure")).Times(0)
-	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
-	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -899,8 +926,6 @@ func TestUpdatePipelinesDeleteStaleWithFailure(t *testing.T) {
 	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
 	// Should not be called because we couldn't re-retrieve the combined list.
 	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Return(errors.New("fake delete failure")).Times(0)
-	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
-	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -929,8 +954,6 @@ func TestUpdatePipelinesUpsertFail(t *testing.T) {
 	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(errors.New("upsert fail test")).Times(1)
 	// Should not get called at all, because of earlier error
 	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Times(0)
-	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
-	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -957,8 +980,6 @@ func TestUpdatePipelinesRespectsAutoLockOn(t *testing.T) {
 	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return([]plank.Pipeline{}, nil).Times(1)
 	client.EXPECT().UpsertPipeline(gomock.Eq(expectedPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
-	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
-	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -984,8 +1005,6 @@ func TestUpdatePipelinesRespectsAutoLockOff(t *testing.T) {
 	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return([]plank.Pipeline{}, nil).Times(1)
 	client.EXPECT().UpsertPipeline(gomock.Eq(expectedPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
-	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
-	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -1019,9 +1038,6 @@ func TestRebuildModuleRoots(t *testing.T) {
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("testone")).Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
-	var app = plank.Application{Name: "testone", Email: "unknown@unknown.com", DataSources: &plank.DataSourcesType{Enabled:  []string{}, Disabled: []string{},},}
-	client.EXPECT().UpdateApplication(gomock.Eq(app)).Return(nil).Times(1)
-	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(app.Notifications), gomock.Eq(app.Name)).Return(nil).Times(1)
 	b.Client = client
 
 	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
@@ -1054,9 +1070,6 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("testtwo")).Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testtwo")).Return([]plank.Pipeline{}, nil).Times(1)
-	var app = plank.Application{Name: "testtwo", Email: "unknown@unknown.com", DataSources: &plank.DataSourcesType{Enabled:  []string{}, Disabled: []string{},},}
-	client.EXPECT().UpdateApplication(gomock.Eq(app)).Return(nil).Times(1)
-	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(app.Notifications), gomock.Eq(app.Name)).Return(nil).Times(1)
 	b.Client = client
 
 	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
