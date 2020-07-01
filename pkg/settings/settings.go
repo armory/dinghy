@@ -50,6 +50,7 @@ type Settings struct {
 	Http              client.Config       `json:"http" yaml:"http"`
 	WebhookValidations []WebhookValidation `json:"webhookValidations,omitempty" yaml:"webhookValidations"`
 	WebhookValidationEnabledProviders []string `json:"webhookValidationEnabledProviders,omitempty" yaml:"webhookValidationEnabledProviders"`
+	LegacyTemplateRawdataProcessing bool  `json:"legacyTemplateRawdataProcessing,omitempty" yaml:"legacyTemplateRawdataProcessing"`
 }
 
 type WebhookValidation struct {

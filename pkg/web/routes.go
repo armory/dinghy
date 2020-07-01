@@ -537,6 +537,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 		Ums:                  wa.Ums,
 		Notifiers:            wa.Notifiers,
 		PushRaw:              rawPushData,
+		LegacyTemplateRawdataProcessing: wa.Config.LegacyTemplateRawdataProcessing,
 	}
 
 	builder.Parser = wa.Parser
