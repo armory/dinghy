@@ -2,11 +2,10 @@
 // Source: pkg/dinghyfile/builder.go
 
 // Package mock_dinghyfile is a generated GoMock package.
-package mock_dinghyfile
+package dinghyfile
 
 import (
 	bytes "bytes"
-	dinghyfile "github.com/armory/dinghy/pkg/dinghyfile"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )
@@ -35,7 +34,7 @@ func (m *MockParser) EXPECT() *MockParserMockRecorder {
 }
 
 // SetBuilder mocks base method.
-func (m *MockParser) SetBuilder(b *dinghyfile.PipelineBuilder) {
+func (m *MockParser) SetBuilder(b *PipelineBuilder) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetBuilder", b)
 }
@@ -47,7 +46,7 @@ func (mr *MockParserMockRecorder) SetBuilder(b interface{}) *gomock.Call {
 }
 
 // Parse mocks base method.
-func (m *MockParser) Parse(org, repo, path, branch string, vars []dinghyfile.VarMap) (*bytes.Buffer, error) {
+func (m *MockParser) Parse(org, repo, path, branch string, vars []VarMap) (*bytes.Buffer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Parse", org, repo, path, branch, vars)
 	ret0, _ := ret[0].(*bytes.Buffer)

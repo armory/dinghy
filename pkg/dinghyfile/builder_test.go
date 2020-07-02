@@ -1039,6 +1039,46 @@ func TestRebuildModuleRoots(t *testing.T) {
 	client.EXPECT().GetApplication(gomock.Eq("testone")).Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
+	b.DinghyfileName = "foo"
+	b.LegacyTemplateRawdataProcessing = true
+
+	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
+	assert.Nil(t, err)
+}
+
+func TestRebuildModuleRootsProcessTemplate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	jsonOne := `{
+    "application": "testone"
+    }`
+
+	rawdata := `{
+	"testkey": "testval"
+	}`
+
+	roots := []string{
+		"https://github.com/repos/org/repo/contents/foo?ref=branch",
+	}
+
+	b := testPipelineBuilder()
+	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test", "branch")
+
+	depman := NewMockDependencyManager(ctrl)
+	depman.EXPECT().GetRoots(gomock.Eq(url)).Return(roots).Times(1)
+	depman.EXPECT().GetRawData(gomock.Eq(roots[0])).Return(rawdata, nil).Times(1)
+	b.Depman = depman
+
+	renderer := NewMockParser(ctrl)
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Eq("branch"), gomock.Nil()).Return(bytes.NewBufferString(jsonOne), nil).Times(1)
+	b.Parser = renderer
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication(gomock.Eq("testone")).Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
+	b.Client = client
+	b.DinghyfileName = "foo"
 
 	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
 	assert.Nil(t, err)
