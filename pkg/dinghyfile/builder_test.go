@@ -1039,7 +1039,6 @@ func TestRebuildModuleRoots(t *testing.T) {
 	client.EXPECT().GetApplication(gomock.Eq("testone")).Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
-	b.DinghyfileName = "foo"
 	b.LegacyTemplateRawdataProcessing = true
 
 	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
@@ -1078,11 +1077,11 @@ func TestRebuildModuleRootsProcessTemplate(t *testing.T) {
 	client.EXPECT().GetApplication(gomock.Eq("testone")).Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
-	b.DinghyfileName = "foo"
 
 	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
 	assert.Nil(t, err)
 }
+
 
 func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -1111,6 +1110,7 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	client.EXPECT().GetApplication(gomock.Eq("testtwo")).Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testtwo")).Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
+	b.LegacyTemplateRawdataProcessing = true
 
 	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
 	assert.NotNil(t, err)
