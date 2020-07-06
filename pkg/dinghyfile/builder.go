@@ -46,17 +46,18 @@ type PipelineBuilder struct {
 	TemplateRepo         string
 	TemplateOrg          string
 	DinghyfileName       string
-	Client               util.PlankClient
-	DeleteStalePipelines bool
-	AutolockPipelines    string
-	EventClient          events.EventClient
-	Parser               Parser
-	Logger               log.FieldLogger
-	Ums                  []Unmarshaller
-	Notifiers            []notifiers.Notifier
-	PushRaw              map[string]interface{}
-	GlobalVariablesMap   map[string]interface{}
-	LegacyTemplateRawdataProcessing bool
+	Client                      util.PlankClient
+	DeleteStalePipelines        bool
+	AutolockPipelines           string
+	EventClient                 events.EventClient
+	Parser                      Parser
+	Logger                      log.FieldLogger
+	Ums                         []Unmarshaller
+	Notifiers                   []notifiers.Notifier
+	PushRaw                     map[string]interface{}
+	GlobalVariablesMap          map[string]interface{}
+	RepositoryRawdataProcessing bool
+	RebuildingModules           bool
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -301,6 +302,7 @@ func (e *Front50BadRequestError) Error() string {
 
 // RebuildModuleRoots rebuilds all dinghyfiles which are roots of the specified file
 func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) error {
+	b.RebuildingModules = true
 	errEncountered := false
 	failedUpdates := []string{}
 	url := b.Downloader.EncodeURL(org, repo, path, branch)
@@ -312,7 +314,7 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 	for _, url := range b.Depman.GetRoots(url) {
 		org, repo, path, branch := b.Downloader.DecodeURL(url)
 		if filepath.Base(path) == b.DinghyfileName {
-			if !b.LegacyTemplateRawdataProcessing {
+			if b.RepositoryRawdataProcessing {
 				rawData, errRaw := b.Depman.GetRawData(url)
 				if errRaw == nil && rawData != "" {
 					b.Logger.Infof("found rawdata for %v", url)

@@ -304,7 +304,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		depUrls = append(depUrls, dep)
 	}
 	r.Builder.Depman.SetDeps(r.Builder.Downloader.EncodeURL(org, repo, path, branch), depUrls)
-	if filepath.Base(path) == r.Builder.DinghyfileName {
+	if filepath.Base(path) == r.Builder.DinghyfileName && !r.Builder.RebuildingModules {
 		result, errRaw := json.Marshal(r.Builder.PushRaw)
 		if errRaw != nil {
 			r.Builder.Logger.Errorf("Failed to parse rawdata:\n %s", r.Builder.PushRaw)
