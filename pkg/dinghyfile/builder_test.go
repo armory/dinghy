@@ -1040,7 +1040,7 @@ func TestRebuildModuleRoots(t *testing.T) {
 	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
 	b.DinghyfileName = "dinghyfile"
-	b.RepositoryRawdataProcessing = true
+	b.RepositoryRawdataProcessing = false
 
 	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch")
 	assert.Nil(t, err)
@@ -1079,6 +1079,7 @@ func TestRebuildModuleRootsProcessTemplate(t *testing.T) {
 	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
 	b.DinghyfileName = "dinghyfile"
+	b.RepositoryRawdataProcessing = true
 
 	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch")
 	assert.Nil(t, err)
@@ -1113,7 +1114,7 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	client.EXPECT().GetPipelines(gomock.Eq("testtwo")).Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
 	b.DinghyfileName = "dinghyfile"
-	b.RepositoryRawdataProcessing = true
+	b.RepositoryRawdataProcessing = false
 
 	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch")
 	assert.NotNil(t, err)
