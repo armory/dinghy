@@ -172,6 +172,31 @@ func (c *RedisCache) GetRoots(url string) []string {
 	return roots
 }
 
+// Set RawData
+func (c *RedisCache) SetRawData(url string, rawData string) error{
+	loge := log.WithFields(log.Fields{"func": "SetRawData"})
+	key := compileKey("rawdata", url)
+
+	status := c.Client.Set(key, rawData, 0)
+	if status.Err() != nil {
+		loge.WithFields(log.Fields{"operation": "set value", "key": key}).Error(status.Err())
+		return status.Err()
+	}
+	return nil
+}
+
+func (c *RedisCache) GetRawData(url string) (string, error) {
+	loge := log.WithFields(log.Fields{"func": "GetRawData"})
+	key := compileKey("rawdata", url)
+
+	stringCmd := c.Client.Get(key)
+	if stringCmd.Err() != nil {
+		loge.WithFields(log.Fields{"operation": "get value", "key": key}).Error(stringCmd.Err())
+		return "", stringCmd.Err()
+	}
+	return stringCmd.Result()
+}
+
 // Clear clears everything
 func (c *RedisCache) Clear() {
 	keys, _ := c.Client.Keys(compileKey("children", "*")).Result()

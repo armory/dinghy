@@ -40,16 +40,17 @@ type Settings struct {
 	StashUsername     string       `json:"stashUsername,omitempty" yaml:"stashUsername"`
 	StashToken        string       `json:"stashToken,omitempty" yaml:"stashToken"`
 	StashEndpoint     string       `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
-	FiatUser          string       `json:"fiatUser,omitempty" yaml:"fiatUser"`
-	Logging           Logging      `json:"logging,omitempty" yaml:"logging"`
-	Secrets           Secrets      `json:"secrets,omitempty" yaml:"secrets"`
-	ParserFormat      string       `json:"parserFormat,omitempty" yaml:"parserFormat"`
-	RepoConfig        []RepoConfig `json:"repoConfig,omitempty" yaml:"repoConfig"`
-	spinnakerSupplied `mapstructure:",squash"`
-	Server            server.ServerConfig `json:"server" yaml:"server"`
-	Http              client.Config       `json:"http" yaml:"http"`
-	WebhookValidations []WebhookValidation `json:"webhookValidations,omitempty" yaml:"webhookValidations"`
-	WebhookValidationEnabledProviders []string `json:"webhookValidationEnabledProviders,omitempty" yaml:"webhookValidationEnabledProviders"`
+	FiatUser                          string       `json:"fiatUser,omitempty" yaml:"fiatUser"`
+	Logging                           Logging      `json:"logging,omitempty" yaml:"logging"`
+	Secrets                           Secrets      `json:"secrets,omitempty" yaml:"secrets"`
+	ParserFormat                      string       `json:"parserFormat,omitempty" yaml:"parserFormat"`
+	RepoConfig                        []RepoConfig `json:"repoConfig,omitempty" yaml:"repoConfig"`
+	spinnakerSupplied                 `mapstructure:",squash"`
+	Server                            server.ServerConfig `json:"server" yaml:"server"`
+	Http                              client.Config       `json:"http" yaml:"http"`
+	WebhookValidations                []WebhookValidation `json:"webhookValidations,omitempty" yaml:"webhookValidations"`
+	WebhookValidationEnabledProviders []string            `json:"webhookValidationEnabledProviders,omitempty" yaml:"webhookValidationEnabledProviders"`
+	RepositoryRawdataProcessing       bool                `json:"repositoryRawdataProcessing,omitempty" yaml:"repositoryRawdataProcessing"`
 }
 
 type WebhookValidation struct {

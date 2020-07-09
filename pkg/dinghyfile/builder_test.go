@@ -1021,28 +1021,70 @@ func TestRebuildModuleRoots(t *testing.T) {
 	jsonOne := `{ "application": "testone"}`
 
 	roots := []string{
-		"https://github.com/repos/org/repo/contents/foo?ref=branch",
+		"https://github.com/repos/org/repo/contents/dinghyfile?ref=branch",
 	}
 
 	b := testPipelineBuilder()
-	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test", "branch")
+	url := b.Downloader.EncodeURL("org", "repo", "template_repo", "branch")
 
 	depman := NewMockDependencyManager(ctrl)
 	depman.EXPECT().GetRoots(gomock.Eq(url)).Return(roots).Times(1)
 	b.Depman = depman
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Eq("branch"), gomock.Nil()).Return(bytes.NewBufferString(jsonOne), nil).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("dinghyfile"), gomock.Eq("branch"), gomock.Nil()).Return(bytes.NewBufferString(jsonOne), nil).Times(1)
 	b.Parser = renderer
 
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("testone")).Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
+	b.DinghyfileName = "dinghyfile"
+	b.RepositoryRawdataProcessing = false
 
-	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
+	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch")
 	assert.Nil(t, err)
 }
+
+func TestRebuildModuleRootsProcessTemplate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	jsonOne := `{
+    "application": "testone"
+    }`
+
+	rawdata := `{
+	"testkey": "testval"
+	}`
+
+	roots := []string{
+		"https://github.com/repos/org/repo/contents/dinghyfile?ref=branch",
+	}
+
+	b := testPipelineBuilder()
+	url := b.Downloader.EncodeURL("org", "repo", "template_repo", "branch")
+
+	depman := NewMockDependencyManager(ctrl)
+	depman.EXPECT().GetRoots(gomock.Eq(url)).Return(roots).Times(1)
+	depman.EXPECT().GetRawData(gomock.Eq(roots[0])).Return(rawdata, nil).Times(1)
+	b.Depman = depman
+
+	renderer := NewMockParser(ctrl)
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("dinghyfile"), gomock.Eq("branch"), gomock.Nil()).Return(bytes.NewBufferString(jsonOne), nil).Times(1)
+	b.Parser = renderer
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication(gomock.Eq("testone")).Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
+	b.Client = client
+	b.DinghyfileName = "dinghyfile"
+	b.RepositoryRawdataProcessing = true
+
+	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch")
+	assert.Nil(t, err)
+}
+
 
 func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -1051,28 +1093,30 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	jsonTwo := `{ "application": "testtwo"}`
 
 	roots := []string{
-		"https://github.com/repos/org/repo/contents/foo?ref=branch",
-		"https://github.com/repos/org/repo/contents/bar?ref=branch",
+		"https://github.com/repos/org/repo/contents/dinghyfile?ref=branch",
+		"https://github.com/repos/org/repo2/contents/dinghyfile?ref=branch",
 	}
 
 	b := testPipelineBuilder()
-	url := b.Downloader.EncodeURL("org", "repo", "rebuild_test", "branch")
+	url := b.Downloader.EncodeURL("org", "repo", "template_repo", "branch")
 
 	depman := NewMockDependencyManager(ctrl)
 	depman.EXPECT().GetRoots(gomock.Eq(url)).Return(roots).Times(1)
 	b.Depman = depman
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("foo"), gomock.Eq("branch"), gomock.Nil()).Return(nil, errors.New("rebuild fail test")).Times(1)
-	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("bar"), gomock.Eq("branch"), gomock.Nil()).Return(bytes.NewBufferString(jsonTwo), nil).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("dinghyfile"), gomock.Eq("branch"), gomock.Nil()).Return(nil, errors.New("rebuild fail test")).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo2"), gomock.Eq("dinghyfile"), gomock.Eq("branch"), gomock.Nil()).Return(bytes.NewBufferString(jsonTwo), nil).Times(1)
 	b.Parser = renderer
 
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("testtwo")).Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testtwo")).Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
+	b.DinghyfileName = "dinghyfile"
+	b.RepositoryRawdataProcessing = false
 
-	err := b.RebuildModuleRoots("org", "repo", "rebuild_test", "branch")
+	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch")
 	assert.NotNil(t, err)
 	assert.Equal(t, "Not all upstream dinghyfiles were updated successfully", err.Error())
 }
