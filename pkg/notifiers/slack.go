@@ -35,7 +35,7 @@ type SlackNotifications struct {
 }
 
 type SlackNotification struct {
-	Type    int      `json:"notificationType" yaml:"notificationType"`
+	Type    string      `json:"notificationType" yaml:"notificationType"`
 	To      []string `json:"to" yaml:"to"`
 	Context context  `json:"additionalContext" yaml:"additionalContext"`
 }
@@ -65,7 +65,7 @@ func (s *SlackNotificationValues) GetAddress() string {
 func newSlackNotification(to, body string) *SlackNotification {
 	// NOTE / TODO SLACK is an enum in Java.  Appears to be a "9" at the moment
 	// Not sure how best to make sure this stays in sync.
-	sn := &SlackNotification{Type: 9}
+	sn := &SlackNotification{Type: "SLACK"}
 	sn.To = []string{to}
 	sn.Context.Body = body
 	sn.Context.Formatter = "TEXT"
