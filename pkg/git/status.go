@@ -16,6 +16,8 @@
 
 package git
 
+import pipebuilder "github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
+
 // Status wires up to the green check or red x next to a GitHub commit.
 type Status string
 
@@ -27,4 +29,17 @@ const (
 	StatusFailure                = "failure"
 	DefaultPendingMessage string = "Updating pipeline definitions..."
 	DefaultSuccessMessage string = "Pipeline definitions updated!"
+	DefaultValidatePendingMessage string = "Validating pipeline definitions..."
+	DefaultValidateSuccessMessage string = "Pipeline definitions validation was successful!"
 )
+
+var DefaultMessagesByBuilderAction = map[pipebuilder.BuilderAction]map[Status]string {
+	pipebuilder.Process: {
+		StatusPending: DefaultPendingMessage,
+		StatusSuccess: DefaultSuccessMessage,
+	},
+	pipebuilder.Validate: {
+		StatusPending: DefaultValidatePendingMessage,
+		StatusSuccess: DefaultValidateSuccessMessage,
+	},
+}

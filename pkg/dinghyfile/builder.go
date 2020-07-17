@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
 	"path/filepath"
 	"regexp"
 	"time"
@@ -58,6 +59,7 @@ type PipelineBuilder struct {
 	GlobalVariablesMap          map[string]interface{}
 	RepositoryRawdataProcessing bool
 	RebuildingModules           bool
+	Action                      pipebuilder.BuilderAction
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -264,10 +266,14 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 	}
 	b.Logger.Info("Validations for app notifications were successful")
 
-	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
-		b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
-		b.NotifyFailure(org, repo, path, err, buf.String() )
-		return err
+	if b.Action == pipebuilder.Validate {
+		b.Logger.Info("Validation finished successfully")
+	} else if b.Action == pipebuilder.Process {
+		if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
+			b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
+			b.NotifyFailure(org, repo, path, err, buf.String() )
+			return err
+		}
 	}
 
 	b.NotifySuccess(org, repo, path, d.ApplicationSpec.Notifications)
@@ -338,11 +344,17 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 	}
 
 	if errEncountered {
-		b.Logger.Error("The following dinghyfiles weren't updated successfully:")
+		var word string
+		if b.Action == pipebuilder.Validate {
+			word = "validated"
+		} else if b.Action == pipebuilder.Process {
+			word = "updated"
+		}
+		b.Logger.Errorf("The following dinghyfiles weren't %v successfully:", word)
 		for _, url := range failedUpdates {
 			b.Logger.Error(url)
 		}
-		return errors.New("Not all upstream dinghyfiles were updated successfully")
+		return fmt.Errorf("Not all upstream dinghyfiles were %v successfully", word)
 	}
 	return nil
 }
