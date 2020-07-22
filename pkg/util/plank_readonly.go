@@ -2,8 +2,6 @@ package util
 
 import "github.com/armory/plank/v3"
 
-var pipelineID string
-
 type PlankReadOnly struct {
 	Plank *plank.Client
 }

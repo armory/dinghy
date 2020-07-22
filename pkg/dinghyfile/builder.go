@@ -268,7 +268,7 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 
 	if b.Action == pipebuilder.Validate {
 		b.Logger.Info("Validation finished successfully")
-	} else if b.Action == pipebuilder.Process {
+	} else {
 		if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 			b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
 			b.NotifyFailure(org, repo, path, err, buf.String() )
@@ -347,7 +347,7 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 		var word string
 		if b.Action == pipebuilder.Validate {
 			word = "validated"
-		} else if b.Action == pipebuilder.Process {
+		} else {
 			word = "updated"
 		}
 		b.Logger.Errorf("The following dinghyfiles weren't %v successfully:", word)

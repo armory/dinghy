@@ -19,6 +19,7 @@ package dinghyfile
 import (
 	"bytes"
 	"errors"
+	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
 	"reflect"
 	"testing"
 
@@ -62,6 +63,39 @@ func TestProcessDinghyfile(t *testing.T) {
 	// Never gets UpsertPipeline because our Render returns no pipelines.
 	client.EXPECT().UpsertPipeline(gomock.Any(), "").Return(nil).Times(0)
 	pb := testPipelineBuilder()
+	pb.Parser = renderer
+	pb.Client = client
+	pb.Logger = logger
+	assert.Nil(t, pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch"))
+}
+
+
+
+func TestProcessDinghyfileValidate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	rendered := `{"application":"biff"}`
+
+	renderer := NewMockParser(ctrl)
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+
+	client := NewMockPlankClient(ctrl)
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Infof(gomock.Eq("Unmarshalled: %v"), gomock.Any()).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Dinghyfile struct: %v"), gomock.Any()).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Updated: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Compiled: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Validations for stage refs were successful")).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Validations for app notifications were successful")).Times(1)
+	logger.EXPECT().Info(gomock.Eq("Validation finished successfully")).Times(1)
+
+	// Because we've set the renderer, we should NOT get this message...
+	logger.EXPECT().Info(gomock.Eq("Calling DetermineRenderer")).Times(0)
+
+	pb := testPipelineBuilder()
+	pb.Action = pipebuilder.Validate
 	pb.Parser = renderer
 	pb.Client = client
 	pb.Logger = logger
