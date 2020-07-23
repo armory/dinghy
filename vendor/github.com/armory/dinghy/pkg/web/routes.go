@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -58,7 +59,9 @@ type Push interface {
 type WebAPI struct {
 	Config      *settings.Settings
 	Client      util.PlankClient
+	ClientReadOnly util.PlankClient
 	Cache       dinghyfile.DependencyManager
+	CacheReadOnly dinghyfile.DependencyManager
 	EventClient *events.Client
 	Logger      log.FieldLogger
 	Ums         []dinghyfile.Unmarshaller
@@ -66,7 +69,7 @@ type WebAPI struct {
 	Parser      dinghyfile.Parser
 }
 
-func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger) *WebAPI {
+func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger, depreadonly dinghyfile.DependencyManager, clientreadonly util.PlankClient) *WebAPI {
 	return &WebAPI{
 		Config:      s,
 		Client:      c,
@@ -75,6 +78,8 @@ func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.Plan
 		Logger:      l,
 		Ums:         []dinghyfile.Unmarshaller{},
 		Notifiers:   []notifiers.Notifier{},
+		ClientReadOnly: clientreadonly,
+		CacheReadOnly: depreadonly,
 	}
 }
 
@@ -131,6 +136,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		AutolockPipelines:    wa.Config.AutoLockPipelines,
 		Logger:               wa.Logger,
 		Ums:                  wa.Ums,
+		Action:               pipebuilder.Process,
 	}
 
 	builder.Parser = wa.Parser
@@ -471,7 +477,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	wa.Logger.Info("Dinghyfile found in commit for repo " + p.Repo())
 
 	// Set commit status to the pending yellow dot.
-	p.SetCommitStatus(git.StatusPending, git.DefaultPendingMessage)
+	p.SetCommitStatus(git.StatusPending, git.DefaultMessagesByBuilderAction[b.Action][git.StatusPending])
 
 	for _, filePath := range p.Files() {
 		components := strings.Split(filePath, "/")
@@ -489,7 +495,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 				}
 				return err
 			}
-			p.SetCommitStatus(git.StatusSuccess, git.DefaultSuccessMessage)
+			p.SetCommitStatus(git.StatusSuccess, git.DefaultMessagesByBuilderAction[b.Action][git.StatusSuccess])
 		}
 	}
 	return nil
@@ -500,17 +506,18 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader, w http.ResponseWriter) {
 	// see if we have any configurations for this repo.
 	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
+	var validation bool
 	if rc := wa.Config.GetRepoConfig(p.Name(), p.Repo()); rc != nil {
 		if !p.IsBranch(rc.Branch) {
-			wa.Logger.Infof("Received request from branch %s. Does not match configured branch %s. Skipping.", p.Branch(), rc.Branch)
-			return
+			wa.Logger.Infof("Received request from branch %s. Does not match configured branch %s. Proceeding as validation.", p.Branch(), rc.Branch)
+			validation = true
 		}
 	} else {
 		// if we didn't find any configurations for this repo, proceed with master
 		wa.Logger.Infof("Found no custom configuration for repo: %s, proceeding with master", p.Repo())
 		if !p.IsMaster() {
-			wa.Logger.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master", p.Branch())
-			return
+			wa.Logger.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master. Proceeding as validation.", p.Branch())
+			validation = true
 		}
 	}
 
@@ -527,16 +534,25 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 		Downloader:           f,
 		Depman:               wa.Cache,
 		TemplateRepo:         wa.Config.TemplateRepo,
-		TemplateOrg:          wa.Config.TemplateOrg,
-		DinghyfileName:       wa.Config.DinghyFilename,
-		DeleteStalePipelines: false,
-		AutolockPipelines:    wa.Config.AutoLockPipelines,
-		Client:               wa.Client,
-		EventClient:          wa.EventClient,
-		Logger:               wa.Logger,
-		Ums:                  wa.Ums,
-		Notifiers:            wa.Notifiers,
-		PushRaw:              rawPushData,
+		TemplateOrg:                 wa.Config.TemplateOrg,
+		DinghyfileName:              wa.Config.DinghyFilename,
+		DeleteStalePipelines:        false,
+		AutolockPipelines:           wa.Config.AutoLockPipelines,
+		Client:                      wa.Client,
+		EventClient:                 wa.EventClient,
+		Logger:                      wa.Logger,
+		Ums:                         wa.Ums,
+		Notifiers:                   wa.Notifiers,
+		PushRaw:                     rawPushData,
+		RepositoryRawdataProcessing: wa.Config.RepositoryRawdataProcessing,
+		Action:                      pipebuilder.Process,
+	}
+
+	if validation {
+		builder.Notifiers = nil
+		builder.Client = wa.ClientReadOnly
+		builder.Depman = wa.CacheReadOnly
+		builder.Action = pipebuilder.Validate
 	}
 
 	builder.Parser = wa.Parser
@@ -558,7 +574,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	// Check if we're in a template repo
 	if p.Repo() == wa.Config.TemplateRepo {
 		// Set status to pending while we process modules
-		p.SetCommitStatus(git.StatusPending, git.DefaultPendingMessage)
+		p.SetCommitStatus(git.StatusPending, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusPending])
 
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
@@ -574,7 +590,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 				return
 			}
 		}
-		p.SetCommitStatus(git.StatusSuccess, git.DefaultSuccessMessage)
+		p.SetCommitStatus(git.StatusSuccess, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusSuccess])
 	}
 
 	w.Write([]byte(`{"status":"accepted"}`))

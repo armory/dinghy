@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
+	"path/filepath"
 	"regexp"
 	"time"
 
@@ -45,20 +47,25 @@ type PipelineBuilder struct {
 	TemplateRepo         string
 	TemplateOrg          string
 	DinghyfileName       string
-	Client               util.PlankClient
-	DeleteStalePipelines bool
-	AutolockPipelines    string
-	EventClient          events.EventClient
-	Parser               Parser
-	Logger               log.FieldLogger
-	Ums                  []Unmarshaller
-	Notifiers            []notifiers.Notifier
-	PushRaw              map[string]interface{}
-	GlobalVariablesMap   map[string]interface{}
+	Client                      util.PlankClient
+	DeleteStalePipelines        bool
+	AutolockPipelines           string
+	EventClient                 events.EventClient
+	Parser                      Parser
+	Logger                      log.FieldLogger
+	Ums                         []Unmarshaller
+	Notifiers                   []notifiers.Notifier
+	PushRaw                     map[string]interface{}
+	GlobalVariablesMap          map[string]interface{}
+	RepositoryRawdataProcessing bool
+	RebuildingModules           bool
+	Action                      pipebuilder.BuilderAction
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
 type DependencyManager interface {
+	GetRawData(url string) (string, error)
+	SetRawData(url string, rawData string) error
 	SetDeps(parent string, deps []string)
 	GetRoots(child string) []string
 }
@@ -259,10 +266,14 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 	}
 	b.Logger.Info("Validations for app notifications were successful")
 
-	if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
-		b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
-		b.NotifyFailure(org, repo, path, err, buf.String() )
-		return err
+	if b.Action == pipebuilder.Validate {
+		b.Logger.Info("Validation finished successfully")
+	} else {
+		if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
+			b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
+			b.NotifyFailure(org, repo, path, err, buf.String() )
+			return err
+		}
 	}
 
 	b.NotifySuccess(org, repo, path, d.ApplicationSpec.Notifications)
@@ -297,6 +308,7 @@ func (e *Front50BadRequestError) Error() string {
 
 // RebuildModuleRoots rebuilds all dinghyfiles which are roots of the specified file
 func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) error {
+	b.RebuildingModules = true
 	errEncountered := false
 	failedUpdates := []string{}
 	url := b.Downloader.EncodeURL(org, repo, path, branch)
@@ -307,18 +319,42 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 	// Process all dinghyfiles that depend on this module
 	for _, url := range b.Depman.GetRoots(url) {
 		org, repo, path, branch := b.Downloader.DecodeURL(url)
-		if err := b.ProcessDinghyfile(org, repo, path, branch); err != nil {
-			errEncountered = true
-			failedUpdates = append(failedUpdates, url)
+		if filepath.Base(path) == b.DinghyfileName {
+			if b.RepositoryRawdataProcessing {
+				rawData, errRaw := b.Depman.GetRawData(url)
+				if errRaw == nil && rawData != "" {
+					b.Logger.Infof("found rawdata for %v", url)
+					// deserialze push data to a map.
+					rawPushData := make(map[string]interface{})
+					if err := json.Unmarshal([]byte(rawData), &rawPushData); err != nil {
+						b.Logger.Errorf("unable to deserialize raw data to map while executing RebuildModuleRoots")
+					} else {
+						b.Logger.Infof("using latest rawdata from %v", url)
+						b.PushRaw = rawPushData
+					}
+				}
+			}
+
+			if err := b.ProcessDinghyfile(org, repo, path, branch); err != nil {
+				errEncountered = true
+				failedUpdates = append(failedUpdates, url)
+			}
 		}
+
 	}
 
 	if errEncountered {
-		b.Logger.Error("The following dinghyfiles weren't updated successfully:")
+		var word string
+		if b.Action == pipebuilder.Validate {
+			word = "validated"
+		} else {
+			word = "updated"
+		}
+		b.Logger.Errorf("The following dinghyfiles weren't %v successfully:", word)
 		for _, url := range failedUpdates {
 			b.Logger.Error(url)
 		}
-		return errors.New("Not all upstream dinghyfiles were updated successfully")
+		return fmt.Errorf("Not all upstream dinghyfiles were %v successfully", word)
 	}
 	return nil
 }

@@ -59,3 +59,16 @@ jobs:
           url: https://aquasec.armory.io
           image: armory/${{ env.BASE_PROJECT }}:${{ env.BUILD_NUMBER }}
           registry: Artifactory
+        
+      - name: Login to Docker Hub
+        if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release-')
+        run: docker login -u ${{ secrets.DOCKER_HUB_USER }} -p '${{ secrets.DOCKER_HUB_PASS }}'
+
+      - name: Publish Release to Docker Hub
+        if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release-')
+        run: |
+          RELEASE=$(./gradlew -Prelease.useLastTag=true $GRADLE_ARGS  printVersion|grep VERSION|awk -F: '{print $2}')
+          echo "Tagging armory-docker-all.jfrog.io/armory/$BASE_PROJECT$RELEASE to armory/$BASE_PROJECT:$RELEASE"
+          docker image tag armory-docker-local.jfrog.io/armory/$BASE_PROJECT:$RELEASE armory/$BASE_PROJECT:$RELEASE
+          echo "Pushing image..."
+          docker push armory/$BASE_PROJECT:$RELEASE

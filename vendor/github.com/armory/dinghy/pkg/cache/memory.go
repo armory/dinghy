@@ -59,6 +59,15 @@ func findInSlice(n *Node, slice []*Node) int {
 	return -1
 }
 
+// Set RawData
+func (c MemoryCache) SetRawData(url string, rawData string) error{
+	return nil
+}
+
+func (c MemoryCache) GetRawData(url string) (string, error) {
+	return "", nil
+}
+
 // SetDeps sets the dependencies for a parent
 func (c MemoryCache) SetDeps(parent string, deps []string) {
 	if _, exists := c[parent]; !exists {

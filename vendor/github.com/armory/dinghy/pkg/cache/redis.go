@@ -140,6 +140,10 @@ func (c *RedisCache) SetDeps(parent string, deps []string) {
 
 // GetRoots grabs roots
 func (c *RedisCache) GetRoots(url string) []string {
+	return returnRoots(c.Client, url)
+}
+
+func returnRoots (c *redis.Client, url string) []string {
 	roots := make([]string, 0)
 	visited := map[string]bool{}
 	loge := log.WithFields(log.Fields{"func": "GetRoots"})
@@ -151,7 +155,7 @@ func (c *RedisCache) GetRoots(url string) []string {
 		visited[curr] = true
 
 		key := compileKey("parents", curr)
-		parents, err := c.Client.SMembers(key).Result()
+		parents, err := c.SMembers(key).Result()
 		if err != nil {
 			loge.WithFields(log.Fields{"operation": "parents", "key": key}).Error(err)
 			break
@@ -170,6 +174,35 @@ func (c *RedisCache) GetRoots(url string) []string {
 	}
 
 	return roots
+}
+
+// Set RawData
+func (c *RedisCache) SetRawData(url string, rawData string) error{
+	loge := log.WithFields(log.Fields{"func": "SetRawData"})
+	key := compileKey("rawdata", url)
+
+	status := c.Client.Set(key, rawData, 0)
+	if status.Err() != nil {
+		loge.WithFields(log.Fields{"operation": "set value", "key": key}).Error(status.Err())
+		return status.Err()
+	}
+	return nil
+}
+
+func (c *RedisCache) GetRawData(url string) (string, error) {
+	return returnRawData(c.Client, url)
+}
+
+func returnRawData(c *redis.Client, url string) (string, error) {
+	loge := log.WithFields(log.Fields{"func": "GetRawData"})
+	key := compileKey("rawdata", url)
+
+	stringCmd := c.Get(key)
+	if stringCmd.Err() != nil {
+		loge.WithFields(log.Fields{"operation": "get value", "key": key}).Error(stringCmd.Err())
+		return "", stringCmd.Err()
+	}
+	return stringCmd.Result()
 }
 
 // Clear clears everything

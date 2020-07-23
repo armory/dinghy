@@ -2,7 +2,7 @@ module github.com/armory-io/dinghy
 
 require (
 	cloud.google.com/go v0.56.0 // indirect
-	github.com/armory/dinghy v1.0.2-0.20200623171214-851badba655c
+	github.com/armory/dinghy v1.0.2-0.20200723000619-3c33937f9a36
 	github.com/armory/go-yaml-tools v0.0.0-20200603151141-b037d3988c49
 	github.com/armory/plank/v3 v3.4.1
 	github.com/aws/aws-sdk-go v1.30.7 // indirect
