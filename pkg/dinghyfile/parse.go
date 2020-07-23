@@ -25,6 +25,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
 	"github.com/armory/dinghy/pkg/git"
 	"path/filepath"
 	"time"
@@ -264,6 +265,12 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		r.Builder.GlobalVariablesMap = gvMap
 	}
 
+	// If we are validating then check always against the modules in master since current branch will
+	// not exists in templare repo
+	var moduleBranch = branch
+	if r.Builder.Action == pipebuilder.Validate {
+		moduleBranch = "master"
+	}
 	// NOTE:  I don't think moduleFunc needs to take branch argument;
 	// moduleFunc should be able to figure out the branch needed from the
 	// configuration (since it has to have access to TemplateOrg and TemplateRepo
@@ -271,9 +278,9 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// have an application in context?  So for now, hardcoding module branch
 	// to "master"
 	funcMap := template.FuncMap{
-		"module":        r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, branch, deps, vars),
+		"module":        r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
 		"local_module":  r.localModuleFunc(org, repo, branch, deps, vars),
-		"appModule":     r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, branch, deps, vars),
+		"appModule":     r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
 		"pipelineID":    r.pipelineIDFunc(vars),
 		"var":           r.varFunc(vars),
 		"makeSlice":     r.makeSlice,
