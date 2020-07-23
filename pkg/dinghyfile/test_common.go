@@ -18,6 +18,7 @@ package dinghyfile
 
 import (
 	"fmt"
+	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/cache"
@@ -52,6 +53,7 @@ func testBasePipelineBuilder() *PipelineBuilder {
 		Logger:      logrus.New(),
 		Ums:         []Unmarshaller{&DinghyJsonUnmarshaller{}},
 		TemplateOrg: "armory",
+		Action:      pipebuilder.Process,
 	}
 }
 

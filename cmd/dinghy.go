@@ -85,6 +85,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 	}
 
 	client := setupPlankClient(config, log)
+	clientReadOnly := util.PlankReadOnly{Plank: client}
 
 	// Create the EventClient
 	ctx, cancel := context.WithCancel(context.Background())
@@ -105,7 +106,11 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 	if _, err := redisClient.Client.Ping().Result(); err != nil {
 		log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
 	}
-	api := web.NewWebAPI(config, redisClient, client, ec, log)
+	redisClientReadOnly := cache.RedisCacheReadOnly{
+		Client: redisClient.Client,
+		Logger: redisClient.Logger,
+	}
+	api := web.NewWebAPI(config, redisClient, client, ec, log, &redisClientReadOnly, clientReadOnly)
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
 	if config.ParserFormat == "json" {
 		api.SetDinghyfileParser(dinghyfile.NewDinghyfileParser(&dinghyfile.PipelineBuilder{}))
