@@ -370,6 +370,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 	// Some bitbucket versions do not send the  X-Event-Key this causes event_type to not be parsed
 	// We will take the value eventKey instead since is the same
 	if _, found := keys["event_type"]; !found {
+		wa.Logger.Warn("event_type was not found in payload, so eventKey will be used instead")
 		keys["event_type"] = keys["eventKey"]
 	}
 
