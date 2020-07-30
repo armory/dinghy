@@ -180,8 +180,8 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	enabled := contains(wa.Config.WebhookValidationEnabledProviders, provider)
 
 	if enabled {
-		repo := p.Repository.Name
-		org := p.Repository.Organization
+		repo := p.Repo()
+		org := p.Org()
 		whvalidations := wa.Config.WebhookValidations
 		if whvalidations != nil && len(whvalidations) > 0 {
 			if !validateWebhookSignature(whvalidations, repo, org, provider, body, r, wa) {
