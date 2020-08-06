@@ -478,6 +478,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	// Ensure dinghyfile was changed.
 	if !p.ContainsFile(wa.Config.DinghyFilename) {
 		wa.Logger.Infof("Push does not include %s, skipping.", wa.Config.DinghyFilename)
+		p.SetCommitStatus(git.StatusSuccess, "No changes in dinghyfile.")
 		return nil
 	}
 
