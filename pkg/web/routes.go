@@ -41,6 +41,7 @@ import (
 	"github.com/armory/dinghy/pkg/notifiers"
 	"github.com/armory/dinghy/pkg/settings"
 	"github.com/armory/dinghy/pkg/util"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // Push represents a push notification from a git service.
@@ -102,6 +103,7 @@ func (wa *WebAPI) AddNotifier(n notifiers.Notifier) {
 // Router defines the routes for the application.
 func (wa *WebAPI) Router() *mux.Router {
 	r := mux.NewRouter()
+	r.Handle("/metrics", promhttp.Handler())
 	r.HandleFunc("/", wa.healthcheck)
 	r.HandleFunc("/health", wa.healthcheck)
 	r.HandleFunc("/healthcheck", wa.healthcheck)
