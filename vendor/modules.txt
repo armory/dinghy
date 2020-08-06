@@ -13,7 +13,7 @@ github.com/BurntSushi/toml
 # github.com/armory-io/monitoring v0.0.7
 github.com/armory-io/monitoring/log/formatters
 github.com/armory-io/monitoring/log/hooks
-# github.com/armory/dinghy v1.0.2-0.20200725000536-f030564a62ca
+# github.com/armory/dinghy v1.0.2-0.20200806191723-39930c8ae8cc
 github.com/armory/dinghy/cmd
 github.com/armory/dinghy/pkg/cache
 github.com/armory/dinghy/pkg/cache/local

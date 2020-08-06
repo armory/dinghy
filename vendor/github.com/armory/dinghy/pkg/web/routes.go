@@ -180,8 +180,8 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	enabled := contains(wa.Config.WebhookValidationEnabledProviders, provider)
 
 	if enabled {
-		repo := p.Repository.Name
-		org := p.Repository.Organization
+		repo := p.Repo()
+		org := p.Org()
 		whvalidations := wa.Config.WebhookValidations
 		if whvalidations != nil && len(whvalidations) > 0 {
 			if !validateWebhookSignature(whvalidations, repo, org, provider, body, r, wa) {
@@ -478,6 +478,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	// Ensure dinghyfile was changed.
 	if !p.ContainsFile(wa.Config.DinghyFilename) {
 		wa.Logger.Infof("Push does not include %s, skipping.", wa.Config.DinghyFilename)
+		p.SetCommitStatus(git.StatusSuccess, fmt.Sprintf("No changes in %v.", wa.Config.DinghyFilename))
 		return nil
 	}
 

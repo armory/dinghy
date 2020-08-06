@@ -43,8 +43,8 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/armory-io/monitoring v0.0.7 h1:IVVhiqhavr+yH2IXlMZMyqjhBb9Ms9L6qmKswLh+ODQ=
 github.com/armory-io/monitoring v0.0.7/go.mod h1:EqWc/9ldt7teZxnS2xnAMJsthM7ldI4ArLnjBRGCYSo=
-github.com/armory/dinghy v1.0.2-0.20200725000536-f030564a62ca h1:Y0l0LHyfjHTZc0EJ1AUzy9a+AAV7mL3AEggEDSYUaZA=
-github.com/armory/dinghy v1.0.2-0.20200725000536-f030564a62ca/go.mod h1:p7YeqWvDzXgg/eFe8tl3f3zFx39JJWtKQKeeXxdZI4w=
+github.com/armory/dinghy v1.0.2-0.20200806191723-39930c8ae8cc h1:hm5g2PuudfOsb28VCTvkEbRZ/LDlFyNVqqWS/Onxfcc=
+github.com/armory/dinghy v1.0.2-0.20200806191723-39930c8ae8cc/go.mod h1:p7YeqWvDzXgg/eFe8tl3f3zFx39JJWtKQKeeXxdZI4w=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
 github.com/armory/go-yaml-tools v0.0.0-20200603151141-b037d3988c49 h1:2iuOSeCtDe/shRUIp4iP/Joja3wlzIT1yLVIhxGJ6II=
 github.com/armory/go-yaml-tools v0.0.0-20200603151141-b037d3988c49/go.mod h1:QreIYVxaLk2qi8gRBvBBDVEWIL84lTVpqTohrmQEuA4=
