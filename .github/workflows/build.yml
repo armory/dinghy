@@ -34,10 +34,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: armory-io/dinghy
-          token: ${{ ARMORYIO_GITHUB_TOKEN }}
+          token: ${{ secrets.ARMORYIO_GITHUB_TOKEN }}
           path: dinghy-io
       
       - name: Commit PR to update dinghy-io
+        # if: github.ref == 'refs/heads/master'
         run:  |
           cd $GITHUB_WORKSPACE/dinghy-io
           git config user.name github-actions
@@ -49,7 +50,7 @@ jobs:
           go mod tidy
           git add --all
           git commit -m "Update dinghy"
-          git push
+          git push --set-upstream origin $(git_current_branch)
 
           
 
