@@ -29,3 +29,28 @@ jobs:
 
       - name: Test
         run: go test -v -mod=vendor ./...
+
+      - name: Download dinghy-io
+        uses: actions/checkout@v2
+        with:
+          repository: armory-io/dinghy
+          token: ${{ ARMORYIO_GITHUB_TOKEN }}
+          path: dinghy-io
+      
+      - name: Commit PR to update dinghy-io
+        run:  |
+          cd $GITHUB_WORKSPACE/dinghy-io
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git branch -d update-dinghy
+          git checkout -b update-dinghy
+          go get github.com/armory/dinghy@master
+          go mod vendor
+          go mod tidy
+          git add --all
+          git commit -m "Update dinghy"
+          git push
+
+          
+
+
