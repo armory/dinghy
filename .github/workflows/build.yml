@@ -49,10 +49,9 @@ jobs:
           go get github.com/armory/dinghy@master
           go mod vendor
           go mod tidy
-
-        # git add --all  
-        # git commit -m "${{github.event.commits[0].message}}"
-        # git push --set-upstream origin update-dinghy
+          git add --all  
+          git commit -m "${{github.event.commits[0].message}}"
+          git push --set-upstream origin update-dinghy
 
       - name: Create Pull Request
         id: cpr
@@ -63,7 +62,7 @@ jobs:
           committer: GitHub <noreply@github.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           signoff: false
-          branch: dinghy-update
+          branch: update-dinghy
           title: ${{github.event.commits[0].message}}
           body: |
             Update dinghy
