@@ -38,7 +38,7 @@ jobs:
           path: dinghy-io
           ref: refs/heads/master
       
-      - name: Commit PR to update dinghy-io
+      - name: Update dinghy-io
         # if: github.ref == 'refs/heads/master'
         run:  |
           cd $GITHUB_WORKSPACE/dinghy-io
@@ -49,10 +49,29 @@ jobs:
           go get github.com/armory/dinghy@master
           go mod vendor
           go mod tidy
-          git add --all
-          git commit -m "Update dinghy"
-          git push --set-upstream origin update-dinghy
 
-          
+        # git add --all  
+        # git commit -m "${{github.event.commits[0].message}}"
+        # git push --set-upstream origin update-dinghy
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.ARMORYIO_GITHUB_TOKEN }}
+          commit-message: ${{github.event.commits[0].message}}
+          committer: GitHub <noreply@github.com>
+          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+          signoff: false
+          branch: dinghy-update
+          title: ${{github.event.commits[0].message}}
+          body: |
+            Update dinghy
+            - Updated with *latest* dinghy version
+          labels: |
+            automated pr
+          team-reviewers: |
+            ico
+          draft: false
 
 
