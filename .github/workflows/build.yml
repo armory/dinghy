@@ -51,7 +51,7 @@ jobs:
           go mod tidy
           git add --all
           git commit -m "Update dinghy"
-          git push --set-upstream origin $(git_current_branch)
+          git push --set-upstream origin update-dinghy
 
           
 
