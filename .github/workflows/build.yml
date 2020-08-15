@@ -44,8 +44,8 @@ jobs:
           cd $GITHUB_WORKSPACE/dinghy-io
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git branch -d update-dinghy
           git checkout -b update-dinghy
+          git reset --hard origin/master
           go get github.com/armory/dinghy@master
           go mod vendor
           go mod tidy
