@@ -52,7 +52,7 @@ jobs:
           git add --all  
           git commit -m "${{github.event.commits[0].message}}"
           git branch --set-upstream-to=origin update-dinghy
-          git push --force --set-upstream origin update-dinghy
+          git push --force
 
       - name: Create Pull Request
         id: cpr
