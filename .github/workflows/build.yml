@@ -51,7 +51,8 @@ jobs:
           go mod tidy
           git add --all  
           git commit -m "${{github.event.commits[0].message}}"
-          git push --set-upstream origin update-dinghy
+          git branch --set-upstream-to=origin/update-dinghy
+          git push --force
 
       - name: Create Pull Request
         id: cpr
