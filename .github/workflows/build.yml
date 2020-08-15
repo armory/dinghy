@@ -36,6 +36,7 @@ jobs:
           repository: armory-io/dinghy
           token: ${{ secrets.ARMORYIO_GITHUB_TOKEN }}
           path: dinghy-io
+          ref: refs/heads/master
       
       - name: Commit PR to update dinghy-io
         # if: github.ref == 'refs/heads/master'
