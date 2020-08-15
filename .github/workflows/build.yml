@@ -15,20 +15,20 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
-      - name: Cache Build Dependencies  # Speeds up subsquent builds
-        uses: actions/cache@v1
-        with:
-          path: ~/go/pkg/mod
-          key: go-${{ hashFiles('**/go.sum') }}
+      # - name: Cache Build Dependencies  # Speeds up subsquent builds
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: ~/go/pkg/mod
+      #     key: go-${{ hashFiles('**/go.sum') }}
 
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+      # - name: Check out code into the Go module directory
+      #   uses: actions/checkout@v2
 
-      - name: Build
-        run: go build -v .
+      # - name: Build
+      #   run: go build -v .
 
-      - name: Test
-        run: go test -v -mod=vendor ./...
+      # - name: Test
+      #   run: go test -v -mod=vendor ./...
 
       - name: Download dinghy-io
         uses: actions/checkout@v2
