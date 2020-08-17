@@ -58,10 +58,10 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.ARMORYIO_GITHUB_TOKEN }}
-          commit-message: ${{github.event.commits[0].message}}
-          committer: GitHub <noreply@github.com>
-          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
-          signoff: false
+          # commit-message: ${{github.event.commits[0].message}}
+          # committer: GitHub <noreply@github.com>
+          # author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+          # signoff: false
           branch: update-dinghy
           title: ${{github.event.commits[0].message}}
           body: |
@@ -69,8 +69,8 @@ jobs:
             - Updated with *latest* dinghy version
           labels: |
             automated pr
-          team-reviewers: |
-            ico
+          # team-reviewers: |
+          #   ico
           draft: false
 
 
