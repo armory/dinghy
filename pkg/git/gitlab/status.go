@@ -26,3 +26,7 @@ import (
 func (p *Push) SetCommitStatus(status git.Status, description string) {
 	// no-op for GitLab
 }
+
+func (p *Push) GetCommitStatus() (error, git.Status, string) {
+	return nil, "",""
+}

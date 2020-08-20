@@ -65,6 +65,10 @@ func (p *Push) SetCommitStatus(s git.Status, description string) {
 	// Do nothing
 }
 
+func (p *Push) GetCommitStatus() (error, git.Status, string) {
+	return nil, "",""
+}
+
 // Name returns the name of the provider to be used in configuration
 func (p *Push) Name() string {
 	return "dummy"

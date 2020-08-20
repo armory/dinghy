@@ -289,6 +289,10 @@ func (p *Push) IsMaster() bool {
 // SetCommitStatus sets a commit status
 func (p *Push) SetCommitStatus(s git.Status, description string) {}
 
+func (p *Push) GetCommitStatus() (error, git.Status, string) {
+	return nil, "",""
+}
+
 // Name returns the name of the provider to be used in configuration
 func (p *Push) Name() string {
 	return "bitbucket-cloud"
