@@ -54,6 +54,7 @@ type Push interface {
 	IsBranch(string) bool
 	IsMaster() bool
 	SetCommitStatus(s git.Status, description string)
+	GetCommitStatus() (error, git.Status, string)
 	Name() string
 }
 
@@ -480,7 +481,10 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	// Ensure dinghyfile was changed.
 	if !p.ContainsFile(wa.Config.DinghyFilename) {
 		wa.Logger.Infof("Push does not include %s, skipping.", wa.Config.DinghyFilename)
-		p.SetCommitStatus(git.StatusSuccess, fmt.Sprintf("No changes in %v.", wa.Config.DinghyFilename))
+		errstat , status, _ := p.GetCommitStatus()
+		if errstat == nil && status == "" {
+			p.SetCommitStatus(git.StatusSuccess, fmt.Sprintf("No changes in %v.", wa.Config.DinghyFilename))
+		}
 		return nil
 	}
 

@@ -49,6 +49,20 @@ func (p *Push) SetCommitStatus(status git.Status, description string) {
 	}
 }
 
+func (p *Push) GetCommitStatus() (error, git.Status, string) {
+	err, statuses := p.Config.ListStatuses(p.Org(), p.Repo(), p.Branch())
+	if err != nil {
+		p.Logger.Warnf("Failed to get status information for %v/%v/%v", p.Org(),p.Repo(),p.Branch())
+		return err, "", ""
+	}
+	for _, status := range statuses {
+		if status.GetContext() == "dinghy" {
+			return nil, git.Status(status.GetState()), status.GetDescription()
+		}
+	}
+	return nil, "",""
+}
+
 func newStatus(s git.Status, deckURL string, description string) *Status {
 	state := string(s)
 	context := "dinghy"
