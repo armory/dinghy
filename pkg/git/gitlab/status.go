@@ -17,6 +17,7 @@
 package gitlab
 
 import (
+	"errors"
 	"github.com/armory/dinghy/pkg/git"
 )
 
@@ -28,5 +29,5 @@ func (p *Push) SetCommitStatus(status git.Status, description string) {
 }
 
 func (p *Push) GetCommitStatus() (error, git.Status, string) {
-	return nil, "",""
+	return errors.New("functionality not implemented"), "",""
 }

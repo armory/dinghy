@@ -18,6 +18,7 @@ package bbcloud
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -290,7 +291,7 @@ func (p *Push) IsMaster() bool {
 func (p *Push) SetCommitStatus(s git.Status, description string) {}
 
 func (p *Push) GetCommitStatus() (error, git.Status, string) {
-	return nil, "",""
+	return errors.New("functionality not implemented"), "",""
 }
 
 // Name returns the name of the provider to be used in configuration

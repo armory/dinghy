@@ -239,7 +239,7 @@ func (p *Push) SetCommitStatus(s git.Status, description string) {}
 
 // GetCommitStatus gets a commit status
 func (p *Push) GetCommitStatus() (error, git.Status, string) {
-	return nil, "",""
+	return errors.New("functionality not implemented"), "",""
 }
 
 // Name returns the name of the provider to be used in configuration
