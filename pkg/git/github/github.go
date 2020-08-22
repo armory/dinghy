@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
@@ -98,6 +97,25 @@ func (g *Config) CreateStatus(status *Status, org, repo, ref string) error {
 		return err
 	}
 	return nil
+}
+
+func (g *Config) ListStatuses(org, repo, ref string) (error, []*github.RepoStatus) {
+
+	ctx := context.Background()
+	client, err := newGitHubClient(ctx, g.Endpoint, g.Token)
+	if err != nil {
+		return err, nil
+	}
+
+	repoStatuses, _, errorStatus := client.Repositories.ListStatuses(ctx, org, repo, ref, nil)
+	if errorStatus != nil {
+		if e, ok := errorStatus.(*github.RateLimitError); ok {
+			return &util.GithubRateLimitErr{RateLimit: e.Rate.Limit, RateReset: e.Rate.Reset.String()}, nil
+		}
+		return errorStatus, nil
+	}
+
+	return nil, repoStatuses
 }
 
 func (g *Config) GetEndpoint() string {
