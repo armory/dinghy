@@ -16,7 +16,10 @@
 
 package dummy
 
-import "github.com/armory/dinghy/pkg/git"
+import (
+	"errors"
+	"github.com/armory/dinghy/pkg/git"
+)
 
 // Push contains data about a push full of commits
 type Push struct {
@@ -63,6 +66,10 @@ func (p* Push) IsBranch(branchToTry string) bool {
 // SetCommitStatus sets a commit status
 func (p *Push) SetCommitStatus(s git.Status, description string) {
 	// Do nothing
+}
+
+func (p *Push) GetCommitStatus() (error, git.Status, string) {
+	return errors.New("functionality not implemented"), "",""
 }
 
 // Name returns the name of the provider to be used in configuration
