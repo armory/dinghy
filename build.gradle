@@ -2,7 +2,7 @@ buildscript {
     ext {
         repoLevel = 'dev'
         baseService = 'dinghy'
-        spinnakerRelease       = "1.21.2"
+        spinnakerRelease        = "1.22.0"
         armoryGradleVersion = '1.3.3'
     }
 
