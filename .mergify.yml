@@ -52,3 +52,13 @@ pull_request_rules:
         strict: smart
       label:
         add: ["auto merged"]
+  - name: Automatically armory-common bump changes to master
+    conditions:
+      - title~=^fix(spinnakerBump)
+      - author=armory-jenkins
+    actions:
+      merge:
+        method: squash
+        strict: smart
+      label:
+        add: ["auto merged"]
