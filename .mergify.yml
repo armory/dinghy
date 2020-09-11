@@ -54,7 +54,7 @@ pull_request_rules:
         add: ["auto merged"]
   - name: Automatically armory-common bump changes to master
     conditions:
-      - title~=^fix(spinnakerBump)
+      - title~=^fix\(spinnakerBump\)
       - author=armory-jenkins
     actions:
       merge:
