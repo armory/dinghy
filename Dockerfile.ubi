@@ -1,0 +1,49 @@
+FROM golang:1.13.10-alpine3.11 as builder
+
+# vendor flags conflict with `go get`
+# so we fetch golint before running make
+# and setting the env variable
+RUN apk update && apk add git make bash build-base gcc bc
+RUN go get -u golang.org/x/lint/golint
+
+ENV GO111MODULE=on GOFLAGS='-mod=vendor' GOOS=linux GOARCH=amd64
+WORKDIR /opt/armory/build/
+ADD ./ /opt/armory/build/
+
+RUN make
+
+FROM registry.redhat.io/ubi8/ubi
+
+MAINTAINER engineering@armory.io
+
+### Atomic/OpenShift Labels - https://github.com/projectatomic/ContainerApplicationGenericLabels
+LABEL name="dinghy" \
+      maintainer="engineering@armory.io" \
+      vendor="armory" \
+      summary="Dinghy" \
+      description="Pipelines as code for Armory Spinnaker."
+
+### add licenses
+COPY --from=builder /opt/armory/build/LICENSE.txt /licenses/LICENSE.txt
+
+EXPOSE 8081
+WORKDIR /opt/armory/bin/
+
+RUN dnf copr enable ngompa/musl-libc -y --disableplugin=subscription-manager
+
+RUN yum update -y --disableplugin=subscription-manager \
+	&& yum install -y --disableplugin=subscription-manager ca-certificates bash curl wget musl-devel \
+	&& adduser -U spinnaker
+
+COPY --from=builder /opt/armory/build/build/dinghy /opt/armory/bin/dinghy
+
+RUN mkdir -p /opt/spinnaker/config
+
+# https://docs.openshift.com/container-platform/4.5/openshift_images/create-images.html#images-create-guide-openshift_create-images
+RUN chmod -R u+x /opt/armory /opt/spinnaker && \
+    chgrp -R 0 /opt/armory /opt/spinnaker && \
+    chmod -R g=u /opt/armory /opt/spinnaker
+
+USER spinnaker
+
+CMD ["/opt/armory/bin/dinghy"]
