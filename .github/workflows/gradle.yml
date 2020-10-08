@@ -91,9 +91,13 @@ jobs:
           echo "Tagging armory/$BASE_PROJECT:ubi to armory/$BASE_PROJECT:$RELEASE-ubi"
           docker image tag armory/$BASE_PROJECT:ubi armory/$BASE_PROJECT:$RELEASE-ubi
 
+          echo "Tagging armory/$BASE_PROJECT:ubi to armory-docker-local.jfrog.io/armory/$BASE_PROJECT:$RELEASE-ubi"
+          docker image tag armory/$BASE_PROJECT:ubi armory-docker-local.jfrog.io/armory/$BASE_PROJECT:$RELEASE-ubi
+
           echo "Tagging armory/$BASE_PROJECT:ubi to scan.connect.redhat.com/${{ secrets.REDHAT_PID }}/$BASE_PROJECT:$RELEASE-ubi for certification"
           docker image tag armory/$BASE_PROJECT:ubi scan.connect.redhat.com/${{ secrets.REDHAT_PID }}/$BASE_PROJECT:$RELEASE-ubi
 
           echo "Pushing image..."
           docker push armory/$BASE_PROJECT:$RELEASE-ubi
+          docker push armory-docker-local.jfrog.io/armory/$BASE_PROJECT:$RELEASE-ubi
           docker push scan.connect.redhat.com/${{ secrets.REDHAT_PID }}/$BASE_PROJECT:$RELEASE-ubi
