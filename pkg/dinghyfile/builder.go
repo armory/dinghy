@@ -105,7 +105,7 @@ func NewDinghyfile() Dinghyfile {
 var (
 	// ErrMalformedJSON is more specific than just returning 422.
 	ErrMalformedJSON = errors.New("malformed json")
-	DefaultEmail     = "unknown@unknown.com"
+	DefaultEmail     = "unknown@localhost"
 )
 
 // UpdateDinghyfile doesn't actually update anything; it unmarshals the
