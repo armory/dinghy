@@ -17,6 +17,7 @@ package plank
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 )
@@ -147,7 +148,7 @@ type FiatPermissionEvaluator struct {
 }
 
 func (f *FiatPermissionEvaluator) HasReadPermission(user string, rp ReadPermissable) (bool, error) {
-	if rp == nil {
+	if isNil(rp) {
 		return false, fmt.Errorf("object for permissions check should not be nil")
 	}
 
@@ -176,6 +177,13 @@ func (f *FiatPermissionEvaluator) HasReadPermission(user string, rp ReadPermissa
 	return true, nil
 }
 
+func isNil(rp ReadPermissable) bool {
+	// rp == nil won't work for interfaces because they have both type and value. rp == nil on a
+	// nil pointer will return false, so we also need the second check.
+	// reflect.ValueOf(rp).IsNil() will accurately return true, but will panic if called on a struct
+	// (ie, rp is not a nil pointer), so we only make that call if rp is a pointer.
+	return rp == nil || (reflect.TypeOf(rp).Kind() == reflect.Ptr && reflect.ValueOf(rp).IsNil())
+}
 
 func (f *FiatPermissionEvaluator) userRoles(username string) ([]string, error) {
 	if v, ok := f.userRoleCache.Load(username); ok {

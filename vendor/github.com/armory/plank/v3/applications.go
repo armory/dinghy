@@ -42,6 +42,12 @@ type PermissionsType struct {
 	Execute []string `json:"EXECUTE" mapstructure:"EXECUTE" yaml:"EXECUTE" hcl:"EXECUTE"`
 }
 
+// Front50 needs this struct to update permissions
+type Front50Permissions struct {
+	Name          string             `json:"name" mapstructure:"name" yaml:"name" hcl:"name"`
+	Permissions   *PermissionsType   `json:"permissions,omitempty" mapstructure:"permissions" yaml:"permissions,omitempty" hcl:"permissions,omitempty"`
+}
+
 type NotificationsType map[string]interface{}
 
 // Application as returned from the Spinnaker API.
@@ -85,8 +91,27 @@ func (c *Client) UpdateApplication(app Application) error {
 	if err := c.PatchWithRetry(fmt.Sprintf("%s/v2/applications/%s", c.URLs["front50"], app.Name), ApplicationJson, app, &unused); err != nil {
 		return fmt.Errorf("could not update application %q: %w", app.Name, err)
 	}
+	if err := c.UpdatePermissions(app.Name, app.Permissions); err != nil {
+		// UpdatePermissions will print in the log if something failed
+		return err
+	}
+
 	return nil
 }
+
+// UpdatePermissions updates an application permissions in the configured front50 store.
+func (c *Client) UpdatePermissions(appName string, permissions *PermissionsType) error {
+	var unused interface{}
+	var permissionsfront50 = Front50Permissions{
+		Name:        appName,
+		Permissions: permissions,
+	}
+	if err := c.PutWithRetry(fmt.Sprintf("%s/permissions/applications/%s", c.URLs["front50"], appName), ApplicationJson, permissionsfront50, &unused); err != nil {
+		return fmt.Errorf("could not update application permissions %q: %w", appName, err)
+	}
+	return nil
+}
+
 
 type createApplicationTask struct {
 	Application Application `json:"application" mapstructure:"application" yaml:"application" hcl:"application"`
