@@ -25,10 +25,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
-	"github.com/armory/dinghy/pkg/git"
 	"path/filepath"
 	"time"
+
+	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
+	"github.com/armory/dinghy/pkg/git"
 
 	"text/template"
 
@@ -113,12 +114,13 @@ func moduleFunction(org string, mod string, r *DinghyfileParser, repo string, br
 		newVars[key] = r.parseValue(vars[i+1])
 	}
 
-	result, err := r.Parse(org, repo, mod, branch, append([]VarMap{newVars}, allVars...))
-	if err != nil {
-		r.Builder.Logger.Errorf("error rendering imported module '%s': %s", mod, err.Error())
-		return "", fmt.Errorf("error rendering imported module '%s': %s", mod, err.Error())
+	//result, err := r.Parse(org, repo, mod, branch, append([]VarMap{newVars}, allVars...))
+	pr := r.Parse(org, repo, mod, branch, append([]VarMap{newVars}, allVars...))
+	if pr.Error != nil {
+		r.Builder.Logger.Errorf("error rendering imported module '%s': %s", mod, pr.Error.Error())
+		return "", fmt.Errorf("error rendering imported module '%s': %s", mod, pr.Error.Error())
 	}
-	return result.String(), nil
+	return pr.Buffer.String(), nil
 }
 
 // TODO: this function errors, it should be returning the error to the caller to be handled
@@ -205,7 +207,7 @@ func (r *DinghyfileParser) makeSlice(args ...interface{}) []interface{} {
 }
 
 // Parse parses the template
-func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) (*bytes.Buffer, error) {
+func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) ParseResponse {
 	module := true
 	event := &events.Event{
 		Start:  time.Now().UTC().Unix(),
@@ -213,7 +215,6 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		Repo:   repo,
 		Path:   path,
 		Branch: branch,
-		End:    time.Now().UTC().Unix(),
 	}
 
 	gitInfo := git.GitInfo{
@@ -228,8 +229,13 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	if err != nil {
 		r.Builder.Logger.Errorf("Failed to download %s/%s/%s/%s", org, repo, path, branch)
 		// we don't actually have a dinghyfile we can send at this point
-		r.Builder.EventClient.SendEvent("parse-err-download", event)
-		return nil, err
+		event.End = time.Now().UTC().Unix()
+		return ParseResponse{
+			Buffer:    nil,
+			EventName: "parse-err-download",
+			Event:     event,
+			Error:     err,
+		}
 	}
 
 	// Preprocess to stringify any json args in calls to modules.
@@ -237,8 +243,13 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	if err != nil {
 		r.Builder.Logger.Errorf("Failed to preprocess:\n %s", contents)
 		event.Dinghyfile = contents
-		r.Builder.EventClient.SendEvent("parse-err-preprocess", event)
-		return nil, err
+		event.End = time.Now().UTC().Unix()
+		return ParseResponse{
+			Buffer:    nil,
+			EventName: "parse-err-preprocess",
+			Event:     event,
+			Error:     err,
+		}
 	}
 
 	// Extract global vars if we're processing a dinghyfile (and not a module)
@@ -248,15 +259,25 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		if err != nil {
 			r.Builder.Logger.Errorf("Failed to parse global vars:\n %s", contents)
 			event.Dinghyfile = contents
-			r.Builder.EventClient.SendEvent("parse-err-globalvar", event)
-			return nil, err
+			event.End = time.Now().UTC().Unix()
+			return ParseResponse{
+				Buffer:    nil,
+				EventName: "parse-err-globalvar",
+				Event:     event,
+				Error:     fmt.Errorf("could not extract global vars from:\n %s", contents),
+			}
 		}
 
 		gvMap, ok := gvs.(map[string]interface{})
 		if !ok {
 			event.Dinghyfile = contents
-			r.Builder.EventClient.SendEvent("parse-err-globalvar", event)
-			return nil, fmt.Errorf("could not extract global vars from:\n %s", contents)
+			event.End = time.Now().UTC().Unix()
+			return ParseResponse{
+				Buffer:    nil,
+				EventName: "parse-err-globalvar",
+				Event:     event,
+				Error:     fmt.Errorf("could not extract global vars from:\n %s", contents),
+			}
 		} else if len(gvMap) > 0 {
 			vars = append(vars, gvMap)
 		} else {
@@ -278,12 +299,12 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// have an application in context?  So for now, hardcoding module branch
 	// to "master"
 	funcMap := template.FuncMap{
-		"module":        r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
-		"local_module":  r.localModuleFunc(org, repo, branch, deps, vars),
-		"appModule":     r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
-		"pipelineID":    r.pipelineIDFunc(vars),
-		"var":           r.varFunc(vars),
-		"makeSlice":     r.makeSlice,
+		"module":       r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
+		"local_module": r.localModuleFunc(org, repo, branch, deps, vars),
+		"appModule":    r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
+		"pipelineID":   r.pipelineIDFunc(vars),
+		"var":          r.varFunc(vars),
+		"makeSlice":    r.makeSlice,
 	}
 
 	// Parse the downloaded template.
@@ -291,8 +312,14 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	if err != nil {
 		r.Builder.Logger.Errorf("Failed to parse template:\n %s", contents)
 		event.Dinghyfile = contents
-		r.Builder.EventClient.SendEvent("parse-err-gotemplate-funcs", event)
-		return nil, err
+
+		event.End = time.Now().UTC().Unix()
+		return ParseResponse{
+			Buffer:    nil,
+			EventName: "parse-err-gotemplate-funcs",
+			Event:     event,
+			Error:     err,
+		}
 	}
 
 	// Run the template to verify the output.
@@ -301,8 +328,14 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	if err != nil {
 		r.Builder.Logger.Errorf("Failed to execute buffer:\n %s\nError: %s", contents, err.Error())
 		event.Dinghyfile = contents
-		r.Builder.EventClient.SendEvent("parse-err-bytebuffer", event)
-		return nil, err
+
+		event.End = time.Now().UTC().Unix()
+		return ParseResponse{
+			Buffer:    nil,
+			EventName: "parse-err-bytebuffer",
+			Event:     event,
+			Error:     err,
+		}
 	}
 
 	// Record the dependencies we ran into.
@@ -315,8 +348,13 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		result, errRaw := json.Marshal(r.Builder.PushRaw)
 		if errRaw != nil {
 			r.Builder.Logger.Errorf("Failed to parse rawdata:\n %s", r.Builder.PushRaw)
-			r.Builder.EventClient.SendEvent("parse-err-rawdata", event)
-			return nil, errRaw
+			event.End = time.Now().UTC().Unix()
+			return ParseResponse{
+				Buffer:    nil,
+				EventName: "parse-err-rawdata",
+				Event:     event,
+				Error:     errRaw,
+			}
 		}
 		r.Builder.Depman.SetRawData(r.Builder.Downloader.EncodeURL(org, repo, path, branch), string(result))
 	}
@@ -325,7 +363,13 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	event.Module = module
 	r.Builder.EventClient.SendEvent("parse", event)
 
-	return buf, nil
+	event.End = time.Now().UTC().Unix()
+	return ParseResponse{
+		Buffer:    buf,
+		EventName: "parse-success",
+		Event:     event,
+		Error:     nil,
+	}
 }
 
 func (r *DinghyfileParser) localModuleFunc(org string, repo string, branch string, deps map[string]bool, allVars []VarMap) interface{} {

@@ -19,9 +19,10 @@ package dinghyfile
 import (
 	"bytes"
 	"errors"
-	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
 	"reflect"
 	"testing"
+
+	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
 
 	"github.com/golang/mock/gomock"
 	"github.com/jinzhu/copier"
@@ -41,7 +42,11 @@ func TestProcessDinghyfile(t *testing.T) {
 	rendered := `{"application":"biff"}`
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+	rval := ParseResponse{
+		Buffer: bytes.NewBuffer([]byte(rendered)),
+		Error:  nil,
+	}
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(rval).Times(1)
 
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication(gomock.Eq("biff")).Return(&plank.Application{}, nil).Times(1)
@@ -69,8 +74,6 @@ func TestProcessDinghyfile(t *testing.T) {
 	assert.Nil(t, pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch"))
 }
 
-
-
 func TestProcessDinghyfileValidate(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -78,7 +81,12 @@ func TestProcessDinghyfileValidate(t *testing.T) {
 	rendered := `{"application":"biff"}`
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+
+	rval := ParseResponse{
+		Buffer: bytes.NewBuffer([]byte(rendered)),
+		Error:  nil,
+	}
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(rval).Times(1)
 
 	client := NewMockPlankClient(ctrl)
 
@@ -115,7 +123,6 @@ func TestUpdateApplication(t *testing.T) {
 	newPipelines := []plank.Pipeline{existingPipeline, newPipeline}
 
 	testapp := &plank.Application{Name: "testapp"}
-
 
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
@@ -162,7 +169,12 @@ func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
 	rendered := `{blargh}`
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+
+	rval := ParseResponse{
+		Buffer: bytes.NewBuffer([]byte(rendered)),
+		Error:  nil,
+	}
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(rval).Times(1)
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Warnf(gomock.Eq("UpdateDinghyfile malformed syntax: %s"), gomock.Any()).Times(1)
@@ -184,7 +196,11 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	rendered := `{"application": "testapp"}`
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+	rval := ParseResponse{
+		Buffer: bytes.NewBuffer([]byte(rendered)),
+		Error:  nil,
+	}
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(rval).Times(1)
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Creating application '%s'..."), gomock.Eq("testapp")).Times(1)
@@ -195,9 +211,9 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
+	client.EXPECT().GetApplication(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
 	client.EXPECT().CreateApplication(gomock.Any()).Return(errors.New("boom")).Times(1)
-	client.EXPECT().GetApplicationNotifications(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
+	client.EXPECT().GetApplicationNotifications(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
@@ -255,7 +271,12 @@ func TestProcessDinghyfileFailedValidation(t *testing.T) {
 			}`
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
+
+	rval := ParseResponse{
+		Buffer: bytes.NewBuffer([]byte(rendered)),
+		Error:  nil,
+	}
+	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(rval).Times(1)
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to validate stage refs for pipeline: %s"), gomock.Any()).Times(1)
@@ -264,7 +285,7 @@ func TestProcessDinghyfileFailedValidation(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplicationNotifications(gomock.Eq("foo")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
+	client.EXPECT().GetApplicationNotifications(gomock.Eq("foo")).Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
@@ -437,13 +458,12 @@ func TestUpdateDinghyfile(t *testing.T) {
 	}
 }
 
-
 func TestValidatePipelines(t *testing.T) {
 	b := testPipelineBuilder()
 
 	fullCases := map[string]struct {
-		dinghyRaw    []byte
-		result       error
+		dinghyRaw []byte
+		result    error
 	}{
 		"dinghyraw_fail_no_refids": {
 			dinghyRaw: []byte(`{
@@ -649,7 +669,6 @@ func TestValidatePipelines(t *testing.T) {
 			}`),
 			result: errors.New("Duplicate stage refId mj2 field found"),
 		},
-
 	}
 
 	for testName, c := range fullCases {
@@ -665,10 +684,10 @@ func TestValidatePipelines(t *testing.T) {
 				}
 			}
 			//Log parsing issues as an error in test
-			if parseErrs != 0{
+			if parseErrs != 0 {
 				assert.True(t, true, false)
 			} else {
-				err := b.ValidatePipelines( d, c.dinghyRaw)
+				err := b.ValidatePipelines(d, c.dinghyRaw)
 				assert.Equal(t, c.result, err)
 			}
 		})
@@ -679,8 +698,8 @@ func TestValidateAppNotifications(t *testing.T) {
 	b := testPipelineBuilder()
 
 	fullCases := map[string]struct {
-		dinghyRaw    []byte
-		result       error
+		dinghyRaw []byte
+		result    error
 	}{
 		"dinghyraw_pass_empty": {
 			dinghyRaw: []byte(`{
@@ -758,7 +777,7 @@ func TestValidateAppNotifications(t *testing.T) {
 			}`),
 			result: errors.New("application notifications format is invalid for email"),
 		},
-		"dinghyraw_passes_arrays" : {
+		"dinghyraw_passes_arrays": {
 			dinghyRaw: []byte(`{
 				"application": "foo",
 				"spec": {
@@ -809,16 +828,15 @@ func TestValidateAppNotifications(t *testing.T) {
 				}
 			}
 			//Log parsing issues as an error in test
-			if parseErrs != 0{
+			if parseErrs != 0 {
 				assert.True(t, true, false)
 			} else {
-				err := b.ValidateAppNotifications( d, c.dinghyRaw)
+				err := b.ValidateAppNotifications(d, c.dinghyRaw)
 				assert.Equal(t, c.result, err)
 			}
 		})
 	}
 }
-
 
 func TestUpdateDinghyfileMalformed(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -1047,7 +1065,6 @@ func TestUpdatePipelinesRespectsAutoLockOff(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-
 func TestRebuildModuleRoots(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1066,7 +1083,11 @@ func TestRebuildModuleRoots(t *testing.T) {
 	b.Depman = depman
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("dinghyfile"), gomock.Eq("branch"), gomock.Nil()).Return(bytes.NewBufferString(jsonOne), nil).Times(1)
+	rval := ParseResponse{
+		Buffer: bytes.NewBuffer([]byte(jsonOne)),
+		Error:  nil,
+	}
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("dinghyfile"), gomock.Eq("branch"), gomock.Nil()).Return(rval).Times(1)
 	b.Parser = renderer
 
 	client := NewMockPlankClient(ctrl)
@@ -1105,7 +1126,11 @@ func TestRebuildModuleRootsProcessTemplate(t *testing.T) {
 	b.Depman = depman
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("dinghyfile"), gomock.Eq("branch"), gomock.Nil()).Return(bytes.NewBufferString(jsonOne), nil).Times(1)
+	rval := ParseResponse{
+		Buffer: bytes.NewBufferString(jsonOne),
+		Error:  nil,
+	}
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("dinghyfile"), gomock.Eq("branch"), gomock.Nil()).Return(rval).Times(1)
 	b.Parser = renderer
 
 	client := NewMockPlankClient(ctrl)
@@ -1118,7 +1143,6 @@ func TestRebuildModuleRootsProcessTemplate(t *testing.T) {
 	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch")
 	assert.Nil(t, err)
 }
-
 
 func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -1139,8 +1163,17 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	b.Depman = depman
 
 	renderer := NewMockParser(ctrl)
-	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("dinghyfile"), gomock.Eq("branch"), gomock.Nil()).Return(nil, errors.New("rebuild fail test")).Times(1)
-	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo2"), gomock.Eq("dinghyfile"), gomock.Eq("branch"), gomock.Nil()).Return(bytes.NewBufferString(jsonTwo), nil).Times(1)
+
+	rvalError := ParseResponse{
+		Buffer: nil,
+		Error:  errors.New("rebuild fail test"),
+	}
+	rvalPass := ParseResponse{
+		Buffer: bytes.NewBufferString(jsonTwo),
+		Error:  nil,
+	}
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo"), gomock.Eq("dinghyfile"), gomock.Eq("branch"), gomock.Nil()).Return(rvalError).Times(1)
+	renderer.EXPECT().Parse(gomock.Eq("org"), gomock.Eq("repo2"), gomock.Eq("dinghyfile"), gomock.Eq("branch"), gomock.Nil()).Return(rvalPass).Times(1)
 	b.Parser = renderer
 
 	client := NewMockPlankClient(ctrl)
@@ -1196,16 +1229,16 @@ func TestFailureNotifier(t *testing.T) {
 
 func Test_extractApplicationName(t *testing.T) {
 	tests := []struct {
-		name    string
-		dinghyfile    string
-		want    string
-		wantErr bool
+		name       string
+		dinghyfile string
+		want       string
+		wantErr    bool
 	}{
 		{
-			name: "json_test",
+			name:       "json_test",
 			dinghyfile: `{"application": "test_app_name"}`,
-			want: "test_app_name",
-			wantErr: false,
+			want:       "test_app_name",
+			wantErr:    false,
 		},
 		{
 			name: "yaml_test",
@@ -1228,7 +1261,7 @@ pipelines:
     waitTime: 4
   {{ module "some.stage.module" "something" }}
   triggers: []`,
-			want: "my-awesome-application",
+			want:    "my-awesome-application",
 			wantErr: false,
 		},
 		{
@@ -1237,7 +1270,7 @@ pipelines:
 "globals" = {
     "waitTime" = 42
 }`,
-			want: "some-app",
+			want:    "some-app",
 			wantErr: false,
 		},
 	}

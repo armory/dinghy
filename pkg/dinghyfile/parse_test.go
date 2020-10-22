@@ -385,7 +385,7 @@ var fileService = dummy.FileService{
 								 "straightvar" "foo"
 								 "condvar" true }}
 	}`,
-	//This is for one dinghy file having an if-else conditional and being true
+		//This is for one dinghy file having an if-else conditional and being true
 		"if_params_indinghyfiletrue.dinghyfile": `{
 		  {{ if eq "test" "test" }}
 		  "test": "true"
@@ -533,8 +533,8 @@ func testDinghyfileParser() *DinghyfileParser {
 
 func TestGracefulErrorHandling(t *testing.T) {
 	builder := testDinghyfileParser()
-	_, err := builder.Parse("org", "repo", "df_bad", "master", nil)
-	assert.NotNil(t, err, "Got non-nil output for mal-formed template action in df_bad")
+	pr := builder.Parse("org", "repo", "df_bad", "master", nil)
+	assert.NotNil(t, pr.Error, "Got non-nil output for mal-formed template action in df_bad")
 }
 
 func TestNestedVars(t *testing.T) {
@@ -542,7 +542,7 @@ func TestNestedVars(t *testing.T) {
 	r.Builder.DinghyfileName = "nested_var_df"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, _ := r.Parse("org", "repo", "nested_var_df", "master", nil)
+	pr := r.Parse("org", "repo", "nested_var_df", "master", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -564,7 +564,7 @@ func TestNestedVars(t *testing.T) {
 
 	// strip whitespace from both strings for assertion
 	exp := strings.Join(strings.Fields(expected), "")
-	actual := strings.Join(strings.Fields(buf.String()), "")
+	actual := strings.Join(strings.Fields(pr.Buffer.String()), "")
 	assert.Equal(t, exp, actual)
 }
 
@@ -661,9 +661,9 @@ func TestGlobalVars(t *testing.T) {
 			r := testDinghyfileParser()
 			r.Builder.DinghyfileName = filepath.Base(c.filename)
 
-			buf, _ := r.Parse("org", "repo", c.filename, "master", nil)
+			pr := r.Parse("org", "repo", c.filename, "master", nil)
 			exp := strings.Join(strings.Fields(c.expected), "")
-			actual := strings.Join(strings.Fields(buf.String()), "")
+			actual := strings.Join(strings.Fields(pr.Buffer.String()), "")
 			assert.Equal(t, exp, actual)
 		})
 	}
@@ -671,7 +671,7 @@ func TestGlobalVars(t *testing.T) {
 
 func TestSimpleWaitStage(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, _ := r.Parse("org", "repo", "df3", "master", nil)
+	pr := r.Parse("org", "repo", "df3", "master", nil)
 
 	const expected = `{
 		"stages": [
@@ -687,13 +687,13 @@ func TestSimpleWaitStage(t *testing.T) {
 
 	// strip whitespace from both strings for assertion
 	exp := strings.Join(strings.Fields(expected), "")
-	actual := strings.Join(strings.Fields(buf.String()), "")
+	actual := strings.Join(strings.Fields(pr.Buffer.String()), "")
 	assert.Equal(t, exp, actual)
 }
 
 func TestSpillover(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, _ := r.Parse("org", "repo", "df", "master", nil)
+	pr := r.Parse("org", "repo", "df", "master", nil)
 
 	const expected = `{
 		"stages": [
@@ -704,43 +704,43 @@ func TestSpillover(t *testing.T) {
 
 	// strip whitespace from both strings for assertion
 	exp := strings.Join(strings.Fields(expected), "")
-	actual := strings.Join(strings.Fields(buf.String()), "")
+	actual := strings.Join(strings.Fields(pr.Buffer.String()), "")
 	assert.Equal(t, exp, actual)
 }
 
 func TestMissingModule(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, err := r.Parse("org", "repo", "missing_module_test", "master", nil)
-	assert.Error(t, err)
-	assert.Nil(t, buf)
+	pr := r.Parse("org", "repo", "missing_module_test", "master", nil)
+	assert.Error(t, pr.Error)
+	assert.Nil(t, pr.Buffer)
 }
 
 func TestUnconfiguredTemplateOrg(t *testing.T) {
 	r := testDinghyfileParser()
 	r.Builder.TemplateOrg = ""
-	buf, err := r.Parse("org", "repo", "missing_module_test", "master", nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Cannot load module missing; templateOrg not configured")
-	assert.Nil(t, buf)
+	pr := r.Parse("org", "repo", "missing_module_test", "master", nil)
+	assert.Error(t, pr.Error)
+	assert.Contains(t, pr.Error.Error(), "Cannot load module missing; templateOrg not configured")
+	assert.Nil(t, pr.Buffer)
 }
 
 func TestIfConditionEmpty(t *testing.T) {
 	r := testDinghyfileParser()
 
 	// if we don't match the if condition this should be blank
-	buf, err := r.Parse("org", "repo", "if_test", "branch", nil)
-	require.Nil(t, err)
+	pr := r.Parse("org", "repo", "if_test", "branch", nil)
+	require.Nil(t, pr.Error)
 	expected := `{}`
 	exp := strings.Join(strings.Fields(expected), "")
-	actual := strings.Join(strings.Fields(buf.String()), "")
+	actual := strings.Join(strings.Fields(pr.Buffer.String()), "")
 	assert.Equal(t, exp, actual)
 
 	// if we do match the if condition, we should see some stage data
-	buf, err = r.Parse("foo", "repo", "if_test", "master", nil)
-	require.Nil(t, err)
+	pr = r.Parse("foo", "repo", "if_test", "master", nil)
+	require.Nil(t, pr.Error)
 	expected = `{"stages":[{"foo":"bar","type":"deploy"},{"type":"jenkins"}]}`
 	exp = strings.Join(strings.Fields(expected), "")
-	actual = strings.Join(strings.Fields(buf.String()), "")
+	actual = strings.Join(strings.Fields(pr.Buffer.String()), "")
 	assert.Equal(t, exp, actual)
 }
 
@@ -751,21 +751,21 @@ func TestConditionalExtraDataFromGit(t *testing.T) {
 	assert.Nil(t, err)
 	r.Builder.PushRaw = d
 
-	buf, _ := r.Parse("org", "repo", "extra_data_test", "master", nil)
+	pr := r.Parse("org", "repo", "extra_data_test", "master", nil)
 	expected := `{"application":"myfancyapplication(author:Codertocat)","pipelines":["stages":[{"foo":"bar","type":"deploy"}{"type":"jenkins"}]{"parameterConfig":[{"description":"ServiceName","name":"service","required":true,{"parameterConfig":[{"artifact":artifact11,}}",{"parameterConfig":[{"artifact":artifact22,}}",}}]}`
 	exp := strings.Join(strings.Fields(expected), "")
-	actual := strings.Join(strings.Fields(buf.String()), "")
+	actual := strings.Join(strings.Fields(pr.Buffer.String()), "")
 	assert.Equal(t, exp, actual)
 }
 
 func TestRangeSyntax(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, err := r.Parse("org", "repo", "range_test", "master", nil)
-	require.Nil(t, err)
+	pr := r.Parse("org", "repo", "range_test", "master", nil)
+	require.Nil(t, pr.Error)
 
 	const expected = `{"stages":[{"foo":"bar","type":"deploy"}{"type":"jenkins"}]}`
 	exp := strings.Join(strings.Fields(expected), "")
-	actual := strings.Join(strings.Fields(buf.String()), "")
+	actual := strings.Join(strings.Fields(pr.Buffer.String()), "")
 	assert.Equal(t, exp, actual)
 }
 
@@ -780,8 +780,8 @@ type testStruct struct {
 func TestModuleVariableSubstitution(t *testing.T) {
 	r := testDinghyfileParser()
 	ts := testStruct{}
-	ret, err := r.Parse("org", "repo", "df2", "master", nil)
-	err = json.Unmarshal(ret.Bytes(), &ts)
+	pr := r.Parse("org", "repo", "df2", "master", nil)
+	err := json.Unmarshal(pr.Buffer.Bytes(), &ts)
 	assert.Equal(t, nil, err)
 
 	assert.Equal(t, "baz", ts.Foo)
@@ -844,15 +844,15 @@ func TestPipelineIDRender(t *testing.T) {
 		"waitForCompletion": true
 	}`
 
-	ret, err := r.Parse("org", "repo", "pipelineIDTest", "master", nil)
-	assert.Nil(t, err)
-	assert.Equal(t, expected, ret.String())
+	pr := r.Parse("org", "repo", "pipelineIDTest", "master", nil)
+	assert.Nil(t, pr.Error)
+	assert.Equal(t, expected, pr.Buffer.String())
 }
 
 func TestModuleEmptyString(t *testing.T) {
 	r := testDinghyfileParser()
-	ret, _ := r.Parse("org", "repo", "df4", "master", nil)
-	assert.Equal(t, `{"foo": ""}`, ret.String())
+	pr := r.Parse("org", "repo", "df4", "master", nil)
+	assert.Equal(t, `{"foo": ""}`, pr.Buffer.String())
 }
 
 func TestLocalModule(t *testing.T) {
@@ -869,8 +869,8 @@ func TestLocalModule(t *testing.T) {
 	}
 		]
 	}`
-	ret, _ := r.Parse("org", "repo", "df_local_module", "master", nil)
-	assert.Equal(t, expected, ret.String())
+	pr := r.Parse("org", "repo", "df_local_module", "master", nil)
+	assert.Equal(t, expected, pr.Buffer.String())
 }
 
 func TestDeepVars(t *testing.T) {
@@ -878,7 +878,7 @@ func TestDeepVars(t *testing.T) {
 	r.Builder.DinghyfileName = "deep_var_df"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, _ := r.Parse("org", "repo", "deep_var_df", "master", nil)
+	pr := r.Parse("org", "repo", "deep_var_df", "master", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -911,7 +911,7 @@ func TestDeepVars(t *testing.T) {
 
 	// strip whitespace from both strings for assertion
 	exp := expected
-	actual := buf.String()
+	actual := pr.Buffer.String()
 	assert.Equal(t, exp, actual)
 }
 
@@ -920,7 +920,7 @@ func TestEmptyDefaultVar(t *testing.T) {
 	r.Builder.DinghyfileName = "deep_var_df"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, _ := r.Parse("org", "repo", "empty_default_variables", "master", nil)
+	pr := r.Parse("org", "repo", "empty_default_variables", "master", nil)
 
 	const expected = `{
 		"application": "dinernotifications",
@@ -938,7 +938,7 @@ func TestEmptyDefaultVar(t *testing.T) {
 	}`
 
 	exp := expected
-	actual := buf.String()
+	actual := pr.Buffer.String()
 	assert.Equal(t, exp, actual)
 }
 
@@ -947,8 +947,8 @@ func TestConditionalArgs(t *testing.T) {
 	r.Builder.DinghyfileName = "if_params.dinghyfile"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, err := r.Parse("org", "repo", "if_params.dinghyfile", "master", nil)
-	require.Nil(t, err)
+	pr := r.Parse("org", "repo", "if_params.dinghyfile", "master", nil)
+	require.Nil(t, pr.Error)
 
 	const raw = `{
 		 "test": "if_params",
@@ -958,13 +958,13 @@ func TestConditionalArgs(t *testing.T) {
 		 }
 	}`
 	var expected interface{}
-	err = json.Unmarshal([]byte(raw), &expected)
+	err := json.Unmarshal([]byte(raw), &expected)
 	require.Nil(t, err)
 	expected_str, err := json.Marshal(expected)
 	require.Nil(t, err)
 
 	var actual interface{}
-	err = json.Unmarshal(buf.Bytes(), &actual)
+	err = json.Unmarshal(pr.Buffer.Bytes(), &actual)
 	require.Nil(t, err)
 	actual_str, err := json.Marshal(actual)
 	require.Nil(t, err)
@@ -977,20 +977,20 @@ func TestConditionalArgsInDinghyfileTrue(t *testing.T) {
 	r.Builder.DinghyfileName = "if_params_indinghyfiletrue.dinghyfile"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, err := r.Parse("org", "repo", "if_params_indinghyfiletrue.dinghyfile", "master", nil)
-	require.Nil(t, err)
+	pr := r.Parse("org", "repo", "if_params_indinghyfiletrue.dinghyfile", "master", nil)
+	require.Nil(t, pr.Error)
 
 	const raw = `{
   "test": "true"
 }`
 	var expected interface{}
-	err = json.Unmarshal([]byte(raw), &expected)
+	err := json.Unmarshal([]byte(raw), &expected)
 	require.Nil(t, err)
 	expected_str, err := json.Marshal(expected)
 	require.Nil(t, err)
 
 	var actual interface{}
-	err = json.Unmarshal(buf.Bytes(), &actual)
+	err = json.Unmarshal(pr.Buffer.Bytes(), &actual)
 	require.Nil(t, err)
 	actual_str, err := json.Marshal(actual)
 	require.Nil(t, err)
@@ -1003,20 +1003,20 @@ func TestConditionalArgsInDinghyfileFalse(t *testing.T) {
 	r.Builder.DinghyfileName = "if_params_indinghyfilefalse.dinghyfile"
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
-	buf, err := r.Parse("org", "repo", "if_params_indinghyfilefalse.dinghyfile", "master", nil)
-	require.Nil(t, err)
+	pr := r.Parse("org", "repo", "if_params_indinghyfilefalse.dinghyfile", "master", nil)
+	require.Nil(t, pr.Error)
 
 	const raw = `{
   "test": "false"
 }`
 	var expected interface{}
-	err = json.Unmarshal([]byte(raw), &expected)
+	err := json.Unmarshal([]byte(raw), &expected)
 	require.Nil(t, err)
 	expected_str, err := json.Marshal(expected)
 	require.Nil(t, err)
 
 	var actual interface{}
-	err = json.Unmarshal(buf.Bytes(), &actual)
+	err = json.Unmarshal(pr.Buffer.Bytes(), &actual)
 	require.Nil(t, err)
 	actual_str, err := json.Marshal(actual)
 	require.Nil(t, err)
@@ -1035,8 +1035,8 @@ func TestNoSpaceBeforeCurlyBrackets(t *testing.T) {
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
 	r.Builder.PushRaw = rawPushData
-	buf, err := r.Parse("org", "repo", "no_space.dinghyfile", "master", nil )
-	require.Nil(t, err)
+	pr := r.Parse("org", "repo", "no_space.dinghyfile", "master", nil)
+	require.Nil(t, pr.Error)
 
 	const raw = `{
   "testprint" : "Codertocat"
@@ -1048,7 +1048,7 @@ func TestNoSpaceBeforeCurlyBrackets(t *testing.T) {
 	require.Nil(t, err)
 
 	var actual interface{}
-	err = json.Unmarshal(buf.Bytes(), &actual)
+	err = json.Unmarshal(pr.Buffer.Bytes(), &actual)
 	require.Nil(t, err)
 	actual_str, err := json.Marshal(actual)
 	require.Nil(t, err)
@@ -1067,8 +1067,8 @@ func TestRawDataInDinghyfile(t *testing.T) {
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
 	r.Builder.PushRaw = rawPushData
-	buf, err := r.Parse("org", "repo", "rawData.dinghyfile", "master", nil)
-	require.Nil(t, err)
+	pr := r.Parse("org", "repo", "rawData.dinghyfile", "master", nil)
+	require.Nil(t, pr.Error)
 
 	const raw = `{
   "testprint" : "Codertocat",
@@ -1081,7 +1081,7 @@ func TestRawDataInDinghyfile(t *testing.T) {
 	require.Nil(t, err)
 
 	var actual interface{}
-	err = json.Unmarshal(buf.Bytes(), &actual)
+	err = json.Unmarshal(pr.Buffer.Bytes(), &actual)
 	require.Nil(t, err)
 	actual_str, err := json.Marshal(actual)
 	require.Nil(t, err)
@@ -1110,12 +1110,12 @@ func TestVarParams(t *testing.T) {
 	logger.EXPECT().Error(gomock.Any()).Times(0)
 	logger.EXPECT().Info(gomock.Eq("No global vars found in dinghyfile")).Times(1)
 
-	buf, err := r.Parse("org", "repo", "var_params.outer", "master", nil)
+	pr := r.Parse("org", "repo", "var_params.outer", "master", nil)
 	// Unfortunately, we don't currently catch this failure here.
-	assert.Nil(t, err)
+	assert.Nil(t, pr.Error)
 
 	var actual interface{}
-	err = json.Unmarshal(buf.Bytes(), &actual)
+	err := json.Unmarshal(pr.Buffer.Bytes(), &actual)
 	assert.NotNil(t, err)
 	/* TODO:  Uncomment this section when/if we make nested references work, delete this if
 						we test for the error properly.
@@ -1145,8 +1145,8 @@ func TestRenderPreprocessFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to preprocess:\n %s"), gomock.Any()).Times(1)
 
-	_, err := r.Parse("org", "repo", "preprocess_fail", "master", nil)
-	assert.NotNil(t, err)
+	pr := r.Parse("org", "repo", "preprocess_fail", "master", nil)
+	assert.NotNil(t, pr.Error)
 }
 
 func TestRenderParseGlobalVarsFail(t *testing.T) {
@@ -1158,28 +1158,28 @@ func TestRenderParseGlobalVarsFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to parse global vars:\n %s"), gomock.Any()).Times(1)
 
-	_, err := r.Parse("org", "repo", "global_vars_parse_fail", "master", nil)
-	assert.NotNil(t, err)
+	pr := r.Parse("org", "repo", "global_vars_parse_fail", "master", nil)
+	assert.NotNil(t, pr.Error)
 }
 
 func TestRenderGlobalVarsExtractFail(t *testing.T) {
 	r := testDinghyfileParser()
 	r.Builder.DinghyfileName = "global_vars_extract_fail"
 
-	_, err := r.Parse("org", "repo", "global_vars_extract_fail", "master", nil)
-	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "could not extract global vars from:\n {\n\t\t\"globals\": 42\n\t}")
+	pr := r.Parse("org", "repo", "global_vars_extract_fail", "master", nil)
+	assert.NotNil(t, pr.Error)
+	assert.Equal(t, pr.Error.Error(), "could not extract global vars from:\n {\n\t\t\"globals\": 42\n\t}")
 }
 
 func TestRenderVarFuncNotDefined(t *testing.T) {
 	r := testDinghyfileParser()
 	r.Builder.DinghyfileName = "varfunc_not_defined"
 
-	buf, err := r.Parse("org", "repo", "varfunc_not_defined", "master", nil)
-	require.Nil(t, err)
+	pr := r.Parse("org", "repo", "varfunc_not_defined", "master", nil)
+	require.Nil(t, pr.Error)
 
 	var actual interface{}
-	err = json.Unmarshal(buf.Bytes(), &actual)
+	err := json.Unmarshal(pr.Buffer.Bytes(), &actual)
 	// This errors because the resulting JSON is { "test": } (since the var
 	// gets replaced with nothing at all) and this is invalid.
 	require.NotNil(t, err)
@@ -1193,9 +1193,9 @@ func TestRenderDownloadFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to download %s/%s/%s/%s"), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
-	_, err := r.Parse("org", "repo", "nonexistentfile", "master", nil)
-	require.NotNil(t, err)
-	require.Equal(t, "File not found", err.Error())
+	pr := r.Parse("org", "repo", "nonexistentfile", "master", nil)
+	require.NotNil(t, pr.Error)
+	require.Equal(t, "File not found", pr.Error.Error())
 }
 
 func TestRenderTemplateParseFail(t *testing.T) {
@@ -1206,9 +1206,9 @@ func TestRenderTemplateParseFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to parse template:\n %s"), gomock.Any()).Times(1)
 
-	_, err := r.Parse("org", "repo", "template_parse_fail", "master", nil)
-	require.NotNil(t, err)
-	require.Equal(t, "template: dinghy-render:2: function \"nope\" not defined", err.Error())
+	pr := r.Parse("org", "repo", "template_parse_fail", "master", nil)
+	require.NotNil(t, pr.Error)
+	require.Equal(t, "template: dinghy-render:2: function \"nope\" not defined", pr.Error.Error())
 }
 
 func TestRenderTemplateBufferFail(t *testing.T) {
@@ -1219,9 +1219,9 @@ func TestRenderTemplateBufferFail(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to execute buffer:\n %s\nError: %s"), gomock.Any(), gomock.Any()).Times(1)
 
-	_, err := r.Parse("org", "repo", "template_buffer_fail", "master", nil)
-	require.NotNil(t, err)
-	require.Equal(t, "template: dinghy-render:2:17: executing \"dinghy-render\" at <4>: can't give argument to non-function 4", err.Error())
+	pr := r.Parse("org", "repo", "template_buffer_fail", "master", nil)
+	require.NotNil(t, pr.Error)
+	require.Equal(t, "template: dinghy-render:2:17: executing \"dinghy-render\" at <4>: can't give argument to non-function 4", pr.Error.Error())
 }
 
 func TestRenderValueArrayFail(t *testing.T) {
@@ -1277,7 +1277,7 @@ func TestModuleFuncDictKeysError(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("dict keys must be strings in module: %s"), gomock.Eq(test_key)).Times(1)
 
-	modFunc := r.moduleFunc("org", "repo","master", map[string]bool{}, []VarMap{})
+	modFunc := r.moduleFunc("org", "repo", "master", map[string]bool{}, []VarMap{})
 	res, _ := modFunc.(func(string, ...interface{}) (string, error))(test_key, 42, "foo")
 	assert.Equal(t, "", res)
 }
@@ -1286,9 +1286,9 @@ func TestDifferentTemplateBranch(t *testing.T) {
 	r := testDinghyfileParser()
 
 	//  This pulls in "mod1" but "mod1" is only on "master", not on "branch".
-	_, err := r.Parse("org", "repo", "different_branch", "branch", nil)
+	pr := r.Parse("org", "repo", "different_branch", "branch", nil)
 
 	expected := `template: dinghy-render:3:7: executing "dinghy-render" at <module "mod1">: error calling module: error rendering imported module 'mod1': File not found`
-	assert.Equal(t, expected, err.Error())
+	assert.Equal(t, expected, pr.Error.Error())
 
 }

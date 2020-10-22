@@ -5,9 +5,9 @@
 package dinghyfile
 
 import (
-	bytes "bytes"
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockParser is a mock of Parser interface.
@@ -46,12 +46,10 @@ func (mr *MockParserMockRecorder) SetBuilder(b interface{}) *gomock.Call {
 }
 
 // Parse mocks base method.
-func (m *MockParser) Parse(org, repo, path, branch string, vars []VarMap) (*bytes.Buffer, error) {
+func (m *MockParser) Parse(org, repo, path, branch string, vars []VarMap) ParseResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Parse", org, repo, path, branch, vars)
-	ret0, _ := ret[0].(*bytes.Buffer)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret[0].(ParseResponse)
 }
 
 // Parse indicates an expected call of Parse.
