@@ -104,6 +104,7 @@ func (wa *WebAPI) AddNotifier(n notifiers.Notifier) {
 // Router defines the routes for the application.
 func (wa *WebAPI) Router() *mux.Router {
 	r := mux.NewRouter()
+	r.HandleFunc("/eventslog", wa.eventlogs).Methods("GET")
 	r.Handle("/metrics", promhttp.Handler())
 	r.HandleFunc("/", wa.healthcheck)
 	r.HandleFunc("/health", wa.healthcheck)
@@ -122,6 +123,11 @@ func (wa *WebAPI) Router() *mux.Router {
 // ==============
 // route handlers
 // ==============
+
+func (wa *WebAPI) eventlogs(w http.ResponseWriter, r *http.Request) {
+	wa.Logger.Debug(r.RemoteAddr, " Requested ", r.RequestURI)
+	w.Write([]byte(`{"status":"ok"}`))
+}
 
 func (wa *WebAPI) healthcheck(w http.ResponseWriter, r *http.Request) {
 	wa.Logger.Debug(r.RemoteAddr, " Requested ", r.RequestURI)
