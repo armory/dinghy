@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/armory/dinghy/pkg/dinghyfile"
+	"github.com/armory/dinghy/pkg/logevents"
 	"github.com/armory/go-yaml-tools/pkg/tls/server"
 	"net/http"
 	"os"
@@ -110,7 +111,9 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		Client: redisClient.Client,
 		Logger: redisClient.Logger,
 	}
-	api := web.NewWebAPI(config, redisClient, client, ec, log, &redisClientReadOnly, clientReadOnly)
+
+	logEventsClient := logevents.LogEventRedisClient{ RedisClient: redisClient }
+	api := web.NewWebAPI(config, redisClient, client, ec, log, &redisClientReadOnly, clientReadOnly, logEventsClient)
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
 	if config.ParserFormat == "json" {
 		api.SetDinghyfileParser(dinghyfile.NewDinghyfileParser(&dinghyfile.PipelineBuilder{}))

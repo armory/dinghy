@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
+	"github.com/armory/dinghy/pkg/logevents"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -69,9 +70,10 @@ type WebAPI struct {
 	Ums         []dinghyfile.Unmarshaller
 	Notifiers   []notifiers.Notifier
 	Parser      dinghyfile.Parser
+	LogEventsClient	logevents.LogEventsClient
 }
 
-func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger, depreadonly dinghyfile.DependencyManager, clientreadonly util.PlankClient) *WebAPI {
+func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger, depreadonly dinghyfile.DependencyManager, clientreadonly util.PlankClient, logeventsClient logevents.LogEventsClient) *WebAPI {
 	return &WebAPI{
 		Config:      s,
 		Client:      c,
@@ -82,6 +84,7 @@ func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.Plan
 		Notifiers:   []notifiers.Notifier{},
 		ClientReadOnly: clientreadonly,
 		CacheReadOnly: depreadonly,
+		LogEventsClient: logeventsClient,
 	}
 }
 
@@ -104,7 +107,8 @@ func (wa *WebAPI) AddNotifier(n notifiers.Notifier) {
 // Router defines the routes for the application.
 func (wa *WebAPI) Router() *mux.Router {
 	r := mux.NewRouter()
-	r.HandleFunc("/eventslog", wa.eventlogs).Methods("GET")
+	r.HandleFunc("/logevents", wa.logevents).Methods("GET")
+	r.HandleFunc("/logeventsSave", wa.logeventsSave).Methods("GET")
 	r.Handle("/metrics", promhttp.Handler())
 	r.HandleFunc("/", wa.healthcheck)
 	r.HandleFunc("/health", wa.healthcheck)
@@ -124,7 +128,11 @@ func (wa *WebAPI) Router() *mux.Router {
 // route handlers
 // ==============
 
-func (wa *WebAPI) eventlogs(w http.ResponseWriter, r *http.Request) {
+func (wa *WebAPI) logeventsSave(w http.ResponseWriter, r *http.Request) {
+	wa.
+}
+
+func (wa *WebAPI) logevents(w http.ResponseWriter, r *http.Request) {
 	wa.Logger.Debug(r.RemoteAddr, " Requested ", r.RequestURI)
 	w.Write([]byte(`{"status":"ok"}`))
 }

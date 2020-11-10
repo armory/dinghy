@@ -46,7 +46,7 @@ func testHealthCheckLogging(t *testing.T, endpoint string) {
 	logger.EXPECT().Debug(gomock.Any()).Times(1)
 	logger.EXPECT().Info(gomock.Any()).Times(0)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -75,7 +75,7 @@ func TestGithubWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode github webhook: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
@@ -91,7 +91,7 @@ func TestGithubWebhookHandlerNoRef(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Info(gomock.Eq("Possibly a non-Push notification received (blank ref)")).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{}`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
@@ -110,7 +110,7 @@ func TestStashWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode stash webhook: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/stash", payload)
@@ -128,7 +128,7 @@ func TestStashWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode stash webhook: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "stash", "refChanges": "not an array"}`)
 
@@ -146,7 +146,7 @@ func TestBitbucketWebhookHandlerBadJSON(t *testing.T) {
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Unable to determine bitbucket event type: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket", payload)
@@ -164,7 +164,7 @@ func TestBitbucketWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode bitbucket-server webhook: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "repo:refs_changed", "changes": "not an array"}`)
 
@@ -182,7 +182,7 @@ func TestBitbucketCloudWebhookHandlerBadJSON(t *testing.T) {
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Unable to determine bitbucket event type: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
@@ -200,7 +200,7 @@ func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode bitbucket-cloud webhook: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "repo:push", "push": {"changes": "not an array"}}`)
 
@@ -216,7 +216,7 @@ func TestUnknownEventType(t *testing.T) {
 
 	logger := mock.NewMockFieldLogger(ctrl)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "", "changes": "not an array"}`)
 
