@@ -42,15 +42,21 @@ type LogEvent struct {
 }
 
 func (c LogEventRedisClient) GetLogEvents() ([]LogEvent, error) {
-	keys, _, err := c.RedisClient.Client.Scan(0, cache.CompileKey("logEventsKeys"), 1000).Result()
+	keys, _, err := c.RedisClient.Client.Scan(0, cache.CompileKey("logEvent*"), 1000).Result()
 	if err != nil {
 		return nil, err
 	}
 
 	var result []LogEvent
 	for _, key := range keys {
+
+		currentEventLog, errorNoKey := c.RedisClient.Client.Get(key).Result()
+		if errorNoKey != nil {
+
+			continue
+		}
 		var logEvent LogEvent
-		errorUnmarshal := json.Unmarshal([]byte(key), &logEvent)
+		errorUnmarshal := json.Unmarshal([]byte(currentEventLog), &logEvent)
 		if errorUnmarshal != nil {
 
 			continue

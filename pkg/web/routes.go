@@ -129,12 +129,29 @@ func (wa *WebAPI) Router() *mux.Router {
 // ==============
 
 func (wa *WebAPI) logeventsSave(w http.ResponseWriter, r *http.Request) {
-	wa.
+	test := logevents.LogEvent{
+		Org:        "org",
+		Repo:       "repo",
+		File:       "file",
+		User:       "user",
+		Message:    "message",
+		Commithash: "dasdljfasjln",
+	}
+	wa.LogEventsClient.SaveLogEvent(test)
 }
 
 func (wa *WebAPI) logevents(w http.ResponseWriter, r *http.Request) {
-	wa.Logger.Debug(r.RemoteAddr, " Requested ", r.RequestURI)
-	w.Write([]byte(`{"status":"ok"}`))
+	logEvents,err  := wa.LogEventsClient.GetLogEvents()
+	if err == nil {
+
+	}
+	//var logEventBytes []byte
+	//for _, currentLog := range logEvents {
+	//	currentByte := []byte(currentLog)
+	//	logEventBytes = append(logEventBytes, currentByte )
+	//}
+	bytesResult, _ := json.Marshal(logEvents)
+	w.Write(bytesResult)
 }
 
 func (wa *WebAPI) healthcheck(w http.ResponseWriter, r *http.Request) {
