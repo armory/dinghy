@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -151,7 +152,7 @@ func TestNewPushIncludesDinghyfileRenamed(t *testing.T) {
 	}))
 	defer func() { testServer.Close() }()
 
-	push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL})
+	push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL, Logger: dinghyfile.NewDinghylog()})
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -174,7 +175,7 @@ func TestNewPushTwoCommitsToSameFile(t *testing.T) {
 	}))
 	defer func() { testServer.Close() }()
 
-	push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL})
+	push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL, Logger: dinghyfile.NewDinghylog()})
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -197,7 +198,7 @@ func TestNewPushIncludesMultipleChangedFiles(t *testing.T) {
 	}))
 	defer func() { testServer.Close() }()
 
-	push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL})
+	push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL, Logger: dinghyfile.NewDinghylog()})
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -227,7 +228,7 @@ func TestNewPushWithPagination(t *testing.T) {
 	}))
 	defer func() { testServer.Close() }()
 
-	push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL})
+	push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL, Logger: dinghyfile.NewDinghylog()})
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -252,7 +253,7 @@ func TestNewPushFromFeatureBranchToMaster(t *testing.T) {
 	}))
 	defer func() { testServer.Close() }()
 
-	push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL})
+	push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL, Logger: dinghyfile.NewDinghylog()})
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -309,7 +310,7 @@ func TestIsBranch(t *testing.T) {
 			}))
 			defer func() { testServer.Close() }()
 
-			push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL})
+			push, err := NewPush(webhookPayload, Config{Endpoint: testServer.URL, Logger: dinghyfile.NewDinghylog()})
 			if err != nil {
 				t.Fatalf(err.Error())
 			}

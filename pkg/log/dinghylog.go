@@ -8,6 +8,10 @@ import (
 
 type DinghyLog interface {
 
+	WithField(key string, value interface{}) *log.Entry
+	WithFields(fields log.Fields) *log.Entry
+	WithError(err error) *log.Entry
+
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
 	Printf(format string, args ...interface{})
@@ -26,7 +30,76 @@ type DinghyLog interface {
 	Fatal(args ...interface{})
 	Panic(args ...interface{})
 
+	Debugln(args ...interface{})
+	Infoln(args ...interface{})
+	Println(args ...interface{})
+	Warnln(args ...interface{})
+	Warningln(args ...interface{})
+	Errorln(args ...interface{})
+	Fatalln(args ...interface{})
+	Panicln(args ...interface{})
+
 	GetBytesBuffByLoggerKey(key string) (*bytes.Buffer, error)
+}
+
+func (d DinghyLogs) WithField(key string, value interface{}) *log.Entry {
+	return d.Logs[SystemLogKey].Logger.WithField(key, value)
+}
+
+func (d DinghyLogs) WithFields(fields log.Fields) *log.Entry {
+	return d.Logs[SystemLogKey].Logger.WithFields(fields)
+}
+
+func (d DinghyLogs) WithError(err error) *log.Entry {
+	return d.Logs[SystemLogKey].Logger.WithError(err)
+}
+
+func (d DinghyLogs) Debugln(args ...interface{}) {
+	for _, log := range d.Logs {
+		log.Logger.Debugln(args)
+	}
+}
+
+func (d DinghyLogs) Infoln(args ...interface{}) {
+	for _, log := range d.Logs {
+		log.Logger.Infoln(args)
+	}
+}
+
+func (d DinghyLogs) Println(args ...interface{}) {
+	for _, log := range d.Logs {
+		log.Logger.Println(args)
+	}
+}
+
+func (d DinghyLogs) Warnln(args ...interface{}) {
+	for _, log := range d.Logs {
+		log.Logger.Warnln(args)
+	}
+}
+
+func (d DinghyLogs) Warningln(args ...interface{}) {
+	for _, log := range d.Logs {
+		log.Logger.Warningln(args)
+	}
+}
+
+func (d DinghyLogs) Errorln(args ...interface{}) {
+	for _, log := range d.Logs {
+		log.Logger.Errorln(args)
+	}
+}
+
+func (d DinghyLogs) Fatalln(args ...interface{}) {
+	for _, log := range d.Logs {
+		log.Logger.Fatalln(args)
+	}
+}
+
+func (d DinghyLogs) Panicln(args ...interface{}) {
+	for _, log := range d.Logs {
+		log.Logger.Panicln(args)
+	}
 }
 
 const (

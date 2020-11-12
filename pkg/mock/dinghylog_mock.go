@@ -7,6 +7,7 @@ package mock
 import (
 	bytes "bytes"
 	gomock "github.com/golang/mock/gomock"
+	logrus "github.com/sirupsen/logrus"
 	reflect "reflect"
 )
 
@@ -31,6 +32,48 @@ func NewMockDinghyLog(ctrl *gomock.Controller) *MockDinghyLog {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockDinghyLog) EXPECT() *MockDinghyLogMockRecorder {
 	return m.recorder
+}
+
+// WithField mocks base method.
+func (m *MockDinghyLog) WithField(key string, value interface{}) *logrus.Entry {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithField", key, value)
+	ret0, _ := ret[0].(*logrus.Entry)
+	return ret0
+}
+
+// WithField indicates an expected call of WithField.
+func (mr *MockDinghyLogMockRecorder) WithField(key, value interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithField", reflect.TypeOf((*MockDinghyLog)(nil).WithField), key, value)
+}
+
+// WithFields mocks base method.
+func (m *MockDinghyLog) WithFields(fields logrus.Fields) *logrus.Entry {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithFields", fields)
+	ret0, _ := ret[0].(*logrus.Entry)
+	return ret0
+}
+
+// WithFields indicates an expected call of WithFields.
+func (mr *MockDinghyLogMockRecorder) WithFields(fields interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithFields", reflect.TypeOf((*MockDinghyLog)(nil).WithFields), fields)
+}
+
+// WithError mocks base method.
+func (m *MockDinghyLog) WithError(err error) *logrus.Entry {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithError", err)
+	ret0, _ := ret[0].(*logrus.Entry)
+	return ret0
+}
+
+// WithError indicates an expected call of WithError.
+func (mr *MockDinghyLogMockRecorder) WithError(err interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithError", reflect.TypeOf((*MockDinghyLog)(nil).WithError), err)
 }
 
 // Debugf mocks base method.
@@ -295,6 +338,134 @@ func (m *MockDinghyLog) Panic(args ...interface{}) {
 func (mr *MockDinghyLogMockRecorder) Panic(args ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Panic", reflect.TypeOf((*MockDinghyLog)(nil).Panic), args...)
+}
+
+// Debugln mocks base method.
+func (m *MockDinghyLog) Debugln(args ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Debugln", varargs...)
+}
+
+// Debugln indicates an expected call of Debugln.
+func (mr *MockDinghyLogMockRecorder) Debugln(args ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Debugln", reflect.TypeOf((*MockDinghyLog)(nil).Debugln), args...)
+}
+
+// Infoln mocks base method.
+func (m *MockDinghyLog) Infoln(args ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Infoln", varargs...)
+}
+
+// Infoln indicates an expected call of Infoln.
+func (mr *MockDinghyLogMockRecorder) Infoln(args ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Infoln", reflect.TypeOf((*MockDinghyLog)(nil).Infoln), args...)
+}
+
+// Println mocks base method.
+func (m *MockDinghyLog) Println(args ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Println", varargs...)
+}
+
+// Println indicates an expected call of Println.
+func (mr *MockDinghyLogMockRecorder) Println(args ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Println", reflect.TypeOf((*MockDinghyLog)(nil).Println), args...)
+}
+
+// Warnln mocks base method.
+func (m *MockDinghyLog) Warnln(args ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Warnln", varargs...)
+}
+
+// Warnln indicates an expected call of Warnln.
+func (mr *MockDinghyLogMockRecorder) Warnln(args ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warnln", reflect.TypeOf((*MockDinghyLog)(nil).Warnln), args...)
+}
+
+// Warningln mocks base method.
+func (m *MockDinghyLog) Warningln(args ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Warningln", varargs...)
+}
+
+// Warningln indicates an expected call of Warningln.
+func (mr *MockDinghyLogMockRecorder) Warningln(args ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warningln", reflect.TypeOf((*MockDinghyLog)(nil).Warningln), args...)
+}
+
+// Errorln mocks base method.
+func (m *MockDinghyLog) Errorln(args ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Errorln", varargs...)
+}
+
+// Errorln indicates an expected call of Errorln.
+func (mr *MockDinghyLogMockRecorder) Errorln(args ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Errorln", reflect.TypeOf((*MockDinghyLog)(nil).Errorln), args...)
+}
+
+// Fatalln mocks base method.
+func (m *MockDinghyLog) Fatalln(args ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Fatalln", varargs...)
+}
+
+// Fatalln indicates an expected call of Fatalln.
+func (mr *MockDinghyLogMockRecorder) Fatalln(args ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Fatalln", reflect.TypeOf((*MockDinghyLog)(nil).Fatalln), args...)
+}
+
+// Panicln mocks base method.
+func (m *MockDinghyLog) Panicln(args ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Panicln", varargs...)
+}
+
+// Panicln indicates an expected call of Panicln.
+func (mr *MockDinghyLogMockRecorder) Panicln(args ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Panicln", reflect.TypeOf((*MockDinghyLog)(nil).Panicln), args...)
 }
 
 // GetBytesBuffByLoggerKey mocks base method.

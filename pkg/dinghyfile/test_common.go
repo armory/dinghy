@@ -52,7 +52,7 @@ func testBasePipelineBuilder() *PipelineBuilder {
 	return &PipelineBuilder{
 		Depman:      cache.NewMemoryCache(),
 		EventClient: &EventsTestClient{},
-		Logger:      newDinghylog(),
+		Logger:      NewDinghylog(),
 		Ums:         []Unmarshaller{&DinghyJsonUnmarshaller{}},
 		TemplateOrg: "armory",
 		Action:      pipebuilder.Process,
@@ -65,7 +65,7 @@ func mockLogger(dr *DinghyfileParser, ctrl *gomock.Controller) *mock.MockDinghyL
 	return dr.Builder.Logger.(*mock.MockDinghyLog)
 }
 
-func newDinghylog() log.DinghyLog{
+func NewDinghylog() log.DinghyLog{
 	return log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
 		log.SystemLogKey : {
 			Logger:         logrus.New(),
