@@ -20,12 +20,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/armory/dinghy/pkg/log"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/git"
-	"github.com/sirupsen/logrus"
 )
 
 // Push contains data about a push full of commits
@@ -35,7 +35,7 @@ type Push struct {
 	StashEndpoint string
 	StashUsername string
 	StashToken    string
-	Logger        logrus.FieldLogger
+	Logger        log.DinghyLog
 }
 
 // WebhookPayload is the payload from the webhook
@@ -146,7 +146,7 @@ type Config struct {
 	Token    string
 	Endpoint string
 	Branch   string
-	Logger   logrus.FieldLogger
+	Logger   log.DinghyLog
 }
 
 // NewPush creates a new Push
@@ -240,6 +240,11 @@ func (p *Push) SetCommitStatus(s git.Status, description string) {}
 // GetCommitStatus gets a commit status
 func (p *Push) GetCommitStatus() (error, git.Status, string) {
 	return errors.New("functionality not implemented"), "",""
+}
+
+// Commits return the list of commit hashes
+func (p *Push) GetCommits() []string {
+	return []string{}
 }
 
 // Name returns the name of the provider to be used in configuration

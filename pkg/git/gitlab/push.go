@@ -17,8 +17,8 @@
 package gitlab
 
 import (
+	"github.com/armory/dinghy/pkg/log"
 	"github.com/armory/dinghy/pkg/settings"
-	"github.com/sirupsen/logrus"
 	gitlab "github.com/xanzy/go-gitlab"
 	"strings"
 )
@@ -27,7 +27,7 @@ import (
 type Push struct {
 	Event       *gitlab.PushEvent
 	DeckBaseURL string
-	Logger      logrus.FieldLogger
+	Logger      log.DinghyLog
 }
 
 func inSlice(arr []string, val string) bool {

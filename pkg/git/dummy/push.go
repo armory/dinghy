@@ -72,6 +72,11 @@ func (p *Push) GetCommitStatus() (error, git.Status, string) {
 	return errors.New("functionality not implemented"), "",""
 }
 
+// Commits return the list of commit hashes
+func (p *Push) GetCommits() []string {
+	return []string{}
+}
+
 // Name returns the name of the provider to be used in configuration
 func (p *Push) Name() string {
 	return "dummy"

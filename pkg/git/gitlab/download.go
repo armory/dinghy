@@ -19,7 +19,7 @@ package gitlab
 import (
 	"fmt"
 	"github.com/armory/dinghy/pkg/cache/local"
-	"github.com/sirupsen/logrus"
+	"github.com/armory/dinghy/pkg/log"
 	gitlab "github.com/xanzy/go-gitlab"
 	"regexp"
 	"strings"
@@ -35,7 +35,7 @@ type GitLabClient interface {
 type FileService struct {
 	cache  local.Cache
 	Client *gitlab.Client
-	Logger logrus.FieldLogger
+	Logger log.DinghyLog
 }
 
 //eDownload a file from gitlab

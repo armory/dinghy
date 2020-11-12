@@ -19,6 +19,7 @@ package logevents
 import (
 	"encoding/json"
 	"github.com/armory/dinghy/pkg/cache"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -32,51 +33,55 @@ type LogEventRedisClient struct {
 }
 
 type LogEvent struct {
-	Org 	string
-	Repo 	string
-	File	string
-	User	string
-	Message	string
-	Date	int64
-	Commithash	string
+	Org 		string
+	Repo 		string
+	Files		[]string
+	Message		string
+	Date		int64
+	Commits		[]string
 }
 
+
+
 func (c LogEventRedisClient) GetLogEvents() ([]LogEvent, error) {
+	loge := log.WithFields(log.Fields{"func": "GetLogEvents"})
 	keys, _, err := c.RedisClient.Client.Scan(0, cache.CompileKey("logEvent*"), 1000).Result()
 	if err != nil {
+		loge.WithFields(log.Fields{"operation": "scan key", "key": cache.CompileKey("logEvent*")}).Error(err)
 		return nil, err
 	}
-
 	var result []LogEvent
 	for _, key := range keys {
-
 		currentEventLog, errorNoKey := c.RedisClient.Client.Get(key).Result()
 		if errorNoKey != nil {
-
+			loge.WithFields(log.Fields{"operation": "get key", "key": key}).Error(err)
 			continue
 		}
 		var logEvent LogEvent
 		errorUnmarshal := json.Unmarshal([]byte(currentEventLog), &logEvent)
 		if errorUnmarshal != nil {
-
+			loge.WithFields(log.Fields{"operation": "unmarshall key " + key, "content": currentEventLog}).Error(err)
 			continue
 		}
 		result = append(result, logEvent)
 	}
-
 	return result, nil
 }
 
 func (c LogEventRedisClient) SaveLogEvent(logEvent LogEvent) error {
+	loge := log.WithFields(log.Fields{"func": "SaveLogEvent"})
 	nanos := time.Now().UnixNano()
 	milis := nanos / 1000000
 	logEvent.Date = milis
 	logEventBytes, err := json.Marshal(logEvent)
 	if err != nil {
+		loge.WithFields(log.Fields{"operation": "marshall logEvent", "content": logEvent}).Error(err)
 		return err
 	}
 	key := cache.CompileKey("logEvent" + string(milis))
-	c.RedisClient.Client.Set(key, logEventBytes, 1 * time.Hour)
-
+	if _, err := c.RedisClient.Client.Set(key, logEventBytes, 1 * time.Hour).Result(); err != nil {
+		loge.WithFields(log.Fields{"operation": "set key", "key": key, "content": logEventBytes}).Error(err)
+		return err
+	}
 	return nil
 }
