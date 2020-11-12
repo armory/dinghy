@@ -164,7 +164,7 @@ func TestBitbucketWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode bitbucket-server webhook: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, nil, mock.NewMockFieldLogger(ctrl), nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "repo:refs_changed", "changes": "not an array"}`)
 
@@ -200,7 +200,7 @@ func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode bitbucket-cloud webhook: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, nil, mock.NewMockFieldLogger(ctrl), nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "repo:push", "push": {"changes": "not an array"}}`)
 

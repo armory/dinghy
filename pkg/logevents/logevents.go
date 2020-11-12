@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"github.com/armory/dinghy/pkg/cache"
 	log "github.com/sirupsen/logrus"
+	"strconv"
 	"time"
 )
 
@@ -39,32 +40,42 @@ type LogEvent struct {
 	Message		string
 	Date		int64
 	Commits		[]string
+	Status		string
 }
-
 
 
 func (c LogEventRedisClient) GetLogEvents() ([]LogEvent, error) {
 	loge := log.WithFields(log.Fields{"func": "GetLogEvents"})
-	keys, _, err := c.RedisClient.Client.Scan(0, cache.CompileKey("logEvent*"), 1000).Result()
-	if err != nil {
-		loge.WithFields(log.Fields{"operation": "scan key", "key": cache.CompileKey("logEvent*")}).Error(err)
-		return nil, err
-	}
+	key := cache.CompileKey("logEvent","*")
+	var cursor uint64
 	var result []LogEvent
-	for _, key := range keys {
-		currentEventLog, errorNoKey := c.RedisClient.Client.Get(key).Result()
-		if errorNoKey != nil {
-			loge.WithFields(log.Fields{"operation": "get key", "key": key}).Error(err)
-			continue
+	for {
+		keys, nextcursor, err := c.RedisClient.Client.Scan(cursor, key , 1000).Result()
+		cursor = nextcursor
+		if err != nil {
+			loge.WithFields(log.Fields{"operation": "scan key", "key": cache.CompileKey("logEvent*")}).Error(err)
+			return nil, err
 		}
-		var logEvent LogEvent
-		errorUnmarshal := json.Unmarshal([]byte(currentEventLog), &logEvent)
-		if errorUnmarshal != nil {
-			loge.WithFields(log.Fields{"operation": "unmarshall key " + key, "content": currentEventLog}).Error(err)
-			continue
+		for _, key := range keys {
+			currentEventLog, errorNoKey := c.RedisClient.Client.Get(key).Result()
+			if errorNoKey != nil {
+				loge.WithFields(log.Fields{"operation": "get key", "key": key}).Error(err)
+				continue
+			}
+			var logEvent LogEvent
+			errorUnmarshal := json.Unmarshal([]byte(currentEventLog), &logEvent)
+			if errorUnmarshal != nil {
+				loge.WithFields(log.Fields{"operation": "unmarshall key " + key, "content": currentEventLog}).Error(err)
+				continue
+			}
+			result = append(result, logEvent)
 		}
-		result = append(result, logEvent)
+
+		if cursor == 0 {
+			break
+		}
 	}
+
 	return result, nil
 }
 
@@ -78,7 +89,7 @@ func (c LogEventRedisClient) SaveLogEvent(logEvent LogEvent) error {
 		loge.WithFields(log.Fields{"operation": "marshall logEvent", "content": logEvent}).Error(err)
 		return err
 	}
-	key := cache.CompileKey("logEvent" + string(milis))
+	key := cache.CompileKey("logEvent", strconv.FormatInt(milis, 10))
 	if _, err := c.RedisClient.Client.Set(key, logEventBytes, 1 * time.Hour).Result(); err != nil {
 		loge.WithFields(log.Fields{"operation": "set key", "key": key, "content": logEventBytes}).Error(err)
 		return err

@@ -17,9 +17,12 @@
 package github
 
 import (
+	"bytes"
 	"errors"
+	"github.com/armory/dinghy/pkg/log"
 	"testing"
 
+	_ "github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -158,7 +161,12 @@ func TestDownload(t *testing.T) {
 			branch: "branch",
 			fs: &FileService{
 				GitHub: &GitHubTest{contents: "file contents"},
-				Logger: logrus.New(),
+				Logger: log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
+					log.SystemLogKey : {
+						Logger:         logrus.New(),
+						LogEventBuffer: &bytes.Buffer{},
+					},
+				}},
 			},
 			expected:    "file contents",
 			expectedErr: nil,
@@ -173,7 +181,12 @@ func TestDownload(t *testing.T) {
 					contents: "",
 					err:      errors.New("fail"),
 				},
-				Logger: logrus.New(),
+				Logger: log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
+					log.SystemLogKey : {
+						Logger:         logrus.New(),
+						LogEventBuffer: &bytes.Buffer{},
+					},
+				}},
 			},
 			expected:    "",
 			expectedErr: errors.New("fail"),

@@ -193,14 +193,12 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	if err != nil {
 		dinghyLog.Errorf("failed to read body in github webhook handler: %s", err.Error())
-		saveLogEvent(wa.LogEventsClient, &p,dinghyLog)
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	dinghyLog.Infof("Received payload: %s", string(body))
 	if err := json.Unmarshal(body, &p); err != nil {
 		dinghyLog.Errorf("failed to decode github webhook: %s", err.Error())
-		saveLogEvent(wa.LogEventsClient, &p,dinghyLog)
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -208,7 +206,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	if p.Ref == "" {
 		// Unmarshal failed, might be a non-Push notification. Log event and return
 		dinghyLog.Info("Possibly a non-Push notification received (blank ref)")
-		saveLogEvent(wa.LogEventsClient, &p,dinghyLog)
+		saveLogEventError(wa.LogEventsClient, &p,dinghyLog)
 		return
 	}
 
@@ -221,7 +219,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		whvalidations := wa.Config.WebhookValidations
 		if whvalidations != nil && len(whvalidations) > 0 {
 			if !validateWebhookSignature(whvalidations, repo, org, provider, body, r, dinghyLog) {
-				saveLogEvent(wa.LogEventsClient, &p,dinghyLog)
+				saveLogEventError(wa.LogEventsClient, &p,dinghyLog)
 				return
 			}
 		}
@@ -238,9 +236,19 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	wa.buildPipelines(&p, body, &fileService, w, dinghyLog)
 }
 
-func saveLogEvent(logevent logevents.LogEventsClient, p Push, dinghyLog log2.DinghyLog) {
+func saveLogEventError(logeventClient logevents.LogEventsClient, p Push, dinghyLog log2.DinghyLog) {
+	saveLogEvent(logeventClient, p, dinghyLog, "error")
+}
+
+func saveLogEventSuccess(logeventClient logevents.LogEventsClient, p Push, dinghyLog log2.DinghyLog) {
+	saveLogEvent(logeventClient, p, dinghyLog, "success")
+}
+
+func saveLogEvent(logeventClient logevents.LogEventsClient, p Push, dinghyLog log2.DinghyLog, status string) {
 	if buf, err := dinghyLog.GetBytesBuffByLoggerKey(log2.LogEventKey); err == nil {
-		logevent.SaveLogEvent(NewLogEventFromPush(p, buf.String()))
+		logEvent := NewLogEventFromPush(p, buf.String())
+		logEvent.Status = status
+		logeventClient.SaveLogEvent(logEvent)
 	}
 }
 
@@ -344,7 +352,6 @@ func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		dinghyLog.Errorf("failed to read body in gitlab webhook handler: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
-		saveLogEvent(wa.LogEventsClient, &p,dinghyLog)
 		return
 	}
 	dinghyLog.Infof("Received payload: %s", string(body))
@@ -353,12 +360,12 @@ func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if strings.Contains(err.Error(), "unexpected event type") {
 			dinghyLog.Infof("Non-Push gitlab notification (%s)", strings.SplitN(err.Error(), ":", 2))
-			saveLogEvent(wa.LogEventsClient, &p,dinghyLog)
+			saveLogEventError(wa.LogEventsClient, &p,dinghyLog)
 			return
 		}
 		dinghyLog.Errorf("failed to parse gitlab webhook: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
-		saveLogEvent(wa.LogEventsClient, &p,dinghyLog)
+		saveLogEventError(wa.LogEventsClient, &p,dinghyLog)
 		return
 	}
 	wa.buildPipelines(&p, body, &fileService, w, dinghyLog)
@@ -395,7 +402,7 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		dinghyLog.Warnf("stash.NewPush failed: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
-		saveLogEvent(wa.LogEventsClient, p,dinghyLog)
+		saveLogEventError(wa.LogEventsClient, p,dinghyLog)
 		return
 	}
 
@@ -463,7 +470,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		}
 		p, err := bbcloud.NewPush(payload, bbcloudConfig)
 		if err != nil {
-			saveLogEvent(wa.LogEventsClient, p,dinghyLog)
+			saveLogEventError(wa.LogEventsClient, p,dinghyLog)
 			util.WriteHTTPError(w, http.StatusInternalServerError, err)
 			return
 		}
@@ -512,7 +519,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		p, err := stash.NewPush(payload, stashConfig)
 		if err != nil {
 			util.WriteHTTPError(w, http.StatusInternalServerError, err)
-			saveLogEvent(wa.LogEventsClient, p,dinghyLog)
+			saveLogEventError(wa.LogEventsClient, p,dinghyLog)
 			return
 		}
 
@@ -638,12 +645,12 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	if err == dinghyfile.ErrMalformedJSON {
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		dinghyLog.Errorf("ProcessPush Failed (malformed JSON): %s", err.Error())
-		saveLogEvent(wa.LogEventsClient, p, dinghyLog)
+		saveLogEventError(wa.LogEventsClient, p, dinghyLog)
 		return
 	} else if err != nil {
 		dinghyLog.Errorf("ProcessPush Failed (other): %s", err.Error())
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
-		saveLogEvent(wa.LogEventsClient, p, dinghyLog)
+		saveLogEventError(wa.LogEventsClient, p, dinghyLog)
 		return
 	}
 
@@ -663,13 +670,13 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 				}
 				p.SetCommitStatus(git.StatusError,"Rebuilding dependent dinghyfiles Failed")
 				dinghyLog.Errorf("RebuildModuleRoots Failed: %s", err.Error())
-				saveLogEvent(wa.LogEventsClient, p, dinghyLog)
+				saveLogEventError(wa.LogEventsClient, p, dinghyLog)
 				return
 			}
 		}
 		p.SetCommitStatus(git.StatusSuccess, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusSuccess])
 	}
 
-	saveLogEvent(wa.LogEventsClient, p, dinghyLog)
+	saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog)
 	w.Write([]byte(`{"status":"accepted"}`))
 }
