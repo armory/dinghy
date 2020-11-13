@@ -30,6 +30,7 @@ type LogEventsClient interface {
 }
 
 type LogEventRedisClient struct {
+	MinutesTTL	time.Duration
 	RedisClient *cache.RedisCache
 }
 
@@ -90,7 +91,7 @@ func (c LogEventRedisClient) SaveLogEvent(logEvent LogEvent) error {
 		return err
 	}
 	key := cache.CompileKey("logEvent", strconv.FormatInt(milis, 10))
-	if _, err := c.RedisClient.Client.Set(key, logEventBytes, 1 * time.Hour).Result(); err != nil {
+	if _, err := c.RedisClient.Client.Set(key, logEventBytes, c.MinutesTTL * time.Minute).Result(); err != nil {
 		loge.WithFields(log.Fields{"operation": "set key", "key": key, "content": logEventBytes}).Error(err)
 		return err
 	}

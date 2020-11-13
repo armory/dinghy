@@ -90,6 +90,7 @@ func NewDefaultSettings() Settings {
 		Server: server.ServerConfig{
 			Port: uint32(dinghyPort),
 		},
+		LogEventTTLMinutes : 1440,
 	}
 }
 

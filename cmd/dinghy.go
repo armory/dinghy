@@ -112,7 +112,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		Logger: redisClient.Logger,
 	}
 
-	logEventsClient := logevents.LogEventRedisClient{ RedisClient: redisClient }
+	logEventsClient := logevents.LogEventRedisClient{ RedisClient: redisClient, MinutesTTL: config.LogEventTTLMinutes }
 	api := web.NewWebAPI(config, redisClient, client, ec, log, &redisClientReadOnly, clientReadOnly, logEventsClient)
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
 	if config.ParserFormat == "json" {

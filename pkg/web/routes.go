@@ -109,12 +109,11 @@ func (wa *WebAPI) AddNotifier(n notifiers.Notifier) {
 // Router defines the routes for the application.
 func (wa *WebAPI) Router() *mux.Router {
 	r := mux.NewRouter()
-	r.HandleFunc("/logevents", wa.logevents).Methods("GET")
-	r.HandleFunc("/logeventsSave", wa.logeventsSave).Methods("GET")
 	r.Handle("/metrics", promhttp.Handler())
 	r.HandleFunc("/", wa.healthcheck)
 	r.HandleFunc("/health", wa.healthcheck)
 	r.HandleFunc("/healthcheck", wa.healthcheck)
+	r.HandleFunc("/v1/logevents", wa.logevents).Methods("GET")
 	r.HandleFunc("/v1/webhooks/github", wa.githubWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/gitlab", wa.gitlabWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/stash", wa.stashWebhookHandler).Methods("POST")
@@ -129,17 +128,6 @@ func (wa *WebAPI) Router() *mux.Router {
 // ==============
 // route handlers
 // ==============
-
-func (wa *WebAPI) logeventsSave(w http.ResponseWriter, r *http.Request) {
-	test := logevents.LogEvent{
-		Org:        "org",
-		Repo:       "repo",
-		Files:      []string{"file"},
-		Message:    "message",
-		Commits:  	[]string{"dasdljfasjln"},
-	}
-	wa.LogEventsClient.SaveLogEvent(test)
-}
 
 func (wa *WebAPI) logevents(w http.ResponseWriter, r *http.Request) {
 	logEvents,err  := wa.LogEventsClient.GetLogEvents()
