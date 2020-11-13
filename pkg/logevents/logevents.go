@@ -35,13 +35,13 @@ type LogEventRedisClient struct {
 }
 
 type LogEvent struct {
-	Org 		string
-	Repo 		string
-	Files		[]string
-	Message		string
-	Date		int64
-	Commits		[]string
-	Status		string
+	Org 		string		`json:"org" yaml:"org"`
+	Repo 		string		`json:"repo" yaml:"repo"`
+	Files		[]string	`json:"files" yaml:"files"`
+	Message		string		`json:"message" yaml:"message"`
+	Date		int64		`json:"date" yaml:"date"`
+	Commits		[]string	`json:"commits" yaml:"commits"`
+	Status		string		`json:"status" yaml:"status"`
 }
 
 

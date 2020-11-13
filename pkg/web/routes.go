@@ -22,7 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
-	log2 "github.com/armory/dinghy/pkg/log"
+	dinghylog "github.com/armory/dinghy/pkg/log"
 	"github.com/armory/dinghy/pkg/logevents"
 	"io/ioutil"
 	"net/http"
@@ -144,7 +144,7 @@ func (wa *WebAPI) healthcheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := log2.NewDinghyLogs(wa.Logger)
+	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
 	var fileService = dummy.FileService{}
 
 	builder := &dinghyfile.PipelineBuilder{
@@ -173,7 +173,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := log2.NewDinghyLogs(wa.Logger)
+	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
 
 	p := github.Push{Logger: dinghyLog}
 
@@ -223,16 +223,16 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	wa.buildPipelines(&p, body, &fileService, w, dinghyLog)
 }
 
-func saveLogEventError(logeventClient logevents.LogEventsClient, p Push, dinghyLog log2.DinghyLog) {
+func saveLogEventError(logeventClient logevents.LogEventsClient, p Push, dinghyLog dinghylog.DinghyLog) {
 	saveLogEvent(logeventClient, p, dinghyLog, "error")
 }
 
-func saveLogEventSuccess(logeventClient logevents.LogEventsClient, p Push, dinghyLog log2.DinghyLog) {
+func saveLogEventSuccess(logeventClient logevents.LogEventsClient, p Push, dinghyLog dinghylog.DinghyLog) {
 	saveLogEvent(logeventClient, p, dinghyLog, "success")
 }
 
-func saveLogEvent(logeventClient logevents.LogEventsClient, p Push, dinghyLog log2.DinghyLog, status string) {
-	if buf, err := dinghyLog.GetBytesBuffByLoggerKey(log2.LogEventKey); err == nil {
+func saveLogEvent(logeventClient logevents.LogEventsClient, p Push, dinghyLog dinghylog.DinghyLog, status string) {
+	if buf, err := dinghyLog.GetBytesBuffByLoggerKey(dinghylog.LogEventKey); err == nil {
 		logEvent := NewLogEventFromPush(p, buf.String())
 		logEvent.Status = status
 		logeventClient.SaveLogEvent(logEvent)
@@ -262,7 +262,7 @@ func contains(whvalidations []string, provider string) bool {
 	return false
 }
 
-func validateWebhookSignature(whvalidations []settings.WebhookValidation, repo string, org string, provider string, body []byte, r *http.Request, logger log2.DinghyLog) bool {
+func validateWebhookSignature(whvalidations []settings.WebhookValidation, repo string, org string, provider string, body []byte, r *http.Request, logger dinghylog.DinghyLog) bool {
 	whcurrentvalidation := settings.WebhookValidation{}
 	if found,whval := findWebhookValidation(whvalidations, repo, org, provider); found {
 		//If record is found and validation is disabled then just return true
@@ -330,7 +330,7 @@ func getWebhookSecret(r *http.Request) string {
 }
 
 func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := log2.NewDinghyLogs(wa.Logger)
+	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
 
 	p := gitlab.Push{Logger: dinghyLog}
 
@@ -359,7 +359,7 @@ func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := log2.NewDinghyLogs(wa.Logger)
+	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
 	payload := stash.WebhookPayload{}
 
 	dinghyLog.Infof("Reading stash payload body")
@@ -405,7 +405,7 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := log2.NewDinghyLogs(wa.Logger)
+	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
 	// read the response body to check for the type and use NopCloser so it can be decoded later
 	keys := make(map[string]interface{})
 	b, err := ioutil.ReadAll(r.Body)
@@ -569,7 +569,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 
 // TODO: this func should return an error and allow the handlers to return the http response. Additionally,
 // it probably doesn't belong in this file once refactored.
-func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader, w http.ResponseWriter, dinghyLog log2.DinghyLog) {
+func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader, w http.ResponseWriter, dinghyLog dinghylog.DinghyLog) {
 	// see if we have any configurations for this repo.
 	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
 	var validation bool
