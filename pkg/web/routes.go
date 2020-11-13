@@ -206,7 +206,6 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	if p.Ref == "" {
 		// Unmarshal failed, might be a non-Push notification. Log event and return
 		dinghyLog.Info("Possibly a non-Push notification received (blank ref)")
-		saveLogEventError(wa.LogEventsClient, &p,dinghyLog)
 		return
 	}
 
@@ -470,7 +469,6 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		}
 		p, err := bbcloud.NewPush(payload, bbcloudConfig)
 		if err != nil {
-			saveLogEventError(wa.LogEventsClient, p,dinghyLog)
 			util.WriteHTTPError(w, http.StatusInternalServerError, err)
 			return
 		}
@@ -519,7 +517,6 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		p, err := stash.NewPush(payload, stashConfig)
 		if err != nil {
 			util.WriteHTTPError(w, http.StatusInternalServerError, err)
-			saveLogEventError(wa.LogEventsClient, p,dinghyLog)
 			return
 		}
 
