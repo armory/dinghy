@@ -51,7 +51,7 @@ func (c LogEventRedisClient) GetLogEvents() ([]LogEvent, error) {
 	loge := log.WithFields(log.Fields{"func": "GetLogEvents"})
 	key := cache.CompileKey("logEvent","*")
 	var cursor uint64
-	var result []LogEvent
+	result := []LogEvent{}
 	for {
 		keys, nextcursor, err := c.RedisClient.Client.Scan(cursor, key , 1000).Result()
 		cursor = nextcursor
