@@ -42,6 +42,8 @@ type LogEvent struct {
 	Date		int64		`json:"date" yaml:"date"`
 	Commits		[]string	`json:"commits" yaml:"commits"`
 	Status		string		`json:"status" yaml:"status"`
+	RawData		string		`json:"rawdata" yaml:"rawdata"`
+	RenderedDinghyfile	string		`json:"rendereddinghyfile" yaml:"rendereddinghyfile"`
 }
 
 
