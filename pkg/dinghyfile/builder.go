@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
+	"github.com/armory/dinghy/pkg/log"
 	"path/filepath"
 	"regexp"
 	"time"
@@ -30,7 +31,6 @@ import (
 	"github.com/armory/dinghy/pkg/notifiers"
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/plank/v3"
-	log "github.com/sirupsen/logrus"
 )
 
 type VarMap map[string]interface{}
@@ -52,7 +52,7 @@ type PipelineBuilder struct {
 	AutolockPipelines           string
 	EventClient                 events.EventClient
 	Parser                      Parser
-	Logger                      log.FieldLogger
+	Logger                      log.DinghyLog
 	Ums                         []Unmarshaller
 	Notifiers                   []notifiers.Notifier
 	PushRaw                     map[string]interface{}

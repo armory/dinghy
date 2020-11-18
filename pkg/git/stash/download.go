@@ -19,21 +19,20 @@ package stash
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/armory/dinghy/pkg/log"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/cache/local"
-
-	"github.com/sirupsen/logrus"
 )
 
 // FileService is for working with repositories
 type FileService struct {
 	cache  local.Cache
 	Config Config
-	Logger logrus.FieldLogger
+	Logger log.DinghyLog
 }
 
 // FileContentsResponse contains response from Stash when you fetch a file

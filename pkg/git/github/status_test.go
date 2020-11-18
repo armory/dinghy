@@ -33,7 +33,7 @@ func TestSetCommitStatusSuccessfully(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	logger := mock.NewMockFieldLogger(ctrl)
+	logger := mock.NewMockDinghyLog(ctrl)
 	logger.EXPECT().Error(gomock.Any()).Times(0)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +62,7 @@ func TestSetCommitStatusFails(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	logger := mock.NewMockFieldLogger(ctrl)
+	logger := mock.NewMockDinghyLog(ctrl)
 	logger.EXPECT().Error(gomock.Any()).Times(1)
 
 	// TODO: Do not use global variable. This will lead to side-effects.
@@ -289,7 +289,7 @@ func TestGetCommitStatus(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			logger := mock.NewMockFieldLogger(ctrl)
+			logger := mock.NewMockDinghyLog(ctrl)
 			logger.EXPECT().Error(gomock.Any()).Times(0)
 
 			logger.EXPECT().Warnf(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(tt.warning)

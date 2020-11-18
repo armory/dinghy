@@ -22,8 +22,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
+	dinghylog "github.com/armory/dinghy/pkg/log"
+	"github.com/armory/dinghy/pkg/logevents"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/events"
@@ -55,6 +58,7 @@ type Push interface {
 	IsMaster() bool
 	SetCommitStatus(s git.Status, description string)
 	GetCommitStatus() (error, git.Status, string)
+	GetCommits() []string
 	Name() string
 }
 
@@ -69,9 +73,10 @@ type WebAPI struct {
 	Ums         []dinghyfile.Unmarshaller
 	Notifiers   []notifiers.Notifier
 	Parser      dinghyfile.Parser
+	LogEventsClient	logevents.LogEventsClient
 }
 
-func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger, depreadonly dinghyfile.DependencyManager, clientreadonly util.PlankClient) *WebAPI {
+func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger, depreadonly dinghyfile.DependencyManager, clientreadonly util.PlankClient, logeventsClient logevents.LogEventsClient) *WebAPI {
 	return &WebAPI{
 		Config:      s,
 		Client:      c,
@@ -82,6 +87,7 @@ func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.Plan
 		Notifiers:   []notifiers.Notifier{},
 		ClientReadOnly: clientreadonly,
 		CacheReadOnly: depreadonly,
+		LogEventsClient: logeventsClient,
 	}
 }
 
@@ -108,6 +114,7 @@ func (wa *WebAPI) Router() *mux.Router {
 	r.HandleFunc("/", wa.healthcheck)
 	r.HandleFunc("/health", wa.healthcheck)
 	r.HandleFunc("/healthcheck", wa.healthcheck)
+	r.HandleFunc("/v1/logevents", wa.logevents).Methods("GET")
 	r.HandleFunc("/v1/webhooks/github", wa.githubWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/gitlab", wa.gitlabWebhookHandler).Methods("POST")
 	r.HandleFunc("/v1/webhooks/stash", wa.stashWebhookHandler).Methods("POST")
@@ -123,12 +130,22 @@ func (wa *WebAPI) Router() *mux.Router {
 // route handlers
 // ==============
 
+func (wa *WebAPI) logevents(w http.ResponseWriter, r *http.Request) {
+	logEvents,err  := wa.LogEventsClient.GetLogEvents()
+	if err == nil {
+
+	}
+	bytesResult, _ := json.Marshal(logEvents)
+	w.Write(bytesResult)
+}
+
 func (wa *WebAPI) healthcheck(w http.ResponseWriter, r *http.Request) {
 	wa.Logger.Debug(r.RemoteAddr, " Requested ", r.RequestURI)
 	w.Write([]byte(`{"status":"ok"}`))
 }
 
 func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
 	var fileService = dummy.FileService{}
 
 	builder := &dinghyfile.PipelineBuilder{
@@ -137,7 +154,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		Client:               wa.Client,
 		DeleteStalePipelines: false,
 		AutolockPipelines:    wa.Config.AutoLockPipelines,
-		Logger:               wa.Logger,
+		Logger:               dinghyLog,
 		Ums:                  wa.Ums,
 		Action:               pipebuilder.Process,
 	}
@@ -157,25 +174,27 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	p := github.Push{Logger: wa.Logger}
+	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
+
+	p := github.Push{Logger: dinghyLog}
 
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		wa.Logger.Errorf("failed to read body in github webhook handler: %s", err.Error())
+		dinghyLog.Errorf("failed to read body in github webhook handler: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	wa.Logger.Infof("Received payload: %s", string(body))
+	dinghyLog.Infof("Received payload: %s", string(body))
 	if err := json.Unmarshal(body, &p); err != nil {
-		wa.Logger.Errorf("failed to decode github webhook: %s", err.Error())
+		dinghyLog.Errorf("failed to decode github webhook: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	if p.Ref == "" {
 		// Unmarshal failed, might be a non-Push notification. Log event and return
-		wa.Logger.Info("Possibly a non-Push notification received (blank ref)")
+		dinghyLog.Info("Possibly a non-Push notification received (blank ref)")
 		return
 	}
 
@@ -187,7 +206,8 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		org := p.Org()
 		whvalidations := wa.Config.WebhookValidations
 		if whvalidations != nil && len(whvalidations) > 0 {
-			if !validateWebhookSignature(whvalidations, repo, org, provider, body, r, wa) {
+			if !validateWebhookSignature(whvalidations, repo, org, provider, body, r, dinghyLog) {
+				saveLogEventError(wa.LogEventsClient, &p,dinghyLog, logevents.LogEvent{	RawData: string(body)})
 				return
 			}
 		}
@@ -199,9 +219,9 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	gh := github.Config{Endpoint: wa.Config.GithubEndpoint, Token: wa.Config.GitHubToken}
 	p.Config = gh
 	p.DeckBaseURL = wa.Config.Deck.BaseURL
-	fileService := github.FileService{GitHub: &gh, Logger: wa.Logger}
+	fileService := github.FileService{GitHub: &gh, Logger: dinghyLog}
 
-	wa.buildPipelines(&p, body, &fileService, w)
+	wa.buildPipelines(&p, body, &fileService, w, dinghyLog)
 }
 
 func contains(whvalidations []string, provider string) bool {
@@ -216,27 +236,27 @@ func contains(whvalidations []string, provider string) bool {
 	return false
 }
 
-func validateWebhookSignature(whvalidations []settings.WebhookValidation, repo string, org string, provider string, body []byte, r *http.Request, wa *WebAPI) bool {
+func validateWebhookSignature(whvalidations []settings.WebhookValidation, repo string, org string, provider string, body []byte, r *http.Request, logger dinghylog.DinghyLog) bool {
 	whcurrentvalidation := settings.WebhookValidation{}
 	if found,whval := findWebhookValidation(whvalidations, repo, org, provider); found {
 		//If record is found and validation is disabled then just return true
 		if whval.Enabled == false {
-			wa.Logger.Infof("Webhook validation for %v/%v is disabled so validation will by bypassed", org, repo)
+			logger.Infof("Webhook validation for %v/%v is disabled so validation will by bypassed", org, repo)
 			return true
 		}
 		whcurrentvalidation = *whval
 	} else {
-		wa.Logger.Infof("Webhook validation for %v/%v was not found, searching for default-webhook-secret", org, repo)
+		logger.Infof("Webhook validation for %v/%v was not found, searching for default-webhook-secret", org, repo)
 		if foundDefault, whvalDefault := findWebhookValidation(whvalidations, "default-webhook-secret", org, provider); foundDefault{
 			if whvalDefault.Enabled == true {
 				whcurrentvalidation = *whvalDefault
-				wa.Logger.Infof("Webhook default secret was found for org: %v", org)
+				logger.Infof("Webhook default secret was found for org: %v", org)
 			} else {
-				wa.Logger.Infof("Webhook default secret for org: %v is disabled", org)
+				logger.Infof("Webhook default secret for org: %v is disabled", org)
 				return false
 			}
 		} else {
-			wa.Logger.Infof("Webhook validation for %v/%v and default-webhook-secret were not found", org, repo)
+			logger.Infof("Webhook validation for %v/%v and default-webhook-secret were not found", org, repo)
 			return false
 		}
 	}
@@ -245,11 +265,11 @@ func validateWebhookSignature(whvalidations []settings.WebhookValidation, repo s
 
 	if rawPayload == "" || whsecret == "" {
 		//Validate in webhook and raw_payload and webhook secret is present.
-		wa.Logger.Error("There is a webhook validation registered in dinghy but the webhook is not configured in github side")
+		logger.Error("There is a webhook validation registered in dinghy but the webhook is not configured in github side")
 		return false
 	}
 
-	return github.IsValidSignature([]byte(rawPayload), getWebhookSecret(r), whcurrentvalidation.Secret, wa.Logger)
+	return github.IsValidSignature([]byte(rawPayload), getWebhookSecret(r), whcurrentvalidation.Secret, logger)
 }
 
 func findWebhookValidation(whvalidations []settings.WebhookValidation, repo string, org string, provider string) (bool, *settings.WebhookValidation) {
@@ -284,44 +304,49 @@ func getWebhookSecret(r *http.Request) string {
 }
 
 func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	p := gitlab.Push{Logger: wa.Logger}
+	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
+
+	p := gitlab.Push{Logger: dinghyLog}
 
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		wa.Logger.Errorf("failed to read body in gitlab webhook handler: %s", err.Error())
+		dinghyLog.Errorf("failed to read body in gitlab webhook handler: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	wa.Logger.Infof("Received payload: %s", string(body))
+	dinghyLog.Infof("Received payload: %s", string(body))
 
 	fileService, err := p.ParseWebhook(wa.Config, body)
 	if err != nil {
 		if strings.Contains(err.Error(), "unexpected event type") {
-			wa.Logger.Infof("Non-Push gitlab notification (%s)", strings.SplitN(err.Error(), ":", 2))
+			dinghyLog.Infof("Non-Push gitlab notification (%s)", strings.SplitN(err.Error(), ":", 2))
+			saveLogEventError(wa.LogEventsClient, &p,dinghyLog, logevents.LogEvent{	RawData: string(body)})
 			return
 		}
-		wa.Logger.Errorf("failed to parse gitlab webhook: %s", err.Error())
+		dinghyLog.Errorf("failed to parse gitlab webhook: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
+		saveLogEventError(wa.LogEventsClient, &p,dinghyLog, logevents.LogEvent{	RawData: string(body)})
 		return
 	}
-	wa.buildPipelines(&p, body, &fileService, w)
+	wa.buildPipelines(&p, body, &fileService, w, dinghyLog)
 }
 
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
+	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
 	payload := stash.WebhookPayload{}
 
-	wa.Logger.Infof("Reading stash payload body")
+	dinghyLog.Infof("Reading stash payload body")
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		wa.Logger.Errorf("failed to read body in stash webhook handler: %s", err.Error())
+		dinghyLog.Errorf("failed to read body in stash webhook handler: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	defer r.Body.Close()
-	wa.Logger.Infof("Received payload: %s", string(body))
+	dinghyLog.Infof("Received payload: %s", string(body))
 	if err := json.Unmarshal(body, &payload); err != nil {
-		wa.Logger.Errorf("failed to decode stash webhook: %s", err.Error())
+		dinghyLog.Errorf("failed to decode stash webhook: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -331,13 +356,14 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		Endpoint: wa.Config.StashEndpoint,
 		Username: wa.Config.StashUsername,
 		Token:    wa.Config.StashToken,
-		Logger:   wa.Logger,
+		Logger:   dinghyLog,
 	}
-	wa.Logger.Infof("Instantiating Stash Payload")
+	dinghyLog.Infof("Instantiating Stash Payload")
 	p, err := stash.NewPush(payload, stashConfig)
 	if err != nil {
-		wa.Logger.Warnf("stash.NewPush failed: %s", err.Error())
+		dinghyLog.Warnf("stash.NewPush failed: %s", err.Error())
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+		saveLogEventError(wa.LogEventsClient, p,dinghyLog, logevents.LogEvent{	RawData: string(body)})
 		return
 	}
 
@@ -346,18 +372,19 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	// fileService here.
 	fileService := stash.FileService{
 		Config: stashConfig,
-		Logger: wa.Logger,
+		Logger: dinghyLog,
 	}
-	wa.Logger.Infof("Building pipeslines from Stash webhook")
-	wa.buildPipelines(p, body, &fileService, w)
+	dinghyLog.Infof("Building pipeslines from Stash webhook")
+	wa.buildPipelines(p, body, &fileService, w, dinghyLog)
 }
 
 func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
+	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
 	// read the response body to check for the type and use NopCloser so it can be decoded later
 	keys := make(map[string]interface{})
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		wa.Logger.Errorf("Failed to read request body: %s", err)
+		dinghyLog.Errorf("Failed to read request body: %s", err)
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -365,7 +392,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 	if err := json.Unmarshal(b, &keys); err != nil {
-		wa.Logger.Errorf("Unable to determine bitbucket event type: %s", err)
+		dinghyLog.Errorf("Unable to determine bitbucket event type: %s", err)
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -373,25 +400,25 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 	// Some bitbucket versions do not send the  X-Event-Key this causes event_type to not be parsed
 	// We will take the value eventKey instead since is the same
 	if _, found := keys["event_type"]; !found {
-		wa.Logger.Info("event_type was not found in payload, so eventKey will be used instead")
+		dinghyLog.Info("event_type was not found in payload, so eventKey will be used instead")
 		keys["event_type"] = keys["eventKey"]
 	}
 
 	switch keys["event_type"] {
 	case "repo:push", "pullrequest:fulfilled":
-		wa.Logger.Info("Processing bitbucket-cloud webhook")
+		dinghyLog.Info("Processing bitbucket-cloud webhook")
 		payload := bbcloud.WebhookPayload{}
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			wa.Logger.Errorf("failed to read body in bitbucket-cloud webhook handler: %s", err.Error())
+			dinghyLog.Errorf("failed to read body in bitbucket-cloud webhook handler: %s", err.Error())
 			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 			return
 		}
 		defer r.Body.Close()
-		wa.Logger.Infof("Received payload: %s", string(body))
+		dinghyLog.Infof("Received payload: %s", string(body))
 		if err := json.Unmarshal(body, &payload); err != nil {
-			wa.Logger.Errorf("failed to decode bitbucket-cloud webhook: %s", err.Error())
+			dinghyLog.Errorf("failed to decode bitbucket-cloud webhook: %s", err.Error())
 			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 			return
 		}
@@ -400,7 +427,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			Endpoint: wa.Config.StashEndpoint,
 			Username: wa.Config.StashUsername,
 			Token:    wa.Config.StashToken,
-			Logger:   wa.Logger,
+			Logger:   dinghyLog,
 		}
 		p, err := bbcloud.NewPush(payload, bbcloudConfig)
 		if err != nil {
@@ -413,25 +440,25 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		// fileService here.
 		fileService := bbcloud.FileService{
 			Config: bbcloudConfig,
-			Logger: wa.Logger,
+			Logger: dinghyLog,
 		}
 
-		wa.buildPipelines(p, body, &fileService, w)
+		wa.buildPipelines(p, body, &fileService, w, dinghyLog)
 
 	case "repo:refs_changed", "pr:merged":
-		wa.Logger.Info("Processing bitbucket-server webhook")
+		dinghyLog.Info("Processing bitbucket-server webhook")
 		payload := stash.WebhookPayload{}
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			wa.Logger.Errorf("failed to read body in bitbucket-server webhook handler: %s", err.Error())
+			dinghyLog.Errorf("failed to read body in bitbucket-server webhook handler: %s", err.Error())
 			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 			return
 		}
 		defer r.Body.Close()
-		wa.Logger.Infof("Received payload: %s", string(body))
+		dinghyLog.Infof("Received payload: %s", string(body))
 		if err := json.Unmarshal(body, &payload); err != nil {
-			wa.Logger.Errorf("failed to decode bitbucket-server webhook: %s", err.Error())
+			dinghyLog.Errorf("failed to decode bitbucket-server webhook: %s", err.Error())
 			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 			return
 		}
@@ -447,8 +474,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			Endpoint: wa.Config.StashEndpoint,
 			Username: wa.Config.StashUsername,
 			Token:    wa.Config.StashToken,
-
-			Logger: wa.Logger,
+			Logger: dinghyLog,
 		}
 		p, err := stash.NewPush(payload, stashConfig)
 		if err != nil {
@@ -461,10 +487,10 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		// fileService here.
 		fileService := stash.FileService{
 			Config: stashConfig,
-			Logger: wa.Logger,
+			Logger: dinghyLog,
 		}
 
-		wa.buildPipelines(p, body, &fileService, w)
+		wa.buildPipelines(p, body, &fileService, w, dinghyLog)
 
 	default:
 		util.WriteHTTPError(w, http.StatusInternalServerError, errors.New("Unknown bitbucket event type"))
@@ -480,7 +506,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	// Ensure dinghyfile was changed.
 	if !p.ContainsFile(wa.Config.DinghyFilename) {
-		wa.Logger.Infof("Push does not include %s, skipping.", wa.Config.DinghyFilename)
+		b.Logger.Infof("Push does not include %s, skipping.", wa.Config.DinghyFilename)
 		errstat , status, _ := p.GetCommitStatus()
 		if errstat == nil && status == "" {
 			p.SetCommitStatus(git.StatusSuccess, fmt.Sprintf("No changes in %v.", wa.Config.DinghyFilename))
@@ -488,7 +514,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 		return nil
 	}
 
-	wa.Logger.Info("Dinghyfile found in commit for repo " + p.Repo())
+	b.Logger.Info("Dinghyfile found in commit for repo " + p.Repo())
 
 	// Set commit status to the pending yellow dot.
 	p.SetCommitStatus(git.StatusPending, git.DefaultMessagesByBuilderAction[b.Action][git.StatusPending])
@@ -501,10 +527,10 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 			// Set commit status based on result of processing.
 			if err != nil {
 				if err == dinghyfile.ErrMalformedJSON {
-					wa.Logger.Errorf("Error processing Dinghyfile (malformed JSON): %s", err.Error())
+					b.Logger.Errorf("Error processing Dinghyfile (malformed JSON): %s", err.Error())
 					p.SetCommitStatus(git.StatusFailure, "Error processing Dinghyfile (malformed JSON)" )
 				} else {
-					wa.Logger.Errorf("Error processing Dinghyfile: %s", err.Error())
+					b.Logger.Errorf("Error processing Dinghyfile: %s", err.Error())
 					p.SetCommitStatus(git.StatusError, fmt.Sprintf("%s", err.Error()))
 				}
 				return err
@@ -517,44 +543,44 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 
 // TODO: this func should return an error and allow the handlers to return the http response. Additionally,
 // it probably doesn't belong in this file once refactored.
-func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader, w http.ResponseWriter) {
+func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader, w http.ResponseWriter, dinghyLog dinghylog.DinghyLog) {
 	// see if we have any configurations for this repo.
 	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
 	var validation bool
 	if rc := wa.Config.GetRepoConfig(p.Name(), p.Repo()); rc != nil {
 		if !p.IsBranch(rc.Branch) {
-			wa.Logger.Infof("Received request from branch %s. Does not match configured branch %s. Proceeding as validation.", p.Branch(), rc.Branch)
+			dinghyLog.Infof("Received request from branch %s. Does not match configured branch %s. Proceeding as validation.", p.Branch(), rc.Branch)
 			validation = true
 		}
 	} else {
 		// if we didn't find any configurations for this repo, proceed with master
-		wa.Logger.Infof("Found no custom configuration for repo: %s, proceeding with master", p.Repo())
+		dinghyLog.Infof("Found no custom configuration for repo: %s, proceeding with master", p.Repo())
 		if !p.IsMaster() {
-			wa.Logger.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master. Proceeding as validation.", p.Branch())
+			dinghyLog.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master. Proceeding as validation.", p.Branch())
 			validation = true
 		}
 	}
 
-	wa.Logger.Infof("Processing request for branch: %s", p.Branch())
+	dinghyLog.Infof("Processing request for branch: %s", p.Branch())
 
 	// deserialze push data to a map.  used in template logic later
 	rawPushData := make(map[string]interface{})
 	if err := json.Unmarshal(rawPush, &rawPushData); err != nil {
-		wa.Logger.Errorf("unable to deserialze raw data to map")
+		dinghyLog.Errorf("unable to deserialze raw data to map")
 	}
 
 	// Construct a pipeline builder using provided downloader
 	builder := &dinghyfile.PipelineBuilder{
-		Downloader:           f,
-		Depman:               wa.Cache,
-		TemplateRepo:         wa.Config.TemplateRepo,
+		Downloader:                  f,
+		Depman:                      wa.Cache,
+		TemplateRepo:                wa.Config.TemplateRepo,
 		TemplateOrg:                 wa.Config.TemplateOrg,
 		DinghyfileName:              wa.Config.DinghyFilename,
 		DeleteStalePipelines:        false,
 		AutolockPipelines:           wa.Config.AutoLockPipelines,
 		Client:                      wa.Client,
 		EventClient:                 wa.EventClient,
-		Logger:                      wa.Logger,
+		Logger:                      dinghyLog,
 		Ums:                         wa.Ums,
 		Notifiers:                   wa.Notifiers,
 		PushRaw:                     rawPushData,
@@ -573,15 +599,17 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	builder.Parser.SetBuilder(builder)
 
 	// Process the push.
-	wa.Logger.Info("Processing Push")
+	dinghyLog.Info("Processing Push")
 	err := wa.ProcessPush(p, builder)
 	if err == dinghyfile.ErrMalformedJSON {
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
-		wa.Logger.Errorf("ProcessPush Failed (malformed JSON): %s", err.Error())
+		dinghyLog.Errorf("ProcessPush Failed (malformed JSON): %s", err.Error())
+		saveLogEventError(wa.LogEventsClient, p,dinghyLog, logevents.LogEvent{	RawData: string(rawPush)})
 		return
 	} else if err != nil {
-		wa.Logger.Errorf("ProcessPush Failed (other): %s", err.Error())
+		dinghyLog.Errorf("ProcessPush Failed (other): %s", err.Error())
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+		saveLogEventError(wa.LogEventsClient, p,dinghyLog, logevents.LogEvent{	RawData: string(rawPush)})
 		return
 	}
 
@@ -600,12 +628,28 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 					util.WriteHTTPError(w, http.StatusInternalServerError, err)
 				}
 				p.SetCommitStatus(git.StatusError,"Rebuilding dependent dinghyfiles Failed")
-				wa.Logger.Errorf("RebuildModuleRoots Failed: %s", err.Error())
+				dinghyLog.Errorf("RebuildModuleRoots Failed: %s", err.Error())
+				saveLogEventError(wa.LogEventsClient, p,dinghyLog, logevents.LogEvent{	RawData: string(rawPush)})
 				return
 			}
 		}
 		p.SetCommitStatus(git.StatusSuccess, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusSuccess])
 	}
 
+	// Only save event if changed files were in repo or it was having a dinghyfile
+	// TODO: If a template repo is having files not related with dinghy an event will be saved
+	if p.Repo() == wa.Config.TemplateRepo{
+		saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{ RawData : string(rawPush)})
+	} else {
+		dinghyfiles := []string{}
+		for _, currfile := range p.Files() {
+			if filepath.Base(currfile) == builder.DinghyfileName {
+				dinghyfiles = append(dinghyfiles, currfile)
+			}
+		}
+		if len(dinghyfiles) > 0 {
+			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{ RawData : string(rawPush), Files: dinghyfiles})
+		}
+	}
 	w.Write([]byte(`{"status":"accepted"}`))
 }
