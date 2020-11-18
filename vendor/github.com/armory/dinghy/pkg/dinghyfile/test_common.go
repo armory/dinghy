@@ -17,15 +17,17 @@
 package dinghyfile
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
+	"github.com/armory/dinghy/pkg/log"
+	"github.com/sirupsen/logrus"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/cache"
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/mock"
 	"github.com/golang/mock/gomock"
-	"github.com/sirupsen/logrus"
 )
 
 // mock out events so that it gets passed over and doesn't do anything
@@ -50,7 +52,7 @@ func testBasePipelineBuilder() *PipelineBuilder {
 	return &PipelineBuilder{
 		Depman:      cache.NewMemoryCache(),
 		EventClient: &EventsTestClient{},
-		Logger:      logrus.New(),
+		Logger:      NewDinghylog(),
 		Ums:         []Unmarshaller{&DinghyJsonUnmarshaller{}},
 		TemplateOrg: "armory",
 		Action:      pipebuilder.Process,
@@ -58,7 +60,16 @@ func testBasePipelineBuilder() *PipelineBuilder {
 }
 
 // This sets a mock logger on the pipeline {
-func mockLogger(dr *DinghyfileParser, ctrl *gomock.Controller) *mock.MockFieldLogger {
-	dr.Builder.Logger = mock.NewMockFieldLogger(ctrl)
-	return dr.Builder.Logger.(*mock.MockFieldLogger)
+func mockLogger(dr *DinghyfileParser, ctrl *gomock.Controller) *mock.MockDinghyLog {
+	dr.Builder.Logger = mock.NewMockDinghyLog(ctrl)
+	return dr.Builder.Logger.(*mock.MockDinghyLog)
+}
+
+func NewDinghylog() log.DinghyLog{
+	return log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
+		log.SystemLogKey : {
+			Logger:         logrus.New(),
+			LogEventBuffer: &bytes.Buffer{},
+		},
+	}}
 }

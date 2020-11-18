@@ -37,19 +37,19 @@ jobs:
         if: github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/release-')
         run: |
           ./gradlew devSnapshot docker dockerPush $GRADLE_ARGS
-          echo "::set-env name=BUILD_NUMBER::$(./gradlew $GRADLE_ARGS printVersion|grep VERSION|awk -F: '{print $2}')"
+          echo "BUILD_NUMBER=$(./gradlew $GRADLE_ARGS printVersion|grep VERSION|awk -F: '{print $2}')" >> $GITHUB_ENV
 
       - name: Publish Candidate
         if: github.ref == 'refs/heads/master'
         run: |
           ./gradlew candidate docker dockerPush $GRADLE_ARGS
-          echo "::set-env name=BUILD_NUMBER::$(./gradlew -Prelease.useLastTag=true $GRADLE_ARGS printVersion|grep VERSION|awk -F: '{print $2}')"
+          echo "BUILD_NUMBER=$(./gradlew -Prelease.useLastTag=true $GRADLE_ARGS printVersion|grep VERSION|awk -F: '{print $2}')" >> $GITHUB_ENV
 
       - name: Publish Release
         if: startsWith(github.ref, 'refs/heads/release-')
         run: |
           ./gradlew final docker dockerPush $GRADLE_ARGS
-          echo "::set-env name=BUILD_NUMBER::$(./gradlew -Prelease.useLastTag=true $GRADLE_ARGS  printVersion|grep VERSION|awk -F: '{print $2}')"
+          echo "BUILD_NUMBER=$(./gradlew -Prelease.useLastTag=true $GRADLE_ARGS  printVersion|grep VERSION|awk -F: '{print $2}')" >> $GITHUB_ENV
 
       - name: Run Security Scan
         uses: armory-io/aquasec-scan-action@v0.0.10

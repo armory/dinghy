@@ -19,7 +19,7 @@ package github
 import (
 	"fmt"
 	"github.com/armory/dinghy/pkg/cache/local"
-	"github.com/sirupsen/logrus"
+	"github.com/armory/dinghy/pkg/log"
 	"regexp"
 	"strings"
 )
@@ -28,7 +28,7 @@ import (
 type FileService struct {
 	cache  local.Cache
 	GitHub GitHubClient
-	Logger logrus.FieldLogger
+	Logger log.DinghyLog
 }
 
 // Download a file from github

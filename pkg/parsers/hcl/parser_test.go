@@ -9,7 +9,6 @@ import (
 	"github.com/armory/plank/v3"
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/hcl"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"path/filepath"
@@ -294,7 +293,7 @@ func testBasePipelineBuilder() *dinghyfile.PipelineBuilder {
 	return &dinghyfile.PipelineBuilder{
 		Depman:      cache.NewMemoryCache(),
 		EventClient: &dinghyfile.EventsTestClient{},
-		Logger:      logrus.New(),
+		Logger:      dinghyfile.NewDinghylog(),
 		Ums:         []dinghyfile.Unmarshaller{&DinghyHcl{}},
 	}
 }

@@ -17,7 +17,7 @@
 package github
 
 import (
-	"github.com/sirupsen/logrus"
+	"github.com/armory/dinghy/pkg/log"
 	"strings"
 )
 
@@ -28,7 +28,7 @@ type Push struct {
 	Ref         string     `json:"ref"`
 	Config      Config
 	DeckBaseURL string
-	Logger      logrus.FieldLogger
+	Logger      log.DinghyLog
 }
 
 // Commit is a commit received from Github webhook

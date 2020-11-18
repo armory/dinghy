@@ -20,13 +20,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/armory/dinghy/pkg/log"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/git"
-	"github.com/sirupsen/logrus"
 )
 
 // -----------------------------------------------------------------------------
@@ -91,14 +91,14 @@ type Config struct {
 	Username string
 	Token    string
 	Endpoint string
-	Logger   logrus.FieldLogger
+	Logger   log.DinghyLog
 }
 
 // Information about what files changed in a push
 type Push struct {
 	Payload      WebhookPayload
 	ChangedFiles []string
-	Logger       logrus.FieldLogger
+	Logger       log.DinghyLog
 }
 
 // -----------------------------------------------------------------------------
@@ -108,9 +108,6 @@ type Push struct {
 // Converts the raw webhook payload sent by Bitbucket Cloud, to an internal Push structure
 // with the list of files changed.
 func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
-	if cfg.Logger == nil {
-		cfg.Logger = logrus.New()
-	}
 	p := &Push{
 		Payload:      payload,
 		ChangedFiles: make([]string, 0),
@@ -197,7 +194,7 @@ func getFilesChanged(fromCommitHash, toCommitHash string, page int, cfg Config,
 	return
 }
 
-func handleDiffstatResponse(resp *http.Response, logger logrus.FieldLogger) (changedFiles []string, hasNext bool, err error) {
+func handleDiffstatResponse(resp *http.Response, logger log.DinghyLog) (changedFiles []string, hasNext bool, err error) {
 	var apiResponse DiffStatResponse
 	respRaw, err := ioutil.ReadAll(resp.Body)
 	respString := string(respRaw)
@@ -292,6 +289,11 @@ func (p *Push) SetCommitStatus(s git.Status, description string) {}
 
 func (p *Push) GetCommitStatus() (error, git.Status, string) {
 	return errors.New("functionality not implemented"), "",""
+}
+
+// Commits return the list of commit hashes
+func (p *Push) GetCommits() []string {
+	return []string{}
 }
 
 // Name returns the name of the provider to be used in configuration

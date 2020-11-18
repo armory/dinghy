@@ -2,7 +2,7 @@ module github.com/armory-io/dinghy
 
 require (
 	cloud.google.com/go v0.56.0 // indirect
-	github.com/armory/dinghy v1.0.2-0.20201015172431-9a2bcab0dcd6
+	github.com/armory/dinghy v1.0.2-0.20201118190612-ecd67e292cb0
 	github.com/armory/go-yaml-tools v0.0.0-20200603151141-b037d3988c49
 	github.com/armory/plank/v3 v3.4.3
 	github.com/aws/aws-sdk-go v1.30.7 // indirect
@@ -21,7 +21,7 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.2.2
 	github.com/pierrec/lz4 v2.5.0+incompatible // indirect
-	github.com/sirupsen/logrus v1.5.0
+	github.com/sirupsen/logrus v1.5.0 // indirect
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/crypto v0.0.0-20200406173513-056763e48d71 // indirect

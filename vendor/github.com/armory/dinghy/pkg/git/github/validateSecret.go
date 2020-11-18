@@ -4,12 +4,12 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/hex"
-	log "github.com/sirupsen/logrus"
+	"github.com/armory/dinghy/pkg/log"
 	"strings"
 )
 
 
-func IsValidSignature(rawpayload []byte, webhookSecret string, key string, logger log.FieldLogger) bool {
+func IsValidSignature(rawpayload []byte, webhookSecret string, key string, logger log.DinghyLog) bool {
 	gotHash := strings.SplitN(webhookSecret, "=", 2)
 	if gotHash[0] != "sha1" {
 		logger.Error("Invalid webhook value")
