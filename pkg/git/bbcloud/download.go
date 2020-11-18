@@ -18,19 +18,19 @@ package bbcloud
 
 import (
 	"fmt"
+	"github.com/armory/dinghy/pkg/log"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 
 	"github.com/armory/dinghy/pkg/cache/local"
-	"github.com/sirupsen/logrus"
 )
 
 // FileService is for working with repositories
 type FileService struct {
 	cache  local.Cache
 	Config Config
-	Logger logrus.FieldLogger
+	Logger log.DinghyLog
 }
 
 // Download downloads a file from Bitbucket Cloud.

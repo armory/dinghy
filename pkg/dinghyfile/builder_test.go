@@ -47,7 +47,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	client.EXPECT().GetApplication(gomock.Eq("biff")).Return(&plank.Application{}, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("biff")).Return([]plank.Pipeline{}, nil).Times(1)
 
-	logger := mock.NewMockFieldLogger(ctrl)
+	logger := mock.NewMockDinghyLog(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Unmarshalled: %v"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Found pipelines for %v: %v"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Dinghyfile struct: %v"), gomock.Any()).Times(1)
@@ -82,7 +82,7 @@ func TestProcessDinghyfileValidate(t *testing.T) {
 
 	client := NewMockPlankClient(ctrl)
 
-	logger := mock.NewMockFieldLogger(ctrl)
+	logger := mock.NewMockDinghyLog(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Unmarshalled: %v"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Dinghyfile struct: %v"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Updated: %s"), gomock.Any()).Times(1)
@@ -144,7 +144,7 @@ func TestProcessDinghyfileDefaultRenderer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	logger := mock.NewMockFieldLogger(ctrl)
+	logger := mock.NewMockDinghyLog(ctrl)
 	logger.EXPECT().Info("Calling DetermineParser").Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to download %s/%s/%s/%s"), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to parse dinghyfile %s: %s"), gomock.Eq("notfound"), gomock.Eq("File not found")).Times(1)
@@ -164,7 +164,7 @@ func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
 	renderer := NewMockParser(ctrl)
 	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
-	logger := mock.NewMockFieldLogger(ctrl)
+	logger := mock.NewMockDinghyLog(ctrl)
 	logger.EXPECT().Warnf(gomock.Eq("UpdateDinghyfile malformed syntax: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to update dinghyfile %s: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("update-dinghyfile-unmarshal-err: %s"), gomock.Any()).Times(1)
@@ -186,7 +186,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	renderer := NewMockParser(ctrl)
 	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
-	logger := mock.NewMockFieldLogger(ctrl)
+	logger := mock.NewMockDinghyLog(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Creating application '%s'..."), gomock.Eq("testapp")).Times(1)
 	logger.EXPECT().Errorf("Failed to create application (%s)", gomock.Any())
 	logger.EXPECT().Errorf(gomock.Eq("Failed to update Pipelines for %s: %s"), gomock.Eq("the/full/path")).Times(1)
@@ -257,7 +257,7 @@ func TestProcessDinghyfileFailedValidation(t *testing.T) {
 	renderer := NewMockParser(ctrl)
 	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
-	logger := mock.NewMockFieldLogger(ctrl)
+	logger := mock.NewMockDinghyLog(ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to validate stage refs for pipeline: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("validate-pipelines-stagerefs-err: %s"), rendered)
 	logger.EXPECT().Errorf(gomock.Eq("Failed to validate pipelines %s"), gomock.Eq("the/full/path")).Times(1)
@@ -825,7 +825,7 @@ func TestUpdateDinghyfileMalformed(t *testing.T) {
 	defer ctrl.Finish()
 
 	b := testPipelineBuilder()
-	logger := mock.NewMockFieldLogger(ctrl)
+	logger := mock.NewMockDinghyLog(ctrl)
 	b.Logger = logger
 	logger.EXPECT().Warnf(gomock.Eq("UpdateDinghyfile malformed syntax: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("update-dinghyfile-unmarshal-err: %s"), gomock.Any()).Times(1)

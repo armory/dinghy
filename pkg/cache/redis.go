@@ -36,7 +36,7 @@ type RedisCache struct {
 	stop   chan os.Signal
 }
 
-func compileKey(keys ...string) string {
+func CompileKey(keys ...string) string {
 	return fmt.Sprintf("Armory:dinghy:%s", strings.Join(keys, ":"))
 }
 
@@ -78,7 +78,7 @@ func (c *RedisCache) monitorWorker() {
 // SetDeps sets dependencies for a parent
 func (c *RedisCache) SetDeps(parent string, deps []string) {
 	loge := log.WithFields(log.Fields{"func": "SetDeps"})
-	key := compileKey("children", parent)
+	key := CompileKey("children", parent)
 
 	currentDeps, err := c.Client.SMembers(key).Result()
 	if err != nil {
@@ -115,7 +115,7 @@ func (c *RedisCache) SetDeps(parent string, deps []string) {
 	}
 
 	//TODO:  if these redis operations fail, what happens?
-	key = compileKey("children", parent)
+	key = CompileKey("children", parent)
 	if _, err := c.Client.SRem(key, depsToDelete...).Result(); err != nil {
 		loge.WithFields(log.Fields{"operation": "child delete deps"}).Debug(err)
 	}
@@ -124,14 +124,14 @@ func (c *RedisCache) SetDeps(parent string, deps []string) {
 	}
 
 	for _, dep := range depsToDelete {
-		key = compileKey("parents", dep.(string))
+		key = CompileKey("parents", dep.(string))
 		if _, err := c.Client.SRem(key, parent).Result(); err != nil {
 			loge.WithFields(log.Fields{"operation": "delete deps"}).Debug(err)
 		}
 	}
 
 	for _, dep := range depsToAdd {
-		key = compileKey("parents", dep.(string))
+		key = CompileKey("parents", dep.(string))
 		if _, err := c.Client.SAdd(key, parent).Result(); err != nil {
 			loge.WithFields(log.Fields{"operation": "add deps"}).Debug(err)
 		}
@@ -154,7 +154,7 @@ func returnRoots (c *redis.Client, url string) []string {
 
 		visited[curr] = true
 
-		key := compileKey("parents", curr)
+		key := CompileKey("parents", curr)
 		parents, err := c.SMembers(key).Result()
 		if err != nil {
 			loge.WithFields(log.Fields{"operation": "parents", "key": key}).Error(err)
@@ -179,7 +179,7 @@ func returnRoots (c *redis.Client, url string) []string {
 // Set RawData
 func (c *RedisCache) SetRawData(url string, rawData string) error{
 	loge := log.WithFields(log.Fields{"func": "SetRawData"})
-	key := compileKey("rawdata", url)
+	key := CompileKey("rawdata", url)
 
 	status := c.Client.Set(key, rawData, 0)
 	if status.Err() != nil {
@@ -195,7 +195,7 @@ func (c *RedisCache) GetRawData(url string) (string, error) {
 
 func returnRawData(c *redis.Client, url string) (string, error) {
 	loge := log.WithFields(log.Fields{"func": "GetRawData"})
-	key := compileKey("rawdata", url)
+	key := CompileKey("rawdata", url)
 
 	stringCmd := c.Get(key)
 	if stringCmd.Err() != nil {
@@ -207,9 +207,9 @@ func returnRawData(c *redis.Client, url string) (string, error) {
 
 // Clear clears everything
 func (c *RedisCache) Clear() {
-	keys, _ := c.Client.Keys(compileKey("children", "*")).Result()
+	keys, _ := c.Client.Keys(CompileKey("children", "*")).Result()
 	c.Client.Del(keys...)
 
-	keys, _ = c.Client.Keys(compileKey("parents", "*")).Result()
+	keys, _ = c.Client.Keys(CompileKey("parents", "*")).Result()
 	c.Client.Del(keys...)
 }

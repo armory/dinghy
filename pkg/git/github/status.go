@@ -63,6 +63,15 @@ func (p *Push) GetCommitStatus() (error, git.Status, string) {
 	return nil, "",""
 }
 
+// Commits return the list of commit hashes
+func (p *Push) GetCommits() []string {
+	var result []string
+	for _, val := range p.Commits {
+		result = append(result, val.ID)
+	}
+	return result
+}
+
 func newStatus(s git.Status, deckURL string, description string) *Status {
 	state := string(s)
 	context := "dinghy"

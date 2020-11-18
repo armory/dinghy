@@ -22,6 +22,7 @@ import (
 	"github.com/armory/go-yaml-tools/pkg/tls/client"
 	"github.com/armory/go-yaml-tools/pkg/tls/server"
 	"github.com/jinzhu/copier"
+	"time"
 )
 
 // Settings contains all information needed to startup and run the dinghy service
@@ -51,6 +52,7 @@ type Settings struct {
 	WebhookValidations                []WebhookValidation `json:"webhookValidations,omitempty" yaml:"webhookValidations"`
 	WebhookValidationEnabledProviders []string            `json:"webhookValidationEnabledProviders,omitempty" yaml:"webhookValidationEnabledProviders"`
 	RepositoryRawdataProcessing       bool                `json:"repositoryRawdataProcessing,omitempty" yaml:"repositoryRawdataProcessing"`
+	LogEventTTLMinutes				  time.Duration		  `json:"LogEventTTLMinutes" yaml:"LogEventTTLMinutes"`
 }
 
 type WebhookValidation struct {
