@@ -83,6 +83,15 @@ func (c LogEventRedisClient) GetLogEvents() ([]LogEvent, error) {
 }
 
 func (c LogEventRedisClient) SaveLogEvent(logEvent LogEvent) error {
+	filesSet := make(map[string]bool)
+	for _, value := range logEvent.Files {
+		filesSet[value] = true
+	}
+	files := []string{}
+	for key, _ := range filesSet {
+		files = append(files, key)
+	}
+	logEvent.Files = files
 	loge := log.WithFields(log.Fields{"func": "SaveLogEvent"})
 	nanos := time.Now().UnixNano()
 	milis := nanos / 1000000

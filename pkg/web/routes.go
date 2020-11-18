@@ -26,6 +26,7 @@ import (
 	"github.com/armory/dinghy/pkg/logevents"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/events"
@@ -221,32 +222,6 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	fileService := github.FileService{GitHub: &gh, Logger: dinghyLog}
 
 	wa.buildPipelines(&p, body, &fileService, w, dinghyLog)
-}
-
-func saveLogEventError(logeventClient logevents.LogEventsClient, p Push, dinghyLog dinghylog.DinghyLog, logEvent logevents.LogEvent) {
-	currentLogEvent := appendPushToLogEvent(logEvent, p)
-	saveLogEvent(logeventClient, p, dinghyLog, currentLogEvent, "error")
-}
-
-func saveLogEventSuccess(logeventClient logevents.LogEventsClient, p Push, dinghyLog dinghylog.DinghyLog, logEvent logevents.LogEvent) {
-	currentLogEvent := appendPushToLogEvent(logEvent, p)
-	saveLogEvent(logeventClient, p, dinghyLog, currentLogEvent, "success")
-}
-
-func saveLogEvent(logeventClient logevents.LogEventsClient, p Push, dinghyLog dinghylog.DinghyLog, logEvent logevents.LogEvent, status string) {
-	if buf, err := dinghyLog.GetBytesBuffByLoggerKey(dinghylog.LogEventKey); err == nil {
-		logEvent.Message  = fmt.Sprintf("%v",buf)
-		logEvent.Status = status
-		logeventClient.SaveLogEvent(logEvent)
-	}
-}
-
-func appendPushToLogEvent(logEvent logevents.LogEvent, push Push) logevents.LogEvent {
-	logEvent.Org = push.Org()
-	logEvent.Repo = push.Repo()
-	logEvent.Files = push.Files()
-	logEvent.Commits = push.GetCommits()
-	return logEvent
 }
 
 func contains(whvalidations []string, provider string) bool {
@@ -661,6 +636,20 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 		p.SetCommitStatus(git.StatusSuccess, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusSuccess])
 	}
 
-	saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{ RawData : string(rawPush)})
+	// Only save event if changed files were in repo or it was having a dinghyfile
+	// TODO: If a template repo is having files not related with dinghy an event will be saved
+	if p.Repo() == wa.Config.TemplateRepo{
+		saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{ RawData : string(rawPush)})
+	} else {
+		dinghyfiles := []string{}
+		for _, currfile := range p.Files() {
+			if filepath.Base(currfile) == builder.DinghyfileName {
+				dinghyfiles = append(dinghyfiles, currfile)
+			}
+		}
+		if len(dinghyfiles) > 0 {
+			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{ RawData : string(rawPush), Files: dinghyfiles})
+		}
+	}
 	w.Write([]byte(`{"status":"accepted"}`))
 }
