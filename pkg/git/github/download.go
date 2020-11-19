@@ -39,6 +39,7 @@ func (f *FileService) Download(org, repo, path, branch string) (string, error) {
 		"master": "main",
 		"main": "master",
 	}
+	// This change is needed for rebuilding the modules since we dont know what is the master branch for each repo
 	// Try to download from master or main branch
 	result, err := f.DownloadFile(org, repo, path, branch)
 	if err != nil {
