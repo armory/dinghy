@@ -51,7 +51,7 @@ func (f *FileService) Download(org, repo, path, branch string) (string, error) {
 				f.Logger.Infof("Download from secondary branch %v succeeded", val)
 				return result2, err2
 			}
-			f.Logger.Infof("Download failed also for branch %v", val)
+			f.Logger.Errorf("Download failed also for branch %v", val)
 		}
 	}
 	return result, err
