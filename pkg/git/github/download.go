@@ -35,6 +35,27 @@ type FileService struct {
 // note that "path" is the full path relative to the repo root
 // eg: src/foo/bar/filename
 func (f *FileService) Download(org, repo, path, branch string) (string, error) {
+	var branchesRelations = map[string]string {
+		"master": "main",
+		"main": "master",
+	}
+	// Try to download from master or main branch
+	result, err := f.DownloadFile(org, repo, path, branch)
+	if err != nil {
+		// If something fails, then try with secondary branch
+		if val, ok := branchesRelations[branch]; ok {
+			f.Logger.Infof("DownloadContents failed with %v branch, trying with %v branch", branch, val )
+			// If secondary branch success then send the result, if it fails return the first result and error
+			if result2, err2 := f.DownloadFile(org, repo, path, val); err2 == nil {
+				f.Logger.Info("Download from secondary branch %v succeeded", val)
+				return result2, err2
+			}
+		}
+	}
+	return result, err
+}
+
+func (f *FileService) DownloadFile(org, repo, path, branch string) (string, error) {
 	// The endpoint used by the Github lib (https://raw.githubusercontent.com/) does not
 	// accept branch names such as refs/heads/master, but only the name of the branch.
 	// Need to strip that if it exists. Can't use split here either, because '/' is allowed
