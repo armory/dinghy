@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"errors"
 	"github.com/armory/dinghy/pkg/log"
+	"github.com/armory/dinghy/pkg/mock"
+	"github.com/golang/mock/gomock"
 	"testing"
 
 	_ "github.com/armory/dinghy/pkg/dinghyfile"
@@ -208,4 +210,31 @@ func TestDownload(t *testing.T) {
 			assert.Equal(t, tc.expected, v)
 		})
 	}
+}
+
+func TestMasterDownloadFailsAndTriesMain(t *testing.T){
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	fs := &FileService{
+		GitHub: &GitHubTest{contents: "", err: errors.New("fail")},
+		Logger: log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
+			log.SystemLogKey : {
+				Logger:         logger,
+				LogEventBuffer: &bytes.Buffer{},
+			},
+		}},
+	}
+
+	logger.EXPECT().Error(gomock.Any()).Times(2)
+	logger.EXPECT().Info(gomock.Eq(stringToSlice("DownloadContents failed with master branch, trying with main branch"))).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("Download failed also for branch %v"),gomock.Any()).Times(1)
+
+	fs.Download("org", " repo", "path", "master")
+}
+
+func stringToSlice(args...interface{}) []interface{} {
+	return args
 }
