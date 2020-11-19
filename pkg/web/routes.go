@@ -639,7 +639,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	// Only save event if changed files were in repo or it was having a dinghyfile
 	// TODO: If a template repo is having files not related with dinghy an event will be saved
 	if p.Repo() == wa.Config.TemplateRepo {
-		if p.Files() != nil && len(p.Files()) > 0 {
+		if len(p.Files()) > 0 {
 			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{ RawData : string(rawPush)})
 		}
 	} else {
