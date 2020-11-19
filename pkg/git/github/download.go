@@ -39,16 +39,16 @@ func (f *FileService) Download(org, repo, path, branch string) (string, error) {
 		"master": "main",
 		"main": "master",
 	}
-	// This change is needed for rebuilding the modules since we dont know what is the master branch for each repo
+	// This change is needed for downloading and rebuilding the modules since we dont know what is the master branch for each repo
 	// Try to download from master or main branch
 	result, err := f.DownloadFile(org, repo, path, branch)
 	if err != nil {
 		// If something fails, then try with secondary branch
 		if val, ok := branchesRelations[branch]; ok {
-			f.Logger.Infof("DownloadContents failed with %v branch, trying with %v branch", branch, val )
+			f.Logger.Info(fmt.Sprintf("DownloadContents failed with %v branch, trying with %v branch", branch, val) )
 			// If secondary branch success then send the result, if it fails return the first result and error
 			if result2, err2 := f.DownloadFile(org, repo, path, val); err2 == nil {
-				f.Logger.Info("Download from secondary branch %v succeeded", val)
+				f.Logger.Infof("Download from secondary branch %v succeeded", val)
 				return result2, err2
 			}
 		}
