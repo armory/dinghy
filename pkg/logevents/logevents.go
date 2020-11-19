@@ -87,9 +87,14 @@ func (c LogEventRedisClient) SaveLogEvent(logEvent LogEvent) error {
 	for _, value := range logEvent.Files {
 		filesSet[value] = true
 	}
+	// Deck does not like null values
 	files := []string{}
 	for key, _ := range filesSet {
 		files = append(files, key)
+	}
+	// Deck does not like null values
+	if logEvent.Commits == nil {
+		logEvent.Commits = []string{}
 	}
 	logEvent.Files = files
 	loge := log.WithFields(log.Fields{"func": "SaveLogEvent"})
