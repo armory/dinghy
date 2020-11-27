@@ -17,12 +17,43 @@
 package main
 
 import (
-	"github.com/armory/dinghy/cmd"
-	"github.com/armory/dinghy/pkg/settings"
+	"fmt"
+	"github.com/armory/dinghy/pkg/database"
+	//"github.com/armory/dinghy/cmd"
+	//"github.com/armory/dinghy/pkg/settings"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"os"
 )
 
+//func main() {
+//	log, d := dinghy.Setup()
+//	config := settings.NewDefaultSettings()
+//	dinghy.Start(log, d, &config)
+//}
+
+
 func main() {
-	log, d := dinghy.Setup()
-	config := settings.NewDefaultSettings()
-	dinghy.Start(log, d, &config)
+	// refer https://github.com/go-sql-driver/mysql#dsn-data-source-name for details
+	dsn := "root:password@tcp(127.0.0.1:3306)/dinghy?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		os.Exit(1)
+	}
+	client :=  database.SQLClient{
+		Client: db,
+		Logger: nil,
+		Ctx:    nil,
+		Stop:   nil,
+	}
+	urls := client.GetRoots("mod2")
+	fmt.Printf("%v", urls)
+
+	rawdata,err := client.GetRawData("test2")
+	fmt.Printf("%v", rawdata)
+
+	errinsert := client.SetRawData("test3", "rawdata3")
+	fmt.Printf("%v", errinsert)
+	rawdata3,err := client.GetRawData("test3")
+	fmt.Printf("%v", rawdata3)
 }

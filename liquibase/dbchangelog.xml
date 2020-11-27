@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd">
+
+    <changeSet id="1" author="jossuecito">
+        <!-- Dependencies table -->
+        <createTable tableName="dependencies">
+            <column name="id" type="int">
+                <constraints primaryKey="true" primaryKeyName="pk_dependencies"/>
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <!-- <column name="org" type="varchar(256)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="repo" type="varchar(256)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="path" type="varchar(1000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="branch" type="varchar(256)">
+                <constraints nullable="false"/>
+            </column> -->
+            <!-- TODO: This needs to be changed probably -->
+            <column name="url" type="varchar(2000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parentid" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <!-- Autoincrement id for dependencies -->
+        <addAutoIncrement
+            columnDataType="int"
+            columnName="id"
+            incrementBy="1"
+            startWith="1"
+            tableName="dependencies"/>
+        
+        <!-- RawData table -->
+        <createTable tableName="rawdata">
+            <column name="url" type="varchar(2000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rawdata" type="clob">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Properties table -->
+        <createTable tableName="property">
+            <column name="property" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="varchar(1000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updatedate" type="bigint"/>
+        </createTable>
+
+        <!-- Executions table -->
+        <createTable tableName="execution">
+            <column name="execution" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="result" type="clob" />
+            <column name="success" type="char(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updatedate" type="bigint"/>
+        </createTable>
+        
+    </changeSet>
+
+    <changeSet id="2" author="author">
+        <tagDatabase tag="version_1"/>
+    </changeSet>
+
+</databaseChangeLog>
