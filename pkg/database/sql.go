@@ -68,7 +68,7 @@ func (c *SQLClient) SetRawData(url string, rawData string) error{
 		return err
 	}
 	if currentRawData != "" {
-		return c.Client.Where(&Rawdata{Url: url}).Update("rawdata", rawData).Error
+		return c.Client.Model(&Rawdata{Url: url}).Update("rawdata", rawData).Error
 	}
 	return c.Client.Create(&Rawdata{
 		Url:     url,
@@ -78,7 +78,7 @@ func (c *SQLClient) SetRawData(url string, rawData string) error{
 
 // Return RawData
 func (c *SQLClient) GetRawData(url string) (string, error) {
-	found := Rawdata{}
-	result := c.Client.Where(&Rawdata{Url: url}).Find(&found)
-	return found.Rawdata, result.Error
+	find := Rawdata{Url: url}
+	result := c.Client.Where(&Rawdata{Url: url}).Find(&find)
+	return find.Rawdata, result.Error
 }

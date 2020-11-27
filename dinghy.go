@@ -52,7 +52,7 @@ func main() {
 	rawdata,err := client.GetRawData("test2")
 	fmt.Printf("%v", rawdata)
 
-	errinsert := client.SetRawData("test3", "rawdata3")
+	errinsert := client.SetRawData("test3", "rawdata4")
 	fmt.Printf("%v", errinsert)
 	rawdata3,err := client.GetRawData("test3")
 	fmt.Printf("%v", rawdata3)
