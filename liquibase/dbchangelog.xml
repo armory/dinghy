@@ -81,7 +81,7 @@
             <column name="message" type="clob">
                 <constraints nullable="false"/>
             </column>
-            <column name="commitdate" type="int">
+            <column name="commitdate" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="commits" type="varchar(500)">

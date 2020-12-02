@@ -63,8 +63,9 @@ func (c LogEventSQLClient) GetLogEvents() ([]LogEvent, error) {
 	result := []LogEvent{}
 	nanos := time.Now().UnixNano()
 	milis := nanos / 1000000
+	condition := milis - int64(c.MinutesTTL * time.Minute)
 
-	queryResult := c.SQLClient.Client.Where("date >= ?", milis - int64(c.MinutesTTL * time.Minute) ).Find(&queryLogEvents)
+	queryResult := c.SQLClient.Client.Where("commitdate >= ?", int(condition) ).Find(&queryLogEvents)
 	if queryResult.Error != nil{
 		return nil, queryResult.Error
 	}
@@ -77,5 +78,8 @@ func (c LogEventSQLClient) GetLogEvents() ([]LogEvent, error) {
 
 func (c LogEventSQLClient) SaveLogEvent(logEvent LogEvent) error {
 	convert := logEvent.ToLogEventSQL()
+	nanos := time.Now().UnixNano()
+	milis := nanos / 1000000
+	convert.Date = milis
 	return c.SQLClient.Client.Create(&convert).Error
 }
