@@ -19,6 +19,7 @@ package dinghy
 import (
 	"context"
 	"fmt"
+	"github.com/armory/dinghy/pkg/database"
 	"github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/armory/dinghy/pkg/logevents"
 	"github.com/armory/go-yaml-tools/pkg/tls/server"
@@ -103,17 +104,43 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		os.Exit(1)
 	}()
 
-	redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)
-	if _, err := redisClient.Client.Ping().Result(); err != nil {
-		log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
-	}
-	redisClientReadOnly := cache.RedisCacheReadOnly{
-		Client: redisClient.Client,
-		Logger: redisClient.Logger,
+	var api *web.WebAPI
+	if config.SQL.DbUrl != "" {
+
+		sqlClient := database.NewMySQLClient(&database.SQLConfig{
+			DbUrl:    config.SQL.DbUrl,
+			User:     config.SQL.User,
+			Password: config.SQL.Password,
+		}, log, ctx, stop)
+		//if _, err := redisClient.Client.Ping().Result(); err != nil {
+		//	log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
+		//}
+
+		sqlClientReadOnly := database.SQLReadOnly{
+			Client: sqlClient,
+			Logger: sqlClient.Logger,
+		}
+
+		logEventsClient := logevents.LogEventSQLClient{ SQLClient: sqlClient, MinutesTTL: config.LogEventTTLMinutes }
+
+		api = web.NewWebAPI(config, sqlClient, client, ec, log, &sqlClientReadOnly, clientReadOnly, logEventsClient)
+
+	} else {
+		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)
+		if _, err := redisClient.Client.Ping().Result(); err != nil {
+			log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
+		}
+
+		redisClientReadOnly := cache.RedisCacheReadOnly{
+			Client: redisClient.Client,
+			Logger: redisClient.Logger,
+		}
+
+		logEventsClient := logevents.LogEventRedisClient{ RedisClient: redisClient, MinutesTTL: config.LogEventTTLMinutes }
+
+		api = web.NewWebAPI(config, redisClient, client, ec, log, &redisClientReadOnly, clientReadOnly, logEventsClient)
 	}
 
-	logEventsClient := logevents.LogEventRedisClient{ RedisClient: redisClient, MinutesTTL: config.LogEventTTLMinutes }
-	api := web.NewWebAPI(config, redisClient, client, ec, log, &redisClientReadOnly, clientReadOnly, logEventsClient)
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
 	if config.ParserFormat == "json" {
 		api.SetDinghyfileParser(dinghyfile.NewDinghyfileParser(&dinghyfile.PipelineBuilder{}))

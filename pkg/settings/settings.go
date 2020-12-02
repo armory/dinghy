@@ -52,7 +52,18 @@ type Settings struct {
 	WebhookValidations                []WebhookValidation `json:"webhookValidations,omitempty" yaml:"webhookValidations"`
 	WebhookValidationEnabledProviders []string            `json:"webhookValidationEnabledProviders,omitempty" yaml:"webhookValidationEnabledProviders"`
 	RepositoryRawdataProcessing       bool                `json:"repositoryRawdataProcessing,omitempty" yaml:"repositoryRawdataProcessing"`
-	LogEventTTLMinutes				  time.Duration		  `json:"LogEventTTLMinutes" yaml:"LogEventTTLMinutes"`
+	LogEventTTLMinutes                time.Duration		  `json:"LogEventTTLMinutes" yaml:"LogEventTTLMinutes"`
+	SQL                               sqlconfig	  `json:"sql,omitempty" yaml:"sql"`
+}
+
+//type databaseConfig struct {
+//	SQLConfig sqlconfig	`json:"sql,omitempty" yaml:"sql"`
+//}
+
+type sqlconfig struct {
+	DbUrl    string 	`json:"dburl" yaml:"dburl"`
+	User     string 	`json:"user" yaml:"user"`
+	Password string 	`json:"password" yaml:"password"`
 }
 
 type WebhookValidation struct {
