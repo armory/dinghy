@@ -548,7 +548,7 @@ func (b *PipelineBuilder) getContent() map[string]interface{} {
 	} else {
 		content["logevent"] = logEvent.String()
 	}
-
+	content["raw"] = b.PushRaw
 	return content
 
 }
