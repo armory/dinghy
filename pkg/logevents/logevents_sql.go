@@ -23,9 +23,10 @@ type LogEventSQL struct {
 	Files		string	`gorm:"column:files"`
 	Message		string	`gorm:"column:message"`
 	Date		int64	`gorm:"column:commitdate"`
-	Commits		string	`gorm:"column:commits"`
+	Commits		string	`gorm:"colu	mn:commits"`
 	Status		string	`gorm:"column:status"`
 	RawData		string	`gorm:"column:rawdata"`
+	Author		string  `gorm:"column:author"`
 	RenderedDinghyfile	string	`gorm:"column:rendereddinghyfile"`
 }
 
@@ -61,11 +62,11 @@ func (log LogEvent) ToLogEventSQL() LogEventSQL {
 func (c LogEventSQLClient) GetLogEvents() ([]LogEvent, error) {
 	queryLogEvents := []LogEventSQL{}
 	result := []LogEvent{}
-	nanos := time.Now().UnixNano()
-	milis := nanos / 1000000
-	condition := milis - int64(c.MinutesTTL * time.Minute)
+	now := time.Now().UnixNano()
+	reducednanos := now - int64(c.MinutesTTL * time.Minute)
+	milis := reducednanos / 1000000
 
-	queryResult := c.SQLClient.Client.Where("commitdate >= ?", int(condition) ).Find(&queryLogEvents)
+	queryResult := c.SQLClient.Client.Where("commitdate >= ?", int(milis) ).Find(&queryLogEvents)
 	if queryResult.Error != nil{
 		return nil, queryResult.Error
 	}

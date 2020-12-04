@@ -105,25 +105,30 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 	}()
 
 	var api *web.WebAPI
-	if config.SQL.DbUrl != "" {
+	var logEventsClient logevents.LogEventsClient
+	var persitenceManager dinghyfile.DependencyManager
+	var persitenceManagerReadOnly dinghyfile.DependencyManager
+	if config.SQL.Enabled {
 
-		sqlClient := database.NewMySQLClient(&database.SQLConfig{
-			DbUrl:    config.SQL.DbUrl,
+		sqlClient, sqlerr := database.NewMySQLClient(&database.SQLConfig{
+			DbUrl:    config.SQL.BaseUrl,
 			User:     config.SQL.User,
 			Password: config.SQL.Password,
+			DbName:	  config.SQL.DatabaseName,
 		}, log, ctx, stop)
-		//if _, err := redisClient.Client.Ping().Result(); err != nil {
-		//	log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
-		//}
+
+		if sqlerr != nil {
+			log.Fatalf("SQL Server at %s could not be contacted: %v", config.SQL.BaseUrl, err)
+		}
 
 		sqlClientReadOnly := database.SQLReadOnly{
 			Client: sqlClient,
 			Logger: sqlClient.Logger,
 		}
 
-		logEventsClient := logevents.LogEventSQLClient{ SQLClient: sqlClient, MinutesTTL: config.LogEventTTLMinutes }
-
-		api = web.NewWebAPI(config, sqlClient, client, ec, log, &sqlClientReadOnly, clientReadOnly, logEventsClient)
+		logEventsClient = &(logevents.LogEventSQLClient{ SQLClient: sqlClient, MinutesTTL: config.LogEventTTLMinutes })
+		persitenceManager = sqlClient
+		persitenceManagerReadOnly = &sqlClientReadOnly
 
 	} else {
 		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)
@@ -136,10 +141,13 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 			Logger: redisClient.Logger,
 		}
 
-		logEventsClient := logevents.LogEventRedisClient{ RedisClient: redisClient, MinutesTTL: config.LogEventTTLMinutes }
+		logEventsClient = logevents.LogEventRedisClient{ RedisClient: redisClient, MinutesTTL: config.LogEventTTLMinutes }
+		persitenceManager = redisClient
+		persitenceManagerReadOnly = &redisClientReadOnly
 
-		api = web.NewWebAPI(config, redisClient, client, ec, log, &redisClientReadOnly, clientReadOnly, logEventsClient)
 	}
+
+	api = web.NewWebAPI(config, persitenceManager, client, ec, log, persitenceManagerReadOnly, clientReadOnly, logEventsClient)
 
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
 	if config.ParserFormat == "json" {

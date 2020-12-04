@@ -61,9 +61,11 @@ type Settings struct {
 //}
 
 type sqlconfig struct {
-	DbUrl    string 	`json:"dburl" yaml:"dburl"`
-	User     string 	`json:"user" yaml:"user"`
-	Password string 	`json:"password" yaml:"password"`
+	Enabled  bool   `json:"enabled,omitempty" yaml:"enabled"`
+	BaseUrl  string `json:"baseUrl" yaml:"baseUrl"`
+	User     string `json:"user" yaml:"user"`
+	Password string `json:"password" yaml:"password"`
+	DatabaseName string `json:"databaseName" yaml:"databaseName"`
 }
 
 type WebhookValidation struct {

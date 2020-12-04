@@ -14,9 +14,7 @@
             <column name="url" type="varchar(2000)">
                 <constraints nullable="false"/>
             </column>
-            <column name="rawdata" type="clob">-->
-                <constraints nullable="false"/>
-            </column>
+            <column name="rawdata" type="clob" />
         </createTable>
 
         <addAutoIncrement
@@ -93,8 +91,8 @@
             <column name="rawdata" type="clob">
                  <constraints nullable="false"/>
             </column>
-            <column name="rendereddinghyfile" type="clob">
-            </column>
+            <column name="author" type="varchar(100)" />
+            <column name="rendereddinghyfile" type="clob" />
         </createTable>
 
         <addAutoIncrement

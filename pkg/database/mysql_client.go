@@ -27,11 +27,11 @@ import (
 //}
 
 // NewRedisCache initializes a new cache
-func NewMySQLClient(sqlOptions *SQLConfig, logger *log.Logger, ctx context.Context, stop chan os.Signal) *SQLClient {
-	dsn := fmt.Sprintf("%v:%v@%v?charset=utf8mb4&parseTime=True&loc=Local", sqlOptions.User, sqlOptions.Password, sqlOptions.DbUrl)
+func NewMySQLClient(sqlOptions *SQLConfig, logger *log.Logger, ctx context.Context, stop chan os.Signal) (*SQLClient, error) {
+	dsn := fmt.Sprintf("%v:%v@tcp(%v)/%v?charset=utf8mb4&parseTime=True&loc=Local", sqlOptions.User, sqlOptions.Password, sqlOptions.DbUrl, sqlOptions.DbName)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		os.Exit(1)
+		return nil, err
 	}
 	sqlclient := &SQLClient{
 		Client: db,
@@ -40,11 +40,12 @@ func NewMySQLClient(sqlOptions *SQLConfig, logger *log.Logger, ctx context.Conte
 		stop:   stop,
 	}
 	//go rc.monitorWorker()
-	return sqlclient
+	return sqlclient, nil
 }
 
 type SQLConfig struct {
 	DbUrl    string
 	User     string
 	Password string
+	DbName	 string
 }
