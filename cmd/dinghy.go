@@ -108,7 +108,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 	var logEventsClient logevents.LogEventsClient
 	var persitenceManager dinghyfile.DependencyManager
 	var persitenceManagerReadOnly dinghyfile.DependencyManager
-	if config.SQL.Enabled {
+	if config.SQL.Enabled  && !config.SQL.EventLogsOnly {
 
 		sqlClient, sqlerr := database.NewMySQLClient(&database.SQLConfig{
 			DbUrl:    config.SQL.BaseUrl,
@@ -129,6 +129,33 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		logEventsClient = &(logevents.LogEventSQLClient{ SQLClient: sqlClient, MinutesTTL: config.LogEventTTLMinutes })
 		persitenceManager = sqlClient
 		persitenceManagerReadOnly = &sqlClientReadOnly
+
+	} else if config.SQL.Enabled  && config.SQL.EventLogsOnly {
+
+		sqlClient, sqlerr := database.NewMySQLClient(&database.SQLConfig{
+			DbUrl:    config.SQL.BaseUrl,
+			User:     config.SQL.User,
+			Password: config.SQL.Password,
+			DbName:	  config.SQL.DatabaseName,
+		}, log, ctx, stop)
+
+		if sqlerr != nil {
+			log.Fatalf("SQL Server at %s could not be contacted: %v", config.SQL.BaseUrl, err)
+		}
+
+		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)
+		if _, err := redisClient.Client.Ping().Result(); err != nil {
+			log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
+		}
+
+		redisClientReadOnly := cache.RedisCacheReadOnly{
+			Client: redisClient.Client,
+			Logger: redisClient.Logger,
+		}
+
+		logEventsClient = &(logevents.LogEventSQLClient{ SQLClient: sqlClient, MinutesTTL: config.LogEventTTLMinutes })
+		persitenceManager = redisClient
+		persitenceManagerReadOnly = &redisClientReadOnly
 
 	} else {
 		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)

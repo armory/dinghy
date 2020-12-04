@@ -66,6 +66,7 @@ type sqlconfig struct {
 	User     string `json:"user" yaml:"user"`
 	Password string `json:"password" yaml:"password"`
 	DatabaseName string `json:"databaseName" yaml:"databaseName"`
+	EventLogsOnly	bool `json:"eventlogsOnly" yaml:"eventlogsOnly"`
 }
 
 type WebhookValidation struct {
