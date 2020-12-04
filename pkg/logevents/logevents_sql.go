@@ -23,7 +23,7 @@ type LogEventSQL struct {
 	Files		string	`gorm:"column:files"`
 	Message		string	`gorm:"column:message"`
 	Date		int64	`gorm:"column:commitdate"`
-	Commits		string	`gorm:"colu	mn:commits"`
+	Commits		string	`gorm:"column:commits"`
 	Status		string	`gorm:"column:status"`
 	RawData		string	`gorm:"column:rawdata"`
 	Author		string  `gorm:"column:author"`
