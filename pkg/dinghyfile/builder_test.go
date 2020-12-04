@@ -20,6 +20,10 @@ import (
 	"bytes"
 	"errors"
 	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
+	"github.com/armory/dinghy/pkg/events"
+	"github.com/armory/dinghy/pkg/log"
+	"github.com/armory/dinghy/pkg/util"
+	"github.com/sirupsen/logrus"
 	"reflect"
 	"testing"
 
@@ -1242,6 +1246,102 @@ pipelines:
 			}
 			if got != tt.want {
 				t.Errorf("extractApplicationName() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPipelineBuilder_getContent(t *testing.T) {
+	type fields struct {
+		Downloader                  Downloader
+		Depman                      DependencyManager
+		TemplateRepo                string
+		TemplateOrg                 string
+		DinghyfileName              string
+		Client                      util.PlankClient
+		DeleteStalePipelines        bool
+		AutolockPipelines           string
+		EventClient                 events.EventClient
+		Parser                      Parser
+		Logger                      log.DinghyLog
+		Ums                         []Unmarshaller
+		Notifiers                   []notifiers.Notifier
+		PushRaw                     map[string]interface{}
+		GlobalVariablesMap          map[string]interface{}
+		RepositoryRawdataProcessing bool
+		RebuildingModules           bool
+		Action                      pipebuilder.BuilderAction
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   map[string]interface{}
+	}{
+		{
+			name: "Content should return a map populated with 'raw' property if no Log Events are available",
+			fields: fields{
+				Logger: NewDinghylog(),
+				PushRaw: map[string]interface{}{
+					"head_commit": map[string]interface{}{
+						"id": "a5fc63bd5a8bdb342d1e83933a5b5c99010e61e4",
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"raw": map[string]interface{}{
+					"head_commit": map[string]interface{}{
+						"id": "a5fc63bd5a8bdb342d1e83933a5b5c99010e61e4",
+					},
+				},
+			},
+		},
+		{
+			name: "Content should return a map populated with 'raw' and 'logevent' properties",
+			fields: fields{
+				Logger: func() log.DinghyLog {
+					memLog := &bytes.Buffer{}
+					memLog.Write([]byte("test"))
+					l := log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
+						log.LogEventKey: {
+							Logger:         logrus.New(),
+							LogEventBuffer: memLog,
+						},
+					}}
+					l.Println("test")
+					return l
+				}(),
+				PushRaw: map[string]interface{}{},
+			},
+			want: map[string]interface{}{
+				"raw":      map[string]interface{}{},
+				"logevent": "test",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &PipelineBuilder{
+				Downloader:                  tt.fields.Downloader,
+				Depman:                      tt.fields.Depman,
+				TemplateRepo:                tt.fields.TemplateRepo,
+				TemplateOrg:                 tt.fields.TemplateOrg,
+				DinghyfileName:              tt.fields.DinghyfileName,
+				Client:                      tt.fields.Client,
+				DeleteStalePipelines:        tt.fields.DeleteStalePipelines,
+				AutolockPipelines:           tt.fields.AutolockPipelines,
+				EventClient:                 tt.fields.EventClient,
+				Parser:                      tt.fields.Parser,
+				Logger:                      tt.fields.Logger,
+				Ums:                         tt.fields.Ums,
+				Notifiers:                   tt.fields.Notifiers,
+				PushRaw:                     tt.fields.PushRaw,
+				GlobalVariablesMap:          tt.fields.GlobalVariablesMap,
+				RepositoryRawdataProcessing: tt.fields.RepositoryRawdataProcessing,
+				RebuildingModules:           tt.fields.RebuildingModules,
+				Action:                      tt.fields.Action,
+			}
+			if got := b.getContent(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getContent() = %v, want %v", got, tt.want)
 			}
 		})
 	}

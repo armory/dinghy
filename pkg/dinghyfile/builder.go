@@ -550,5 +550,4 @@ func (b *PipelineBuilder) getContent() map[string]interface{} {
 	}
 	content["raw"] = b.PushRaw
 	return content
-
 }
