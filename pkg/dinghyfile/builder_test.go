@@ -69,8 +69,6 @@ func TestProcessDinghyfile(t *testing.T) {
 	assert.Nil(t, pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch"))
 }
 
-
-
 func TestProcessDinghyfileValidate(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -115,7 +113,6 @@ func TestUpdateApplication(t *testing.T) {
 	newPipelines := []plank.Pipeline{existingPipeline, newPipeline}
 
 	testapp := &plank.Application{Name: "testapp"}
-
 
 	client := NewMockPlankClient(ctrl)
 	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
@@ -195,9 +192,9 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
+	client.EXPECT().GetApplication(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
 	client.EXPECT().CreateApplication(gomock.Any()).Return(errors.New("boom")).Times(1)
-	client.EXPECT().GetApplicationNotifications(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
+	client.EXPECT().GetApplicationNotifications(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
@@ -264,7 +261,7 @@ func TestProcessDinghyfileFailedValidation(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplicationNotifications(gomock.Eq("foo")).Return(nil, &plank.FailedResponse{StatusCode:404}).Times(1)
+	client.EXPECT().GetApplicationNotifications(gomock.Eq("foo")).Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
@@ -437,13 +434,12 @@ func TestUpdateDinghyfile(t *testing.T) {
 	}
 }
 
-
 func TestValidatePipelines(t *testing.T) {
 	b := testPipelineBuilder()
 
 	fullCases := map[string]struct {
-		dinghyRaw    []byte
-		result       error
+		dinghyRaw []byte
+		result    error
 	}{
 		"dinghyraw_fail_no_refids": {
 			dinghyRaw: []byte(`{
@@ -649,7 +645,6 @@ func TestValidatePipelines(t *testing.T) {
 			}`),
 			result: errors.New("Duplicate stage refId mj2 field found"),
 		},
-
 	}
 
 	for testName, c := range fullCases {
@@ -665,10 +660,10 @@ func TestValidatePipelines(t *testing.T) {
 				}
 			}
 			//Log parsing issues as an error in test
-			if parseErrs != 0{
+			if parseErrs != 0 {
 				assert.True(t, true, false)
 			} else {
-				err := b.ValidatePipelines( d, c.dinghyRaw)
+				err := b.ValidatePipelines(d, c.dinghyRaw)
 				assert.Equal(t, c.result, err)
 			}
 		})
@@ -679,8 +674,8 @@ func TestValidateAppNotifications(t *testing.T) {
 	b := testPipelineBuilder()
 
 	fullCases := map[string]struct {
-		dinghyRaw    []byte
-		result       error
+		dinghyRaw []byte
+		result    error
 	}{
 		"dinghyraw_pass_empty": {
 			dinghyRaw: []byte(`{
@@ -758,7 +753,7 @@ func TestValidateAppNotifications(t *testing.T) {
 			}`),
 			result: errors.New("application notifications format is invalid for email"),
 		},
-		"dinghyraw_passes_arrays" : {
+		"dinghyraw_passes_arrays": {
 			dinghyRaw: []byte(`{
 				"application": "foo",
 				"spec": {
@@ -809,16 +804,15 @@ func TestValidateAppNotifications(t *testing.T) {
 				}
 			}
 			//Log parsing issues as an error in test
-			if parseErrs != 0{
+			if parseErrs != 0 {
 				assert.True(t, true, false)
 			} else {
-				err := b.ValidateAppNotifications( d, c.dinghyRaw)
+				err := b.ValidateAppNotifications(d, c.dinghyRaw)
 				assert.Equal(t, c.result, err)
 			}
 		})
 	}
 }
-
 
 func TestUpdateDinghyfileMalformed(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -1047,7 +1041,6 @@ func TestUpdatePipelinesRespectsAutoLockOff(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-
 func TestRebuildModuleRoots(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1119,7 +1112,6 @@ func TestRebuildModuleRootsProcessTemplate(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-
 func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1167,10 +1159,10 @@ type mockNotifier struct {
 	LastError    error
 }
 
-func (m *mockNotifier) SendSuccess(org, repo, path string, notificationsType plank.NotificationsType) {
+func (m *mockNotifier) SendSuccess(org, repo, path string, notificationsType plank.NotificationsType, content map[string]interface{}) {
 	m.SuccessCalls = m.SuccessCalls + 1
 }
-func (m *mockNotifier) SendFailure(org, repo, path string, err error, notificationsType plank.NotificationsType) {
+func (m *mockNotifier) SendFailure(org, repo, path string, err error, notificationsType plank.NotificationsType, content map[string]interface{}) {
 	m.FailureCalls = m.FailureCalls + 1
 	m.LastError = err
 }
@@ -1196,16 +1188,16 @@ func TestFailureNotifier(t *testing.T) {
 
 func Test_extractApplicationName(t *testing.T) {
 	tests := []struct {
-		name    string
-		dinghyfile    string
-		want    string
-		wantErr bool
+		name       string
+		dinghyfile string
+		want       string
+		wantErr    bool
 	}{
 		{
-			name: "json_test",
+			name:       "json_test",
 			dinghyfile: `{"application": "test_app_name"}`,
-			want: "test_app_name",
-			wantErr: false,
+			want:       "test_app_name",
+			wantErr:    false,
 		},
 		{
 			name: "yaml_test",
@@ -1228,7 +1220,7 @@ pipelines:
     waitTime: 4
   {{ module "some.stage.module" "something" }}
   triggers: []`,
-			want: "my-awesome-application",
+			want:    "my-awesome-application",
 			wantErr: false,
 		},
 		{
@@ -1237,7 +1229,7 @@ pipelines:
 "globals" = {
     "waitTime" = 42
 }`,
-			want: "some-app",
+			want:    "some-app",
 			wantErr: false,
 		},
 	}
