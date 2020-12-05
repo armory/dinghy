@@ -7,26 +7,11 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"os"
+	"syscall"
+	"time"
 )
 
-//func main() {
-//	// refer https://github.com/go-sql-driver/mysql#dsn-data-source-name for details
-//	dsn := "root:password@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
-//	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-//	if err != nil {
-//		os.Exit(1)
-//	}
-//	client :=  SQLClient{
-//		Client: db,
-//		Logger: nil,
-//		Ctx:    nil,
-//		Stop:   nil,
-//	}
-//	urls := client.GetRoots("mod2")
-//	fmt.Sprintf("%v", urls)
-//}
-
-// NewRedisCache initializes a new cache
+// NewMySQLClient initializes a MySQL Client
 func NewMySQLClient(sqlOptions *SQLConfig, logger *log.Logger, ctx context.Context, stop chan os.Signal) (*SQLClient, error) {
 	dsn := fmt.Sprintf("%v:%v@tcp(%v)/%v?charset=utf8mb4&parseTime=True&loc=Local", sqlOptions.User, sqlOptions.Password, sqlOptions.DbUrl, sqlOptions.DbName)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
@@ -41,8 +26,35 @@ func NewMySQLClient(sqlOptions *SQLConfig, logger *log.Logger, ctx context.Conte
 		stop:   stop,
 	}
 
-	//go rc.monitorWorker()
+	go sqlclient.monitorWorker()
 	return sqlclient, nil
+}
+
+func (c *SQLClient) monitorWorker() {
+	timer := time.NewTicker(10 * time.Second)
+	count := 0
+	for {
+		select {
+		case <-timer.C:
+			sqlDB, err := c.Client.DB()
+			if err != nil {
+				c.stop <- syscall.SIGINT
+			}
+			if err := sqlDB.Ping(); err != nil {
+				count++
+				c.Logger.Errorf("SQL monitor failed %d times (5 max)", count)
+				if count >= 5 {
+					c.Logger.Error("Stopping dinghy because communication with MySQL database failed")
+					timer.Stop()
+					c.stop <- syscall.SIGINT
+				}
+				continue
+			}
+			count = 0
+		case <-c.ctx.Done():
+			return
+		}
+	}
 }
 
 type SQLConfig struct {
