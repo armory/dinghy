@@ -1287,7 +1287,7 @@ func TestPipelineBuilder_getContent(t *testing.T) {
 				},
 			},
 			want: map[string]interface{}{
-				"raw": map[string]interface{}{
+				"rawdata": map[string]interface{}{
 					"head_commit": map[string]interface{}{
 						"id": "a5fc63bd5a8bdb342d1e83933a5b5c99010e61e4",
 					},
@@ -1295,7 +1295,7 @@ func TestPipelineBuilder_getContent(t *testing.T) {
 			},
 		},
 		{
-			name: "Content should return a map populated with 'raw' and 'logevent' properties",
+			name: "Content should return a map populated with 'raw' and 'logevent' properties, since both are populated.",
 			fields: fields{
 				Logger: func() log.DinghyLog {
 					return NewDinghylogWithContent("test")
@@ -1303,9 +1303,28 @@ func TestPipelineBuilder_getContent(t *testing.T) {
 				PushRaw: map[string]interface{}{},
 			},
 			want: map[string]interface{}{
-				"raw":      map[string]interface{}{},
+				"rawdata":  map[string]interface{}{},
 				"logevent": "test",
 			},
+		},
+		{
+			name: "Content should return a map populated with 'logevent' properties, since no raw data is.",
+			fields: fields{
+				Logger: func() log.DinghyLog {
+					return NewDinghylogWithContent("test")
+				}(),
+				PushRaw: nil,
+			},
+			want: map[string]interface{}{
+				"logevent": "test",
+			},
+		},
+		{
+			name: "Content should return a empty map, since no properties are populated.",
+			fields: fields{
+				Logger: NewDinghylog(),
+			},
+			want: map[string]interface{}{},
 		},
 	}
 	for _, tt := range tests {

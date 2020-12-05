@@ -548,6 +548,8 @@ func (b *PipelineBuilder) getNotificationContent() map[string]interface{} {
 	} else {
 		content["logevent"] = logEvent.String()
 	}
-	content["rawdata"] = b.PushRaw
+	if b.PushRaw != nil {
+		content["rawdata"] = b.PushRaw
+	}
 	return content
 }
