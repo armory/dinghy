@@ -42,11 +42,11 @@ type Parser interface {
 
 // PipelineBuilder is responsible for downloading dinghyfiles/modules, compiling them, and sending them to Spinnaker
 type PipelineBuilder struct {
-	Downloader           Downloader
-	Depman               DependencyManager
-	TemplateRepo         string
-	TemplateOrg          string
-	DinghyfileName       string
+	Downloader                  Downloader
+	Depman                      DependencyManager
+	TemplateRepo                string
+	TemplateOrg                 string
+	DinghyfileName              string
 	Client                      util.PlankClient
 	DeleteStalePipelines        bool
 	AutolockPipelines           string
@@ -168,7 +168,7 @@ func (b *PipelineBuilder) ValidatePipelines(d Dinghyfile, dinghyfile []byte) err
 
 	var lastErr error
 	var warning bool
-	for _, pipeline := range d.Pipelines{
+	for _, pipeline := range d.Pipelines {
 		validateResult := pipeline.ValidateRefIds()
 		for _, stageWarning := range validateResult.Warnings {
 			warning = true
@@ -233,7 +233,7 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 	if err != nil {
 		buf, errDownload := b.Downloader.Download(org, repo, path, branch)
 		if errDownload == nil {
-			b.NotifyFailure(org, repo, path, err, buf )
+			b.NotifyFailure(org, repo, path, err, buf)
 		} else {
 			b.NotifyFailure(org, repo, path, err, "")
 		}
@@ -271,7 +271,7 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) erro
 	} else {
 		if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
 			b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
-			b.NotifyFailure(org, repo, path, err, buf.String() )
+			b.NotifyFailure(org, repo, path, err, buf.String())
 			return err
 		}
 	}
@@ -424,7 +424,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			b.Logger.Debug("Locking pipeline ", p.Name)
 			p.Lock()
 		}
-		
+
 		if err := b.Client.UpsertPipeline(p, p.ID); err != nil {
 			err = unwrapFront50Error(err)
 			b.Logger.Errorf("Upsert failed: %s", err.Error())
@@ -498,7 +498,7 @@ func (b *PipelineBuilder) AddUnmarshaller(u Unmarshaller) {
 
 func (b *PipelineBuilder) NotifySuccess(org, repo, path string, notifications plank.NotificationsType) {
 	for _, n := range b.Notifiers {
-		n.SendSuccess(org, repo, path, notifications)
+		n.SendSuccess(org, repo, path, notifications, b.getNotificationContent())
 	}
 }
 
@@ -510,7 +510,7 @@ func (b *PipelineBuilder) NotifyFailure(org, repo, path string, err error, dingh
 		}
 	}
 	for _, n := range b.Notifiers {
-		n.SendFailure(org, repo, path, err, notifications )
+		n.SendFailure(org, repo, path, err, notifications, b.getNotificationContent())
 	}
 }
 
@@ -537,4 +537,19 @@ func getParams(regEx, url string) (paramsMap map[string]string) {
 		}
 	}
 	return paramsMap
+}
+
+func (b *PipelineBuilder) getNotificationContent() map[string]interface{} {
+	content := map[string]interface{}{}
+
+	logEvent, err := b.Logger.GetBytesBuffByLoggerKey(log.LogEventKey)
+	if err != nil {
+		b.Logger.Error(fmt.Sprintf("there was an error trying to get notification content: %v", err))
+	} else {
+		content["logevent"] = logEvent.String()
+	}
+	if b.PushRaw != nil {
+		content["rawdata"] = b.PushRaw
+	}
+	return content
 }
