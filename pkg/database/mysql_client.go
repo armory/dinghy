@@ -30,15 +30,17 @@ import (
 func NewMySQLClient(sqlOptions *SQLConfig, logger *log.Logger, ctx context.Context, stop chan os.Signal) (*SQLClient, error) {
 	dsn := fmt.Sprintf("%v:%v@tcp(%v)/%v?charset=utf8mb4&parseTime=True&loc=Local", sqlOptions.User, sqlOptions.Password, sqlOptions.DbUrl, sqlOptions.DbName)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+
 	if err != nil {
 		return nil, err
 	}
 	sqlclient := &SQLClient{
 		Client: db,
-		Logger: logger.WithFields(log.Fields{"cache": "redis"}),
+		Logger: logger.WithFields(log.Fields{"persistence": "sql"}),
 		ctx:    ctx,
 		stop:   stop,
 	}
+
 	//go rc.monitorWorker()
 	return sqlclient, nil
 }
