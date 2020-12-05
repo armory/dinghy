@@ -23,7 +23,6 @@ import (
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/log"
 	"github.com/armory/dinghy/pkg/util"
-	"github.com/sirupsen/logrus"
 	"reflect"
 	"testing"
 
@@ -1299,16 +1298,7 @@ func TestPipelineBuilder_getContent(t *testing.T) {
 			name: "Content should return a map populated with 'raw' and 'logevent' properties",
 			fields: fields{
 				Logger: func() log.DinghyLog {
-					memLog := &bytes.Buffer{}
-					memLog.Write([]byte("test"))
-					l := log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
-						log.LogEventKey: {
-							Logger:         logrus.New(),
-							LogEventBuffer: memLog,
-						},
-					}}
-					l.Println("test")
-					return l
+					return NewDinghylogWithContent("test")
 				}(),
 				PushRaw: map[string]interface{}{},
 			},
@@ -1340,8 +1330,8 @@ func TestPipelineBuilder_getContent(t *testing.T) {
 				RebuildingModules:           tt.fields.RebuildingModules,
 				Action:                      tt.fields.Action,
 			}
-			if got := b.getContent(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getContent() = %v, want %v", got, tt.want)
+			if got := b.getNotificationContent(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getNotificationContent() = %v, want %v", got, tt.want)
 			}
 		})
 	}

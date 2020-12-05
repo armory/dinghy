@@ -498,7 +498,7 @@ func (b *PipelineBuilder) AddUnmarshaller(u Unmarshaller) {
 
 func (b *PipelineBuilder) NotifySuccess(org, repo, path string, notifications plank.NotificationsType) {
 	for _, n := range b.Notifiers {
-		n.SendSuccess(org, repo, path, notifications, b.getContent())
+		n.SendSuccess(org, repo, path, notifications, b.getNotificationContent())
 	}
 }
 
@@ -510,7 +510,7 @@ func (b *PipelineBuilder) NotifyFailure(org, repo, path string, err error, dingh
 		}
 	}
 	for _, n := range b.Notifiers {
-		n.SendFailure(org, repo, path, err, notifications, b.getContent())
+		n.SendFailure(org, repo, path, err, notifications, b.getNotificationContent())
 	}
 }
 
@@ -539,15 +539,15 @@ func getParams(regEx, url string) (paramsMap map[string]string) {
 	return paramsMap
 }
 
-func (b *PipelineBuilder) getContent() map[string]interface{} {
+func (b *PipelineBuilder) getNotificationContent() map[string]interface{} {
 	content := map[string]interface{}{}
 
 	logEvent, err := b.Logger.GetBytesBuffByLoggerKey(log.LogEventKey)
 	if err != nil {
-		b.Logger.Info(fmt.Sprintf("there was an error trying to get content: %v", err))
+		b.Logger.Error(fmt.Sprintf("there was an error trying to get notification content: %v", err))
 	} else {
 		content["logevent"] = logEvent.String()
 	}
-	content["raw"] = b.PushRaw
+	content["rawdata"] = b.PushRaw
 	return content
 }

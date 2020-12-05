@@ -73,3 +73,18 @@ func NewDinghylog() log.DinghyLog {
 		},
 	}}
 }
+
+func NewDinghylogWithContent(content string) log.DinghyLog {
+	memLog := &bytes.Buffer{}
+	memLog.Write([]byte(content))
+	return log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
+		log.SystemLogKey: {
+			Logger:         logrus.New(),
+			LogEventBuffer: &bytes.Buffer{},
+		},
+		log.LogEventKey: {
+			Logger:         logrus.New(),
+			LogEventBuffer: memLog,
+		},
+	}}
+}
