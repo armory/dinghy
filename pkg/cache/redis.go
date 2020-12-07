@@ -226,7 +226,7 @@ func (c *RedisCache) GetAllDinghyfiles() []string {
 		keys, nextcursor, err := c.Client.Scan(cursor, key, 1000).Result()
 		cursor = nextcursor
 		if err != nil {
-			loge.WithFields(log.Fields{"operation": "scan key", "key": CompileKey("parent","*")}).Error(err)
+			loge.WithFields(log.Fields{"operation": "scan key", "key": CompileKey("parents","*")}).Error(err)
 			return result
 		}
 		for _, key := range keys {
