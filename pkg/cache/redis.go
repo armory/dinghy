@@ -254,7 +254,7 @@ func (c *RedisCache) GetAllDinghyfiles() []string {
 	return result
 }
 
-// Get all Dinghyfiles
+// Get all childrens from url
 func (c *RedisCache) GetChildren(url string) []string {
 	loge := log.WithFields(log.Fields{"func": "GetChildren"})
 	key := CompileKey("children", url)
