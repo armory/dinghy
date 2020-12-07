@@ -51,15 +51,15 @@
         </createTable>
 
         <!-- Executions table -->
-        <createTable tableName="execution">
+        <createTable tableName="executions">
             <column name="execution" type="varchar(100)">
-                <constraints nullable="false"/>
+                <constraints primaryKey="true" primaryKeyName="pk_executions"/>
             </column>
             <column name="result" type="clob" />
-            <column name="success" type="char(1)">
+            <column name="success" type="boolean">
                 <constraints nullable="false"/>
             </column>
-            <column name="updatedate" type="bigint"/>
+            <column name="lastupdateddate" type="bigint"/>
         </createTable>
 
         <!-- LogEvents table -->

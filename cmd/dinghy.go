@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/armory/dinghy/pkg/database"
 	"github.com/armory/dinghy/pkg/dinghyfile"
+	"github.com/armory/dinghy/pkg/execution"
 	"github.com/armory/dinghy/pkg/logevents"
 	"github.com/armory/go-yaml-tools/pkg/tls/server"
 	"net/http"
@@ -108,6 +109,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 	var logEventsClient logevents.LogEventsClient
 	var persitenceManager dinghyfile.DependencyManager
 	var persitenceManagerReadOnly dinghyfile.DependencyManager
+	// Full SQL mode
 	if config.SQL.Enabled  && !config.SQL.EventLogsOnly {
 
 		sqlClient, sqlerr := database.NewMySQLClient(&database.SQLConfig{
@@ -130,8 +132,20 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		persitenceManager = sqlClient
 		persitenceManagerReadOnly = &sqlClientReadOnly
 
-	} else if config.SQL.Enabled  && config.SQL.EventLogsOnly {
 
+		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)
+
+		migration := execution.RedisToSQLMigration{
+			Settings:   config,
+			Logger:     log,
+			RedisCache: redisClient,
+			SQLClient:  sqlClient,
+		}
+
+		migration.Execute()
+
+	} else if config.SQL.Enabled  && config.SQL.EventLogsOnly {
+		// Hybrid SQL mode just for eventlogs
 		sqlClient, sqlerr := database.NewMySQLClient(&database.SQLConfig{
 			DbUrl:    config.SQL.BaseUrl,
 			User:     config.SQL.User,
@@ -158,6 +172,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		persitenceManagerReadOnly = &redisClientReadOnly
 
 	} else {
+		// Redis mode
 		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)
 		if _, err := redisClient.Client.Ping().Result(); err != nil {
 			log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)

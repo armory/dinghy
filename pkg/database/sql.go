@@ -28,14 +28,25 @@ type SQLClient struct {
 }
 
 type Fileurl struct {
-	Id 			int		`gorm:"primaryKey;column:id"`
-	Url			string	`gorm:"column:url"`
-	Rawdata		string	`gorm:"column:rawdata"`
+	Id      int    `gorm:"primaryKey;column:id"`
+	Url     string `gorm:"column:url"`
+	Rawdata string `gorm:"column:rawdata"`
 }
 
 type FileurlChilds struct {
-	FileurlID 			int		`gorm:"column:fileurl_id"`
-	ChildfileurlId		int		`gorm:"column:childfileurl_id"`
+	FileurlID      int `gorm:"column:fileurl_id"`
+	ChildfileurlId int `gorm:"column:childfileurl_id"`
+}
+
+type ExecutionSQL struct {
+	Execution      	string `gorm:"primaryKey;column:execution"`
+	Result 			string `gorm:"column:result"`
+	Success 		bool `gorm:"column:success"`
+	LastUpdatedDate int `gorm:"column:lastupdateddate"`
+}
+
+func (ExecutionSQL) TableName() string {
+	return "executions"
 }
 
 // SetDeps sets dependencies for a parent
@@ -70,7 +81,7 @@ func containsChildId(slice []FileurlChilds, searchChildId int) bool {
 	if slice == nil {
 		return false
 	}
-	for _, val := range slice  {
+	for _, val := range slice {
 		if val.ChildfileurlId == searchChildId {
 			return true
 		}
@@ -83,12 +94,12 @@ func (c *SQLClient) GetRoots(url string) []string {
 	return returnRoots(c, url)
 }
 
-func returnRoots (c *SQLClient, url string) []string {
+func returnRoots(c *SQLClient, url string) []string {
 	results := []string{}
 	currUrl := Fileurl{}
 	c.Client.Where(&Fileurl{Url: url}).Find(&currUrl)
 	if currUrl.Url != "" {
-		parents := []FileurlChilds{{FileurlID: currUrl.Id }}
+		parents := []FileurlChilds{{FileurlID: currUrl.Id}}
 		tempParent := []FileurlChilds{}
 		for {
 			for _, currParent := range parents {
@@ -125,7 +136,7 @@ func (c *SQLClient) GetRawData(url string) (string, error) {
 }
 
 // Return RawData
-func returnRawData( c *SQLClient, url string) (string, error) {
+func returnRawData(c *SQLClient, url string) (string, error) {
 	find := Fileurl{Url: url}
 	result := c.Client.Where(&Fileurl{Url: url}).Find(&find)
 	return find.Rawdata, result.Error
