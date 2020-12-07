@@ -12,7 +12,7 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package git
 
@@ -23,17 +23,17 @@ type Status string
 
 // Status types
 const (
-	StatusPending         Status = "pending"
-	StatusError                  = "error"
-	StatusSuccess                = "success"
-	StatusFailure                = "failure"
-	DefaultPendingMessage string = "Updating pipeline definitions..."
-	DefaultSuccessMessage string = "Pipeline definitions updated!"
+	StatusPending                 Status = "pending"
+	StatusError                          = "error"
+	StatusSuccess                        = "success"
+	StatusFailure                        = "failure"
+	DefaultPendingMessage         string = "Updating pipeline definitions..."
+	DefaultSuccessMessage         string = "Pipeline definitions updated!"
 	DefaultValidatePendingMessage string = "Validating pipeline definitions..."
 	DefaultValidateSuccessMessage string = "Pipeline definitions validation was successful!"
 )
 
-var DefaultMessagesByBuilderAction = map[pipebuilder.BuilderAction]map[Status]string {
+var DefaultMessagesByBuilderAction = map[pipebuilder.BuilderAction]map[Status]string{
 	pipebuilder.Process: {
 		StatusPending: DefaultPendingMessage,
 		StatusSuccess: DefaultSuccessMessage,

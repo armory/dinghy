@@ -29,7 +29,7 @@ type Unmarshaller interface {
 	Unmarshal(data []byte, i interface{}) error
 }
 
-type DinghyJsonUnmarshaller struct {}
+type DinghyJsonUnmarshaller struct{}
 
 // Unmarshal is wrapper around json.Unmarshal that returns user-friendly
 // errors when there are syntax errors.

@@ -21,18 +21,14 @@ type LogEventsClient interface {
 	SaveLogEvent(logEvent LogEvent) error
 }
 
-
-
 type LogEvent struct {
-	Org 		string		`json:"org" yaml:"org"`
-	Repo 		string		`json:"repo" yaml:"repo"`
-	Files		[]string	`json:"files" yaml:"files"`
-	Message		string		`json:"message" yaml:"message"`
-	Date		int64		`json:"date" yaml:"date"`
-	Commits		[]string	`json:"commits" yaml:"commits"`
-	Status		string		`json:"status" yaml:"status"`
-	RawData		string		`json:"rawdata" yaml:"rawdata"`
-	RenderedDinghyfile	string		`json:"rendereddinghyfile" yaml:"rendereddinghyfile"`
+	Org                string   `json:"org" yaml:"org"`
+	Repo               string   `json:"repo" yaml:"repo"`
+	Files              []string `json:"files" yaml:"files"`
+	Message            string   `json:"message" yaml:"message"`
+	Date               int64    `json:"date" yaml:"date"`
+	Commits            []string `json:"commits" yaml:"commits"`
+	Status             string   `json:"status" yaml:"status"`
+	RawData            string   `json:"rawdata" yaml:"rawdata"`
+	RenderedDinghyfile string   `json:"rendereddinghyfile" yaml:"rendereddinghyfile"`
 }
-
-

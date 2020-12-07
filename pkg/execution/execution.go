@@ -20,7 +20,7 @@ func CreateExecution (sqlClient *database.SQLClient, executionName string) error
 	execution := database.ExecutionSQL{
 		Execution:       executionName,
 		Result:          "",
-		Success:         false,
+		Success:         "false",
 		LastUpdatedDate: int(milis),
 	}
 	return sqlClient.Client.Create(&execution).Error
@@ -29,10 +29,14 @@ func CreateExecution (sqlClient *database.SQLClient, executionName string) error
 func UpdateExecution (sqlClient *database.SQLClient, executionName string, result string, success bool) error {
 	nanos := time.Now().UnixNano()
 	milis := nanos / 1000000
+	succVal := "false"
+	if success {
+		succVal = "true"
+	}
 	execution := database.ExecutionSQL{
 		Execution:       executionName,
 		Result:          result,
-		Success:         success,
+		Success:         succVal,
 		LastUpdatedDate: int(milis),
 	}
 	return sqlClient.Client.Save(&execution).Error

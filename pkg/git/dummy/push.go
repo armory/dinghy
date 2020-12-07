@@ -59,7 +59,7 @@ func (p *Push) Branch() string {
 }
 
 // IsBranch returns a boolean value indicating if the provided value matches the branch on the current request
-func (p* Push) IsBranch(branchToTry string) bool {
+func (p *Push) IsBranch(branchToTry string) bool {
 	return true
 }
 
@@ -69,7 +69,7 @@ func (p *Push) SetCommitStatus(s git.Status, description string) {
 }
 
 func (p *Push) GetCommitStatus() (error, git.Status, string) {
-	return errors.New("functionality not implemented"), "",""
+	return errors.New("functionality not implemented"), "", ""
 }
 
 // Commits return the list of commit hashes

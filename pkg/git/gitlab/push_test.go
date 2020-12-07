@@ -27,7 +27,7 @@ import (
 	"time"
 )
 
-type commitsStruct []*struct{
+type commitsStruct []*struct {
 	ID        string     `json:"id"`
 	Message   string     `json:"message"`
 	Timestamp *time.Time `json:"timestamp"`
@@ -59,26 +59,26 @@ type projectStruct struct {
 }
 
 func loadExample(t *testing.T) []byte {
-   content, err := ioutil.ReadFile("example_payload.json")
-   require.Equal(t, err, nil)
-   return content
+	content, err := ioutil.ReadFile("example_payload.json")
+	require.Equal(t, err, nil)
+	return content
 }
 
 func TestInSlice(t *testing.T) {
 	testCases := map[string]struct {
-		slice []string
+		slice     []string
 		valToFind string
-		expected bool
+		expected  bool
 	}{
 		"success": {
-			slice: []string{"app", "src", "dinghyfile"},
+			slice:     []string{"app", "src", "dinghyfile"},
 			valToFind: "dinghyfile",
-			expected: true,
+			expected:  true,
 		},
 		"failure": {
-			slice: []string{"app", "src", "meh"},
+			slice:     []string{"app", "src", "meh"},
 			valToFind: "dinghyfile",
-			expected: false,
+			expected:  false,
 		},
 	}
 
@@ -92,8 +92,8 @@ func TestInSlice(t *testing.T) {
 
 func TestContainsFile(t *testing.T) {
 	testCases := map[string]struct {
-		file string
-		push *Push
+		file     string
+		push     *Push
 		expected bool
 	}{
 		"added file": {
@@ -102,7 +102,7 @@ func TestContainsFile(t *testing.T) {
 				Event: &gitlab.PushEvent{
 					Commits: commitsStruct{
 						{
-							Added: []string{"added-some-file"},
+							Added:    []string{"added-some-file"},
 							Modified: []string{},
 						},
 					},
@@ -116,7 +116,7 @@ func TestContainsFile(t *testing.T) {
 				Event: &gitlab.PushEvent{
 					Commits: commitsStruct{
 						{
-							Added: []string{},
+							Added:    []string{},
 							Modified: []string{"modified-some-file"},
 						},
 					},
@@ -139,7 +139,7 @@ func TestContainsFile(t *testing.T) {
 				Event: &gitlab.PushEvent{
 					Commits: commitsStruct{
 						{
-							Added: []string{"added-some-file"},
+							Added:    []string{"added-some-file"},
 							Modified: []string{"modified-some-file"},
 						},
 					},
@@ -157,17 +157,17 @@ func TestContainsFile(t *testing.T) {
 	}
 }
 
-func TestFiles(t *testing.T ) {
+func TestFiles(t *testing.T) {
 	testCases := map[string]struct {
-		push *Push
+		push     *Push
 		expected []string
-	} {
+	}{
 		"files added": {
 			push: &Push{
 				Event: &gitlab.PushEvent{
 					Commits: commitsStruct{
 						{
-							Added: []string{"added-some-file", "added-another-file"},
+							Added:    []string{"added-some-file", "added-another-file"},
 							Modified: []string{},
 						},
 					},
@@ -178,13 +178,13 @@ func TestFiles(t *testing.T ) {
 		"files modified": {
 			push: &Push{
 				Event: &gitlab.PushEvent{
-				Commits: commitsStruct{
-					{
-						Added: []string{},
-						Modified: []string{"modified-some-file", "modified-another-file"},
+					Commits: commitsStruct{
+						{
+							Added:    []string{},
+							Modified: []string{"modified-some-file", "modified-another-file"},
+						},
 					},
 				},
-			},
 			},
 			expected: []string{"modified-some-file", "modified-another-file"},
 		},
@@ -206,7 +206,7 @@ func TestFiles(t *testing.T ) {
 				Event: &gitlab.PushEvent{
 					Commits: commitsStruct{
 						{
-							Added: []string{},
+							Added:    []string{},
 							Modified: []string{},
 						},
 					},
@@ -226,7 +226,7 @@ func TestFiles(t *testing.T ) {
 
 func TestRepo(t *testing.T) {
 	testCases := map[string]struct {
-		push *Push
+		push     *Push
 		expected string
 	}{
 		"success": {
@@ -251,7 +251,7 @@ func TestRepo(t *testing.T) {
 
 func TestOrg(t *testing.T) {
 	testCases := map[string]struct {
-		push *Push
+		push     *Push
 		expected string
 	}{
 		"success": {
@@ -276,13 +276,13 @@ func TestOrg(t *testing.T) {
 
 func TestBranch(t *testing.T) {
 	testCases := map[string]struct {
-		push *Push
+		push     *Push
 		expected string
 	}{
 		"success": {
 			push: &Push{
 				Event: &gitlab.PushEvent{
-					Ref:         "my-branch",
+					Ref: "my-branch",
 				},
 			},
 			expected: "my-branch",
@@ -299,27 +299,27 @@ func TestBranch(t *testing.T) {
 
 func TestIsBranch(t *testing.T) {
 	testCases := map[string]struct {
-		push *Push
+		push        *Push
 		branchToTry string
-		expected bool
+		expected    bool
 	}{
 		"match: short name compare to long name": {
 			push: &Push{
 				Event: &gitlab.PushEvent{
-					Ref:         "my-branch",
+					Ref: "my-branch",
 				},
 			},
 			branchToTry: "refs/heads/my-branch",
-			expected: true,
+			expected:    true,
 		},
 		"match: long name compare to short name": {
 			push: &Push{
 				Event: &gitlab.PushEvent{
-					Ref:         "refs/heads/my-branch",
+					Ref: "refs/heads/my-branch",
 				},
 			},
 			branchToTry: "my-branch",
-			expected: true,
+			expected:    true,
 		},
 		"match: short same": {
 			push: &Push{
@@ -360,13 +360,13 @@ func TestIsBranch(t *testing.T) {
 
 func TestIsMaster(t *testing.T) {
 	testCases := map[string]struct {
-		push *Push
+		push     *Push
 		expected bool
 	}{
 		"true": {
 			push: &Push{
 				Event: &gitlab.PushEvent{
-					Ref:         "refs/heads/master",
+					Ref: "refs/heads/master",
 				},
 			},
 			expected: true,
@@ -374,7 +374,7 @@ func TestIsMaster(t *testing.T) {
 		"false": {
 			push: &Push{
 				Event: &gitlab.PushEvent{
-					Ref:         "refs/heads/not-master",
+					Ref: "refs/heads/not-master",
 				},
 			},
 			expected: false,
@@ -391,22 +391,22 @@ func TestIsMaster(t *testing.T) {
 
 func TestParseWebhook(t *testing.T) {
 	testCases := map[string]struct {
-		push *Push
-		settings *settings.Settings
-		body []byte
+		push        *Push
+		settings    *settings.Settings
+		body        []byte
 		expectedErr error
 	}{
 		"success": {
 			push: &Push{
 				Event: &gitlab.PushEvent{
-					Ref:         "refs/heads/master",
+					Ref: "refs/heads/master",
 				},
 			},
 			settings: &settings.Settings{
-				GitLabToken: "token",
+				GitLabToken:    "token",
 				GitLabEndpoint: "https://my-endpoint",
 			},
-			body: loadExample(t),
+			body:        loadExample(t),
 			expectedErr: nil,
 		},
 	}

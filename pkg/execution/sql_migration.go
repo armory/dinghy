@@ -53,7 +53,7 @@ func (execution *RedisToSQLMigration) Execute() (map[string]interface{}, error){
 
 	errorExec := CreateExecution(execution.SQLClient, "REDIS_TO_SQL_MIGRATION")
 	if errorExec != nil {
-		execution.Logger.Info("REDIS_TO_SQL_MIGRATION will not be executed because %v", errorExec)
+		execution.Logger.Infof("REDIS_TO_SQL_MIGRATION will not be executed because %v", errorExec)
 		return nil, nil
 	}
 

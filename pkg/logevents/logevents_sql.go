@@ -20,27 +20,26 @@ import (
 )
 
 type LogEventSQLClient struct {
-	MinutesTTL	time.Duration
-	SQLClient 	*database.SQLClient
+	MinutesTTL time.Duration
+	SQLClient  *database.SQLClient
 }
-
 
 func (LogEventSQL) TableName() string {
 	return "logevents"
 }
 
 type LogEventSQL struct {
-	Id 			int		`gorm:"primaryKey;column:id"`
-	Org 		string	`gorm:"column:org"`
-	Repo 		string	`gorm:"column:repo"`
-	Files		string	`gorm:"column:files"`
-	Message		string	`gorm:"column:message"`
-	Date		int64	`gorm:"column:commitdate"`
-	Commits		string	`gorm:"column:commits"`
-	Status		string	`gorm:"column:status"`
-	RawData		string	`gorm:"column:rawdata"`
-	Author		string  `gorm:"column:author"`
-	RenderedDinghyfile	string	`gorm:"column:rendereddinghyfile"`
+	Id                 int    `gorm:"primaryKey;column:id"`
+	Org                string `gorm:"column:org"`
+	Repo               string `gorm:"column:repo"`
+	Files              string `gorm:"column:files"`
+	Message            string `gorm:"column:message"`
+	Date               int64  `gorm:"column:commitdate"`
+	Commits            string `gorm:"column:commits"`
+	Status             string `gorm:"column:status"`
+	RawData            string `gorm:"column:rawdata"`
+	Author             string `gorm:"column:author"`
+	RenderedDinghyfile string `gorm:"column:rendereddinghyfile"`
 }
 
 func (log LogEventSQL) ToLogEvent() LogEvent {
@@ -71,16 +70,15 @@ func (log LogEvent) ToLogEventSQL() LogEventSQL {
 	}
 }
 
-
 func (c LogEventSQLClient) GetLogEvents() ([]LogEvent, error) {
 	queryLogEvents := []LogEventSQL{}
 	result := []LogEvent{}
 	now := time.Now().UnixNano()
-	reducednanos := now - int64(c.MinutesTTL * time.Minute)
+	reducednanos := now - int64(c.MinutesTTL*time.Minute)
 	milis := reducednanos / 1000000
 
-	queryResult := c.SQLClient.Client.Where("commitdate >= ?", int(milis) ).Find(&queryLogEvents)
-	if queryResult.Error != nil{
+	queryResult := c.SQLClient.Client.Where("commitdate >= ?", int(milis)).Find(&queryLogEvents)
+	if queryResult.Error != nil {
 		return nil, queryResult.Error
 	}
 

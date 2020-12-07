@@ -74,5 +74,5 @@ type SQLConfig struct {
 	DbUrl    string
 	User     string
 	Password string
-	DbName	 string
+	DbName   string
 }

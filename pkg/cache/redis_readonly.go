@@ -31,7 +31,6 @@ type RedisCacheReadOnly struct {
 	stop   chan os.Signal
 }
 
-
 // SetDeps sets dependencies for a parent
 func (c *RedisCacheReadOnly) SetDeps(parent string, deps []string) {
 
@@ -43,7 +42,7 @@ func (c *RedisCacheReadOnly) GetRoots(url string) []string {
 }
 
 // Set RawData
-func (c *RedisCacheReadOnly) SetRawData(url string, rawData string) error{
+func (c *RedisCacheReadOnly) SetRawData(url string, rawData string) error {
 	return nil
 }
 

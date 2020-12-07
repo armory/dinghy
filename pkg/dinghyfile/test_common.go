@@ -65,9 +65,9 @@ func mockLogger(dr *DinghyfileParser, ctrl *gomock.Controller) *mock.MockDinghyL
 	return dr.Builder.Logger.(*mock.MockDinghyLog)
 }
 
-func NewDinghylog() log.DinghyLog{
+func NewDinghylog() log.DinghyLog {
 	return log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
-		log.SystemLogKey : {
+		log.SystemLogKey: {
 			Logger:         logrus.New(),
 			LogEventBuffer: &bytes.Buffer{},
 		},

@@ -22,17 +22,17 @@ import (
 )
 
 type LogEventRedisClient struct {
-	MinutesTTL	time.Duration
+	MinutesTTL  time.Duration
 	RedisClient *cache.RedisCache
 }
 
 func (c LogEventRedisClient) GetLogEvents() ([]LogEvent, error) {
 	loge := log.WithFields(log.Fields{"func": "GetLogEvents"})
-	key := cache.CompileKey("logEvent","*")
+	key := cache.CompileKey("logEvent", "*")
 	var cursor uint64
 	result := []LogEvent{}
 	for {
-		keys, nextcursor, err := c.RedisClient.Client.Scan(cursor, key , 1000).Result()
+		keys, nextcursor, err := c.RedisClient.Client.Scan(cursor, key, 1000).Result()
 		cursor = nextcursor
 		if err != nil {
 			loge.WithFields(log.Fields{"operation": "scan key", "key": cache.CompileKey("logEvent*")}).Error(err)
@@ -86,7 +86,7 @@ func (c LogEventRedisClient) SaveLogEvent(logEvent LogEvent) error {
 		return err
 	}
 	key := cache.CompileKey("logEvent", strconv.FormatInt(milis, 10))
-	if _, err := c.RedisClient.Client.Set(key, logEventBytes, c.MinutesTTL * time.Minute).Result(); err != nil {
+	if _, err := c.RedisClient.Client.Set(key, logEventBytes, c.MinutesTTL*time.Minute).Result(); err != nil {
 		loge.WithFields(log.Fields{"operation": "set key", "key": key, "content": logEventBytes}).Error(err)
 		return err
 	}

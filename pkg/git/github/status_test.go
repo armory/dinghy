@@ -84,16 +84,15 @@ func TestSetCommitStatusFails(t *testing.T) {
 	p.SetCommitStatus(git.StatusPending, git.DefaultPendingMessage)
 }
 
-
 func TestGetCommitStatus(t *testing.T) {
 
 	tests := []struct {
-		name string
-		payload string
-		err error
-		status git.Status
+		name        string
+		payload     string
+		err         error
+		status      git.Status
 		description string
-		warning int
+		warning     int
 	}{
 		{
 			"payload_have_status",
@@ -303,16 +302,16 @@ func TestGetCommitStatus(t *testing.T) {
 				Config: Config{
 					Endpoint: ts.URL,
 				},
-				Repository: Repository{Organization: "armory", Name: "dinghy" },
-				Logger: logger,
+				Repository: Repository{Organization: "armory", Name: "dinghy"},
+				Logger:     logger,
 			}
 
 			// This shouldn't throw exceptions/panics
 			a, b, c := p.GetCommitStatus()
 			var got = fmt.Sprintf("%v - %v - %v", a, b, c)
 			var want = fmt.Sprintf("%v - %v - %v", tt.err, tt.status, tt.description)
-			if got !=  want {
-				t.Errorf("got %v and want %v", got, want )
+			if got != want {
+				t.Errorf("got %v and want %v", got, want)
 				t.Fail()
 			}
 		})

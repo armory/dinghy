@@ -7,7 +7,6 @@ import (
 )
 
 type DinghyLog interface {
-
 	WithField(key string, value interface{}) *log.Entry
 	WithFields(fields log.Fields) *log.Entry
 	WithError(err error) *log.Entry
@@ -104,7 +103,7 @@ func (d DinghyLogs) Panicln(args ...interface{}) {
 
 const (
 	SystemLogKey = "system"
-	LogEventKey = "logevent"
+	LogEventKey  = "logevent"
 )
 
 func (d DinghyLogs) GetBytesBuffByLoggerKey(key string) (*bytes.Buffer, error) {
@@ -211,12 +210,12 @@ func (d DinghyLogs) Panic(args ...interface{}) {
 }
 
 type DinghyLogs struct {
-	Logs	map[string]DinghyLogStruct
+	Logs map[string]DinghyLogStruct
 }
 
 type DinghyLogStruct struct {
-	Logger	 		log.FieldLogger
-	LogEventBuffer	*bytes.Buffer
+	Logger         log.FieldLogger
+	LogEventBuffer *bytes.Buffer
 }
 
 func NewDinghyLogs(systemLog log.FieldLogger) DinghyLog {
@@ -226,13 +225,13 @@ func NewDinghyLogs(systemLog log.FieldLogger) DinghyLog {
 	logevent.SetLevel(lvl)
 	logevent.SetOutput(&memLog)
 	return DinghyLogs{Logs: map[string]DinghyLogStruct{
-		SystemLogKey : {
+		SystemLogKey: {
 			Logger:         systemLog,
 			LogEventBuffer: &bytes.Buffer{},
 		},
-		LogEventKey : {
-			Logger:			logevent,
-			LogEventBuffer:	&memLog,
+		LogEventKey: {
+			Logger:         logevent,
+			LogEventBuffer: &memLog,
 		},
 	}}
 }

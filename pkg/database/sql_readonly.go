@@ -30,7 +30,6 @@ type SQLReadOnly struct {
 	stop   chan os.Signal
 }
 
-
 // SetDeps sets dependencies for a parent
 func (c *SQLReadOnly) SetDeps(parent string, deps []string) {
 
@@ -42,7 +41,7 @@ func (c *SQLReadOnly) GetRoots(url string) []string {
 }
 
 // Set RawData
-func (c *SQLReadOnly) SetRawData(url string, rawData string) error{
+func (c *SQLReadOnly) SetRawData(url string, rawData string) error {
 	return nil
 }
 
