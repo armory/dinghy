@@ -43,6 +43,7 @@ type SlackNotification struct {
 type context struct {
 	Body      string `json:"body" yaml:"body"`
 	Formatter string `json:"formatter" yaml:"formatter"`
+	Subject	  string `json:"subject" yaml:"subject"`
 }
 
 type SlackNotifier struct {
@@ -69,6 +70,7 @@ func newSlackNotification(to, body string) *SlackNotification {
 	sn.To = []string{to}
 	sn.Context.Body = body
 	sn.Context.Formatter = "TEXT"
+	sn.Context.Subject = "Spinnaker Notification"
 	return sn
 }
 
