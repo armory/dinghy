@@ -15,7 +15,8 @@ type ExtSettings struct {
 }
 
 type notifierConfig struct {
-	Slack slackOpts `json:"slack,omitempty" yaml:"slack"`
+	Slack  slackOpts  `json:"slack,omitempty" yaml:"slack"`
+	Github githubOpts `json:"github,omitempty" yaml:"github"`
 }
 
 type slackOpts struct {
@@ -23,8 +24,19 @@ type slackOpts struct {
 	Channel string `json:"channel" yaml:"channel"`
 }
 
+type githubOpts struct {
+	Enabled string `json:"enabled" yaml:"enabled"`
+}
+
 func (s slackOpts) IsEnabled() bool {
 	return (s.Channel != "") && (strings.ToLower(s.Enabled) == "true")
+}
+
+func (g githubOpts) IsEnabled() bool {
+	if g.Enabled == "" {
+		return true
+	}
+	return strings.ToLower(g.Enabled) == "true"
 }
 
 func LoadExtraSettings(s *settings.Settings) (*ExtSettings, error) {

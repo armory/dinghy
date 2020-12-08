@@ -39,6 +39,13 @@ func main() {
 		log.Info("Slack notifications disabled/not configured")
 	}
 
+	if moreConfig.Notifiers.Github.IsEnabled() {
+		log.Infof("Github notifications enabled")
+		api.AddNotifier(notifiers.NewGithubNotifier(moreConfig))
+	} else {
+		log.Info("Github notifications disabled")
+	}
+
 	switch moreConfig.Settings.ParserFormat {
 	case "yaml":
 		log.Info("Setting Dinghyfile parser to YAML")

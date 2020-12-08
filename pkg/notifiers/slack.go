@@ -25,17 +25,17 @@ import (
  */
 
 type SlackNotificationValues struct {
-	When    	[]string  `json:"when" yaml:"when" mapstructure:"when"`
-	Address 	string    `json:"address" yaml:"address" mapstructure:"address"`
-	Level	 	string    `json:"level" yaml:"level" mapstructure:"level"`
+	When    []string `json:"when" yaml:"when" mapstructure:"when"`
+	Address string   `json:"address" yaml:"address" mapstructure:"address"`
+	Level   string   `json:"level" yaml:"level" mapstructure:"level"`
 }
 
 type SlackNotifications struct {
-	SlackValues []SlackNotificationValues  `json:"slack" yaml:"slack" mapstructure:"slack"`
+	SlackValues []SlackNotificationValues `json:"slack" yaml:"slack" mapstructure:"slack"`
 }
 
 type SlackNotification struct {
-	Type    string      `json:"notificationType" yaml:"notificationType"`
+	Type    string   `json:"notificationType" yaml:"notificationType"`
 	To      []string `json:"to" yaml:"to"`
 	Context context  `json:"additionalContext" yaml:"additionalContext"`
 }
@@ -82,9 +82,9 @@ func NewSlackNotifier(s *settings.ExtSettings) *SlackNotifier {
 	}
 }
 
-func (sn *SlackNotifier) SendSuccess(org, repo, path string, notificationsType plank.NotificationsType) {
+func (sn *SlackNotifier) SendSuccess(org, repo, path string, notificationsType plank.NotificationsType, content map[string]interface{}) {
 	// If convertion to ApplicationNotification is fine then filter and send the notifications to the respective channels
-	if appNotifications, errorConverting :=  ToNotifications(notificationsType); errorConverting == nil {
+	if appNotifications, errorConverting := ToNotifications(notificationsType); errorConverting == nil {
 		slackNotifToSend := filterApplicationNotificationsChannels(appNotifications, []string{"pipeline.complete"})
 		for _, sendNotif := range slackNotifToSend {
 			sn.sendToEcho(newSlackNotification(sendNotif, fmt.Sprintf("Dinghy Successful Update: %s/%s/%s", org, repo, path)))
@@ -97,7 +97,7 @@ func filterApplicationNotificationsChannels(notifications []ApplicationNotificat
 	// Simulates a set, adding channels depending on whenValues
 	var resultMap = make(map[string]bool)
 	for _, val := range notifications {
-		if notif, ok := val.(*SlackNotificationValues); ok{
+		if notif, ok := val.(*SlackNotificationValues); ok {
 			for _, when := range notif.GetWhen() {
 				if contains(whenValues, when) {
 					resultMap[notif.GetAddress()] = true
@@ -119,7 +119,7 @@ func contains(genericSlice []string, value string) bool {
 	if genericSlice == nil {
 		return false
 	}
-	for _, val := range genericSlice  {
+	for _, val := range genericSlice {
 		if val == value {
 			return true
 		}
@@ -127,9 +127,9 @@ func contains(genericSlice []string, value string) bool {
 	return false
 }
 
-func (sn *SlackNotifier) SendFailure(org, repo, path string, errorDinghy error, notificationsType plank.NotificationsType) {
+func (sn *SlackNotifier) SendFailure(org, repo, path string, errorDinghy error, notificationsType plank.NotificationsType, content map[string]interface{}) {
 	// If convertion to ApplicationNotification is fine then filter and send the notifications to the respective channels
-	if appNotifications, errorConverting  :=  ToNotifications(notificationsType); errorConverting == nil {
+	if appNotifications, errorConverting := ToNotifications(notificationsType); errorConverting == nil {
 		slackNotifToSend := filterApplicationNotificationsChannels(appNotifications, []string{"pipeline.failed"})
 		for _, sendNotif := range slackNotifToSend {
 			sn.sendToEcho(newSlackNotification(sendNotif, fmt.Sprintf("Dinghy Failed Update: %s/%s/%s (%s)", org, repo, path, errorDinghy.Error())))
