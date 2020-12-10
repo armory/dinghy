@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/armory/dinghy/pkg/dinghyfile"
+	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
 	"github.com/armory/dinghy/pkg/events"
+	"github.com/armory/dinghy/pkg/git"
 	"github.com/armory/dinghy/pkg/preprocessor"
 	"gopkg.in/yaml.v2"
 	"path/filepath"
@@ -146,53 +148,58 @@ func (r *DinghyfileYamlParser) pipelineIDFunc(vars []dinghyfile.VarMap) interfac
 	}
 }
 
-func (r *DinghyfileYamlParser) moduleFunc(org, branch string, deps map[string]bool, allVars []dinghyfile.VarMap) interface{} {
+func (r *DinghyfileYamlParser) moduleFunc(org string, repo string, branch string, deps map[string]bool, allVars []dinghyfile.VarMap) interface{} {
 	return func(mod string, vars ...interface{}) (string, error) {
-		// Record the dependency.
-		child := r.Builder.Downloader.EncodeURL(org, r.Builder.TemplateRepo, mod, branch)
-		if _, exists := deps[child]; !exists {
-			deps[child] = true
+		return moduleFunction(org, mod, r, repo, branch, deps, vars, allVars)
+	}
+}
+
+func moduleFunction(org string, mod string, r *DinghyfileYamlParser, repo string, branch string, deps map[string]bool, vars []interface{}, allVars []dinghyfile.VarMap) (string, error) {
+
+	// Record the dependency.
+	child := r.Builder.Downloader.EncodeURL(org, repo, mod, branch)
+	if _, exists := deps[child]; !exists {
+		deps[child] = true
+	}
+
+	length := len(vars)
+	if length%2 != 0 {
+		r.Builder.Logger.Warnf("odd number of parameters received to module %s", mod)
+	}
+
+	// Convert module argument pairs to key/value map
+	newVars := make(dinghyfile.VarMap)
+	for i := 0; i+1 < length; i += 2 {
+		key, ok := vars[i].(string)
+		if !ok {
+			r.Builder.Logger.Errorf("dict keys must be strings in module: %s", mod)
+			return "", fmt.Errorf("dict keys must be strings in module: %s", mod)
 		}
 
-		length := len(vars)
-		if length%2 != 0 {
-			r.Builder.Logger.Warnf("odd number of parameters received to module %s", mod)
-		}
-
-		// Convert module argument pairs to key/value map
-		newVars := make(dinghyfile.VarMap)
-		for i := 0; i+1 < length; i += 2 {
-			key, ok := vars[i].(string)
-			if !ok {
-				r.Builder.Logger.Errorf("dict keys must be strings in module: %s", mod)
-				return "", fmt.Errorf("dict keys must be strings in module: %s", mod)
-			}
-
-			// checks for deepvariables, passes all the way down values from dinghyFile to module inside module
-			deepVariable, ok := vars[i+1].(string)
-			if ok && len(deepVariable) > 6 {
-				if deepVariable[0:5] == "{{var" {
-					for _, vm := range allVars {
-						if val, exists := vm[deepVariable[6:len(deepVariable)-2]]; exists {
-							newValue, err := r.renderValue(val)
-							if err != nil {
-								return "", err
-							}
-							r.Builder.Logger.Info("Substituting deepvariable ", vars[i], " : old value : ", deepVariable, " for new value: ", newValue.(string))
-							vars[i+1] = r.parseValue(val)
+		// checks for deepvariables, passes all the way down values from dinghyFile to module inside module
+		deepVariable, ok := vars[i+1].(string)
+		if ok && len(deepVariable) > 6 {
+			if deepVariable[0:5] == "{{var" {
+				for _, vm := range allVars {
+					if val, exists := vm[deepVariable[6:len(deepVariable)-2]]; exists {
+						newValue, err := r.renderValue(val)
+						if err != nil {
+							return "", err
 						}
+						r.Builder.Logger.Info("Substituting deepvariable ", vars[i], " : old value : ", deepVariable, " for new value: ", newValue.(string))
+						vars[i+1] = r.parseValue(val)
 					}
 				}
 			}
-			newVars[key] = r.parseValue(vars[i+1])
 		}
-
-		result, err := r.Parse(r.Builder.TemplateOrg, r.Builder.TemplateRepo, mod, branch, append([]dinghyfile.VarMap{newVars}, allVars...))
-		if err != nil {
-			r.Builder.Logger.Errorf("Error rendering imported module '%s': %s", mod, err.Error())
-		}
-		return result.String(), nil
+		newVars[key] = r.parseValue(vars[i+1])
 	}
+
+	result, err := r.Parse(org, repo, mod, branch, append([]dinghyfile.VarMap{newVars}, allVars...))
+	if err != nil {
+		r.Builder.Logger.Errorf("Error rendering imported module '%s': %s", mod, err.Error())
+	}
+	return result.String(), nil
 }
 
 func (r *DinghyfileYamlParser) makeSlice(args ...interface{}) []interface{} {
@@ -206,6 +213,14 @@ func (r *DinghyfileYamlParser) Parse(org, repo, path, branch string, vars []ding
 		Org:   org,
 		Repo:  repo,
 		Path:  path,
+	}
+
+	gitInfo := git.GitInfo{
+		RawData: r.Builder.PushRaw,
+		Org: org,
+		Repo: repo,
+		Path: path,
+		Branch: branch,
 	}
 
 	deps := make(map[string]bool)
@@ -230,7 +245,7 @@ func (r *DinghyfileYamlParser) Parse(org, repo, path, branch string, vars []ding
 	// Extract global vars if we're processing a dinghyfile (and not a module)
 	if filepath.Base(path) == r.Builder.DinghyfileName {
 		//module = false
-		gvs, err := ParseGlobalVars(contents)
+		gvs, err := ParseGlobalVars(contents, gitInfo)
 		if err != nil {
 			if gvs == nil {
 				r.Builder.Logger.Errorf("Failed to parse global vars: %s", err.Error())
@@ -247,14 +262,23 @@ func (r *DinghyfileYamlParser) Parse(org, repo, path, branch string, vars []ding
 		} else {
 			r.Builder.Logger.Info("No global vars found in dinghyfile")
 		}
+		r.Builder.GlobalVariablesMap = gvMap
+	}
+
+	// If we are validating then check always against the modules in master since current branch will
+	// not exists in templare repo
+	var moduleBranch = branch
+	if r.Builder.Action == pipebuilder.Validate {
+		moduleBranch = "master"
 	}
 
 	funcMap := template.FuncMap{
-		"module":     r.moduleFunc(org, branch, deps, vars),
-		"appModule":  r.moduleFunc(org, branch, deps, vars),
-		"pipelineID": r.pipelineIDFunc(vars),
-		"var":        r.varFunc(vars),
-		"makeSlice":  r.makeSlice,
+		"module":        r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
+		"local_module":  r.localModuleFunc(org, repo, branch, deps, vars),
+		"appModule":     r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
+		"pipelineID":    r.pipelineIDFunc(vars),
+		"var":           r.varFunc(vars),
+		"makeSlice":     r.makeSlice,
 	}
 
 	// Parse the downloaded template.
@@ -266,7 +290,7 @@ func (r *DinghyfileYamlParser) Parse(org, repo, path, branch string, vars []ding
 
 	// Run the template to verify the output.
 	buf := new(bytes.Buffer)
-	err = tmpl.Execute(buf, "")
+	err = tmpl.Execute(buf, gitInfo)
 	if err != nil {
 		r.Builder.Logger.Error("Failed to execute buffer")
 		return nil, err
@@ -286,4 +310,15 @@ func (r *DinghyfileYamlParser) Parse(org, repo, path, branch string, vars []ding
 	r.Builder.EventClient.SendEvent(eventType, event)
 
 	return buf, nil
+}
+
+
+func (r *DinghyfileYamlParser) localModuleFunc(org string, repo string, branch string, deps map[string]bool, allVars []dinghyfile.VarMap) interface{} {
+	return func(mod string, vars ...interface{}) (string, error) {
+		if r.Builder.TemplateOrg == org && r.Builder.TemplateRepo == repo {
+			return "", fmt.Errorf("%v is a local_module, calling local_module from a module is not allowed", mod)
+		} else {
+			return moduleFunction(org, mod, r, repo, branch, deps, vars, allVars)
+		}
+	}
 }

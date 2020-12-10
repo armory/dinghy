@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/armory/dinghy/pkg/cache"
 	"github.com/armory/dinghy/pkg/dinghyfile"
+	"github.com/armory/dinghy/pkg/git"
 	"github.com/armory/dinghy/pkg/git/dummy"
 	"github.com/armory/dinghy/pkg/preprocessor"
 	"github.com/armory/plank/v3"
@@ -384,7 +385,7 @@ pipelines:
 - {{ module "preprod_deploy.pipeline.module" "application" "search" "master" "preprod" }}
 - {{ module "prod_deploy.pipeline.module" "application" "search" "master" "prod" }}
 `
-	out, err := ParseGlobalVars(input)
+	out, err := ParseGlobalVars(input, git.GitInfo{})
 	gvMap, ok := out.(map[string]interface{})
 	assert.True(t, ok, "Something went wrong while extracting global vars")
 	assert.Contains(t, gvMap, "system")

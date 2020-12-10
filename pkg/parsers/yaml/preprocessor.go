@@ -3,6 +3,7 @@ package yaml
 import (
 	"bytes"
 	"fmt"
+	"github.com/armory/dinghy/pkg/git"
 	y "gopkg.in/yaml.v2"
 	"text/template"
 )
@@ -74,14 +75,16 @@ func dummyVar(args ...interface{}) string {
 
 // removeModules replaces all template function calls ({{ ... }}) in the dinghyfile with
 // the YAML: a: b so that we can extract the global vars using Yaml.Unmarshal
-func removeModules(input string) string {
+func removeModules(input string, gitInfo git.GitInfo) string {
 
 	funcMap := template.FuncMap{
-		"module":     dummySubstitute,
-		"appModule":  dummyKV,
-		"var":        dummyVar,
-		"pipelineID": dummyVar,
-		"makeSlice":  dummySlice,
+		"module":        dummySubstitute,
+		"local_module":  dummySubstitute,
+		"appModule":     dummyKV,
+		"var":           dummyVar,
+		"pipelineID":    dummyVar,
+		"makeSlice":     dummySlice,
+		"if":            dummySlice,
 	}
 
 	tmpl, err := template.New("blank-out").Funcs(funcMap).Parse(input)
@@ -90,7 +93,7 @@ func removeModules(input string) string {
 	}
 
 	buf := new(bytes.Buffer)
-	err = tmpl.Execute(buf, "")
+	err = tmpl.Execute(buf, gitInfo)
 	if err != nil {
 		return input
 	}
@@ -99,10 +102,10 @@ func removeModules(input string) string {
 }
 
 // ParseGlobalVars returns the map of global variables in the dinghyfile
-func ParseGlobalVars(input string) (interface{}, error) {
+func ParseGlobalVars(input string, gitInfo git.GitInfo) (interface{}, error) {
 
 	var d interface{}
-	input = removeModules(input)
+	input = removeModules(input, gitInfo)
 	err := Unmarshal([]byte(input), &d)
 	if err != nil {
 		return nil, err
