@@ -385,7 +385,7 @@ var fileService = dummy.FileService{
 								 "straightvar" "foo"
 								 "condvar" true }}
 	}`,
-	//This is for one dinghy file having an if-else conditional and being true
+		//This is for one dinghy file having an if-else conditional and being true
 		"if_params_indinghyfiletrue.dinghyfile": `{
 		  {{ if eq "test" "test" }}
 		  "test": "true"
@@ -500,6 +500,11 @@ var fileService = dummy.FileService{
 
 		// DictKeysError
 		"dict_keys_error": "",
+
+		// Sprig functions test
+		"sprig_functions": `{
+			"test": {{ splitList "$" "foo$bar$baz" | toJson }}
+		}`,
 	},
 	"branch": {
 		"if_test": `{
@@ -1035,7 +1040,7 @@ func TestNoSpaceBeforeCurlyBrackets(t *testing.T) {
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
 	r.Builder.PushRaw = rawPushData
-	buf, err := r.Parse("org", "repo", "no_space.dinghyfile", "master", nil )
+	buf, err := r.Parse("org", "repo", "no_space.dinghyfile", "master", nil)
 	require.Nil(t, err)
 
 	const raw = `{
@@ -1277,7 +1282,7 @@ func TestModuleFuncDictKeysError(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("dict keys must be strings in module: %s"), gomock.Eq(test_key)).Times(1)
 
-	modFunc := r.moduleFunc("org", "repo","master", map[string]bool{}, []VarMap{})
+	modFunc := r.moduleFunc("org", "repo", "master", map[string]bool{}, []VarMap{})
 	res, _ := modFunc.(func(string, ...interface{}) (string, error))(test_key, 42, "foo")
 	assert.Equal(t, "", res)
 }
@@ -1291,4 +1296,18 @@ func TestDifferentTemplateBranch(t *testing.T) {
 	expected := `template: dinghy-render:3:7: executing "dinghy-render" at <module "mod1">: error calling module: error rendering imported module 'mod1': File not found`
 	assert.Equal(t, expected, err.Error())
 
+}
+
+func TestSprigFuncs(t *testing.T) {
+	r := testDinghyfileParser()
+	buf, _ := r.Parse("org", "repo", "sprig_functions", "master", nil)
+
+	const expected = `{
+		"test": ["foo","bar","baz"]
+	}`
+
+	// strip whitespace from both strings for assertion
+	exp := strings.Join(strings.Fields(expected), "")
+	actual := strings.Join(strings.Fields(buf.String()), "")
+	assert.Equal(t, exp, actual)
 }
