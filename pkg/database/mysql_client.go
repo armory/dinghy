@@ -32,9 +32,11 @@ func NewMySQLClient(sqlOptions *SQLConfig, logger *log.Logger, ctx context.Conte
 	if err != nil {
 		return nil, err
 	}
+
+	//TODO: Add logger so queries can be seen, create a parameter later for this
 	sqlclient := &SQLClient{
 		Client: db,
-		Logger: logger.WithFields(log.Fields{"persistence": "sql"}),
+		Logger: nil,
 		ctx:    ctx,
 		stop:   stop,
 	}
@@ -44,6 +46,7 @@ func NewMySQLClient(sqlOptions *SQLConfig, logger *log.Logger, ctx context.Conte
 }
 
 func (c *SQLClient) monitorWorker() {
+	logger := log.WithFields(log.Fields{"persistence": "sql"})
 	timer := time.NewTicker(10 * time.Second)
 	count := 0
 	for {
@@ -55,9 +58,9 @@ func (c *SQLClient) monitorWorker() {
 			}
 			if err := sqlDB.Ping(); err != nil {
 				count++
-				c.Logger.Errorf("SQL monitor failed %d times (5 max)", count)
+				logger.Errorf("SQL monitor failed %d times (5 max)", count)
 				if count >= 5 {
-					c.Logger.Error("Stopping dinghy because communication with MySQL database failed")
+					logger.Error("Stopping dinghy because communication with MySQL database failed")
 					timer.Stop()
 					c.stop <- syscall.SIGINT
 				}

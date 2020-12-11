@@ -41,14 +41,16 @@ func CompileKey(keys ...string) string {
 }
 
 // NewRedisCache initializes a new cache
-func NewRedisCache(redisOptions *redis.Options, logger *log.Logger, ctx context.Context, stop chan os.Signal) *RedisCache {
+func NewRedisCache(redisOptions *redis.Options, logger *log.Logger, ctx context.Context, stop chan os.Signal, startMonitor bool) *RedisCache {
 	rc := &RedisCache{
 		Client: redis.NewClient(redisOptions),
 		Logger: logger.WithFields(log.Fields{"cache": "redis"}),
 		ctx:    ctx,
 		stop:   stop,
 	}
-	go rc.monitorWorker()
+	if startMonitor {
+		go rc.monitorWorker()
+	}
 	return rc
 }
 

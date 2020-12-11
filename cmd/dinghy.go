@@ -133,7 +133,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		persitenceManagerReadOnly = &sqlClientReadOnly
 
 
-		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)
+		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop, false)
 
 		migration := execution.RedisToSQLMigration{
 			Settings:   config,
@@ -143,6 +143,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		}
 
 		migration.Execute()
+		migration.Finalize()
 
 	} else if config.SQL.Enabled  && config.SQL.EventLogsOnly {
 		// Hybrid SQL mode just for eventlogs
@@ -157,7 +158,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 			log.Fatalf("SQL Server at %s could not be contacted: %v", config.SQL.BaseUrl, err)
 		}
 
-		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)
+		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop, true)
 		if _, err := redisClient.Client.Ping().Result(); err != nil {
 			log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
 		}
@@ -173,7 +174,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 
 	} else {
 		// Redis mode
-		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)
+		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop, true)
 		if _, err := redisClient.Client.Ping().Result(); err != nil {
 			log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
 		}

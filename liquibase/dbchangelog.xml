@@ -39,17 +39,6 @@
         <addForeignKeyConstraint baseTableName="fileurl_childs" baseColumnNames="childfileurl_id" constraintName="fk_child" referencedTableName="fileurls"
                                  referencedColumnNames="id"></addForeignKeyConstraint>
 
-        <!-- Properties table -->
-        <createTable tableName="property">
-            <column name="property" type="varchar(100)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="value" type="varchar(1000)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="updatedate" type="bigint"/>
-        </createTable>
-
         <!-- Executions table -->
         <createTable tableName="executions">
             <column name="execution" type="varchar(100)">
@@ -107,5 +96,17 @@
     <changeSet id="2" author="author">
         <tagDatabase tag="version_1"/>
     </changeSet>
+
+
+<!--    &lt;!&ndash; Properties table &ndash;&gt;-->
+<!--    <createTable tableName="property">-->
+<!--        <column name="property" type="varchar(100)">-->
+<!--            <constraints nullable="false"/>-->
+<!--        </column>-->
+<!--        <column name="value" type="varchar(1000)">-->
+<!--            <constraints nullable="false"/>-->
+<!--        </column>-->
+<!--        <column name="updatedate" type="bigint"/>-->
+<!--    </createTable>-->
 
 </databaseChangeLog>
