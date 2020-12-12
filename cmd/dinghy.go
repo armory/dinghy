@@ -135,7 +135,9 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 
 		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop, false)
 
-		migration := execution.RedisToSQLMigration{
+		var migration execution.Execution
+
+		migration = &execution.RedisToSQLMigration{
 			Settings:   config,
 			Logger:     log,
 			RedisCache: redisClient,
