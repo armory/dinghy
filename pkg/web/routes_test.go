@@ -102,7 +102,7 @@ func TestGithubWebhookHandlerNoRef(t *testing.T) {
 }
 
 // This function is needed for the not formatted messages after dinghylog implementation
-func stringToInterfaceSlice (args ...interface{}) []interface{}{
+func stringToInterfaceSlice(args ...interface{}) []interface{} {
 	return args
 }
 

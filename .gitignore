@@ -20,6 +20,10 @@
 # Created by https://www.gitignore.io/api/vim
 # Edit at https://www.gitignore.io/?templates=vim
 
+# Liquibase local files
+liquibase/liquibase.properties
+liquibase/mysql.jar
+
 ### Vim ###
 # Swap
 [._]*.s[a-v][a-z]

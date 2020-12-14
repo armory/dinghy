@@ -19,7 +19,9 @@ package dinghy
 import (
 	"context"
 	"fmt"
+	"github.com/armory/dinghy/pkg/database"
 	"github.com/armory/dinghy/pkg/dinghyfile"
+	"github.com/armory/dinghy/pkg/execution"
 	"github.com/armory/dinghy/pkg/logevents"
 	"github.com/armory/go-yaml-tools/pkg/tls/server"
 	"net/http"
@@ -103,17 +105,95 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		os.Exit(1)
 	}()
 
-	redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop)
-	if _, err := redisClient.Client.Ping().Result(); err != nil {
-		log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
-	}
-	redisClientReadOnly := cache.RedisCacheReadOnly{
-		Client: redisClient.Client,
-		Logger: redisClient.Logger,
+	var api *web.WebAPI
+	var logEventsClient logevents.LogEventsClient
+	var persitenceManager dinghyfile.DependencyManager
+	var persitenceManagerReadOnly dinghyfile.DependencyManager
+	// Full SQL mode
+	if config.SQL.Enabled  && !config.SQL.EventLogsOnly {
+
+		sqlClient, sqlerr := database.NewMySQLClient(&database.SQLConfig{
+			DbUrl:    config.SQL.BaseUrl,
+			User:     config.SQL.User,
+			Password: config.SQL.Password,
+			DbName:	  config.SQL.DatabaseName,
+		}, log, ctx, stop)
+
+		if sqlerr != nil {
+			log.Fatalf("SQL Server at %s could not be contacted: %v", config.SQL.BaseUrl, err)
+		}
+
+		sqlClientReadOnly := database.SQLReadOnly{
+			Client: sqlClient,
+			Logger: sqlClient.Logger,
+		}
+
+		logEventsClient = &(logevents.LogEventSQLClient{ SQLClient: sqlClient, MinutesTTL: config.LogEventTTLMinutes })
+		persitenceManager = sqlClient
+		persitenceManagerReadOnly = &sqlClientReadOnly
+
+
+		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop, false)
+
+		var migration execution.Execution
+
+		migration = &execution.RedisToSQLMigration{
+			Settings:   config,
+			Logger:     log,
+			RedisCache: redisClient,
+			SQLClient:  sqlClient,
+		}
+
+		migration.Execute()
+		migration.Finalize()
+
+	} else if config.SQL.Enabled  && config.SQL.EventLogsOnly {
+		// Hybrid SQL mode just for eventlogs
+		sqlClient, sqlerr := database.NewMySQLClient(&database.SQLConfig{
+			DbUrl:    config.SQL.BaseUrl,
+			User:     config.SQL.User,
+			Password: config.SQL.Password,
+			DbName:	  config.SQL.DatabaseName,
+		}, log, ctx, stop)
+
+		if sqlerr != nil {
+			log.Fatalf("SQL Server at %s could not be contacted: %v", config.SQL.BaseUrl, err)
+		}
+
+		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop, true)
+		if _, err := redisClient.Client.Ping().Result(); err != nil {
+			log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
+		}
+
+		redisClientReadOnly := cache.RedisCacheReadOnly{
+			Client: redisClient.Client,
+			Logger: redisClient.Logger,
+		}
+
+		logEventsClient = &(logevents.LogEventSQLClient{ SQLClient: sqlClient, MinutesTTL: config.LogEventTTLMinutes })
+		persitenceManager = redisClient
+		persitenceManagerReadOnly = &redisClientReadOnly
+
+	} else {
+		// Redis mode
+		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop, true)
+		if _, err := redisClient.Client.Ping().Result(); err != nil {
+			log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
+		}
+
+		redisClientReadOnly := cache.RedisCacheReadOnly{
+			Client: redisClient.Client,
+			Logger: redisClient.Logger,
+		}
+
+		logEventsClient = logevents.LogEventRedisClient{ RedisClient: redisClient, MinutesTTL: config.LogEventTTLMinutes }
+		persitenceManager = redisClient
+		persitenceManagerReadOnly = &redisClientReadOnly
+
 	}
 
-	logEventsClient := logevents.LogEventRedisClient{ RedisClient: redisClient, MinutesTTL: config.LogEventTTLMinutes }
-	api := web.NewWebAPI(config, redisClient, client, ec, log, &redisClientReadOnly, clientReadOnly, logEventsClient)
+	api = web.NewWebAPI(config, persitenceManager, client, ec, log, persitenceManagerReadOnly, clientReadOnly, logEventsClient)
+
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
 	if config.ParserFormat == "json" {
 		api.SetDinghyfileParser(dinghyfile.NewDinghyfileParser(&dinghyfile.PipelineBuilder{}))

@@ -164,7 +164,7 @@ func TestDownload(t *testing.T) {
 			fs: &FileService{
 				GitHub: &GitHubTest{contents: "file contents"},
 				Logger: log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
-					log.SystemLogKey : {
+					log.SystemLogKey: {
 						Logger:         logrus.New(),
 						LogEventBuffer: &bytes.Buffer{},
 					},
@@ -184,7 +184,7 @@ func TestDownload(t *testing.T) {
 					err:      errors.New("fail"),
 				},
 				Logger: log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
-					log.SystemLogKey : {
+					log.SystemLogKey: {
 						Logger:         logrus.New(),
 						LogEventBuffer: &bytes.Buffer{},
 					},
@@ -212,7 +212,7 @@ func TestDownload(t *testing.T) {
 	}
 }
 
-func TestMasterDownloadFailsAndTriesMain(t *testing.T){
+func TestMasterDownloadFailsAndTriesMain(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -221,7 +221,7 @@ func TestMasterDownloadFailsAndTriesMain(t *testing.T){
 	fs := &FileService{
 		GitHub: &GitHubTest{contents: "", err: errors.New("fail")},
 		Logger: log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
-			log.SystemLogKey : {
+			log.SystemLogKey: {
 				Logger:         logger,
 				LogEventBuffer: &bytes.Buffer{},
 			},
@@ -230,11 +230,11 @@ func TestMasterDownloadFailsAndTriesMain(t *testing.T){
 
 	logger.EXPECT().Error(gomock.Any()).Times(2)
 	logger.EXPECT().Info(gomock.Eq(stringToSlice("DownloadContents failed with master branch, trying with main branch"))).Times(1)
-	logger.EXPECT().Errorf(gomock.Eq("Download failed also for branch %v"),gomock.Any()).Times(1)
+	logger.EXPECT().Errorf(gomock.Eq("Download failed also for branch %v"), gomock.Any()).Times(1)
 
 	fs.Download("org", " repo", "path", "master")
 }
 
-func stringToSlice(args...interface{}) []interface{} {
+func stringToSlice(args ...interface{}) []interface{} {
 	return args
 }

@@ -53,7 +53,6 @@ func TestEncodeUrl(t *testing.T) {
 	}
 }
 
-
 func TestDecodeUrl(t *testing.T) {
 	cases := []struct {
 		endpoint string

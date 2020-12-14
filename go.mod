@@ -22,6 +22,8 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/xanzy/go-gitlab v0.20.1
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	gorm.io/driver/mysql v1.0.3
+	gorm.io/gorm v1.20.7
 )
 
 replace git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999

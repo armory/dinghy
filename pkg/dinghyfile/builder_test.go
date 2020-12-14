@@ -1250,6 +1250,7 @@ pipelines:
 	}
 }
 
+
 func TestPipelineBuilder_getContent(t *testing.T) {
 	type fields struct {
 		Downloader                  Downloader
@@ -1355,3 +1356,4 @@ func TestPipelineBuilder_getContent(t *testing.T) {
 		})
 	}
 }
+

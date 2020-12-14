@@ -27,20 +27,20 @@ import (
 
 // Settings contains all information needed to startup and run the dinghy service
 type Settings struct {
-	TemplateOrg       string       `json:"templateOrg,omitempty" yaml:"templateOrg"`
-	TemplateRepo      string       `json:"templateRepo,omitempty" yaml:"templateRepo"`
-	DinghyFilename    string       `json:"dinghyFilename,omitempty" yaml:"dinghyFilename"`
-	AutoLockPipelines string       `json:"autoLockPipelines,omitempty" yaml:"autoLockPipelines"`
-	SpinnakerUIURL    string       `json:"spinUIUrl,omitempty" yaml:"spinUIUrl"`
-	GitHubCredsPath   string       `json:"githubCredsPath,omitempty" yaml:"githubCredsPath"`
-	GitHubToken       string       `json:"githubToken,omitempty" yaml:"githubToken"`
-	GithubEndpoint    string       `json:"githubEndpoint,omitempty" yaml:"githubEndpoint"`
-	GitLabToken       string       `json:"gitlabToken,omitempty" yaml:"gitlabToken"`
-	GitLabEndpoint    string       `json:"gitlabEndpoint,omitempty" yaml:"gitlabEndpoint"`
-	StashCredsPath    string       `json:"stashCredsPath,omitempty" yaml:"stashCredsPath"`
-	StashUsername     string       `json:"stashUsername,omitempty" yaml:"stashUsername"`
-	StashToken        string       `json:"stashToken,omitempty" yaml:"stashToken"`
-	StashEndpoint     string       `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
+	TemplateOrg                       string       `json:"templateOrg,omitempty" yaml:"templateOrg"`
+	TemplateRepo                      string       `json:"templateRepo,omitempty" yaml:"templateRepo"`
+	DinghyFilename                    string       `json:"dinghyFilename,omitempty" yaml:"dinghyFilename"`
+	AutoLockPipelines                 string       `json:"autoLockPipelines,omitempty" yaml:"autoLockPipelines"`
+	SpinnakerUIURL                    string       `json:"spinUIUrl,omitempty" yaml:"spinUIUrl"`
+	GitHubCredsPath                   string       `json:"githubCredsPath,omitempty" yaml:"githubCredsPath"`
+	GitHubToken                       string       `json:"githubToken,omitempty" yaml:"githubToken"`
+	GithubEndpoint                    string       `json:"githubEndpoint,omitempty" yaml:"githubEndpoint"`
+	GitLabToken                       string       `json:"gitlabToken,omitempty" yaml:"gitlabToken"`
+	GitLabEndpoint                    string       `json:"gitlabEndpoint,omitempty" yaml:"gitlabEndpoint"`
+	StashCredsPath                    string       `json:"stashCredsPath,omitempty" yaml:"stashCredsPath"`
+	StashUsername                     string       `json:"stashUsername,omitempty" yaml:"stashUsername"`
+	StashToken                        string       `json:"stashToken,omitempty" yaml:"stashToken"`
+	StashEndpoint                     string       `json:"stashEndpoint,omitempty" yaml:"stashEndpoint"`
 	FiatUser                          string       `json:"fiatUser,omitempty" yaml:"fiatUser"`
 	Logging                           Logging      `json:"logging,omitempty" yaml:"logging"`
 	Secrets                           Secrets      `json:"secrets,omitempty" yaml:"secrets"`
@@ -52,18 +52,30 @@ type Settings struct {
 	WebhookValidations                []WebhookValidation `json:"webhookValidations,omitempty" yaml:"webhookValidations"`
 	WebhookValidationEnabledProviders []string            `json:"webhookValidationEnabledProviders,omitempty" yaml:"webhookValidationEnabledProviders"`
 	RepositoryRawdataProcessing       bool                `json:"repositoryRawdataProcessing,omitempty" yaml:"repositoryRawdataProcessing"`
-	LogEventTTLMinutes				  time.Duration		  `json:"LogEventTTLMinutes" yaml:"LogEventTTLMinutes"`
+	LogEventTTLMinutes                time.Duration       `json:"LogEventTTLMinutes" yaml:"LogEventTTLMinutes"`
+	SQL                               sqlconfig           `json:"sql,omitempty" yaml:"sql"`
+}
+
+//type databaseConfig struct {
+//	SQLConfig sqlconfig	`json:"sql,omitempty" yaml:"sql"`
+//}
+
+type sqlconfig struct {
+	Enabled       bool   `json:"enabled,omitempty" yaml:"enabled"`
+	BaseUrl       string `json:"baseUrl" yaml:"baseUrl"`
+	User          string `json:"user" yaml:"user"`
+	Password      string `json:"password" yaml:"password"`
+	DatabaseName  string `json:"databaseName" yaml:"databaseName"`
+	EventLogsOnly bool   `json:"eventlogsOnly" yaml:"eventlogsOnly"`
 }
 
 type WebhookValidation struct {
-	Enabled 				bool	`json:"enabled,omitempty" yaml:"enabled"`
-	VersionControlProvider 	string	`json:"versionControlProvider,omitempty" yaml:"versionControlProvider"`
-	Organization 			string	`json:"organization,omitempty" yaml:"organization"`
-	Repo	 				string	`json:"repo,omitempty" yaml:"repo"`
-	Secret 					string	`json:"secret,omitempty" yaml:"secret"`
+	Enabled                bool   `json:"enabled,omitempty" yaml:"enabled"`
+	VersionControlProvider string `json:"versionControlProvider,omitempty" yaml:"versionControlProvider"`
+	Organization           string `json:"organization,omitempty" yaml:"organization"`
+	Repo                   string `json:"repo,omitempty" yaml:"repo"`
+	Secret                 string `json:"secret,omitempty" yaml:"secret"`
 }
-
-
 
 type spinnakerSupplied struct {
 	Orca    spinnakerService `json:"orca,omitempty" yaml:"orca"`

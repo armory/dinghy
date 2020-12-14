@@ -51,7 +51,7 @@ func parseToken(it *iterator) string {
 	begin := it.pos
 	var prevstr string
 	for !it.end() && !unicode.IsSpace(it.get()) {
-		if prevstr + string(it.get()) == "}}" {
+		if prevstr+string(it.get()) == "}}" {
 			it.pos--
 			break
 		}
@@ -204,13 +204,13 @@ func dummySlice(args ...interface{}) []string {
 func removeModules(input string, gitInfo git.GitInfo) string {
 
 	funcMap := template.FuncMap{
-		"module":        dummySubstitute,
-		"local_module":  dummySubstitute,
-		"appModule":     dummyKV,
-		"var":           dummyVar,
-		"pipelineID":    dummyVar,
-		"makeSlice":     dummySlice,
-		"if":            dummySlice,
+		"module":       dummySubstitute,
+		"local_module": dummySubstitute,
+		"appModule":    dummyKV,
+		"var":          dummyVar,
+		"pipelineID":   dummyVar,
+		"makeSlice":    dummySlice,
+		"if":           dummySlice,
 	}
 
 	tmpl, err := template.New("blank-out").Funcs(funcMap).Parse(input)

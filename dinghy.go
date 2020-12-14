@@ -17,7 +17,7 @@
 package main
 
 import (
-	"github.com/armory/dinghy/cmd"
+	dinghy "github.com/armory/dinghy/cmd"
 	"github.com/armory/dinghy/pkg/settings"
 )
 
@@ -26,3 +26,4 @@ func main() {
 	config := settings.NewDefaultSettings()
 	dinghy.Start(log, d, &config)
 }
+

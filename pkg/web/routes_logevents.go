@@ -34,7 +34,7 @@ func saveLogEventSuccess(logeventClient logevents.LogEventsClient, p Push, dingh
 
 func saveLogEvent(logeventClient logevents.LogEventsClient, p Push, dinghyLog dinghylog.DinghyLog, logEvent logevents.LogEvent, status string) {
 	if buf, err := dinghyLog.GetBytesBuffByLoggerKey(dinghylog.LogEventKey); err == nil {
-		logEvent.Message  = fmt.Sprintf("%v",buf)
+		logEvent.Message = fmt.Sprintf("%v", buf)
 		logEvent.Status = status
 		logeventClient.SaveLogEvent(logEvent)
 	}

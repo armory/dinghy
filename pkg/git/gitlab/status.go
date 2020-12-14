@@ -29,7 +29,7 @@ func (p *Push) SetCommitStatus(status git.Status, description string) {
 }
 
 func (p *Push) GetCommitStatus() (error, git.Status, string) {
-	return errors.New("functionality not implemented"), "",""
+	return errors.New("functionality not implemented"), "", ""
 }
 
 // Commits return the list of commit hashes

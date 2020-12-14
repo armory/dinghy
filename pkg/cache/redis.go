@@ -41,14 +41,16 @@ func CompileKey(keys ...string) string {
 }
 
 // NewRedisCache initializes a new cache
-func NewRedisCache(redisOptions *redis.Options, logger *log.Logger, ctx context.Context, stop chan os.Signal) *RedisCache {
+func NewRedisCache(redisOptions *redis.Options, logger *log.Logger, ctx context.Context, stop chan os.Signal, startMonitor bool) *RedisCache {
 	rc := &RedisCache{
 		Client: redis.NewClient(redisOptions),
 		Logger: logger.WithFields(log.Fields{"cache": "redis"}),
 		ctx:    ctx,
 		stop:   stop,
 	}
-	go rc.monitorWorker()
+	if startMonitor {
+		go rc.monitorWorker()
+	}
 	return rc
 }
 
@@ -143,7 +145,7 @@ func (c *RedisCache) GetRoots(url string) []string {
 	return returnRoots(c.Client, url)
 }
 
-func returnRoots (c *redis.Client, url string) []string {
+func returnRoots(c *redis.Client, url string) []string {
 	roots := make([]string, 0)
 	visited := map[string]bool{}
 	loge := log.WithFields(log.Fields{"func": "GetRoots"})
@@ -177,7 +179,7 @@ func returnRoots (c *redis.Client, url string) []string {
 }
 
 // Set RawData
-func (c *RedisCache) SetRawData(url string, rawData string) error{
+func (c *RedisCache) SetRawData(url string, rawData string) error {
 	loge := log.WithFields(log.Fields{"func": "SetRawData"})
 	key := CompileKey("rawdata", url)
 
@@ -213,3 +215,58 @@ func (c *RedisCache) Clear() {
 	keys, _ = c.Client.Keys(CompileKey("parents", "*")).Result()
 	c.Client.Del(keys...)
 }
+
+
+// Get all Dinghyfiles
+func (c *RedisCache) GetAllDinghyfiles() []string {
+	loge := log.WithFields(log.Fields{"func": "GetAllDinghyfiles"})
+	key := CompileKey("parents", "*")
+	var cursor uint64
+	result := []string{}
+	childrens := map[string]bool{}
+	for {
+		keys, nextcursor, err := c.Client.Scan(cursor, key, 1000).Result()
+		cursor = nextcursor
+		if err != nil {
+			loge.WithFields(log.Fields{"operation": "scan key", "key": CompileKey("parents","*")}).Error(err)
+			return result
+		}
+		for _, key := range keys {
+			childrens[key] = true
+		}
+
+		if cursor == 0 {
+			break
+		}
+	}
+
+	for currentChildren, _ := range childrens {
+		parents, errorNoKey := c.Client.SMembers(currentChildren).Result()
+		if errorNoKey != nil {
+			continue
+		}
+		for _, currentParent := range parents {
+			compiledChildren := CompileKey("parents", currentParent)
+			if _, ok := childrens[compiledChildren]; !ok {
+				result = append(result, currentParent)
+			}
+		}
+	}
+
+	return result
+}
+
+// Get all childrens from url
+func (c *RedisCache) GetChildren(url string) []string {
+	loge := log.WithFields(log.Fields{"func": "GetChildren"})
+	key := CompileKey("children", url)
+
+	childrens, errorNoKey := c.Client.SMembers(key).Result()
+	if errorNoKey != nil {
+		loge.WithFields(log.Fields{"operation": "SMembers key", "key": key}).Error(errorNoKey)
+		return []string{}
+	}
+
+	return childrens
+}
+
