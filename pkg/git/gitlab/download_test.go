@@ -129,7 +129,7 @@ func TestDownload(t *testing.T) {
 			path:   "path",
 			branch: "branch",
 			fs: &FileService{
-				Client: NewTestClient(200,"file contents"),
+				Client: NewTestClient(200, "file contents"),
 			},
 			expected:    "file contents",
 			expectedErr: nil,

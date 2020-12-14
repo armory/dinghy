@@ -385,7 +385,7 @@ var fileService = dummy.FileService{
 								 "straightvar" "foo"
 								 "condvar" true }}
 	}`,
-	//This is for one dinghy file having an if-else conditional and being true
+		//This is for one dinghy file having an if-else conditional and being true
 		"if_params_indinghyfiletrue.dinghyfile": `{
 		  {{ if eq "test" "test" }}
 		  "test": "true"
@@ -1035,7 +1035,7 @@ func TestNoSpaceBeforeCurlyBrackets(t *testing.T) {
 	r.Builder.TemplateOrg = "org"
 	r.Builder.TemplateRepo = "repo"
 	r.Builder.PushRaw = rawPushData
-	buf, err := r.Parse("org", "repo", "no_space.dinghyfile", "master", nil )
+	buf, err := r.Parse("org", "repo", "no_space.dinghyfile", "master", nil)
 	require.Nil(t, err)
 
 	const raw = `{
@@ -1277,7 +1277,7 @@ func TestModuleFuncDictKeysError(t *testing.T) {
 	logger := mockLogger(r, ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("dict keys must be strings in module: %s"), gomock.Eq(test_key)).Times(1)
 
-	modFunc := r.moduleFunc("org", "repo","master", map[string]bool{}, []VarMap{})
+	modFunc := r.moduleFunc("org", "repo", "master", map[string]bool{}, []VarMap{})
 	res, _ := modFunc.(func(string, ...interface{}) (string, error))(test_key, 42, "foo")
 	assert.Equal(t, "", res)
 }

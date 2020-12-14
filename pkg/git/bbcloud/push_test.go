@@ -273,24 +273,24 @@ func contains(files []string, file string) bool {
 
 func TestIsBranch(t *testing.T) {
 	testCases := map[string]struct {
-		webhookBranchName         string
-		configBranchName        string
-		expected    bool
+		webhookBranchName string
+		configBranchName  string
+		expected          bool
 	}{
 		"true": {
 			webhookBranchName: "refs/heads/some_branch",
-			configBranchName: "some_branch",
-			expected: true,
+			configBranchName:  "some_branch",
+			expected:          true,
 		},
 		"true again": {
 			webhookBranchName: "refs/heads/some_branch",
-			configBranchName: "refs/heads/some_branch",
-			expected: true,
+			configBranchName:  "refs/heads/some_branch",
+			expected:          true,
 		},
 		"false": {
 			webhookBranchName: "refs/heads/some_branch",
-			configBranchName: "meh",
-			expected: false,
+			configBranchName:  "meh",
+			expected:          false,
 		},
 	}
 

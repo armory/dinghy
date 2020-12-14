@@ -37,7 +37,7 @@ func connectToRedis() *RedisCache {
 		Addr:     fmt.Sprintf("%s:%s", host, port),
 		Password: util.GetenvOrDefault("REDIS_PASSWORD", ""),
 		DB:       0,
-	}, logrus.New(), context.Background(), make(chan os.Signal, 1))
+	}, logrus.New(), context.Background(), make(chan os.Signal, 1), true)
 
 	c.Clear()
 	return c

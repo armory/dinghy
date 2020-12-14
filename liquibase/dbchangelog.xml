@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd">
+
+    <changeSet id="1" author="jossuecito">
+        <!-- Dependencies table -->
+        <createTable tableName="fileurls">
+            <column name="id" type="int">
+                <constraints primaryKey="true" primaryKeyName="pk_fileurls"/>
+            </column>
+            <column name="url" type="varchar(2000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rawdata" type="clob" />
+        </createTable>
+
+        <addAutoIncrement
+                columnDataType="int"
+                columnName="id"
+                incrementBy="1"
+                startWith="1"
+                tableName="fileurls"/>
+
+        <createTable tableName="fileurl_childs">
+            <column name="fileurl_id" type="int">
+                 <constraints nullable="false"/>
+            </column>
+            <column name="childfileurl_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="fileurl_childs" baseColumnNames="fileurl_id" constraintName="fk_parent" referencedTableName="fileurls"
+                                 referencedColumnNames="id"></addForeignKeyConstraint>
+
+        <addForeignKeyConstraint baseTableName="fileurl_childs" baseColumnNames="childfileurl_id" constraintName="fk_child" referencedTableName="fileurls"
+                                 referencedColumnNames="id"></addForeignKeyConstraint>
+
+        <!-- Executions table -->
+        <createTable tableName="executions">
+            <column name="execution" type="varchar(100)">
+                <constraints primaryKey="true" primaryKeyName="pk_executions"/>
+            </column>
+            <column name="result" type="clob" />
+            <column name="success" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lastupdateddate" type="bigint"/>
+        </createTable>
+
+        <!-- LogEvents table -->
+        <createTable tableName="logevents">
+            <column name="id" type="int">
+                <constraints primaryKey="true" primaryKeyName="pk_logevents"/>
+            </column>
+            <column name="org" type="varchar(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="repo" type="varchar(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="files" type="varchar(1000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="clob">
+                <constraints nullable="false"/>
+            </column>
+            <column name="commitdate" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="commits" type="varchar(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rawdata" type="clob">
+                 <constraints nullable="false"/>
+            </column>
+            <column name="author" type="varchar(100)" />
+            <column name="rendereddinghyfile" type="clob" />
+        </createTable>
+
+        <addAutoIncrement
+                columnDataType="int"
+                columnName="id"
+                incrementBy="1"
+                startWith="1"
+                tableName="logevents"/>
+
+    </changeSet>
+
+    <changeSet id="2" author="author">
+        <tagDatabase tag="version_1"/>
+    </changeSet>
+
+
+<!--    &lt;!&ndash; Properties table &ndash;&gt;-->
+<!--    <createTable tableName="property">-->
+<!--        <column name="property" type="varchar(100)">-->
+<!--            <constraints nullable="false"/>-->
+<!--        </column>-->
+<!--        <column name="value" type="varchar(1000)">-->
+<!--            <constraints nullable="false"/>-->
+<!--        </column>-->
+<!--        <column name="updatedate" type="bigint"/>-->
+<!--    </createTable>-->
+
+</databaseChangeLog>

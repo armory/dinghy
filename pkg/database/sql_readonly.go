@@ -14,42 +14,41 @@
 * limitations under the License.
  */
 
-package cache
+package database
 
 import (
 	"context"
-	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
 
 // RedisCacheReadOnly maintains a dependency graph inside Redis
-type RedisCacheReadOnly struct {
-	Client *redis.Client
+type SQLReadOnly struct {
+	Client *SQLClient
 	Logger *log.Entry
 	ctx    context.Context
 	stop   chan os.Signal
 }
 
 // SetDeps sets dependencies for a parent
-func (c *RedisCacheReadOnly) SetDeps(parent string, deps []string) {
+func (c *SQLReadOnly) SetDeps(parent string, deps []string) {
 
 }
 
 // GetRoots grabs roots
-func (c *RedisCacheReadOnly) GetRoots(url string) []string {
+func (c *SQLReadOnly) GetRoots(url string) []string {
 	return returnRoots(c.Client, url)
 }
 
 // Set RawData
-func (c *RedisCacheReadOnly) SetRawData(url string, rawData string) error {
+func (c *SQLReadOnly) SetRawData(url string, rawData string) error {
 	return nil
 }
 
-func (c *RedisCacheReadOnly) GetRawData(url string) (string, error) {
+func (c *SQLReadOnly) GetRawData(url string) (string, error) {
 	return returnRawData(c.Client, url)
 }
 
 // Clear clears everything
-func (c *RedisCacheReadOnly) Clear() {
+func (c *SQLReadOnly) Clear() {
 }

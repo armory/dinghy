@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-
 func IsValidSignature(rawpayload []byte, webhookSecret string, key string, logger log.DinghyLog) bool {
 	gotHash := strings.SplitN(webhookSecret, "=", 2)
 	if gotHash[0] != "sha1" {

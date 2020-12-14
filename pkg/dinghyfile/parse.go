@@ -278,12 +278,12 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// have an application in context?  So for now, hardcoding module branch
 	// to "master"
 	funcMap := template.FuncMap{
-		"module":        r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
-		"local_module":  r.localModuleFunc(org, repo, branch, deps, vars),
-		"appModule":     r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
-		"pipelineID":    r.pipelineIDFunc(vars),
-		"var":           r.varFunc(vars),
-		"makeSlice":     r.makeSlice,
+		"module":       r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
+		"local_module": r.localModuleFunc(org, repo, branch, deps, vars),
+		"appModule":    r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
+		"pipelineID":   r.pipelineIDFunc(vars),
+		"var":          r.varFunc(vars),
+		"makeSlice":    r.makeSlice,
 	}
 
 	// Parse the downloaded template.

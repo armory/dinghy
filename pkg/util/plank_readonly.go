@@ -22,45 +22,45 @@ type PlankReadOnly struct {
 	Plank *plank.Client
 }
 
-func (p PlankReadOnly) GetApplication(string string) (*plank.Application, error){
+func (p PlankReadOnly) GetApplication(string string) (*plank.Application, error) {
 	return p.Plank.GetApplication(string)
 }
 
-func (p PlankReadOnly) UpdateApplicationNotifications(plank.NotificationsType, string) error{
+func (p PlankReadOnly) UpdateApplicationNotifications(plank.NotificationsType, string) error {
 	return nil
 }
 
-func (p PlankReadOnly) GetApplicationNotifications(app string) (*plank.NotificationsType, error){
+func (p PlankReadOnly) GetApplicationNotifications(app string) (*plank.NotificationsType, error) {
 	return p.Plank.GetApplicationNotifications(app)
 }
 
-func (p PlankReadOnly) CreateApplication(*plank.Application) error{
+func (p PlankReadOnly) CreateApplication(*plank.Application) error {
 	return nil
 }
 
-func (p PlankReadOnly) UpdateApplication(plank.Application) error{
+func (p PlankReadOnly) UpdateApplication(plank.Application) error {
 	return nil
 }
 
-func (p PlankReadOnly) GetPipelines(string string) ([]plank.Pipeline, error){
+func (p PlankReadOnly) GetPipelines(string string) ([]plank.Pipeline, error) {
 	return p.Plank.GetPipelines(string)
 }
 
-func (p PlankReadOnly) DeletePipeline(plank.Pipeline) error{
+func (p PlankReadOnly) DeletePipeline(plank.Pipeline) error {
 	return nil
 }
 
-func (p PlankReadOnly) UpsertPipeline(pipe plank.Pipeline, str string) error{
+func (p PlankReadOnly) UpsertPipeline(pipe plank.Pipeline, str string) error {
 	return nil
 }
 
-func (p PlankReadOnly) ResyncFiat() error{
+func (p PlankReadOnly) ResyncFiat() error {
 	return nil
 }
 
-func (p PlankReadOnly) ArmoryEndpointsEnabled() bool{
+func (p PlankReadOnly) ArmoryEndpointsEnabled() bool {
 	return false
 }
 
-func (p PlankReadOnly) EnableArmoryEndpoints(){
+func (p PlankReadOnly) EnableArmoryEndpoints() {
 }
