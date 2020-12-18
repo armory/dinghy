@@ -1300,7 +1300,9 @@ func TestDifferentTemplateBranch(t *testing.T) {
 
 func TestSprigFuncs(t *testing.T) {
 	r := testDinghyfileParser()
-	buf, _ := r.Parse("org", "repo", "sprig_functions", "master", nil)
+	filepath := "sprig_functions"
+	r.Builder.DinghyfileName = filepath
+	buf, _ := r.Parse("org", "repo", filepath, "master", nil)
 
 	const expected = `{
 		"test": ["foo","bar","baz"]
