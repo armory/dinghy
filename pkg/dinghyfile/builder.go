@@ -498,8 +498,10 @@ func (b *PipelineBuilder) AddUnmarshaller(u Unmarshaller) {
 
 func (b *PipelineBuilder) NotifySuccess(org, repo, path string, notifications plank.NotificationsType) {
 	for _, n := range b.Notifiers {
-		if b.Action == pipebuilder.Validate && n.SendOnValidation() {
-			n.SendSuccess(org, repo, path, notifications, b.getNotificationContent())
+		if b.Action == pipebuilder.Validate {
+			if n.SendOnValidation() {
+				n.SendSuccess(org, repo, path, notifications, b.getNotificationContent())
+			}
 		} else {
 			n.SendSuccess(org, repo, path, notifications, b.getNotificationContent())
 		}
@@ -514,8 +516,10 @@ func (b *PipelineBuilder) NotifyFailure(org, repo, path string, err error, dingh
 		}
 	}
 	for _, n := range b.Notifiers {
-		if b.Action == pipebuilder.Validate && n.SendOnValidation() {
-			n.SendFailure(org, repo, path, err, notifications, b.getNotificationContent())
+		if b.Action == pipebuilder.Validate {
+			if n.SendOnValidation() {
+				n.SendFailure(org, repo, path, err, notifications, b.getNotificationContent())
+			}
 		} else {
 			n.SendFailure(org, repo, path, err, notifications, b.getNotificationContent())
 		}
