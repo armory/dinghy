@@ -81,6 +81,10 @@ func NewGithubNotifier(s *settings.ExtSettings) *GithubNotifier {
 	}
 }
 
+func (gn *GithubNotifier) SendOnValidation() bool {
+	return true
+}
+
 func (gn *GithubNotifier) SendSuccess(org, repo, path string, notificationsType plank.NotificationsType, content map[string]interface{}) {
 	notification := newGithubNotification(org, repo, content, false, fmt.Sprintf("%s/%s/%s", org, repo, path))
 	err := gn.createCommitComment(notification.Body, notification.Owner, notification.Repo, notification.Sha, false)

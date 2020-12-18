@@ -82,6 +82,10 @@ func NewSlackNotifier(s *settings.ExtSettings) *SlackNotifier {
 	}
 }
 
+func (gn *SlackNotifier) SendOnValidation() bool {
+	return false
+}
+
 func (sn *SlackNotifier) SendSuccess(org, repo, path string, notificationsType plank.NotificationsType, content map[string]interface{}) {
 	// If convertion to ApplicationNotification is fine then filter and send the notifications to the respective channels
 	if appNotifications, errorConverting := ToNotifications(notificationsType); errorConverting == nil {

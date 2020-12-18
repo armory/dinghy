@@ -52,7 +52,7 @@ func (p *Push) SetCommitStatus(status git.Status, description string) {
 func (p *Push) GetCommitStatus() (error, git.Status, string) {
 	err, statuses := p.Config.ListStatuses(p.Org(), p.Repo(), p.Branch())
 	if err != nil {
-		p.Logger.Warnf("Failed to get status information for %v/%v/%v", p.Org(),p.Repo(),p.Branch())
+		p.Logger.Warnf("Failed to get status information for %v/%v/%v", p.Org(), p.Repo(), p.Branch())
 		return err, "", ""
 	}
 	for _, status := range statuses {
@@ -60,7 +60,7 @@ func (p *Push) GetCommitStatus() (error, git.Status, string) {
 			return nil, git.Status(status.GetState()), status.GetDescription()
 		}
 	}
-	return nil, "",""
+	return nil, "", ""
 }
 
 // Commits return the list of commit hashes
