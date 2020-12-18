@@ -589,7 +589,6 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	}
 
 	if validation {
-		builder.Notifiers = nil
 		builder.Client = wa.ClientReadOnly
 		builder.Depman = wa.CacheReadOnly
 		builder.Action = pipebuilder.Validate
