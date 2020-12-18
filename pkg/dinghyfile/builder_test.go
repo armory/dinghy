@@ -1170,6 +1170,10 @@ func (m *mockNotifier) SendFailure(org, repo, path string, err error, notificati
 	m.LastError = err
 }
 
+func (m *mockNotifier) SendOnValidation() bool {
+	return true
+}
+
 func TestSuccessNotifier(t *testing.T) {
 	b := testPipelineBuilder()
 	n := mockNotifier{}
