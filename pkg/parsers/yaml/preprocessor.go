@@ -3,6 +3,7 @@ package yaml
 import (
 	"bytes"
 	"fmt"
+	"github.com/Masterminds/sprig/v3"
 	"github.com/armory/dinghy/pkg/git"
 	y "gopkg.in/yaml.v2"
 	"text/template"
@@ -85,6 +86,11 @@ func removeModules(input string, gitInfo git.GitInfo) string {
 		"pipelineID":    dummyVar,
 		"makeSlice":     dummySlice,
 		"if":            dummySlice,
+	}
+
+	// All sprig functions will be changed for a dummy slice
+	for key,_ := range sprig.GenericFuncMap() {
+		funcMap[key] = dummySlice
 	}
 
 	tmpl, err := template.New("blank-out").Funcs(funcMap).Parse(input)

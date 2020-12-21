@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/Masterminds/sprig/v3"
 	"github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
 	"github.com/armory/dinghy/pkg/events"
@@ -282,7 +283,7 @@ func (r *DinghyfileYamlParser) Parse(org, repo, path, branch string, vars []ding
 	}
 
 	// Parse the downloaded template.
-	tmpl, err := template.New("dinghy-render").Funcs(funcMap).Parse(contents)
+	tmpl, err := template.New("dinghy-render").Funcs(sprig.TxtFuncMap()).Funcs(funcMap).Parse(contents)
 	if err != nil {
 		r.Builder.Logger.Error("Failed to parse template")
 		return nil, err
