@@ -500,6 +500,11 @@ var fileService = dummy.FileService{
 
 		// DictKeysError
 		"dict_keys_error": "",
+
+		// Sprig functions test
+		"sprig_functions": `{
+			"test": {{ splitList "$" "foo$bar$baz" | toJson }}
+		}`,
 	},
 	"branch": {
 		"if_test": `{
@@ -1291,4 +1296,20 @@ func TestDifferentTemplateBranch(t *testing.T) {
 	expected := `template: dinghy-render:3:7: executing "dinghy-render" at <module "mod1">: error calling module: error rendering imported module 'mod1': File not found`
 	assert.Equal(t, expected, err.Error())
 
+}
+
+func TestSprigFuncs(t *testing.T) {
+	r := testDinghyfileParser()
+	filepath := "sprig_functions"
+	r.Builder.DinghyfileName = filepath
+	buf, _ := r.Parse("org", "repo", filepath, "master", nil)
+
+	const expected = `{
+		"test": ["foo","bar","baz"]
+	}`
+
+	// strip whitespace from both strings for assertion
+	exp := strings.Join(strings.Fields(expected), "")
+	actual := strings.Join(strings.Fields(buf.String()), "")
+	assert.Equal(t, exp, actual)
 }
