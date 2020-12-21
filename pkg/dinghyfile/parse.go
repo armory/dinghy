@@ -32,6 +32,7 @@ import (
 
 	"text/template"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/preprocessor"
 )
@@ -287,7 +288,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	}
 
 	// Parse the downloaded template.
-	tmpl, err := template.New("dinghy-render").Funcs(funcMap).Parse(contents)
+	tmpl, err := template.New("dinghy-render").Funcs(sprig.TxtFuncMap()).Funcs(funcMap).Parse(contents)
 	if err != nil {
 		r.Builder.Logger.Errorf("Failed to parse template:\n %s", contents)
 		event.Dinghyfile = contents
