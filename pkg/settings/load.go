@@ -233,5 +233,15 @@ func decryptSecrets(ctx context.Context, config *Settings) error {
 		return err
 	}
 	config.StashToken = secret
+
+	decrypter, err = secrets.NewDecrypter(ctx, config.SQL.Password)
+	if err != nil {
+		return err
+	}
+	secret, err = decrypter.Decrypt()
+	if err != nil {
+		return err
+	}
+	config.SQL.Password = secret
 	return nil
 }
