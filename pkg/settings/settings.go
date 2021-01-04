@@ -146,6 +146,9 @@ func (s *Settings) Redacted() *Settings {
 	if redacted.GitLabToken != "" {
 		redacted.GitLabToken = "**REDACTED**"
 	}
+	if redacted.SQL.Password != "" {
+		redacted.SQL.Password = "**REDACTED**"
+	}
 	if redacted.StashToken != "" {
 		redacted.StashToken = "**REDACTED**"
 	}
