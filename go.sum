@@ -53,12 +53,8 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/armory-io/monitoring v0.0.7 h1:IVVhiqhavr+yH2IXlMZMyqjhBb9Ms9L6qmKswLh+ODQ=
 github.com/armory-io/monitoring v0.0.7/go.mod h1:EqWc/9ldt7teZxnS2xnAMJsthM7ldI4ArLnjBRGCYSo=
-github.com/armory/dinghy v1.0.2-0.20201214212636-965f736c20b7 h1:Tpyqrcz6wt+KZb5EGdPCsysR2jWkLd9tbCMQo56sJ+I=
-github.com/armory/dinghy v1.0.2-0.20201214212636-965f736c20b7/go.mod h1:o9NHJB9NLzs7GbwvhxRpJ6c7Lbt5LU/P4CAz6I5IKmY=
-github.com/armory/dinghy v1.0.2-0.20201218210258-c743804d9735 h1:zbz5WQ2pdQU3+GPv3tC3XrnisSI5oNefSCffnusQLbo=
-github.com/armory/dinghy v1.0.2-0.20201218210258-c743804d9735/go.mod h1:o9NHJB9NLzs7GbwvhxRpJ6c7Lbt5LU/P4CAz6I5IKmY=
-github.com/armory/dinghy v1.0.2-0.20201221191958-aa7825915052 h1:1K7xJIefEFi0+YxFfqEmOTJ8h5hmSMIe10dMTU2s5z8=
-github.com/armory/dinghy v1.0.2-0.20201221191958-aa7825915052/go.mod h1:v1asXi7X6psL6mxm0T9FRhrwtSYmN830Xb1x2D7eo7s=
+github.com/armory/dinghy v1.0.2-0.20210104212807-29b1834b1c78 h1:xLuwCLhyBUCotE6aZaiq+cMP06labHrdnnB+C3z4aHg=
+github.com/armory/dinghy v1.0.2-0.20210104212807-29b1834b1c78/go.mod h1:v1asXi7X6psL6mxm0T9FRhrwtSYmN830Xb1x2D7eo7s=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
 github.com/armory/go-yaml-tools v0.0.0-20200603151141-b037d3988c49 h1:2iuOSeCtDe/shRUIp4iP/Joja3wlzIT1yLVIhxGJ6II=
 github.com/armory/go-yaml-tools v0.0.0-20200603151141-b037d3988c49/go.mod h1:QreIYVxaLk2qi8gRBvBBDVEWIL84lTVpqTohrmQEuA4=
@@ -227,8 +223,6 @@ github.com/huandu/xstrings v1.3.1 h1:4jgBlKK6tLKFvO8u5pmYjG91cqytmDCDvGh7ECVFfFs
 github.com/huandu/xstrings v1.3.1/go.mod h1:y5/lhBue+AyNmUVz9RLU9xbLR0o4KIIExikq4ovT0aE=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/imdario/mergo v0.3.5/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
-github.com/imdario/mergo v0.3.6 h1:xTNEAn+kxVO7dTZGu0CegyqKZmoWFI0rF8UxjlB2d28=
-github.com/imdario/mergo v0.3.6/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
 github.com/imdario/mergo v0.3.8 h1:CGgOkSJeqMRmt0D9XLWExdT4m4F1vd3FV3VPt+0VxkQ=
 github.com/imdario/mergo v0.3.8/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
 github.com/jinzhu/copier v0.0.0-20180308034124-7e38e58719c3 h1:sHsPfNMAG70QAvKbddQ0uScZCHQoZsT5NykGRCeeeIs=
@@ -375,8 +369,6 @@ golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 h1:HuIa8hRrWRSrqYzx1qI49N
 golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 h1:ObdrDkeb4kJdCP557AjRjq69pTHfNouLtWZG7j9rPN8=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
-golang.org/x/crypto v0.0.0-20200406173513-056763e48d71 h1:DOmugCavvUtnUD114C1Wh+UgTgQZ4pMLzXxi1pSt+/Y=
-golang.org/x/crypto v0.0.0-20200406173513-056763e48d71/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/crypto v0.0.0-20200414173820-0848c9571904 h1:bXoxMPcSLOq08zI3/c5dEBT6lE4eh+jOh886GHrn6V8=
 golang.org/x/crypto v0.0.0-20200414173820-0848c9571904/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/exp v0.0.0-20190121172915-509febef88a4/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=

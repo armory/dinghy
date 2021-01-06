@@ -50,14 +50,7 @@ RUN chmod 0755 liquibase-upgrade.sh
 EXPOSE 8081
 WORKDIR /opt/armory/bin/
 
-# Install yq
-ENV YAML_BIN_VERSION 3.4.1
-RUN wget -O /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YAML_BIN_VERSION}/yq_linux_amd64"
-RUN chmod 0755 /usr/local/bin/yq
-
-
-
 COPY --from=builder /opt/armory/build/build/dinghy /opt/armory/bin/dinghy
 USER spinnaker
 
-CMD ["/liquibase/liquibase-upgrade.sh"]
+CMD ["/opt/armory/bin/dinghy"]
