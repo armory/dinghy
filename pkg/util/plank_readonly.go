@@ -16,7 +16,11 @@
 
 package util
 
-import "github.com/armory/plank/v3"
+import (
+	"fmt"
+	"github.com/armory/plank/v3"
+	"github.com/google/uuid"
+)
 
 type PlankReadOnly struct {
 	Plank 		*plank.Client
@@ -70,7 +74,7 @@ func (p *PlankReadOnly) UpsertPipeline(pipe plank.Pipeline, appName string) erro
 		p.tempPipes = &[]plank.Pipeline{}
 	}
 	// Auto generate a dummy id
-	pipe.ID = "auto-generated-dummy-id"
+	pipe.ID = fmt.Sprintf("auto-generated-dummy-id-%v", uuid.New().String())
 	(*p.tempPipes) = append(*p.tempPipes, pipe)
 	return nil
 }
