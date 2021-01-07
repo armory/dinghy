@@ -311,6 +311,10 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 	b.RebuildingModules = true
 	errEncountered := false
 	failedUpdates := []string{}
+	if b.Action == pipebuilder.Validate {
+		// Since we are checking for modules, those live in master
+		branch = "master"
+	}
 	url := b.Downloader.EncodeURL(org, repo, path, branch)
 	b.Logger.Info("Processing module: " + url)
 
