@@ -19,7 +19,8 @@ package util
 import "github.com/armory/plank/v3"
 
 type PlankReadOnly struct {
-	Plank *plank.Client
+	Plank 		*plank.Client
+	tempPipes	map[string][]plank.Pipeline
 }
 
 func (p PlankReadOnly) GetApplication(string string) (*plank.Application, error) {
@@ -42,15 +43,30 @@ func (p PlankReadOnly) UpdateApplication(plank.Application) error {
 	return nil
 }
 
-func (p PlankReadOnly) GetPipelines(string string) ([]plank.Pipeline, error) {
-	return p.Plank.GetPipelines(string)
+func (p PlankReadOnly) GetPipelines(appName string) ([]plank.Pipeline, error) {
+	pipes,err := p.Plank.GetPipelines(appName)
+	if err != nil {
+		return  pipes,err
+	}
+	for _, val := range p.tempPipes[appName]{
+		pipes = append(pipes, val)
+	}
+
+	return pipes, nil
 }
 
 func (p PlankReadOnly) DeletePipeline(plank.Pipeline) error {
 	return nil
 }
 
-func (p PlankReadOnly) UpsertPipeline(pipe plank.Pipeline, str string) error {
+func (p PlankReadOnly) UpsertPipeline(pipe plank.Pipeline, appName string) error {
+	// This is getting a little complex
+	// When a pipeline does not exists dinghy create it so it can be referenced
+	// Its a recursive call so it loops forever if this temp pipeline is not created
+	value, _ := p.tempPipes[appName]
+	// Auto generate a dummy id
+	pipe.ID = "auto-generated-dummy-id"
+	value = append(value, pipe)
 	return nil
 }
 
