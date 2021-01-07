@@ -192,7 +192,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 
 	}
 
-	api = web.NewWebAPI(config, persitenceManager, client, ec, log, persitenceManagerReadOnly, clientReadOnly, logEventsClient)
+	api = web.NewWebAPI(config, persitenceManager, client, ec, log, persitenceManagerReadOnly, &clientReadOnly, logEventsClient)
 
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
 	if config.ParserFormat == "json" {
