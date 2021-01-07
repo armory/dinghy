@@ -48,6 +48,7 @@ func (p PlankReadOnly) GetPipelines(appName string) ([]plank.Pipeline, error) {
 	if err != nil {
 		return  pipes,err
 	}
+	// Here we will get the previously created pipelines
 	for _, val := range p.tempPipes[appName]{
 		pipes = append(pipes, val)
 	}
