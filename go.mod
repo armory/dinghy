@@ -8,6 +8,7 @@ require (
 	github.com/go-redis/redis v6.14.1+incompatible
 	github.com/golang/mock v1.3.1
 	github.com/google/go-github v17.0.0+incompatible
+	github.com/google/uuid v1.1.1
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2
 	github.com/hashicorp/go-cleanhttp v0.5.1
