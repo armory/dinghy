@@ -24,7 +24,26 @@ How it works:
   dependency is modified, the pipeline definition will be rebuilt and re-posted
   to Spinnaker. (sound familiar? haha)
 
-### Testing Manually
+### Local Development
+
+You will need a [golang toolchain] and [make] to work on this project.
+
+#### Building & Testing
+
+You can run the `make build` and `make test` targets to build and test the
+project.  You will need Redis running (either locally or in your Spinnaker
+cluster), as well as Front50 and Orca.
+
+If you have an existing Spinnaker cluster, you can port-forward to your local
+machine like so:
+
+```shell
+kubectl -n spinnaker port-forward svc/spin-redis   6379
+kubectl -n spinnaker port-forward svc/spin-front50 8080
+kubectl -n spinnaker port-forward svc/spin-orca    8083
+```
+
+#### Sample Request
 
 ```shell
 curl -X POST \
@@ -38,3 +57,6 @@ testing the git webhook, as an example)
 
 Dinghy is also embedded in the [arm cli](https://github.com/armory-io/arm) tool
 for local validation of pipelines.
+
+[golang toolchain]: https://golang.org/doc/install
+[make]: https://www.gnu.org/software/make/
