@@ -40,6 +40,7 @@ type LogEventSQL struct {
 	RawData            string `gorm:"column:rawdata"`
 	Author             string `gorm:"column:author"`
 	RenderedDinghyfile string `gorm:"column:rendereddinghyfile"`
+	PullRequest        string `gorm:"column:pullrequest"`
 }
 
 func (log LogEventSQL) ToLogEvent() LogEvent {

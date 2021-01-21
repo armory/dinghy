@@ -82,6 +82,7 @@
             </column>
             <column name="author" type="varchar(100)" />
             <column name="rendereddinghyfile" type="clob" />
+            <column name="pullrequest" type="varchar(500)"/>
         </createTable>
 
         <addAutoIncrement
