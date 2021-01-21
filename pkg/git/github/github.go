@@ -145,7 +145,7 @@ func (g *Config) GetShaFromRawData(rawPushData []byte) string {
 
 	// deserialze push data to a map.  used in template logic later
 	content := make(map[string]interface{})
-	_ = json.Unmarshal(rawPushData, &rawPushData)
+	_ = json.Unmarshal(rawPushData, &content)
 
 	sha := ""
 	v, ok := content[head_commit]
