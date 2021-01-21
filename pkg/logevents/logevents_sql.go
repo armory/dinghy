@@ -54,6 +54,7 @@ func (log LogEventSQL) ToLogEvent() LogEvent {
 		Status:             log.Status,
 		RawData:            log.RawData,
 		RenderedDinghyfile: log.RenderedDinghyfile,
+		PullRequest:        log.PullRequest,
 	}
 }
 
@@ -68,6 +69,7 @@ func (log LogEvent) ToLogEventSQL() LogEventSQL {
 		Status:             log.Status,
 		RawData:            log.RawData,
 		RenderedDinghyfile: log.RenderedDinghyfile,
+		PullRequest:        log.PullRequest,
 	}
 }
 
