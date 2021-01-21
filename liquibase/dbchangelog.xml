@@ -97,11 +97,11 @@
         <tagDatabase tag="version_1"/>
     </changeSet>
 
-<!--    <changeSet author="cristhian-castaneda" id="3">-->
-<!--        <addColumn tableName="logevents" >-->
-<!--            <column name="pullrequest" type="varchar(500)"/>-->
-<!--        </addColumn>-->
-<!--    </changeSet>-->
+    <changeSet author="cristhian-castaneda" id="3">
+        <addColumn tableName="logevents" >
+            <column name="pullrequest" type="varchar(500)"/>
+        </addColumn>
+    </changeSet>
 
 <!--    &lt;!&ndash; Properties table &ndash;&gt;-->
 <!--    <createTable tableName="property">-->
