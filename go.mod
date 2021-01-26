@@ -7,7 +7,7 @@ require (
 	github.com/armory/plank/v3 v3.4.3
 	github.com/go-redis/redis v6.14.1+incompatible
 	github.com/golang/mock v1.3.1
-	github.com/google/go-github v17.0.0+incompatible
+	github.com/google/go-github/v33 v33.0.0
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2

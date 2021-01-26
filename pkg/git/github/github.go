@@ -19,10 +19,16 @@ package github
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/armory/dinghy/pkg/util"
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v33/github"
 	"golang.org/x/oauth2"
+)
+
+const (
+	head_commit = "head_commit"
+	id          = "id"
 )
 
 type GitHubClient interface {
@@ -57,7 +63,7 @@ func (g *Config) DownloadContents(org, repo, path, branch string) (string, error
 	}
 
 	opt := &github.RepositoryContentGetOptions{Ref: branch}
-	r, err := client.Repositories.DownloadContents(ctx, org, repo, path, opt)
+	r, _, err := client.Repositories.DownloadContents(ctx, org, repo, path, opt)
 	if err != nil {
 		if e, ok := err.(*github.RateLimitError); ok {
 			return "", &util.GithubRateLimitErr{RateLimit: e.Rate.Limit, RateReset: e.Rate.Reset.String()}
@@ -116,6 +122,41 @@ func (g *Config) ListStatuses(org, repo, ref string) (error, []*github.RepoStatu
 	}
 
 	return nil, repoStatuses
+}
+
+func (g *Config) GetPullRequest(org, repo, ref, sha string) (*github.PullRequest, error) {
+
+	ctx := context.Background()
+	client, err := newGitHubClient(ctx, g.Endpoint, g.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	pullRequests, _, err := client.PullRequests.ListPullRequestsWithCommit(ctx, org, repo, sha, &github.PullRequestListOptions{Base: ref})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return pullRequests[0], nil
+}
+
+func (g *Config) GetShaFromRawData(rawPushData []byte) string {
+
+	// deserialze push data to a map.  used in template logic later
+	content := make(map[string]interface{})
+	_ = json.Unmarshal(rawPushData, &content)
+
+	sha := ""
+	v, ok := content[head_commit]
+	if ok {
+		v, ok = v.(map[string]interface{})[id]
+		if ok {
+			sha = v.(string)
+		}
+	}
+
+	return sha
 }
 
 func (g *Config) GetEndpoint() string {
