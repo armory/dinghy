@@ -221,7 +221,13 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p.DeckBaseURL = wa.Config.Deck.BaseURL
 	fileService := github.FileService{GitHub: &gh, Logger: dinghyLog}
 
-	wa.buildPipelines(&p, body, &fileService, w, dinghyLog)
+	var pullRequestUrl string
+	pullRequest, err := gh.GetPullRequest(p.Org(), p.Repo(), p.Branch(), gh.GetShaFromRawData(body))
+	if pullRequest != nil {
+		pullRequestUrl = pullRequest.GetHTMLURL()
+	}
+
+	wa.buildPipelines(&p, body, &fileService, w, dinghyLog, pullRequestUrl)
 }
 
 func contains(whvalidations []string, provider string) bool {
@@ -329,7 +335,7 @@ func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		saveLogEventError(wa.LogEventsClient, &p, dinghyLog, logevents.LogEvent{RawData: string(body)})
 		return
 	}
-	wa.buildPipelines(&p, body, &fileService, w, dinghyLog)
+	wa.buildPipelines(&p, body, &fileService, w, dinghyLog, "")
 }
 
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -375,7 +381,7 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		Logger: dinghyLog,
 	}
 	dinghyLog.Infof("Building pipeslines from Stash webhook")
-	wa.buildPipelines(p, body, &fileService, w, dinghyLog)
+	wa.buildPipelines(p, body, &fileService, w, dinghyLog, "")
 }
 
 func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -443,7 +449,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			Logger: dinghyLog,
 		}
 
-		wa.buildPipelines(p, body, &fileService, w, dinghyLog)
+		wa.buildPipelines(p, body, &fileService, w, dinghyLog, "")
 
 	case "repo:refs_changed", "pr:merged":
 		dinghyLog.Info("Processing bitbucket-server webhook")
@@ -490,7 +496,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			Logger: dinghyLog,
 		}
 
-		wa.buildPipelines(p, body, &fileService, w, dinghyLog)
+		wa.buildPipelines(p, body, &fileService, w, dinghyLog, "")
 
 	default:
 		util.WriteHTTPError(w, http.StatusInternalServerError, errors.New("Unknown bitbucket event type"))
@@ -543,7 +549,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 
 // TODO: this func should return an error and allow the handlers to return the http response. Additionally,
 // it probably doesn't belong in this file once refactored.
-func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader, w http.ResponseWriter, dinghyLog dinghylog.DinghyLog) {
+func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader, w http.ResponseWriter, dinghyLog dinghylog.DinghyLog, pullRequest string) {
 	// see if we have any configurations for this repo.
 	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
 	var validation bool
@@ -603,12 +609,12 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	if err == dinghyfile.ErrMalformedJSON {
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		dinghyLog.Errorf("ProcessPush Failed (malformed JSON): %s", err.Error())
-		saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush)})
+		saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest})
 		return
 	} else if err != nil {
 		dinghyLog.Errorf("ProcessPush Failed (other): %s", err.Error())
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
-		saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush)})
+		saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest})
 		return
 	}
 
@@ -628,7 +634,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 				}
 				p.SetCommitStatus(git.StatusError, "Rebuilding dependent dinghyfiles Failed")
 				dinghyLog.Errorf("RebuildModuleRoots Failed: %s", err.Error())
-				saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush)})
+				saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest})
 				return
 			}
 		}
@@ -639,7 +645,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	// TODO: If a template repo is having files not related with dinghy an event will be saved
 	if p.Repo() == wa.Config.TemplateRepo {
 		if len(p.Files()) > 0 {
-			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush)})
+			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest})
 		}
 	} else {
 		dinghyfiles := []string{}
@@ -649,7 +655,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 			}
 		}
 		if len(dinghyfiles) > 0 {
-			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), Files: dinghyfiles})
+			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), Files: dinghyfiles, PullRequest: pullRequest})
 		}
 	}
 	w.Write([]byte(`{"status":"accepted"}`))

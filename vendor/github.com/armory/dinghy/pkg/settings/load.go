@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -43,7 +44,7 @@ const (
 )
 
 func NewDefaultSettings() Settings {
-	dinghyPort, err := strconv.ParseUint(util.GetenvOrDefault("DINGHY_PORT", string(DefaultDinghyPort)), 10, 32)
+	dinghyPort, err := strconv.ParseUint(util.GetenvOrDefault("DINGHY_PORT", fmt.Sprintf("%v",DefaultDinghyPort)), 10, 32)
 
 	if err != nil {
 		dinghyPort = DefaultDinghyPort

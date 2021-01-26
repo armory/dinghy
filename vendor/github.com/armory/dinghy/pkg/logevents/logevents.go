@@ -31,4 +31,5 @@ type LogEvent struct {
 	Status             string   `json:"status" yaml:"status"`
 	RawData            string   `json:"rawdata" yaml:"rawdata"`
 	RenderedDinghyfile string   `json:"rendereddinghyfile" yaml:"rendereddinghyfile"`
+	PullRequest        string   `json:"pullrequest" yaml:"pullrequest"`
 }
