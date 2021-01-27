@@ -39,7 +39,7 @@ func (p *PlankReadOnly) GetApplicationNotifications(app string) (*plank.Notifica
 	return p.Plank.GetApplicationNotifications(app)
 }
 
-func (p *PlankReadOnly) PlankReadOnlylication(*plank.Application) error {
+func (p *PlankReadOnly) CreateApplication(*plank.Application) error {
 	return nil
 }
 
