@@ -12,7 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-## [3.4.3] 2020-1014
+## [3.4.4] 2020-01-22
+
+### Added
+- Added AppMetadata attribute, this information will be added to Application object when you marshal an Application to JSON, this will enable the support for any existing field in Application object
+
+### Fixed
+
+### Removed
+
+## [3.4.3] 2020-10-14
 
 ### Added
 - Created method `UpdatePermissions` that is used by `UpdateApplication`
@@ -173,6 +182,7 @@ paylods from 4xx and 5xx responses in the `plank.FailedResponse` struct.
   struct makes sense for the context.
 
 [Unreleased]: https://github.com/armory/plank/compare/v1.3.0...HEAD
+[3.4.4]: https://github.com/armory/plank/compare/v3.4.3...v3.4.4
 [3.4.3]: https://github.com/armory/plank/compare/v3.4.2...v3.4.3
 [3.4.2]: https://github.com/armory/plank/compare/v3.4.1...v3.4.2
 [3.4.1]: https://github.com/armory/plank/compare/v3.4.0...v3.4.1
