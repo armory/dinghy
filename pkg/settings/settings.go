@@ -10,21 +10,29 @@ import (
 )
 
 type ExtSettings struct {
+	// Notifiers configurations
 	Notifiers notifierConfig `json:"notifiers,omitempty" yaml:"notifiers"`
+	// Dinghy OSS configuration
 	Settings  *settings.Settings
 }
 
 type notifierConfig struct {
+	// Slack configuration
+	// More info: https://docs.armory.io/docs/armory-admin/dinghy-enable/#slack-notifications
 	Slack  slackOpts  `json:"slack,omitempty" yaml:"slack"`
+	// Github comments validation, when a validation is done it will add a comment with the full log
 	Github githubOpts `json:"github,omitempty" yaml:"github"`
 }
 
 type slackOpts struct {
+	// Enabled flag
 	Enabled string `json:"enabled" yaml:"enabled"`
+	// Slack channel configured for notifications
 	Channel string `json:"channel" yaml:"channel"`
 }
 
 type githubOpts struct {
+	// Enabled flag, by default is true
 	Enabled string `json:"enabled" yaml:"enabled"`
 }
 

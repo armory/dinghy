@@ -3,9 +3,9 @@ module github.com/armory-io/dinghy
 require (
 	cloud.google.com/go v0.56.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.1.0
-	github.com/armory/dinghy v1.0.2-0.20210126175120-3e1fa9f7eb9b
+	github.com/armory/dinghy v1.0.2-0.20210127184351-29122b3cf27a
 	github.com/armory/go-yaml-tools v0.0.0-20200603151141-b037d3988c49
-	github.com/armory/plank/v3 v3.4.3
+	github.com/armory/plank/v3 v3.4.4
 	github.com/aws/aws-sdk-go v1.30.7 // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-redis/redis v6.15.7+incompatible // indirect
