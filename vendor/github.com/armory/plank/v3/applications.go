@@ -16,8 +16,10 @@
 package plank
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mitchellh/mapstructure"
 	"time"
 )
 
@@ -59,6 +61,19 @@ type Application struct {
 	DataSources   *DataSourcesType   `json:"dataSources,omitempty" mapstructure:"dataSources" yaml:"datasources,omitempty" hcl:"datasources,omitempty"`
 	Permissions   *PermissionsType   `json:"permissions,omitempty" mapstructure:"permissions" yaml:"permissions,omitempty" hcl:"permissions,omitempty"`
 	Notifications NotificationsType  `json:"notifications,omitempty" mapstructure:"notifications" yaml:"notifications,omitempty" hcl:"notifications,omitempty"`
+	AppMetadata	  map[string]interface{}  `json:"appmetadata,omitempty" mapstructure:"appmetadata" yaml:"appmetadata,omitempty" hcl:"appmetadata,omitempty"`
+}
+
+
+// All in Metadata will be in root
+func (a Application) MarshalJSON() ([]byte, error) {
+	amap := make(map[string]interface{})
+	mapstructure.Decode(a, &amap)
+	delete(amap, "appmetadata")
+	for key,val := range a.AppMetadata {
+		amap[key] = val
+	}
+	return json.Marshal(amap)
 }
 
 // GetApplication returns the Application data struct for the
