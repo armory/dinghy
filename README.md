@@ -28,6 +28,9 @@ How it works:
 
 You will need a [golang toolchain] and [make] to work on this project.
 
+You should complete and add the file located in `example/dinghy.yml` to `/opt/spinnaker/config/dinghy.yml` since 
+this is the file that dinghy search for configuration.
+
 #### Building & Testing
 
 You can run the `make build` and `make test` targets to build and test the
@@ -41,7 +44,11 @@ machine like so:
 kubectl -n spinnaker port-forward svc/spin-redis   6379
 kubectl -n spinnaker port-forward svc/spin-front50 8080
 kubectl -n spinnaker port-forward svc/spin-orca    8083
+kubectl -n spinnaker port-forward svc/spin-fiat    7003
+kubectl -n spinnaker port-forward svc/spin-echo    8089
 ```
+
+
 
 #### Sample Request
 
