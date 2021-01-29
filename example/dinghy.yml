@@ -1,0 +1,94 @@
+# YOU CAN FIND MORE INFORMATION REGARDING THIS FILE IN pkg/settings/settings.go
+
+# This will be the TTL value to ger dinghyevents data
+LogEventTTLMinutes: 60
+# Organization account that will have the template repository
+templateOrg: <organization/user>
+# Repository for templates (modules)
+templateRepo: <repository>
+# Fiat service account
+# fiatUser: <user>
+# Github token
+githubToken: <token>
+# Webhook validations for repositories or orgs
+# More info here: https://docs.armory.io/docs/spinnaker-user-guides/using-dinghy/#webhook-secret-validation
+webhookValidations:
+# Enabled flag
+- enabled: true
+  # Version control provider, only github supported at this moment 
+  versionControlProvider: github
+  # Organization
+  organization: <org>
+  # Repository
+  repo: <repo>
+  # Secret
+  secret: <secret>
+# List of providers to check for webhook validation, currently only github supported
+# More info here: https://docs.armory.io/docs/spinnaker-user-guides/using-dinghy/#webhook-secret-validation
+webhookValidationEnabledProviders:
+-
+repositoryRawdataProcessing: true
+# Github endpoint
+githubEndpoint: https://api.github.com
+# Stash/Bitbucket username
+stashUsername: <username>
+# Stash/Bitbucket token
+stashToken: <token>
+# Stash/Bitbucket api endpoint
+stashEndpoint: https://api.bitbucket.org/2.0
+# Names of the file that will be processed by dinghy, by default is dinghyfile
+dinghyFilename: dinghyfile
+# Lock Dinghy pipelines
+autoLockPipelines: true
+# This is for propietary configuration
+# notifiers:
+#   slack:
+#     enabled: true
+#     channel: jossuecito-notifications-channel
+
+# SQL configuration for dinghy
+sql:
+  # User
+  user: root
+  # Password
+  password: password
+  # If this flag is enabled only events will be saved in database, redis will continue to be used for relationships
+  # eventlogsOnly: false
+  # Database url
+  baseUrl: 127.0.0.1:3306
+  # DB name
+  databaseName: dinghy
+  # Enabled flag
+  enabled: false
+
+
+# Since you made a port-forward all the services would be linked with localhost
+echo:
+  baseUrl: http://localhost:8089
+  enabled: true
+fiat:
+  baseUrl: http://localhost:7003
+  enabled: true
+front50:
+  baseUrl:  http://localhost:8080
+  enabled: true
+orca:
+  baseUrl: http://localhost:8083
+  enabled: true
+redis:
+  baseUrl: redis://localhost:6379
+
+
+spinnaker:
+  extensibility:
+    plugins: {}
+    repositories: {}
+    plugins-root-path: /opt/dinghy/plugins
+    strict-plugin-loading: false
+
+logging:
+  remote:
+    enabled: false
+    endpoint: https://debug.armory.io/v1/logs
+    customerId: someuuid
+    version: 2.20.0
