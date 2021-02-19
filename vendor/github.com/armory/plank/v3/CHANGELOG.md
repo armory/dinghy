@@ -12,6 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [3.4.5] 2021-16-02
+
+### Added
+- Added parameter SpelEvaluator to allow reading this value
+
+### Fixed
+- Fixed a bug in which pipelines with the parameter SpelEvaluator where not being saved with said parameter
+
+### Removed
+
+
 ## [3.4.4] 2020-01-22
 
 ### Added
@@ -182,6 +193,7 @@ paylods from 4xx and 5xx responses in the `plank.FailedResponse` struct.
   struct makes sense for the context.
 
 [Unreleased]: https://github.com/armory/plank/compare/v1.3.0...HEAD
+[3.4.5]: https://github.com/armory/plank/compare/v3.4.4...v3.4.5
 [3.4.4]: https://github.com/armory/plank/compare/v3.4.3...v3.4.4
 [3.4.3]: https://github.com/armory/plank/compare/v3.4.2...v3.4.3
 [3.4.2]: https://github.com/armory/plank/compare/v3.4.1...v3.4.2
