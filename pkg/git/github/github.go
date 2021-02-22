@@ -137,8 +137,11 @@ func (g *Config) GetPullRequest(org, repo, ref, sha string) (*github.PullRequest
 	if err != nil {
 		return nil, err
 	}
-
-	return pullRequests[0], nil
+	if len(pullRequests) > 0 {
+		return pullRequests[0], nil
+	} else {
+		return nil, nil
+	}
 }
 
 func (g *Config) GetShaFromRawData(rawPushData []byte) string {
