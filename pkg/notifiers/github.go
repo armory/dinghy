@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 	"log"
+	"math"
 )
 
 const (
@@ -47,17 +48,15 @@ type GithubNotification struct {
 	Sha   string
 }
 
-func newGithubNotification(owner, repo string, content map[string]interface{}, isError bool, message string) *GithubNotification {
+func generateNotifications(owner, repo string, content map[string]interface{}, isError bool, message string) []GithubNotification {
+	charLimit := 65000
 	body := ""
-	v, ok := content[logevent]
-	if ok {
+	if v, ok := content[logevent]; ok {
 		body = v.(string)
 	}
-	body = buildComment(body, message, isError)
 
 	sha := ""
-	v, ok = content[rawdata]
-	if ok {
+	if v, ok := content[rawdata]; ok {
 		v, ok = v.(map[string]interface{})[head_commit]
 		if ok {
 			v, ok = v.(map[string]interface{})[id]
@@ -66,13 +65,33 @@ func newGithubNotification(owner, repo string, content map[string]interface{}, i
 			}
 		}
 	}
+	numCommentsNeeded := int(math.Ceil(float64(len(body)) / float64(charLimit)))
+	githubNotifications := []GithubNotification{}
+	var commentBody string
+	for i := 0; i < numCommentsNeeded; i++ {
+		if i == 0 {
+			if numCommentsNeeded == 1 {
+				commentBody = buildFirstComment(body, message, isError)
+			} else {
+				commentBody = buildFirstComment(body[0:charLimit], message, isError)
+			}
+		} else {
+			startingLoc := (i * charLimit)
+			if i == numCommentsNeeded-1 {
+				commentBody = buildSubsequentComments(body[startingLoc:])
+			} else {
+				commentBody = buildSubsequentComments(body[startingLoc : startingLoc+charLimit])
+			}
+		}
 
-	return &GithubNotification{
-		Body:  body,
-		Owner: owner,
-		Repo:  repo,
-		Sha:   sha,
+		githubNotifications = append(githubNotifications, GithubNotification{
+			Body:  commentBody,
+			Owner: owner,
+			Repo:  repo,
+			Sha:   sha,
+		})
 	}
+	return githubNotifications
 }
 
 func NewGithubNotifier(s *settings.ExtSettings) *GithubNotifier {
@@ -86,18 +105,22 @@ func (gn *GithubNotifier) SendOnValidation() bool {
 }
 
 func (gn *GithubNotifier) SendSuccess(org, repo, path string, notificationsType plank.NotificationsType, content map[string]interface{}) {
-	notification := newGithubNotification(org, repo, content, false, fmt.Sprintf("%s/%s/%s", org, repo, path))
-	err := gn.createCommitComment(notification.Body, notification.Owner, notification.Repo, notification.Sha, false)
-	if err != nil {
-		log.Fatal(err)
+	notifications := generateNotifications(org, repo, content, false, fmt.Sprintf("%s/%s/%s", org, repo, path))
+	for _, notification := range notifications {
+		err := gn.createCommitComment(notification.Body, notification.Owner, notification.Repo, notification.Sha, false)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
 func (gn *GithubNotifier) SendFailure(org, repo, path string, errorDinghy error, notificationsType plank.NotificationsType, content map[string]interface{}) {
-	notification := newGithubNotification(org, repo, content, true, fmt.Sprintf("%s/%s/%s (%s)", org, repo, path, errorDinghy.Error()))
-	err := gn.createCommitComment(notification.Body, notification.Owner, notification.Repo, notification.Sha, true)
-	if err != nil {
-		log.Fatal(err)
+	notifications := generateNotifications(org, repo, content, true, fmt.Sprintf("%s/%s/%s (%s)", org, repo, path, errorDinghy.Error()))
+	for _, notification := range notifications {
+		err := gn.createCommitComment(notification.Body, notification.Owner, notification.Repo, notification.Sha, true)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -128,7 +151,7 @@ func (gn *GithubNotifier) createCommitComment(body, owner, repo, sha string, isE
 	return nil
 }
 
-func buildComment(body, message string, isError bool) string {
+func buildFirstComment(body, message string, isError bool) string {
 	var output bytes.Buffer
 	if isError {
 		output.WriteString(fmt.Sprintf("#### Failed\n> :x: &nbsp; %s\n", message))
@@ -137,6 +160,27 @@ func buildComment(body, message string, isError bool) string {
 	}
 	output.WriteString("<details>\n")
 	output.WriteString("<summary>Logs</summary>\n")
+	output.WriteString("\n")
+	output.WriteString("#### Detail\n")
+	output.WriteString("\n")
+	output.WriteString("```")
+	output.WriteString("\n")
+	output.WriteString(body)
+	output.WriteString("\n")
+	output.WriteString("```")
+	output.WriteString("\n")
+	output.WriteString("<div align=\"right\">\n")
+	output.WriteString("<img src=\"https://avatars1.githubusercontent.com/u/20845599?s=200&v=4\" width=\"20px\" />")
+	output.WriteString("<a href=\"https://docs.armory.io/docs/spinnaker-user-guides/using-dinghy\" target=\"_blank\" > Pipeline as Code</a> ")
+	output.WriteString("</div>\n")
+	output.WriteString("</details>\n")
+	return output.String()
+}
+
+func buildSubsequentComments(body string) string {
+	var output bytes.Buffer
+	output.WriteString("<details>\n")
+	output.WriteString("<summary>Additional Logs</summary>\n")
 	output.WriteString("\n")
 	output.WriteString("#### Detail\n")
 	output.WriteString("\n")

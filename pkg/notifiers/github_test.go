@@ -20,10 +20,10 @@ func Test_newGithubNotification(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *GithubNotification
+		want []GithubNotification
 	}{
 		{
-			name: "GithubNotification should be instantiated",
+			name: "GithubNotifications should be instantiated",
 			args: args{
 				owner:   "",
 				repo:    "",
@@ -31,7 +31,7 @@ func Test_newGithubNotification(t *testing.T) {
 				isError: false,
 				message: "",
 			},
-			want: newGithubNotification("", "", map[string]interface{}{}, false, ""),
+			want: generateNotifications("", "", map[string]interface{}{}, false, ""),
 		},
 		{
 			name: "GithubNotification should be instantiated with nil content",
@@ -41,12 +41,12 @@ func Test_newGithubNotification(t *testing.T) {
 				content: nil,
 				isError: false,
 			},
-			want: newGithubNotification("", "", nil, false, ""),
+			want: generateNotifications("", "", nil, false, ""),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := newGithubNotification(tt.args.owner, tt.args.repo, tt.args.content, tt.args.isError, tt.args.message); !reflect.DeepEqual(got, tt.want) {
+			if got := generateNotifications(tt.args.owner, tt.args.repo, tt.args.content, tt.args.isError, tt.args.message); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("newGithubNotification() = %v, want %v", got, tt.want)
 			}
 		})
@@ -146,7 +146,7 @@ func Test_buildComment(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildComment(tt.args.body, tt.args.message, tt.args.isError)
+			got := buildFirstComment(tt.args.body, tt.args.message, tt.args.isError)
 			var re = regexp.MustCompile(tt.shouldContain)
 			assert.Equal(t, true, re.MatchString(got))
 		})
