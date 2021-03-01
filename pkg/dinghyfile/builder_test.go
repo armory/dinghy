@@ -178,7 +178,8 @@ func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
 	pb := testPipelineBuilder()
 	pb.Logger = logger
 	pb.Parser = renderer
-	_, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	dinghyfileParsed, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	assert.Equal(t, rendered, dinghyfileParsed)
 	assert.NotNil(t, res)
 }
 
@@ -208,7 +209,8 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	pb.Logger = logger
 	pb.Parser = renderer
 	pb.Client = client
-	_, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	dinghyfileParsed, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	assert.Equal(t, rendered, dinghyfileParsed)
 	assert.NotNil(t, res)
 	assert.Equal(t, "boom", res.Error())
 }
@@ -275,7 +277,8 @@ func TestProcessDinghyfileFailedValidation(t *testing.T) {
 	pb.Logger = logger
 	pb.Parser = renderer
 	pb.Client = client
-	_, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	dinghyfileParsed, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	assert.Equal(t, rendered, dinghyfileParsed)
 	assert.NotNil(t, res)
 	assert.Equal(t, "Duplicate stage refId mj2 field found", res.Error())
 }
