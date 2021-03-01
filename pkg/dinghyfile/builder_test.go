@@ -69,7 +69,9 @@ func TestProcessDinghyfile(t *testing.T) {
 	pb.Parser = renderer
 	pb.Client = client
 	pb.Logger = logger
-	assert.Nil(t, pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch"))
+	if _, err := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch"); err != nil {
+		t.Fail()
+	}
 }
 
 func TestProcessDinghyfileValidate(t *testing.T) {
@@ -100,7 +102,10 @@ func TestProcessDinghyfileValidate(t *testing.T) {
 	pb.Parser = renderer
 	pb.Client = client
 	pb.Logger = logger
-	assert.Nil(t, pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch"))
+
+	if _, err := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch"); err != nil {
+		t.Fail()
+	}
 }
 
 // Test updateapp
@@ -151,7 +156,7 @@ func TestProcessDinghyfileDefaultRenderer(t *testing.T) {
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
-	res := pb.ProcessDinghyfile("fake", "news", "notfound", "branch")
+	_, res := pb.ProcessDinghyfile("fake", "news", "notfound", "branch")
 	assert.NotNil(t, res)
 }
 
@@ -173,7 +178,7 @@ func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
 	pb := testPipelineBuilder()
 	pb.Logger = logger
 	pb.Parser = renderer
-	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	_, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
 	assert.NotNil(t, res)
 }
 
@@ -203,7 +208,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	pb.Logger = logger
 	pb.Parser = renderer
 	pb.Client = client
-	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	_, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
 	assert.NotNil(t, res)
 	assert.Equal(t, "boom", res.Error())
 }
@@ -270,7 +275,7 @@ func TestProcessDinghyfileFailedValidation(t *testing.T) {
 	pb.Logger = logger
 	pb.Parser = renderer
 	pb.Client = client
-	res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	_, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
 	assert.NotNil(t, res)
 	assert.Equal(t, "Duplicate stage refId mj2 field found", res.Error())
 }
@@ -1254,7 +1259,6 @@ pipelines:
 	}
 }
 
-
 func TestPipelineBuilder_getContent(t *testing.T) {
 	type fields struct {
 		Downloader                  Downloader
@@ -1360,4 +1364,3 @@ func TestPipelineBuilder_getContent(t *testing.T) {
 		})
 	}
 }
-
