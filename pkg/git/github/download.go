@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/armory/dinghy/pkg/cache/local"
 	"github.com/armory/dinghy/pkg/log"
+	"github.com/armory/dinghy/pkg/util"
 	"github.com/google/go-github/v33/github"
 	"net/http"
 	"regexp"
@@ -102,6 +103,12 @@ func (f *FileService) DownloadContents(org, repo, path, branch string) (string, 
 
 	//check GitHub response
 	if err = github.CheckResponse(resp); err != nil {
+		if e, ok := err.(*github.RateLimitError); ok {
+			return "", &util.GithubRateLimitErr{RateLimit: e.Rate.Limit, RateReset: e.Rate.Reset.String()}
+		}
+		if util.IsGitHubFileNotFoundErr(err.Error()) {
+			return "", &util.GitHubFileNotFoundErr{Org: org, Repo: repo, Path: path}
+		}
 		return "", err
 	}
 

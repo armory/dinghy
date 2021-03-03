@@ -193,7 +193,7 @@ func TestDownload(t *testing.T) {
 				}},
 			},
 			contains:    "",
-			expectedErr: errors.New("GET https://api.github.com/repos/org/repo/contents/path?ref=branch: 404 Not Found []"),
+			expectedErr: errors.New("File path not found for org org in repository repo"),
 		},
 	}
 
