@@ -26,4 +26,3 @@ func main() {
 	config := settings.NewDefaultSettings()
 	dinghy.Start(log, d, &config)
 }
-
