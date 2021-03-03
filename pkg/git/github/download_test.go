@@ -154,16 +154,16 @@ func TestDownload(t *testing.T) {
 		path        string
 		branch      string
 		fs          *FileService
-		expected    string
+		contains    string
 		expectedErr error
 	}{
 		"success": {
-			org:    "org",
-			repo:   "repo",
-			path:   "path",
-			branch: "branch",
+			org:    "armory",
+			repo:   "dinghy",
+			path:   "example/dinghyfile",
+			branch: "master",
 			fs: &FileService{
-				GitHub: &GitHubTest{contents: "file contents"},
+				GitHub: &GitHubTest{endpoint: "https://api.github.com", contents: "file contents"},
 				Logger: log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
 					log.SystemLogKey: {
 						Logger:         logrus.New(),
@@ -171,7 +171,7 @@ func TestDownload(t *testing.T) {
 					},
 				}},
 			},
-			expected:    "file contents",
+			contains:    "dinghy",
 			expectedErr: nil,
 		},
 		"error": {
@@ -181,6 +181,7 @@ func TestDownload(t *testing.T) {
 			branch: "branch",
 			fs: &FileService{
 				GitHub: &GitHubTest{
+					endpoint: "https://api.github.com",
 					contents: "",
 					err:      errors.New("fail"),
 				},
@@ -191,15 +192,15 @@ func TestDownload(t *testing.T) {
 					},
 				}},
 			},
-			expected:    "",
-			expectedErr: errors.New("fail"),
+			contains:    "",
+			expectedErr: errors.New("GET https://api.github.com/repos/org/repo/contents/path?ref=branch: 404 Not Found []"),
 		},
 	}
 
 	for desc, tc := range testCases {
 		t.Run(desc, func(t *testing.T) {
 			actual, err := tc.fs.Download(tc.org, tc.repo, tc.path, tc.branch)
-			assert.Equal(t, tc.expected, actual)
+			assert.Contains(t, actual, tc.contains)
 			if tc.expectedErr == nil {
 				assert.Equal(t, tc.expectedErr, err)
 			} else {
@@ -208,7 +209,7 @@ func TestDownload(t *testing.T) {
 
 			// test caching
 			v := tc.fs.cache.Get(tc.fs.EncodeURL("org", "repo", "path", "branch"))
-			assert.Equal(t, tc.expected, v)
+			assert.Contains(t, tc.contains, v)
 		})
 	}
 }
@@ -236,25 +237,6 @@ func TestMasterDownloadFailsAndTriesMain(t *testing.T) {
 	fs.Download("org", " repo", "path", "master")
 }
 
-func TestDownloadContents(t *testing.T) {
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	logger := mock.NewMockFieldLogger(ctrl)
-
-	fs := &FileService{
-		GitHub: &GitHubTest{endpoint: "https://api.github.com", contents: "", err: errors.New("fail")},
-		Logger: log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
-			log.SystemLogKey: {
-				Logger:         logger,
-				LogEventBuffer: &bytes.Buffer{},
-			},
-		}},
-	}
-
-	_, _ = fs.DownloadContents("armory", "dinghy", "example/dinghyfile", "master")
-}
 func stringToSlice(args ...interface{}) []interface{} {
 	return args
 }
