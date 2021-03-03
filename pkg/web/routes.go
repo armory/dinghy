@@ -168,7 +168,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	fileService["master"]["dinghyfile"] = buf.String()
 	wa.Logger.Infof("Received payload: %s", fileService["master"]["dinghyfile"])
 
-	if err := builder.ProcessDinghyfile("", "", "dinghyfile", ""); err != nil {
+	if _, err := builder.ProcessDinghyfile("", "", "dinghyfile", ""); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 	}
 }
@@ -509,7 +509,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 // =========
 
 // ProcessPush processes a push using a pipeline builder
-func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
+func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) (string, error) {
 	// Ensure dinghyfile was changed.
 	if !p.ContainsFile(wa.Config.DinghyFilename) {
 		b.Logger.Infof("Push does not include %s, skipping.", wa.Config.DinghyFilename)
@@ -517,7 +517,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 		if errstat == nil && status == "" {
 			p.SetCommitStatus(git.StatusSuccess, fmt.Sprintf("No changes in %v.", wa.Config.DinghyFilename))
 		}
-		return nil
+		return "", nil
 	}
 
 	b.Logger.Info("Dinghyfile found in commit for repo " + p.Repo())
@@ -525,11 +525,13 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 	// Set commit status to the pending yellow dot.
 	p.SetCommitStatus(git.StatusPending, git.DefaultMessagesByBuilderAction[b.Action][git.StatusPending])
 
+	var dinghyfilesRendered bytes.Buffer
 	for _, filePath := range p.Files() {
 		components := strings.Split(filePath, "/")
 		if components[len(components)-1] == wa.Config.DinghyFilename {
 			// Process the dinghyfile.
-			err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath, p.Branch())
+			dinghyRendered, err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath, p.Branch())
+			dinghyfilesRendered.WriteString(dinghyRendered)
 			// Set commit status based on result of processing.
 			if err != nil {
 				if err == dinghyfile.ErrMalformedJSON {
@@ -539,12 +541,12 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) error {
 					b.Logger.Errorf("Error processing Dinghyfile: %s", err.Error())
 					p.SetCommitStatus(git.StatusError, fmt.Sprintf("%s", err.Error()))
 				}
-				return err
+				return dinghyfilesRendered.String(), err
 			}
 			p.SetCommitStatus(git.StatusSuccess, git.DefaultMessagesByBuilderAction[b.Action][git.StatusSuccess])
 		}
 	}
-	return nil
+	return dinghyfilesRendered.String(), nil
 }
 
 // TODO: this func should return an error and allow the handlers to return the http response. Additionally,
@@ -605,16 +607,16 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 
 	// Process the push.
 	dinghyLog.Info("Processing Push")
-	err := wa.ProcessPush(p, builder)
+	dinghyfilesRendered, err := wa.ProcessPush(p, builder)
 	if err == dinghyfile.ErrMalformedJSON {
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
 		dinghyLog.Errorf("ProcessPush Failed (malformed JSON): %s", err.Error())
-		saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest})
+		saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
 		return
 	} else if err != nil {
 		dinghyLog.Errorf("ProcessPush Failed (other): %s", err.Error())
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
-		saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest})
+		saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
 		return
 	}
 
@@ -634,7 +636,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 				}
 				p.SetCommitStatus(git.StatusError, "Rebuilding dependent dinghyfiles Failed")
 				dinghyLog.Errorf("RebuildModuleRoots Failed: %s", err.Error())
-				saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest})
+				saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
 				return
 			}
 		}
@@ -645,7 +647,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	// TODO: If a template repo is having files not related with dinghy an event will be saved
 	if p.Repo() == wa.Config.TemplateRepo {
 		if len(p.Files()) > 0 {
-			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest})
+			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
 		}
 	} else {
 		dinghyfiles := []string{}
@@ -655,7 +657,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 			}
 		}
 		if len(dinghyfiles) > 0 {
-			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), Files: dinghyfiles, PullRequest: pullRequest})
+			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), Files: dinghyfiles, PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
 		}
 	}
 	w.Write([]byte(`{"status":"accepted"}`))
