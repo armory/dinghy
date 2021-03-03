@@ -37,13 +37,21 @@ type GitHubFileNotFoundErr struct {
 }
 
 func IsGitHubFileNotFoundErr(errString string) bool {
-	pattern := `No file named .* found in .*`
-	matched, err := regexp.Match(pattern, []byte(errString))
-	if err != nil {
-		// TODO:  We should probably figure out how to log/return any errors...
-		return false
+	patterns := []string{
+		`No file named .* found in .*`,
+		`Not Found`,
 	}
-	return matched
+	for _, pattern := range patterns {
+		matched, err := regexp.Match(pattern, []byte(errString))
+		if err != nil {
+			// TODO:  We should probably figure out how to log/return any errors...
+			return false
+		}
+		if matched {
+			return matched
+		}
+	}
+	return false
 }
 
 func (e *GitHubFileNotFoundErr) Error() string {

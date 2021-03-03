@@ -19,6 +19,7 @@ package github
 type GitHubTest struct {
 	contents string
 	endpoint string
+	token    string
 	err      error
 }
 
@@ -32,4 +33,8 @@ func (g *GitHubTest) CreateStatus(status *Status, org, repo, ref string) error {
 
 func (g *GitHubTest) GetEndpoint() string {
 	return g.endpoint
+}
+
+func (g *GitHubTest) GetToken() string {
+	return g.token
 }

@@ -222,9 +222,10 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	fileService := github.FileService{GitHub: &gh, Logger: dinghyLog}
 
 	var pullRequestUrl string
-	pullRequest, err := gh.GetPullRequest(p.Org(), p.Repo(), p.Branch(), gh.GetShaFromRawData(body))
-	if pullRequest != nil {
-		pullRequestUrl = pullRequest.GetHTMLURL()
+	if pullRequest, err := gh.GetPullRequest(p.Org(), p.Repo(), p.Branch(), gh.GetShaFromRawData(body)); err == nil {
+		if pullRequest != nil {
+			pullRequestUrl = pullRequest.GetHTMLURL()
+		}
 	}
 
 	wa.buildPipelines(&p, body, &fileService, w, dinghyLog, pullRequestUrl)

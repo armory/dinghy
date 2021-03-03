@@ -35,6 +35,7 @@ type GitHubClient interface {
 	DownloadContents(string, string, string, string) (string, error)
 	CreateStatus(*Status, string, string, string) error
 	GetEndpoint() string
+	GetToken() string
 }
 
 type Config struct {
@@ -164,4 +165,8 @@ func (g *Config) GetShaFromRawData(rawPushData []byte) string {
 
 func (g *Config) GetEndpoint() string {
 	return g.Endpoint
+}
+
+func (g *Config) GetToken() string {
+	return g.Token
 }
