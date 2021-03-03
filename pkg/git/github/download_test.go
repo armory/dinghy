@@ -19,12 +19,13 @@ package github
 import (
 	"bytes"
 	"errors"
+	"github.com/armory/dinghy/pkg/cache/local"
+	_ "github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/armory/dinghy/pkg/log"
 	"github.com/armory/dinghy/pkg/mock"
 	"github.com/golang/mock/gomock"
 	"testing"
 
-	_ "github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -235,6 +236,100 @@ func TestMasterDownloadFailsAndTriesMain(t *testing.T) {
 	fs.Download("org", " repo", "path", "master")
 }
 
+func TestDownloadContents(t *testing.T) {
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+
+	fs := &FileService{
+		GitHub: &GitHubTest{endpoint: "https://api.github.com", contents: "", err: errors.New("fail")},
+		Logger: log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
+			log.SystemLogKey: {
+				Logger:         logger,
+				LogEventBuffer: &bytes.Buffer{},
+			},
+		}},
+	}
+
+	_, _ = fs.DownloadContents("armory", "dinghy", "example/dinghyfile", "master")
+}
 func stringToSlice(args ...interface{}) []interface{} {
 	return args
+}
+
+func TestFileService_DownloadContents(t *testing.T) {
+	type fields struct {
+		cache  local.Cache
+		GitHub GitHubClient
+		Logger log.DinghyLog
+	}
+	type args struct {
+		org    string
+		repo   string
+		path   string
+		branch string
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		args     args
+		contains string
+		wantErr  bool
+	}{
+		{
+			name: "Content should be downloaded correctly",
+			fields: fields{
+				GitHub: &GitHubTest{endpoint: "https://api.github.com"},
+			},
+			args: args{
+				org:    "armory",
+				repo:   "dinghy",
+				path:   "example/dinghyfile",
+				branch: "master",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Large files should be downloaded correctly",
+			fields: fields{
+				GitHub: &GitHubTest{endpoint: "https://api.github.com"},
+			},
+			args: args{
+				org:    "armory",
+				repo:   "se-pipeline-files",
+				path:   "kubernetesdemo/dinghyfile",
+				branch: "master",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Download should fail, file not exist.",
+			fields: fields{
+				GitHub: &GitHubTest{endpoint: "https://api.github.com"},
+			},
+			args: args{
+				org:    "example",
+				repo:   "test",
+				path:   "dinghyfile",
+				branch: "master",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &FileService{
+				cache:  tt.fields.cache,
+				GitHub: tt.fields.GitHub,
+				Logger: tt.fields.Logger,
+			}
+			_, err := f.DownloadContents(tt.args.org, tt.args.repo, tt.args.path, tt.args.branch)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DownloadContents() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
 }

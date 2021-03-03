@@ -90,7 +90,9 @@ func (f *FileService) DownloadContents(org, repo, path, branch string) (string, 
 	if err != nil {
 		return "", err
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("token %s", f.GitHub.GetToken()))
+	if token := f.GitHub.GetToken(); token != "" {
+		req.Header.Add("Authorization", fmt.Sprintf("token %s", f.GitHub.GetToken()))
+	}
 	req.Header.Add("Accept", "application/vnd.github.v3.raw")
 
 	resp, err := client.Do(req)
