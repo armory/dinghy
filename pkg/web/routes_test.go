@@ -34,7 +34,7 @@ import (
 
 func TestRouterSanity(t *testing.T) {
 	wa := &WebAPI{}
-	wa.Mh=new(NoOpMetricsHandler)
+	wa.MetricsHandler=new(NoOpMetricsHandler)
 	r := wa.Router()
 	assert.Equal(t, "*mux.Router", reflect.TypeOf(r).String())
 }
