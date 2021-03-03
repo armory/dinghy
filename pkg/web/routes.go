@@ -62,6 +62,17 @@ type Push interface {
 	Name() string
 }
 
+type MetricsHandler interface {
+	WrapHandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) (string, func(http.ResponseWriter, *http.Request))
+}
+
+type NoOpMetricsHandler struct {}
+
+func (nom *NoOpMetricsHandler) WrapHandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) (string, func(http.ResponseWriter, *http.Request)) {
+	return pattern, handler
+}
+
+
 type WebAPI struct {
 	Config          *settings.Settings
 	Client          util.PlankClient
@@ -74,6 +85,7 @@ type WebAPI struct {
 	Notifiers       []notifiers.Notifier
 	Parser          dinghyfile.Parser
 	LogEventsClient logevents.LogEventsClient
+	Mh				MetricsHandler
 }
 
 func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger, depreadonly dinghyfile.DependencyManager, clientreadonly util.PlankClient, logeventsClient logevents.LogEventsClient) *WebAPI {
@@ -111,17 +123,17 @@ func (wa *WebAPI) AddNotifier(n notifiers.Notifier) {
 func (wa *WebAPI) Router() *mux.Router {
 	r := mux.NewRouter()
 	r.Handle("/metrics", promhttp.Handler())
-	r.HandleFunc("/", wa.healthcheck)
-	r.HandleFunc("/health", wa.healthcheck)
-	r.HandleFunc("/healthcheck", wa.healthcheck)
-	r.HandleFunc("/v1/logevents", wa.logevents).Methods("GET")
-	r.HandleFunc("/v1/webhooks/github", wa.githubWebhookHandler).Methods("POST")
-	r.HandleFunc("/v1/webhooks/gitlab", wa.gitlabWebhookHandler).Methods("POST")
-	r.HandleFunc("/v1/webhooks/stash", wa.stashWebhookHandler).Methods("POST")
-	r.HandleFunc("/v1/webhooks/bitbucket", wa.bitbucketWebhookHandler).Methods("POST")
+	r.HandleFunc(wa.Mh.WrapHandleFunc("/", wa.healthcheck))
+	r.HandleFunc(wa.Mh.WrapHandleFunc("/health", wa.healthcheck))
+	r.HandleFunc(wa.Mh.WrapHandleFunc("/healthcheck", wa.healthcheck))
+	r.HandleFunc(wa.Mh.WrapHandleFunc("/v1/logevents", wa.logevents)).Methods("GET")
+	r.HandleFunc(wa.Mh.WrapHandleFunc("/v1/webhooks/github", wa.githubWebhookHandler)).Methods("POST")
+	r.HandleFunc(wa.Mh.WrapHandleFunc("/v1/webhooks/gitlab", wa.gitlabWebhookHandler)).Methods("POST")
+	r.HandleFunc(wa.Mh.WrapHandleFunc("/v1/webhooks/stash", wa.stashWebhookHandler)).Methods("POST")
+	r.HandleFunc(wa.Mh.WrapHandleFunc("/v1/webhooks/bitbucket", wa.bitbucketWebhookHandler)).Methods("POST")
 	// all of the bitbucket webhooks come through this one handler, this is being left for backwards compatibility
-	r.HandleFunc("/v1/webhooks/bitbucket-cloud", wa.bitbucketWebhookHandler).Methods("POST")
-	r.HandleFunc("/v1/updatePipeline", wa.manualUpdateHandler).Methods("POST")
+	r.HandleFunc(wa.Mh.WrapHandleFunc("/v1/webhooks/bitbucket-cloud", wa.bitbucketWebhookHandler)).Methods("POST")
+	r.HandleFunc(wa.Mh.WrapHandleFunc("/v1/updatePipeline", wa.manualUpdateHandler)).Methods("POST")
 	r.Use(RequestLoggingMiddleware)
 	return r
 }
