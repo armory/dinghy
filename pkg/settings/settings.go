@@ -12,6 +12,8 @@ import (
 type ExtSettings struct {
 	// Notifiers configurations
 	Notifiers notifierConfig `json:"notifiers,omitempty" yaml:"notifiers"`
+	// Metrics configurations
+	Metrics metricsConfig `json:"metrics,omitempty" yaml:"metrics"`
 	// Dinghy OSS configuration
 	Settings  *settings.Settings
 }
@@ -24,6 +26,14 @@ type notifierConfig struct {
 	Github githubOpts `json:"github,omitempty" yaml:"github"`
 }
 
+type metricsConfig struct {
+	NewRelic newRelicOpts `json:"newRelic,omitempty" yaml:"newRelic"`
+}
+
+type newRelicOpts struct{
+	ApiKey string `json:"apiKey,omitempty" yaml:"apiKey"`
+	ApplicationName string `json:"applicationName,omitempty" yaml:"applicationName"`
+}
 type slackOpts struct {
 	// Enabled flag
 	Enabled string `json:"enabled" yaml:"enabled"`

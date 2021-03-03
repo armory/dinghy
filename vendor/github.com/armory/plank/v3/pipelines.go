@@ -41,6 +41,7 @@ type Pipeline struct {
 	Config               interface{}              `json:"config,omitempty" yaml:"config,omitempty" hcl:"config,omitempty"`
 	UpdateTs             string                   `json:"updateTs" yaml:"updateTs" hcl:"updateTs"`
 	Locked               *PipelineLockType        `json:"locked,omitempty" yaml:"locked,omitempty" hcl:"locked,omitempty"`
+	SpelEvaluator	     string                   `json:"spelEvaluator" yaml:"spelEvaluator" hcl:"spelEvaluator"`
 }
 
 type PipelineLockType struct {

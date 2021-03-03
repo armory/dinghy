@@ -19,7 +19,7 @@ github.com/Masterminds/sprig/v3
 # github.com/armory-io/monitoring v0.0.7
 github.com/armory-io/monitoring/log/formatters
 github.com/armory-io/monitoring/log/hooks
-# github.com/armory/dinghy v1.0.2-0.20210127184351-29122b3cf27a
+# github.com/armory/dinghy v1.0.2-0.20210303223756-fc118ae487b3 => /Users/toddunderwood/armory/oss/dinghy
 github.com/armory/dinghy/cmd
 github.com/armory/dinghy/pkg/cache
 github.com/armory/dinghy/pkg/cache/local
@@ -50,7 +50,7 @@ github.com/armory/go-yaml-tools/pkg/tls
 github.com/armory/go-yaml-tools/pkg/tls/client
 github.com/armory/go-yaml-tools/pkg/tls/server
 github.com/armory/go-yaml-tools/pkg/yaml
-# github.com/armory/plank/v3 v3.4.4
+# github.com/armory/plank/v3 v3.4.5
 github.com/armory/plank/v3
 # github.com/aws/aws-sdk-go v1.30.7
 github.com/aws/aws-sdk-go/aws
@@ -203,6 +203,15 @@ github.com/mitchellh/go-homedir
 github.com/mitchellh/mapstructure
 # github.com/mitchellh/reflectwalk v1.0.0
 github.com/mitchellh/reflectwalk
+# github.com/newrelic/go-agent/v3 v3.10.0
+github.com/newrelic/go-agent/v3/internal
+github.com/newrelic/go-agent/v3/internal/cat
+github.com/newrelic/go-agent/v3/internal/com_newrelic_trace_v1
+github.com/newrelic/go-agent/v3/internal/jsonx
+github.com/newrelic/go-agent/v3/internal/logger
+github.com/newrelic/go-agent/v3/internal/sysinfo
+github.com/newrelic/go-agent/v3/internal/utilization
+github.com/newrelic/go-agent/v3/newrelic
 # github.com/pierrec/lz4 v2.5.0+incompatible
 github.com/pierrec/lz4
 github.com/pierrec/lz4/internal/xxh32

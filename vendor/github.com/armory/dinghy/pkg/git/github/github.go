@@ -35,6 +35,7 @@ type GitHubClient interface {
 	DownloadContents(string, string, string, string) (string, error)
 	CreateStatus(*Status, string, string, string) error
 	GetEndpoint() string
+	GetToken() string
 }
 
 type Config struct {
@@ -137,8 +138,11 @@ func (g *Config) GetPullRequest(org, repo, ref, sha string) (*github.PullRequest
 	if err != nil {
 		return nil, err
 	}
-
-	return pullRequests[0], nil
+	if len(pullRequests) > 0 {
+		return pullRequests[0], nil
+	} else {
+		return nil, nil
+	}
 }
 
 func (g *Config) GetShaFromRawData(rawPushData []byte) string {
@@ -161,4 +165,8 @@ func (g *Config) GetShaFromRawData(rawPushData []byte) string {
 
 func (g *Config) GetEndpoint() string {
 	return g.Endpoint
+}
+
+func (g *Config) GetToken() string {
+	return g.Token
 }

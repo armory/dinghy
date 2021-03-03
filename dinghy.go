@@ -19,18 +19,28 @@ package main
 import (
 	"fmt"
 	dinghy_hcl "github.com/armory-io/dinghy/pkg/parsers/hcl"
+	"net/http"
 	"os"
 	"os/exec"
 
+	"github.com/armory-io/dinghy/pkg/notifiers"
 	// Open Core Dinghy
 	dinghy_yaml "github.com/armory-io/dinghy/pkg/parsers/yaml"
-	dinghy "github.com/armory/dinghy/cmd"
-
-	"github.com/armory-io/dinghy/pkg/notifiers"
 	"github.com/armory-io/dinghy/pkg/settings"
+	dinghy "github.com/armory/dinghy/cmd"
 	settings_dinghy "github.com/armory/dinghy/pkg/settings"
+	"github.com/armory/dinghy/pkg/web"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	logr "github.com/sirupsen/logrus"
 )
+
+type NewRelicMetricsHandler struct {
+	app *newrelic.Application
+}
+
+func (nrm NewRelicMetricsHandler) WrapHandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) (string, func(http.ResponseWriter, *http.Request)) {
+	return newrelic.WrapHandleFunc(nrm.app, pattern, handler)
+}
 
 func main() {
 	// Load default settings and execute liquibase script
@@ -55,7 +65,33 @@ func main() {
 	} else {
 		log.Info("Github notifications disabled")
 	}
-
+	var app *newrelic.Application
+	if moreConfig.Metrics.NewRelic.ApiKey != "" {
+		if moreConfig.Metrics.NewRelic.ApplicationName == "" {
+			log.Error("An NewRelic application name must be pecified")
+		}
+		app, err = newrelic.NewApplication(
+			// Name your application
+			newrelic.ConfigAppName(moreConfig.Metrics.NewRelic.ApplicationName),
+			// Fill in your New Relic license key
+			newrelic.ConfigLicense(moreConfig.Metrics.NewRelic.ApiKey),
+			// Add logging:
+			newrelic.ConfigDebugLogger(os.Stdout),
+			// Optional: add additional changes to your configuration via a config function:
+			func(cfg *newrelic.Config) {
+				cfg.CustomInsightsEvents.Enabled = false
+			},
+		)
+		// If an application could not be created then err will reveal why.
+		if err != nil {
+			fmt.Println("unable to create New Relic Application", err)
+		}
+		var mh NewRelicMetricsHandler
+		mh.app = app
+		api.MetricsHandler = mh
+	} else {
+		api.MetricsHandler = new(web.NoOpMetricsHandler)
+	}
 	switch moreConfig.Settings.ParserFormat {
 	case "yaml":
 		log.Info("Setting Dinghyfile parser to YAML")
@@ -70,7 +106,6 @@ func main() {
 	api.Client.EnableArmoryEndpoints()
 	dinghy.Start(log, api, api.Config)
 }
-
 
 func executeLiquibase(settings *settings_dinghy.Settings) {
 	log := logr.New()
@@ -95,14 +130,14 @@ func executeLiquibase(settings *settings_dinghy.Settings) {
 			cmd, err := exec.Command("/liquibase/liquibase-upgrade.sh", settings.SQL.BaseUrl,
 				settings.SQL.DatabaseName, settings.SQL.User, settings.SQL.Password).CombinedOutput()
 			if err != nil {
-				fmt.Fprintf(os.Stdout,"cmd output: %v", string(cmd))
-				fmt.Fprintf(os.Stdout,"Execution of /liquibase/liquibase-upgrade.sh failed: %v", err)
+				fmt.Fprintf(os.Stdout, "cmd output: %v", string(cmd))
+				fmt.Fprintf(os.Stdout, "Execution of /liquibase/liquibase-upgrade.sh failed: %v", err)
 				os.Exit(1)
 			}
 			fmt.Fprintf(os.Stdout, "Execution of /liquibase/liquibase-upgrade.sh succeeded: %v", string(cmd))
 
 		} else {
-			fmt.Fprintf(os.Stdout,"Something failed reading /liquibase/liquibase-upgrade.sh - %v", err)
+			fmt.Fprintf(os.Stdout, "Something failed reading /liquibase/liquibase-upgrade.sh - %v", err)
 			os.Exit(1)
 		}
 	}
