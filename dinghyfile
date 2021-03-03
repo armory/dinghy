@@ -1,39 +1,69 @@
 {
-  "application": "dinghy",
-  "pipelines": [
-    {
-      "application": "dinghy",
-      "index": 2,
-      "keepWaitingPipelines": false,
-      "limitConcurrent": true,
-      "name": "Simple",
-      "stages": [
-        {
-          "name": "Wait",
-          "refId": "1",
-          "requisiteStageRefIds": [],
-          "type": "wait",
-          "waitTime": 60
-        }
-      ],
-      "triggers": []
-    },
-    {
-      "application": "dinghy",
-      "index": 3,
-      "keepWaitingPipelines": false,
-      "limitConcurrent": true,
-      "name": "Made By Dinghy",
-      "stages": [
-        {
-          "name": "Wait",
-          "refId": "1",
-          "requisiteStageRefIds": [],
-          "type": "wait",
-          "waitTime": 60
-        }
-      ],
-      "triggers": []
-    }
-  ]
+   "application":"dinghy",
+   "pipelines":[
+      {
+         "application":"dinghy",
+         "name":"Dinghy Infrastructure Provisioning",
+         "description":"<img src=\"https://media.giphy.com/media/VDMDnHvgwBGNN58UXN/giphy.gif\" />",
+         "keepWaitingPipelines":false,
+         "limitConcurrent":true,
+         "parameterConfig":[
+            {
+               "default":"staging",
+               "description":"Environment",
+               "hasOptions":true,
+               "label":"Environment",
+               "name":"environment",
+               "options":[
+                  {
+                     "value":"staging"
+                  },
+                  {
+                     "value":"production"
+                  }
+               ],
+               "pinned":true,
+               "required":true
+            }
+         ],
+         "stages":[
+            {
+               "action":"apply",
+               "artifacts":[
+                  {
+                     "account":"gitrepo-armory",
+                     "artifact":{
+                        "artifactAccount":"gitrepo-armory",
+                        "customKind":true,
+                        "id":"8d9af425-997d-4b1a-9974-a5908105dcfe",
+                        "name":"dinghy",
+                        "reference":"https://github.com/armory-io/dinghy.git",
+                        "type":"git/repo",
+                        "version":"master"
+                     }
+                  }
+               ],
+               "dir":"infrastructure",
+               "name":"Infrastructure Configuration",
+               "overrides":{
+
+               },
+               "profile":"",
+               "refId":"1",
+               "requisiteStageRefIds":[
+
+               ],
+               "targets":[
+
+               ],
+               "terraformVersion":"0.14.2",
+               "type":"terraform",
+               "workspace":"${ parameters.environment }"
+            }
+         ],
+         "triggers":[
+
+         ]
+      }
+   ]
 }

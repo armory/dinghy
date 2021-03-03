@@ -14,3 +14,5 @@ coveragereport.txt
 # Build cruft
 /dinghy
 .armory-dependencies
+
+infrastructure/.terraform
