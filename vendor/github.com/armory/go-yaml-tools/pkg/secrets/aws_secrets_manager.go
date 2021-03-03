@@ -73,7 +73,7 @@ func (a *AwsSecretsManagerDecrypter) parse(params string) error {
 		return fmt.Errorf(GenericMalformedKeyError)
 	}
 	for _, entry := range entries {
-		kvPair := strings.Split(entry, ":")
+		kvPair := strings.SplitN(entry, ":", 2)
 		if len(kvPair) != 2 {
 			return fmt.Errorf(GenericMalformedKeyError)
 		}
