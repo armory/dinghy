@@ -19,12 +19,13 @@ package github
 import (
 	"bytes"
 	"errors"
+	"github.com/armory/dinghy/pkg/cache/local"
+	_ "github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/armory/dinghy/pkg/log"
 	"github.com/armory/dinghy/pkg/mock"
 	"github.com/golang/mock/gomock"
 	"testing"
 
-	_ "github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -153,16 +154,16 @@ func TestDownload(t *testing.T) {
 		path        string
 		branch      string
 		fs          *FileService
-		expected    string
+		contains    string
 		expectedErr error
 	}{
 		"success": {
-			org:    "org",
-			repo:   "repo",
-			path:   "path",
-			branch: "branch",
+			org:    "armory",
+			repo:   "dinghy",
+			path:   "example/dinghyfile",
+			branch: "master",
 			fs: &FileService{
-				GitHub: &GitHubTest{contents: "file contents"},
+				GitHub: &GitHubTest{endpoint: "https://api.github.com", contents: "file contents"},
 				Logger: log.DinghyLogs{Logs: map[string]log.DinghyLogStruct{
 					log.SystemLogKey: {
 						Logger:         logrus.New(),
@@ -170,7 +171,7 @@ func TestDownload(t *testing.T) {
 					},
 				}},
 			},
-			expected:    "file contents",
+			contains:    "dinghy",
 			expectedErr: nil,
 		},
 		"error": {
@@ -180,6 +181,7 @@ func TestDownload(t *testing.T) {
 			branch: "branch",
 			fs: &FileService{
 				GitHub: &GitHubTest{
+					endpoint: "https://api.github.com",
 					contents: "",
 					err:      errors.New("fail"),
 				},
@@ -190,15 +192,15 @@ func TestDownload(t *testing.T) {
 					},
 				}},
 			},
-			expected:    "",
-			expectedErr: errors.New("fail"),
+			contains:    "",
+			expectedErr: errors.New("File path not found for org org in repository repo"),
 		},
 	}
 
 	for desc, tc := range testCases {
 		t.Run(desc, func(t *testing.T) {
 			actual, err := tc.fs.Download(tc.org, tc.repo, tc.path, tc.branch)
-			assert.Equal(t, tc.expected, actual)
+			assert.Contains(t, actual, tc.contains)
 			if tc.expectedErr == nil {
 				assert.Equal(t, tc.expectedErr, err)
 			} else {
@@ -207,7 +209,7 @@ func TestDownload(t *testing.T) {
 
 			// test caching
 			v := tc.fs.cache.Get(tc.fs.EncodeURL("org", "repo", "path", "branch"))
-			assert.Equal(t, tc.expected, v)
+			assert.Contains(t, tc.contains, v)
 		})
 	}
 }
@@ -237,4 +239,79 @@ func TestMasterDownloadFailsAndTriesMain(t *testing.T) {
 
 func stringToSlice(args ...interface{}) []interface{} {
 	return args
+}
+
+func TestFileService_DownloadContents(t *testing.T) {
+	type fields struct {
+		cache  local.Cache
+		GitHub GitHubClient
+		Logger log.DinghyLog
+	}
+	type args struct {
+		org    string
+		repo   string
+		path   string
+		branch string
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		args     args
+		contains string
+		wantErr  bool
+	}{
+		{
+			name: "Content should be downloaded correctly",
+			fields: fields{
+				GitHub: &GitHubTest{endpoint: "https://api.github.com"},
+			},
+			args: args{
+				org:    "armory",
+				repo:   "dinghy",
+				path:   "example/dinghyfile",
+				branch: "master",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Large files should be downloaded correctly",
+			fields: fields{
+				GitHub: &GitHubTest{endpoint: "https://api.github.com"},
+			},
+			args: args{
+				org:    "armory",
+				repo:   "se-pipeline-files",
+				path:   "kubernetesdemo/dinghyfile",
+				branch: "master",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Download should fail, file not exist.",
+			fields: fields{
+				GitHub: &GitHubTest{endpoint: "https://api.github.com"},
+			},
+			args: args{
+				org:    "example",
+				repo:   "test",
+				path:   "dinghyfile",
+				branch: "master",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &FileService{
+				cache:  tt.fields.cache,
+				GitHub: tt.fields.GitHub,
+				Logger: tt.fields.Logger,
+			}
+			_, err := f.DownloadContents(tt.args.org, tt.args.repo, tt.args.path, tt.args.branch)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DownloadContents() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
 }
