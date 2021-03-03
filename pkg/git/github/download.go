@@ -17,9 +17,12 @@
 package github
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/armory/dinghy/pkg/cache/local"
 	"github.com/armory/dinghy/pkg/log"
+	"github.com/google/go-github/v33/github"
+	"net/http"
 	"regexp"
 	"strings"
 )
@@ -58,7 +61,7 @@ func (f *FileService) Download(org, repo, path, branch string) (string, error) {
 }
 
 func (f *FileService) DownloadFile(org, repo, path, branch string) (string, error) {
-	// The endpoint used by the Github lib (https://raw.githubusercontent.com/) does not
+	// The endpoint used by Github does not
 	// accept branch names such as refs/heads/master, but only the name of the branch.
 	// Need to strip that if it exists. Can't use split here either, because '/' is allowed
 	// in branch names
@@ -70,7 +73,7 @@ func (f *FileService) DownloadFile(org, repo, path, branch string) (string, erro
 		return body, nil
 	}
 
-	contents, err := f.GitHub.DownloadContents(org, repo, path, branch)
+	contents, err := f.DownloadContents(org, repo, path, branch)
 	if err != nil {
 		f.Logger.Error(err)
 		return "", err
@@ -79,6 +82,38 @@ func (f *FileService) DownloadFile(org, repo, path, branch string) (string, erro
 	f.cache.Add(url, contents)
 
 	return contents, nil
+}
+
+func (f *FileService) DownloadContents(org, repo, path, branch string) (string, error) {
+	client := http.DefaultClient
+	req, err := http.NewRequest("GET", f.EncodeURL(org, repo, path, branch), nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("token %s", f.GitHub.GetToken()))
+	req.Header.Add("Accept", "application/vnd.github.v3.raw")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	//check GitHub response
+	if err = github.CheckResponse(resp); err != nil {
+		return "", err
+	}
+
+	b := new(bytes.Buffer)
+
+	if _, err = b.ReadFrom(resp.Body); err != nil {
+		return "", err
+	}
+
+	if err = resp.Body.Close(); err != nil {
+		return "", err
+	}
+
+	return b.String(), nil
 }
 
 // EncodeURL returns the git url for a given org, repo, path and branch
