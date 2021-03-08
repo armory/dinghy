@@ -19,7 +19,7 @@ github.com/Masterminds/sprig/v3
 # github.com/armory-io/monitoring v0.0.7
 github.com/armory-io/monitoring/log/formatters
 github.com/armory-io/monitoring/log/hooks
-# github.com/armory/dinghy v1.0.2-0.20210303223756-fc118ae487b3 => /Users/toddunderwood/armory/oss/dinghy
+# github.com/armory/dinghy v1.0.2-0.20210303223756-fc118ae487b3
 github.com/armory/dinghy/cmd
 github.com/armory/dinghy/pkg/cache
 github.com/armory/dinghy/pkg/cache/local
@@ -43,7 +43,7 @@ github.com/armory/dinghy/pkg/preprocessor
 github.com/armory/dinghy/pkg/settings
 github.com/armory/dinghy/pkg/util
 github.com/armory/dinghy/pkg/web
-# github.com/armory/go-yaml-tools v0.0.0-20200603151141-b037d3988c49
+# github.com/armory/go-yaml-tools v0.0.2
 github.com/armory/go-yaml-tools/pkg/secrets
 github.com/armory/go-yaml-tools/pkg/spring
 github.com/armory/go-yaml-tools/pkg/tls
@@ -105,6 +105,8 @@ github.com/beorn7/perks/quantile
 github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/fsnotify/fsnotify v1.4.9
+github.com/fsnotify/fsnotify
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
 # github.com/go-redis/redis v6.15.7+incompatible
@@ -297,7 +299,7 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1
+# golang.org/x/sys v0.0.0-20200805065543-0cf7623e9dbd
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows

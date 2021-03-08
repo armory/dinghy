@@ -1,28 +1,36 @@
 package spring
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/fsnotify/fsnotify"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
+	yamlParse "gopkg.in/yaml.v2"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/afero"
-	yamlParse "gopkg.in/yaml.v2"
-
 	"github.com/armory/go-yaml-tools/pkg/yaml"
 )
 
-var defaultConfigDirs = buildConfigDirs()
-
-var defaultProfiles = []string{
-	"armory",
-	"local",
+type springEnv struct {
+	defaultConfigDirs []string
+	defaultProfiles   []string
+	configDir         string
+	envMap            map[string]string
 }
 
-func buildConfigDirs() []string {
+func (s *springEnv) initialize() {
+	s.buildConfigDirs()
+	s.defaultProfiles = []string{"armory", "local"}
+	s.configDir = s.configDirectory()
+	s.envMap = keyPairToMap(os.Environ())
+}
+
+func (s *springEnv) buildConfigDirs() {
 	paths := []string{
 		// The order matters.
 		"/home/spinnaker/config",
@@ -33,34 +41,58 @@ func buildConfigDirs() []string {
 	if err == nil {
 		paths = append(paths, filepath.Join(usr.HomeDir, ".spinnaker"))
 	}
-	return paths
+	s.defaultConfigDirs = paths
+}
+
+func (s *springEnv) configDirectory() string {
+	for _, dir := range s.defaultConfigDirs {
+		if _, err := fs.Stat(dir); err == nil {
+			return dir
+		}
+	}
+	return ""
+}
+
+func (s *springEnv) profiles() []string {
+	p := os.Getenv("SPRING_PROFILES_ACTIVE")
+	if len(p) > 0 {
+		return strings.Split(p, ",")
+	}
+	return s.defaultProfiles
 }
 
 // Use afero to create an abstraction layer between our package and the
 // OS's file system. This will allow us to test our package.
 var fs = afero.NewOsFs()
 
-func loadConfig(configFile string) map[interface{}]interface{} {
+func loadConfig(configFile string) (map[interface{}]interface{}, error) {
 	s := map[interface{}]interface{}{}
 	if _, err := fs.Stat(configFile); err == nil {
 		bytes, err := afero.ReadFile(fs, configFile)
 		if err != nil {
 			log.Errorf("Unable to open config file %s: %v", configFile, err)
-			return nil
+			return nil, nil
 		}
 		if err = yamlParse.Unmarshal(bytes, &s); err != nil {
-			log.Errorf("Unable to parse config file %s: %v", configFile, err)
-			return s
+			return s, fmt.Errorf("unable to parse config file %s: %w", configFile, err)
 		}
 		log.Info("Configured with settings from file: ", configFile)
 	} else {
-		log.Info("Config file ", configFile, " not present; falling back to default settings")
+		logFsStatError(err, "Config file ", configFile, " not present; falling back to default settings")
 	}
-	return s
+	return s, nil
+}
+
+func logFsStatError(err error, args ...interface{}) {
+	if os.IsNotExist(err) {
+		log.WithError(err).Debug(args...)
+		return
+	}
+	log.WithError(err).Error(args...)
 }
 
 //LoadProperties tries to do what spring properties manages by loading files
-//using the right precendence and returning a merged map that contains all the
+//using the right precedence and returning a merged map that contains all the
 //keys and their values have been substituted for the correct value
 //
 //Usage:
@@ -77,7 +109,77 @@ func LoadProperties(propNames []string, configDir string, envKeyPairs []string) 
 	envMap := keyPairToMap(envKeyPairs)
 	profStr := envMap["SPRING_PROFILES_ACTIVE"]
 	profs := strings.Split(profStr, ",")
-	return loadProperties(propNames, configDir, profs, envMap)
+	config, _, err := loadProperties(propNames, configDir, profs, envMap)
+	return config, err
+}
+
+// Similar to LoadDefault but provides a callback function that will be invoked when a configuration change
+// is detected. Parsing errors are also provided to the callback, so check for these as well.
+// This works by keeping track of files parsed during the initial parsing, it means that files will only
+// be tracked if they contain something. e.g. you cannot dynamically add a profile.
+// Environment variables are frozen on the initial run. This is by design
+func LoadDefaultDynamic(ctx context.Context, propNames []string, updateFn func(map[string]interface{}, error)) (map[string]interface{}, error) {
+	env := springEnv{}
+	env.initialize()
+	return loadDefaultDynamicWithEnv(env, ctx, propNames, updateFn)
+}
+
+func loadDefaultDynamicWithEnv(env springEnv, ctx context.Context, propNames []string, updateFn func(map[string]interface{}, error)) (map[string]interface{}, error) {
+	if env.configDir == "" {
+		return nil, errors.New("could not find config directory")
+	}
+
+	config, files, err := loadProperties(propNames, env.configDir, env.profiles(), env.envMap)
+	if len(files) > 0 {
+		go watchConfigFiles(ctx, files, env.envMap, updateFn)
+	}
+	return config, err
+}
+
+func watchConfigFiles(ctx context.Context, files []string, envMap map[string]string, updateFn func(map[string]interface{}, error)) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.WithError(err).Errorf("unable to watch any file")
+	}
+	defer watcher.Close()
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					log.Debugf("file %s modified, rebuilding config", event.Name)
+					var cfgs []map[interface{}]interface{}
+					for _, f := range files {
+						config, err := loadConfig(f)
+						if err != nil {
+							log.Errorf("file %s had error %s", f, err.Error())
+						}
+						cfgs = append(cfgs, config)
+					}
+					m, err := yaml.Resolve(cfgs, envMap)
+					updateFn(m, err)
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Println("error:", err)
+			}
+		}
+	}()
+
+	for _, f := range files {
+		if err = watcher.Add(f); err != nil {
+			log.WithError(err).Errorf("unable to watch file changes for %s", f)
+		}
+	}
+	<-ctx.Done()
 }
 
 // LoadDefault will use the following defaults:
@@ -95,13 +197,17 @@ func LoadProperties(propNames []string, configDir string, envKeyPairs []string) 
 //
 // Specify propNames in the same way as LoadProperties().
 func LoadDefault(propNames []string) (map[string]interface{}, error) {
-	profs := profiles()
-	dir := configDirectory()
-	if dir == "" {
+	env := springEnv{}
+	env.initialize()
+	return loadDefaultWithEnv(env, propNames)
+}
+
+func loadDefaultWithEnv(env springEnv, propNames []string) (map[string]interface{}, error) {
+	if env.configDir == "" {
 		return nil, errors.New("could not find config directory")
 	}
-	env := keyPairToMap(os.Environ())
-	return loadProperties(propNames, dir, profs, env)
+	config, _, err := loadProperties(propNames, env.configDir, env.profiles(), env.envMap)
+	return config, err
 }
 
 func keyPairToMap(keyPairs []string) map[string]string {
@@ -113,38 +219,21 @@ func keyPairToMap(keyPairs []string) map[string]string {
 	return m
 }
 
-func profiles() []string {
-	s := os.Getenv("SPRING_PROFILES_ACTIVE")
-	if len(s) > 0 {
-		return strings.Split(s, ",")
-	}
-	return defaultProfiles
-}
-
-func configDirectory() string {
-	for _, dir := range defaultConfigDirs {
-		if _, err := fs.Stat(dir); err == nil {
-			return dir
-		}
-	}
-	return ""
-}
-
-func loadProperties(propNames []string, confDir string, profiles []string, envMap map[string]string) (map[string]interface{}, error) {
-	propMaps := []map[interface{}]interface{}{}
+func loadProperties(propNames []string, confDir string, profiles []string, envMap map[string]string) (map[string]interface{}, []string, error) {
+	var propMaps []map[interface{}]interface{}
+	var filePaths []string
 	//first load the main props, i.e. gate.yml/yaml with no profile extensions
 	for _, prop := range propNames {
 		// yaml is "official"
-		filePath := fmt.Sprintf("%s/%s.yaml", confDir, prop)
-		config := loadConfig(filePath)
-
-		// but people also use "yml" too, if we don't get anything let's try this
-		if len(config) == 0 {
-			filePath = fmt.Sprintf("%s/%s.yml", confDir, prop)
-			config = loadConfig(filePath)
+		config, filePath, err := loadPropertyFromFile(fmt.Sprintf("%s/%s", confDir, prop))
+		// file might have been unparsable
+		if err != nil {
+			return nil, filePaths, err
 		}
-
-		propMaps = append(propMaps, config)
+		if len(config) > 0 {
+			propMaps = append(propMaps, config)
+			filePaths = append(filePaths, filePath)
+		}
 	}
 
 	for _, prop := range propNames {
@@ -153,12 +242,34 @@ func loadProperties(propNames []string, confDir string, profiles []string, envMa
 		for i := range profiles {
 			p := profiles[i]
 			pTrim := strings.TrimSpace(p)
-			filePath := fmt.Sprintf("%s/%s-%s.yml", confDir, prop, pTrim)
-			propMaps = append(propMaps, loadConfig(filePath))
+			config, filePath, err := loadPropertyFromFile(fmt.Sprintf("%s/%s-%s", confDir, prop, pTrim))
+			if err != nil {
+				return nil, filePaths, err
+			}
+			if len(config) > 0 {
+				propMaps = append(propMaps, config)
+				filePaths = append(filePaths, filePath)
+			}
 		}
 	}
 	m, err := yaml.Resolve(propMaps, envMap)
-	return m, err
+	return m, filePaths, err
+}
+
+func loadPropertyFromFile(pathPrefix string) (map[interface{}]interface{}, string, error) {
+	filePath := fmt.Sprintf("%s.yaml", pathPrefix)
+	config, err := loadConfig(filePath)
+	if err != nil {
+		return config, filePath, err
+	}
+	if len(config) > 0 {
+		return config, filePath, nil
+	}
+
+	// but people also use "yml" too, if we don't get anything let's try this
+	filePath = fmt.Sprintf("%s.yml", pathPrefix)
+	config, err = loadConfig(filePath)
+	return config, filePath, err
 }
 
 // Bool is a helper routine that allocates a new bool value
