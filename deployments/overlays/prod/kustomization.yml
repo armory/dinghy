@@ -1,0 +1,4 @@
+resources:
+  - ../../base
+namePrefix: staging-
+namespace: armory-hosted-services-prod

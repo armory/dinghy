@@ -9,6 +9,5 @@ spec:
   - port: 80
     targetPort: 8081
     protocol: TCP
-  type: LoadBalancer
   selector:
     app: dinghy

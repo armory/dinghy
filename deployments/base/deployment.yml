@@ -1,9 +1,12 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: dinghy
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: dinghy
   template:
     metadata:
       labels:
@@ -11,13 +14,10 @@ spec:
     spec:
       containers:
       - name: dinghy
-        image: gcr.io/cloud-armory/dinghy
-        resources:
-          requests:
-            memory: "128M"
-            cpu: "1000m"
+        image: armory-docker-all.jfrog.io/armory/dinghy:${trigger['tag']}
+        imagePullPolicy: Always
         ports:
-        - containerPort: 8081
+          - containerPort: 8081
         livenessProbe:
           httpGet:
             path: /
@@ -30,3 +30,5 @@ spec:
             port: 8081
           initialDelaySeconds: 5
           timeoutSeconds: 2
+      imagePullSecrets:
+        - name: regcred
