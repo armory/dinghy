@@ -139,12 +139,13 @@ func (gn *GithubNotifier) createCommitComment(body, owner, repo, sha string, isE
 		Body: github.String(body),
 	}
 
-	response, _, err := gn.client.Repositories.CreateComment(ctx.Background(), owner, repo, sha, input)
+	comment, response, err := gn.client.Repositories.CreateComment(ctx.Background(), owner, repo, sha, input)
 	if err != nil {
 		return err
 	}
-	if !isError {
-		if _, _, err = gn.client.Reactions.CreateCommentReaction(ctx.Background(), owner, repo, *response.ID, "rocket"); err != nil {
+	// We could see a 400 error and in that case we should not try to react to the comment
+	if !isError && response.StatusCode == 200 {
+		if _, _, err = gn.client.Reactions.CreateCommentReaction(ctx.Background(), owner, repo, *comment.ID, "rocket"); err != nil {
 			return err
 		}
 	}
