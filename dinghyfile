@@ -69,6 +69,9 @@
         "keepWaitingPipelines": false,
         "limitConcurrent": true,
         "spelEvaluator": "v4",
+        "application": "dinghy",
+        "name":"Deploy to Stage",
+        "description":"<img src=\"https://thumbs.gfycat.com/AthleticFluidEft-max-1mb.gif\" />",
         "stages": [
           {
             "expectedArtifacts": [
@@ -143,8 +146,7 @@
             "repository": "armory/dinghy",
             "type": "docker"
           }
-        ],
-        "updateTs": "1615233817485"
+        ]
       }
-       ]
+  ]
 }
