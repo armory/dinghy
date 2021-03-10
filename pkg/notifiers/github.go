@@ -7,8 +7,8 @@ import (
 	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory/plank/v3"
 	"github.com/google/go-github/github"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
-	"log"
 	"math"
 )
 
@@ -109,7 +109,7 @@ func (gn *GithubNotifier) SendSuccess(org, repo, path string, notificationsType 
 	for _, notification := range notifications {
 		err := gn.createCommitComment(notification.Body, notification.Owner, notification.Repo, notification.Sha, false)
 		if err != nil {
-			log.Fatal(err)
+			log.Error(err)
 		}
 	}
 }
@@ -119,7 +119,7 @@ func (gn *GithubNotifier) SendFailure(org, repo, path string, errorDinghy error,
 	for _, notification := range notifications {
 		err := gn.createCommitComment(notification.Body, notification.Owner, notification.Repo, notification.Sha, true)
 		if err != nil {
-			log.Fatal(err)
+			log.Error(err)
 		}
 	}
 }
@@ -144,7 +144,7 @@ func (gn *GithubNotifier) createCommitComment(body, owner, repo, sha string, isE
 		return err
 	}
 	// We could see a 400 error and in that case we should not try to react to the comment
-	if !isError && response.StatusCode == 200 {
+	if !isError && response.StatusCode == 201 {
 		if _, _, err = gn.client.Reactions.CreateCommentReaction(ctx.Background(), owner, repo, *comment.ID, "rocket"); err != nil {
 			return err
 		}
