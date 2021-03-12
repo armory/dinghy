@@ -66,6 +66,61 @@
 
          ]
       },
+      {
+        "application": "dinghy",
+        "name": "Deploy on Merge",
+        "description":"<img src=\"https://media.giphy.com/media/yidUzuMf6DH8cz09zO/giphy.gif\" />",
+        "keepWaitingPipelines": false,
+        "limitConcurrent": true,
+        "stages": [
+          {
+            "application": "dinghy",
+            "failPipeline": true,
+            "isNew": true,
+            "name": "Deploy to Staging",
+            "pipeline": "d07c7a1c-3bb7-4b9f-a00f-d2b4fb387b92",
+            "refId": "1",
+            "requisiteStageRefIds": [],
+            "type": "pipeline",
+            "waitForCompletion": true
+          },
+          {
+            "failPipeline": true,
+            "isNew": true,
+            "judgmentInputs": [],
+            "name": "Approve Deploy to Prod",
+            "notifications": [],
+            "refId": "2",
+            "requisiteStageRefIds": [
+              "1"
+            ],
+            "type": "manualJudgment"
+          },
+          {
+            "application": "dinghy",
+            "failPipeline": true,
+            "isNew": true,
+            "name": "Deploy to Production",
+            "pipeline": "f6b1c79f-452e-4ab9-b453-12c776296d68",
+            "refId": "3",
+            "requisiteStageRefIds": [
+              "2"
+            ],
+            "type": "pipeline",
+            "waitForCompletion": true
+          }
+        ],
+        "triggers": [
+            {
+               "account": "artifactory",
+               "enabled": true,
+               "organization": "armory",
+               "registry": "armory-docker-local.jfrog.io",
+               "repository": "armory/dinghy",
+               "type": "docker"
+            }
+        ]
+      },
       {{ module "dinghy/modules/deploy.dinghy" "environmentName" "staging"}},
       {{ module "dinghy/modules/deploy.dinghy" "environmentName" "prod" }}
   ]
