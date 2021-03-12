@@ -1,5 +1,6 @@
 {
    "application":"dinghy",
+   "globals": {},
    "pipelines":[
       {
          "application":"dinghy",
@@ -65,88 +66,7 @@
 
          ]
       },
-      {
-        "keepWaitingPipelines": false,
-        "limitConcurrent": true,
-        "spelEvaluator": "v4",
-        "application": "dinghy",
-        "name":"Deploy to Stage",
-        "description":"<img src=\"https://thumbs.gfycat.com/AthleticFluidEft-max-1mb.gif\" />",
-        "stages": [
-          {
-            "expectedArtifacts": [
-              {
-                "defaultArtifact": {
-                  "customKind": true,
-                  "id": "fa8d6669-54dd-45d9-ad91-8eab366f1542"
-                },
-                "displayName": "hot-starfish-86",
-                "id": "9fa00adc-bbb7-43bc-9ef0-e2321c91b02b",
-                "matchArtifact": {
-                  "artifactAccount": "embedded-artifact",
-                  "customKind": false,
-                  "id": "7b3abfa8-537c-4f3f-8fcc-29a367444641",
-                  "type": "embedded/base64"
-                },
-                "useDefaultArtifact": false,
-                "usePriorArtifact": false
-              }
-            ],
-            "inputArtifact": {
-              "account": "gitrepo-armory",
-              "artifact": {
-                "artifactAccount": "gitrepo-armory",
-                "customKind": true,
-                "id": "2abf10ab-2cbd-4570-9dce-9a495d0391a7",
-                "reference": "https://github.com/armory-io/dinghy",
-                "type": "git/repo",
-                "version": "master"
-              }
-            },
-            "inputArtifacts": null,
-            "kustomizeFilePath": "deployments/overlays/staging/kustomization.yml",
-            "name": "Bake Staging",
-            "overrides": {},
-            "refId": "1",
-            "requisiteStageRefIds": [],
-            "templateRenderer": "KUSTOMIZE",
-            "type": "bakeManifest"
-          },
-          {
-            "account": "saas-spinnaker-prod",
-            "cloudProvider": "kubernetes",
-            "manifestArtifactId": "9fa00adc-bbb7-43bc-9ef0-e2321c91b02b",
-            "moniker": {
-              "app": "dinghy"
-            },
-            "name": "Deploy staging",
-            "namespaceOverride": "armory-hosted-services-staging",
-            "refId": "2",
-            "requisiteStageRefIds": [
-              "1"
-            ],
-            "skipExpressionEvaluation": false,
-            "source": "artifact",
-            "trafficManagement": {
-              "enabled": false,
-              "options": {
-                "enableTraffic": false,
-                "services": []
-              }
-            },
-            "type": "deployManifest"
-          }
-        ],
-        "triggers": [
-          {
-            "account": "artifactory",
-            "enabled": true,
-            "organization": "armory",
-            "registry": "armory-docker-all.jfrog.io",
-            "repository": "armory/dinghy",
-            "type": "docker"
-          }
-        ]
-      }
+      {{ module "dinghy/modules/deploy.dinghy" "environmentName" "staging"}},
+      {{ module "dinghy/modules/deploy.dinghy" "environmentName" "prod" }}
   ]
 }
