@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: dinghy
-        image: armory-docker-all.jfrog.io/armory/dinghy:${trigger['tag']}
+        image: armory-docker-all.jfrog.io/armory/dinghy:${parameters['tag']}
         imagePullPolicy: Always
         ports:
           - containerPort: 8081
