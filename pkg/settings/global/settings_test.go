@@ -14,7 +14,7 @@
 * limitations under the License.
  */
 
-package lighthouse
+package global
 
 import (
 	"testing"

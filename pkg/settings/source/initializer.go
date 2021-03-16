@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/armory/dinghy/pkg/settings/lighthouse"
+	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/settings/secret"
 	"github.com/armory/go-yaml-tools/pkg/spring"
 	"github.com/imdario/mergo"
@@ -22,9 +22,9 @@ func NewInitialize() *Initialize {
 	return &Initialize{}
 }
 
-func (i *Initialize) Autoconfigure() (*lighthouse.Settings, error) {
+func (i *Initialize) Autoconfigure() (*global.Settings, error) {
 
-	config := lighthouse.NewDefaultSettings()
+	config := global.NewDefaultSettings()
 	springConfig, err := i.loadProfiles()
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (i *Initialize) Autoconfigure() (*lighthouse.Settings, error) {
 	return i.configureSettings(config)
 }
 
-func (i *Initialize) configureSettings(settings lighthouse.Settings) (*lighthouse.Settings, error) {
+func (i *Initialize) configureSettings(settings global.Settings) (*global.Settings, error) {
 
 	// If Github token not passed directly
 	// Required for backwards compatibility
@@ -110,7 +110,7 @@ func (i *Initialize) configureSettings(settings lighthouse.Settings) (*lighthous
 	return &settings, nil
 }
 
-func (i *Initialize) decodeProfilesToSettings(profiles map[string]interface{}, s *lighthouse.Settings) error {
+func (i *Initialize) decodeProfilesToSettings(profiles map[string]interface{}, s *global.Settings) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		WeaklyTypedInput: true,
 		Result:           s,
@@ -121,9 +121,9 @@ func (i *Initialize) decodeProfilesToSettings(profiles map[string]interface{}, s
 	return decoder.Decode(profiles)
 }
 
-func (i *Initialize) loadProfiles() (lighthouse.Settings, error) {
+func (i *Initialize) loadProfiles() (global.Settings, error) {
 	// var s Settings
-	var config lighthouse.Settings
+	var config global.Settings
 	propNames := []string{"spinnaker", "dinghy"}
 	c, err := spring.LoadDefault(propNames)
 	if err != nil {

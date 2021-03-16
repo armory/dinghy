@@ -1,6 +1,6 @@
 package source
 
-import "github.com/armory/dinghy/pkg/settings/lighthouse"
+import "github.com/armory/dinghy/pkg/settings/global"
 
 //go:generate stringer -type=SettingField
 type SettingField int
@@ -42,7 +42,7 @@ const (
 )
 
 type Source interface {
-	Load() (*lighthouse.Settings, error)
+	Load() (*global.Settings, error)
 	GetConfigurationByKey(SettingField) interface{}
 	GetSourceName() string
 }

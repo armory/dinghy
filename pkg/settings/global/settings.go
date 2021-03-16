@@ -15,7 +15,7 @@
  */
 
 // Package settings is a single place to put all of the application settings.
-package lighthouse
+package global
 
 import (
 	"fmt"

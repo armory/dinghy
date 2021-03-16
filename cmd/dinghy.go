@@ -23,7 +23,7 @@ import (
 	"github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/armory/dinghy/pkg/execution"
 	"github.com/armory/dinghy/pkg/logevents"
-	"github.com/armory/dinghy/pkg/settings/lighthouse"
+	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/go-yaml-tools/pkg/tls/server"
 	"net/http"
 	"os"
@@ -46,7 +46,7 @@ import (
 	logr "github.com/sirupsen/logrus"
 )
 
-func newRedisOptions(redisOptions lighthouse.Redis) *redis.Options {
+func newRedisOptions(redisOptions global.Redis) *redis.Options {
 	url := strings.TrimPrefix(redisOptions.BaseURL, "redis://")
 	return &redis.Options{
 		MaxRetries: 5,
@@ -208,7 +208,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 	return log, api
 }
 
-func setupPlankClient(settings *lighthouse.Settings, log *logr.Logger) *plank.Client {
+func setupPlankClient(settings *global.Settings, log *logr.Logger) *plank.Client {
 	var httpClient *http.Client
 	if log.Level == logr.DebugLevel {
 		httpClient = debug.NewInterceptorHttpClient(log, &settings.Http, true)
@@ -228,7 +228,7 @@ func AddUnmarshaller(u dinghyfile.DinghyJsonUnmarshaller, api *web.WebAPI) {
 	api.AddDinghyfileUnmarshaller(u)
 }
 
-func Start(log *logr.Logger, api *web.WebAPI, settings2 *lighthouse.Settings) {
+func Start(log *logr.Logger, api *web.WebAPI, settings2 *global.Settings) {
 	log.Infof("Dinghy starting on %s", settings2.Server.GetAddr())
 	api.MetricsHandler = new(web.NoOpMetricsHandler)
 	if err := server.NewServer(&settings2.Server).Start(api.Router()); err != nil {
@@ -236,7 +236,7 @@ func Start(log *logr.Logger, api *web.WebAPI, settings2 *lighthouse.Settings) {
 	}
 }
 
-func setupRemoteLogging(l *logr.Logger, loggingConfig lighthouse.Logging) error {
+func setupRemoteLogging(l *logr.Logger, loggingConfig global.Logging) error {
 	var hostname string
 	hostname, err := os.Hostname()
 	if err != nil || hostname == "" {

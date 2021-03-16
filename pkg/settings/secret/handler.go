@@ -2,16 +2,16 @@ package secret
 
 import (
 	"context"
-	"github.com/armory/dinghy/pkg/settings/lighthouse"
+	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/go-yaml-tools/pkg/secrets"
 )
 
 type SecretHandler struct {
 }
 
-func NewSecretHandler(s lighthouse.Secrets) (*SecretHandler, error) {
+func NewSecretHandler(s global.Secrets) (*SecretHandler, error) {
 
-	if (lighthouse.Secrets{}) != s {
+	if (global.Secrets{}) != s {
 		if (secrets.VaultConfig{}) != s.Vault {
 			if err := secrets.RegisterVaultConfig(s.Vault); err != nil {
 				return nil, err
@@ -22,7 +22,7 @@ func NewSecretHandler(s lighthouse.Secrets) (*SecretHandler, error) {
 	return &SecretHandler{}, nil
 }
 
-func (sh *SecretHandler) Decrypt(ctx context.Context, config *lighthouse.Settings) error {
+func (sh *SecretHandler) Decrypt(ctx context.Context, config *global.Settings) error {
 	decrypter, err := secrets.NewDecrypter(ctx, config.GitHubToken)
 	if err != nil {
 		return err

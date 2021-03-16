@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/armory/dinghy/pkg/settings/lighthouse"
+	"github.com/armory/dinghy/pkg/settings/global"
 	"net/http"
 
 	cleanhttp "github.com/hashicorp/go-cleanhttp"
@@ -35,7 +35,7 @@ type EventClient interface {
 
 type Client struct {
 	Client   *retryablehttp.Client
-	Settings *lighthouse.Settings
+	Settings *global.Settings
 	Ctx      context.Context
 }
 
@@ -61,7 +61,7 @@ type payload struct {
 	Event   *Event  `json:"content"`
 }
 
-func NewEventClient(ctx context.Context, settings *lighthouse.Settings) *Client {
+func NewEventClient(ctx context.Context, settings *global.Settings) *Client {
 	c := retryablehttp.NewClient()
 	c.HTTPClient.Transport = cleanhttp.DefaultPooledTransport() // reuse the client so we can pipeline stuff
 	return &Client{

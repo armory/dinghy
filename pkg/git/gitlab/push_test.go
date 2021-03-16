@@ -392,7 +392,7 @@ func TestIsMaster(t *testing.T) {
 func TestParseWebhook(t *testing.T) {
 	testCases := map[string]struct {
 		push        *Push
-		settings    *lighthouse.Settings
+		settings    *global.Settings
 		body        []byte
 		expectedErr error
 	}{
@@ -402,7 +402,7 @@ func TestParseWebhook(t *testing.T) {
 					Ref: "refs/heads/master",
 				},
 			},
-			settings: &lighthouse.Settings{
+			settings: &global.Settings{
 				GitLabToken:    "token",
 				GitLabEndpoint: "https://my-endpoint",
 			},

@@ -24,7 +24,7 @@ import (
 	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
 	dinghylog "github.com/armory/dinghy/pkg/log"
 	"github.com/armory/dinghy/pkg/logevents"
-	"github.com/armory/dinghy/pkg/settings/lighthouse"
+	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/settings/source"
 	"io/ioutil"
 	"net/http"
@@ -216,7 +216,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	if enabled {
 		repo := p.Repo()
 		org := p.Org()
-		whvalidations := wa.SourceConfig.GetConfigurationByKey(source.WebhookValidations).([]lighthouse.WebhookValidation)
+		whvalidations := wa.SourceConfig.GetConfigurationByKey(source.WebhookValidations).([]global.WebhookValidation)
 		if whvalidations != nil && len(whvalidations) > 0 {
 			if !validateWebhookSignature(whvalidations, repo, org, provider, body, r, dinghyLog) {
 				saveLogEventError(wa.LogEventsClient, &p, dinghyLog, logevents.LogEvent{RawData: string(body)})
@@ -230,7 +230,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: we're assigning config in two places here, we should refactor this
 	gh := github.Config{Endpoint: wa.SourceConfig.GetConfigurationByKey(source.GithubEndpoint).(string), Token: wa.SourceConfig.GetConfigurationByKey(source.GitHubToken).(string)}
 	p.Config = gh
-	p.DeckBaseURL = wa.SourceConfig.GetConfigurationByKey(source.Deck).(lighthouse.SpinnakerService).BaseURL
+	p.DeckBaseURL = wa.SourceConfig.GetConfigurationByKey(source.Deck).(global.SpinnakerService).BaseURL
 	fileService := github.FileService{GitHub: &gh, Logger: dinghyLog}
 
 	var pullRequestUrl string
@@ -255,8 +255,8 @@ func contains(whvalidations []string, provider string) bool {
 	return false
 }
 
-func validateWebhookSignature(whvalidations []lighthouse.WebhookValidation, repo string, org string, provider string, body []byte, r *http.Request, logger dinghylog.DinghyLog) bool {
-	whcurrentvalidation := lighthouse.WebhookValidation{}
+func validateWebhookSignature(whvalidations []global.WebhookValidation, repo string, org string, provider string, body []byte, r *http.Request, logger dinghylog.DinghyLog) bool {
+	whcurrentvalidation := global.WebhookValidation{}
 	if found, whval := findWebhookValidation(whvalidations, repo, org, provider); found {
 		//If record is found and validation is disabled then just return true
 		if whval.Enabled == false {
@@ -291,7 +291,7 @@ func validateWebhookSignature(whvalidations []lighthouse.WebhookValidation, repo
 	return github.IsValidSignature([]byte(rawPayload), getWebhookSecret(r), whcurrentvalidation.Secret, logger)
 }
 
-func findWebhookValidation(whvalidations []lighthouse.WebhookValidation, repo string, org string, provider string) (bool, *lighthouse.WebhookValidation) {
+func findWebhookValidation(whvalidations []global.WebhookValidation, repo string, org string, provider string) (bool, *global.WebhookValidation) {
 	if whvalidations != nil && len(whvalidations) > 0 {
 		for i := range whvalidations {
 			whval := whvalidations[i]
@@ -568,7 +568,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	// see if we have any configurations for this repo.
 	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
 	var validation bool
-	if rc := lighthouse.GetRepoConfig(wa.SourceConfig.GetConfigurationByKey(source.RepoConfig).([]lighthouse.RepoConfig), p.Name(), p.Repo()); rc != nil {
+	if rc := global.GetRepoConfig(wa.SourceConfig.GetConfigurationByKey(source.RepoConfig).([]global.RepoConfig), p.Name(), p.Repo()); rc != nil {
 		if !p.IsBranch(rc.Branch) {
 			dinghyLog.Infof("Received request from branch %s. Does not match configured branch %s. Proceeding as validation.", p.Branch(), rc.Branch)
 			validation = true

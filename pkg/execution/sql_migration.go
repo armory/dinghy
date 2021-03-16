@@ -16,12 +16,13 @@ package execution
 import (
 	"github.com/armory/dinghy/pkg/cache"
 	"github.com/armory/dinghy/pkg/database"
-	"github.com/armory/dinghy/pkg/settings/lighthouse"
+	"github.com/armory/dinghy/pkg/settings/global"
+
 	logr "github.com/sirupsen/logrus"
 )
 
 type RedisToSQLMigration struct {
-	Settings   *lighthouse.Settings
+	Settings   *global.Settings
 	Logger     *logr.Logger
 	RedisCache *cache.RedisCache
 	SQLClient  *database.SQLClient

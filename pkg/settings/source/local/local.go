@@ -1,7 +1,7 @@
 package local
 
 import (
-	"github.com/armory/dinghy/pkg/settings/lighthouse"
+	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/settings/source"
 	"github.com/oleiade/reflections"
 )
@@ -13,7 +13,7 @@ const (
 
 //LocalSource is file source
 type LocalSource struct {
-	Configs lighthouse.Settings
+	Configs global.Settings
 }
 
 //NewLocalSource creates a source which can handler local files
@@ -23,7 +23,7 @@ func NewLocalSource() *LocalSource {
 }
 
 //Load loads configuration
-func (lSource *LocalSource) Load() (*lighthouse.Settings, error) {
+func (lSource *LocalSource) Load() (*global.Settings, error) {
 
 	initializer := source.NewInitialize()
 	config, err := initializer.Autoconfigure()

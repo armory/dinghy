@@ -1,7 +1,7 @@
 package remote
 
 import (
-	"github.com/armory/dinghy/pkg/settings/lighthouse"
+	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/settings/source"
 )
 
@@ -20,7 +20,7 @@ func NewRemoteSource() *RemoteSource {
 	return remoteConfigSource
 }
 
-func (rSource *RemoteSource) Load() (*lighthouse.Settings, error) {
+func (rSource *RemoteSource) Load() (*global.Settings, error) {
 
 	initializer := source.NewInitialize()
 	config, err := initializer.Autoconfigure()
