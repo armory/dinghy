@@ -1,9 +1,11 @@
 package local
 
 import (
+	"fmt"
 	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/settings/source"
 	"github.com/oleiade/reflections"
+	"log"
 )
 
 const (
@@ -44,6 +46,27 @@ func (*LocalSource) GetSourceName() string {
 
 //GetConfigurationByKey get one key value
 func (lSource *LocalSource) GetConfigurationByKey(key source.SettingField) interface{} {
-	v, _ := reflections.GetField(lSource.Configs, key.String())
+	v, err := reflections.GetField(lSource.Configs, key.String())
+	if err != nil {
+		log.Fatal(err)
+	}
 	return v
+}
+
+//GetStringByKey get one key value (string)
+func (lSource *LocalSource) GetStringByKey(key source.SettingField) string {
+	v := lSource.GetConfigurationByKey(key)
+	return fmt.Sprintf("%v", v)
+}
+
+//GetStringByKey get one key value (string)
+func (lSource *LocalSource) GetBoolByKey(key source.SettingField) bool {
+	v := lSource.GetConfigurationByKey(key)
+	return v.(bool)
+}
+
+//GetStringArrayByKey get one key value (string)
+func (lSource *LocalSource) GetStringArrayByKey(key source.SettingField) []string {
+	v := lSource.GetConfigurationByKey(key)
+	return v.([]string)
 }

@@ -44,5 +44,8 @@ const (
 type Source interface {
 	Load() (*global.Settings, error)
 	GetConfigurationByKey(SettingField) interface{}
+	GetStringArrayByKey(SettingField) []string
+	GetStringByKey(SettingField) string
+	GetBoolByKey(SettingField) bool
 	GetSourceName() string
 }

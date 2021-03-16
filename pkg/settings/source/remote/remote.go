@@ -37,7 +37,23 @@ func (rSource *RemoteSource) GetConfigurationByKey(key source.SettingField) inte
 	return nil
 }
 
+//GetStringByKey get one key value (string)
+func (rSource *RemoteSource) GetStringByKey(key source.SettingField) string {
+	return ""
+}
+
+//GetStringByKey get one key value (string)
+func (rSource *RemoteSource) GetBoolByKey(key source.SettingField) bool {
+	return false
+}
+
 //GetSourceName get name of source
 func (*RemoteSource) GetSourceName() string {
 	return RemoteConfigSourceConst
+}
+
+//GetStringArrayByKey get one key value (string)
+func (rSource *RemoteSource) GetStringArrayByKey(key source.SettingField) []string {
+
+	return nil
 }
