@@ -143,10 +143,10 @@ type Settings struct {
 	// This will be the TTL value to ger dinghyevents data
 	LogEventTTLMinutes time.Duration `json:"LogEventTTLMinutes" yaml:"LogEventTTLMinutes"`
 	// SQL configuration for dinghy
-	SQL sqlconfig `json:"sql,omitempty" yaml:"sql"`
+	SQL Sqlconfig `json:"sql,omitempty" yaml:"sql"`
 }
 
-type sqlconfig struct {
+type Sqlconfig struct {
 	// Enabled flag
 	Enabled bool `json:"enabled,omitempty" yaml:"enabled"`
 	// Database url
