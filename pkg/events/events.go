@@ -21,9 +21,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/armory/dinghy/pkg/settings/lighthouse"
 	"net/http"
 
-	"github.com/armory/dinghy/pkg/settings"
 	cleanhttp "github.com/hashicorp/go-cleanhttp"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	log "github.com/sirupsen/logrus"
@@ -35,7 +35,7 @@ type EventClient interface {
 
 type Client struct {
 	Client   *retryablehttp.Client
-	Settings *settings.Settings
+	Settings *lighthouse.Settings
 	Ctx      context.Context
 }
 
@@ -61,7 +61,7 @@ type payload struct {
 	Event   *Event  `json:"content"`
 }
 
-func NewEventClient(ctx context.Context, settings *settings.Settings) *Client {
+func NewEventClient(ctx context.Context, settings *lighthouse.Settings) *Client {
 	c := retryablehttp.NewClient()
 	c.HTTPClient.Transport = cleanhttp.DefaultPooledTransport() // reuse the client so we can pipeline stuff
 	return &Client{
@@ -92,7 +92,7 @@ func (c *Client) postEvent(event payload) error {
 	if err != nil {
 		return err
 	}
-	req, err := retryablehttp.NewRequest(http.MethodPost, c.Settings.Echo.BaseURL, postData)
+	req, err := retryablehttp.NewRequest(http.MethodPost, c.Settings.SpinnakerSupplied.Echo.BaseURL, postData)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (c *Client) postEvent(event payload) error {
 		return err
 	}
 	if res.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("debug at %s returned %d", c.Settings.Echo.BaseURL, res.StatusCode))
+		return errors.New(fmt.Sprintf("debug at %s returned %d", c.Settings.SpinnakerSupplied.Echo.BaseURL, res.StatusCode))
 	}
 	return nil
 }

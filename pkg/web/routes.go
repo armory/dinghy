@@ -24,6 +24,8 @@ import (
 	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
 	dinghylog "github.com/armory/dinghy/pkg/log"
 	"github.com/armory/dinghy/pkg/logevents"
+	"github.com/armory/dinghy/pkg/settings/lighthouse"
+	"github.com/armory/dinghy/pkg/settings/source"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -42,7 +44,6 @@ import (
 	"github.com/armory/dinghy/pkg/git/gitlab"
 	"github.com/armory/dinghy/pkg/git/stash"
 	"github.com/armory/dinghy/pkg/notifiers"
-	"github.com/armory/dinghy/pkg/settings"
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -66,15 +67,14 @@ type MetricsHandler interface {
 	WrapHandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) (string, func(http.ResponseWriter, *http.Request))
 }
 
-type NoOpMetricsHandler struct {}
+type NoOpMetricsHandler struct{}
 
 func (nom *NoOpMetricsHandler) WrapHandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) (string, func(http.ResponseWriter, *http.Request)) {
 	return pattern, handler
 }
 
-
 type WebAPI struct {
-	Config          *settings.Settings
+	SourceConfig    source.Source
 	Client          util.PlankClient
 	ClientReadOnly  util.PlankClient
 	Cache           dinghyfile.DependencyManager
@@ -88,9 +88,9 @@ type WebAPI struct {
 	MetricsHandler
 }
 
-func NewWebAPI(s *settings.Settings, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger, depreadonly dinghyfile.DependencyManager, clientreadonly util.PlankClient, logeventsClient logevents.LogEventsClient) *WebAPI {
+func NewWebAPI(s source.Source, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger, depreadonly dinghyfile.DependencyManager, clientreadonly util.PlankClient, logeventsClient logevents.LogEventsClient) *WebAPI {
 	return &WebAPI{
-		Config:          s,
+		SourceConfig:    s,
 		Client:          c,
 		Cache:           r,
 		EventClient:     e,
@@ -165,7 +165,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		Downloader:           fileService,
 		Client:               wa.Client,
 		DeleteStalePipelines: false,
-		AutolockPipelines:    wa.Config.AutoLockPipelines,
+		AutolockPipelines:    wa.SourceConfig.GetConfigurationByKey(source.AutoLockPipelines).(string),
 		Logger:               dinghyLog,
 		Ums:                  wa.Ums,
 		Action:               pipebuilder.Process,
@@ -211,12 +211,12 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	provider := "github"
-	enabled := contains(wa.Config.WebhookValidationEnabledProviders, provider)
+	enabled := contains(wa.SourceConfig.GetConfigurationByKey(source.WebhookValidationEnabledProviders).([]string), provider)
 
 	if enabled {
 		repo := p.Repo()
 		org := p.Org()
-		whvalidations := wa.Config.WebhookValidations
+		whvalidations := wa.SourceConfig.GetConfigurationByKey(source.WebhookValidations).([]lighthouse.WebhookValidation)
 		if whvalidations != nil && len(whvalidations) > 0 {
 			if !validateWebhookSignature(whvalidations, repo, org, provider, body, r, dinghyLog) {
 				saveLogEventError(wa.LogEventsClient, &p, dinghyLog, logevents.LogEvent{RawData: string(body)})
@@ -228,9 +228,9 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	p.Ref = strings.Replace(p.Ref, "refs/heads/", "", 1)
 
 	// TODO: we're assigning config in two places here, we should refactor this
-	gh := github.Config{Endpoint: wa.Config.GithubEndpoint, Token: wa.Config.GitHubToken}
+	gh := github.Config{Endpoint: wa.SourceConfig.GetConfigurationByKey(source.GithubEndpoint).(string), Token: wa.SourceConfig.GetConfigurationByKey(source.GitHubToken).(string)}
 	p.Config = gh
-	p.DeckBaseURL = wa.Config.Deck.BaseURL
+	p.DeckBaseURL = wa.SourceConfig.GetConfigurationByKey(source.Deck).(lighthouse.SpinnakerService).BaseURL
 	fileService := github.FileService{GitHub: &gh, Logger: dinghyLog}
 
 	var pullRequestUrl string
@@ -255,8 +255,8 @@ func contains(whvalidations []string, provider string) bool {
 	return false
 }
 
-func validateWebhookSignature(whvalidations []settings.WebhookValidation, repo string, org string, provider string, body []byte, r *http.Request, logger dinghylog.DinghyLog) bool {
-	whcurrentvalidation := settings.WebhookValidation{}
+func validateWebhookSignature(whvalidations []lighthouse.WebhookValidation, repo string, org string, provider string, body []byte, r *http.Request, logger dinghylog.DinghyLog) bool {
+	whcurrentvalidation := lighthouse.WebhookValidation{}
 	if found, whval := findWebhookValidation(whvalidations, repo, org, provider); found {
 		//If record is found and validation is disabled then just return true
 		if whval.Enabled == false {
@@ -291,7 +291,7 @@ func validateWebhookSignature(whvalidations []settings.WebhookValidation, repo s
 	return github.IsValidSignature([]byte(rawPayload), getWebhookSecret(r), whcurrentvalidation.Secret, logger)
 }
 
-func findWebhookValidation(whvalidations []settings.WebhookValidation, repo string, org string, provider string) (bool, *settings.WebhookValidation) {
+func findWebhookValidation(whvalidations []lighthouse.WebhookValidation, repo string, org string, provider string) (bool, *lighthouse.WebhookValidation) {
 	if whvalidations != nil && len(whvalidations) > 0 {
 		for i := range whvalidations {
 			whval := whvalidations[i]
@@ -336,7 +336,7 @@ func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	dinghyLog.Infof("Received payload: %s", string(body))
 
-	fileService, err := p.ParseWebhook(wa.Config, body)
+	fileService, err := p.ParseWebhook(wa.SourceConfig.GetConfigurationByKey(source.GitLabEndpoint).(string), wa.SourceConfig.GetConfigurationByKey(source.GitLabToken).(string), body)
 	if err != nil {
 		if strings.Contains(err.Error(), "unexpected event type") {
 			dinghyLog.Infof("Non-Push gitlab notification (%s)", strings.SplitN(err.Error(), ":", 2))
@@ -372,9 +372,9 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 	payload.IsOldStash = true
 	stashConfig := stash.Config{
-		Endpoint: wa.Config.StashEndpoint,
-		Username: wa.Config.StashUsername,
-		Token:    wa.Config.StashToken,
+		Endpoint: wa.SourceConfig.GetConfigurationByKey(source.StashEndpoint).(string),
+		Username: wa.SourceConfig.GetConfigurationByKey(source.StashUsername).(string),
+		Token:    wa.SourceConfig.GetConfigurationByKey(source.StashToken).(string),
 		Logger:   dinghyLog,
 	}
 	dinghyLog.Infof("Instantiating Stash Payload")
@@ -443,9 +443,9 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		}
 
 		bbcloudConfig := bbcloud.Config{
-			Endpoint: wa.Config.StashEndpoint,
-			Username: wa.Config.StashUsername,
-			Token:    wa.Config.StashToken,
+			Endpoint: wa.SourceConfig.GetConfigurationByKey(source.StashEndpoint).(string),
+			Username: wa.SourceConfig.GetConfigurationByKey(source.StashUsername).(string),
+			Token:    wa.SourceConfig.GetConfigurationByKey(source.StashToken).(string),
 			Logger:   dinghyLog,
 		}
 		p, err := bbcloud.NewPush(payload, bbcloudConfig)
@@ -490,9 +490,9 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 
 		payload.IsOldStash = false
 		stashConfig := stash.Config{
-			Endpoint: wa.Config.StashEndpoint,
-			Username: wa.Config.StashUsername,
-			Token:    wa.Config.StashToken,
+			Endpoint: wa.SourceConfig.GetConfigurationByKey(source.StashEndpoint).(string),
+			Username: wa.SourceConfig.GetConfigurationByKey(source.StashUsername).(string),
+			Token:    wa.SourceConfig.GetConfigurationByKey(source.StashToken).(string),
 			Logger:   dinghyLog,
 		}
 		p, err := stash.NewPush(payload, stashConfig)
@@ -524,11 +524,11 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 // ProcessPush processes a push using a pipeline builder
 func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) (string, error) {
 	// Ensure dinghyfile was changed.
-	if !p.ContainsFile(wa.Config.DinghyFilename) {
-		b.Logger.Infof("Push does not include %s, skipping.", wa.Config.DinghyFilename)
+	if !p.ContainsFile(wa.SourceConfig.GetConfigurationByKey(source.DinghyFilename).(string)) {
+		b.Logger.Infof("Push does not include %s, skipping.", wa.SourceConfig.GetConfigurationByKey(source.DinghyFilename).(string))
 		errstat, status, _ := p.GetCommitStatus()
 		if errstat == nil && status == "" {
-			p.SetCommitStatus(git.StatusSuccess, fmt.Sprintf("No changes in %v.", wa.Config.DinghyFilename))
+			p.SetCommitStatus(git.StatusSuccess, fmt.Sprintf("No changes in %v.", wa.SourceConfig.GetConfigurationByKey(source.DinghyFilename).(string)))
 		}
 		return "", nil
 	}
@@ -541,7 +541,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder) (string, er
 	var dinghyfilesRendered bytes.Buffer
 	for _, filePath := range p.Files() {
 		components := strings.Split(filePath, "/")
-		if components[len(components)-1] == wa.Config.DinghyFilename {
+		if components[len(components)-1] == wa.SourceConfig.GetConfigurationByKey(source.DinghyFilename).(string) {
 			// Process the dinghyfile.
 			dinghyRendered, err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath, p.Branch())
 			dinghyfilesRendered.WriteString(dinghyRendered)
@@ -568,7 +568,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	// see if we have any configurations for this repo.
 	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
 	var validation bool
-	if rc := wa.Config.GetRepoConfig(p.Name(), p.Repo()); rc != nil {
+	if rc := lighthouse.GetRepoConfig(wa.SourceConfig.GetConfigurationByKey(source.RepoConfig).([]lighthouse.RepoConfig), p.Name(), p.Repo()); rc != nil {
 		if !p.IsBranch(rc.Branch) {
 			dinghyLog.Infof("Received request from branch %s. Does not match configured branch %s. Proceeding as validation.", p.Branch(), rc.Branch)
 			validation = true
@@ -594,18 +594,18 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	builder := &dinghyfile.PipelineBuilder{
 		Downloader:                  f,
 		Depman:                      wa.Cache,
-		TemplateRepo:                wa.Config.TemplateRepo,
-		TemplateOrg:                 wa.Config.TemplateOrg,
-		DinghyfileName:              wa.Config.DinghyFilename,
+		TemplateRepo:                wa.SourceConfig.GetConfigurationByKey(source.TemplateRepo).(string),
+		TemplateOrg:                 wa.SourceConfig.GetConfigurationByKey(source.TemplateOrg).(string),
+		DinghyfileName:              wa.SourceConfig.GetConfigurationByKey(source.DinghyFilename).(string),
 		DeleteStalePipelines:        false,
-		AutolockPipelines:           wa.Config.AutoLockPipelines,
+		AutolockPipelines:           wa.SourceConfig.GetConfigurationByKey(source.AutoLockPipelines).(string),
 		Client:                      wa.Client,
 		EventClient:                 wa.EventClient,
 		Logger:                      dinghyLog,
 		Ums:                         wa.Ums,
 		Notifiers:                   wa.Notifiers,
 		PushRaw:                     rawPushData,
-		RepositoryRawdataProcessing: wa.Config.RepositoryRawdataProcessing,
+		RepositoryRawdataProcessing: wa.SourceConfig.GetConfigurationByKey(source.RepositoryRawdataProcessing).(bool),
 		Action:                      pipebuilder.Process,
 	}
 
@@ -634,7 +634,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	}
 
 	// Check if we're in a template repo
-	if p.Repo() == wa.Config.TemplateRepo {
+	if p.Repo() == wa.SourceConfig.GetConfigurationByKey(source.TemplateRepo).(string) {
 		// Set status to pending while we process modules
 		p.SetCommitStatus(git.StatusPending, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusPending])
 
@@ -658,7 +658,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 
 	// Only save event if changed files were in repo or it was having a dinghyfile
 	// TODO: If a template repo is having files not related with dinghy an event will be saved
-	if p.Repo() == wa.Config.TemplateRepo {
+	if p.Repo() == wa.SourceConfig.GetConfigurationByKey(source.TemplateRepo).(string) {
 		if len(p.Files()) > 0 {
 			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
 		}

@@ -18,11 +18,11 @@ package main
 
 import (
 	dinghy "github.com/armory/dinghy/cmd"
-	"github.com/armory/dinghy/pkg/settings"
+	"github.com/armory/dinghy/pkg/settings/lighthouse"
 )
 
 func main() {
 	log, d := dinghy.Setup()
-	config := settings.NewDefaultSettings()
+	config := lighthouse.NewDefaultSettings()
 	dinghy.Start(log, d, &config)
 }

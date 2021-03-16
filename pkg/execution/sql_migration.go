@@ -16,22 +16,22 @@ package execution
 import (
 	"github.com/armory/dinghy/pkg/cache"
 	"github.com/armory/dinghy/pkg/database"
-	"github.com/armory/dinghy/pkg/settings"
+	"github.com/armory/dinghy/pkg/settings/lighthouse"
 	logr "github.com/sirupsen/logrus"
 )
 
 type RedisToSQLMigration struct {
-	Settings *settings.Settings
-	Logger *logr.Logger
+	Settings   *lighthouse.Settings
+	Logger     *logr.Logger
 	RedisCache *cache.RedisCache
-	SQLClient *database.SQLClient
+	SQLClient  *database.SQLClient
 }
 
-func (execution *RedisToSQLMigration) ExecutionName () string {
+func (execution *RedisToSQLMigration) ExecutionName() string {
 	return "REDIS_TO_SQL_MIGRATION"
 }
 
-func (execution *RedisToSQLMigration) CreateExecution(sqlClient *database.SQLClient, executionName string) error{
+func (execution *RedisToSQLMigration) CreateExecution(sqlClient *database.SQLClient, executionName string) error {
 	return CreateExecution(sqlClient, executionName)
 }
 
@@ -46,7 +46,7 @@ func (execution *RedisToSQLMigration) CanExecute() bool {
 				return false
 			} else {
 				found := database.ExecutionSQL{}
-				result  := execution.SQLClient.Client.Where(&database.ExecutionSQL{Execution: execution.ExecutionName()}).Find(&found)
+				result := execution.SQLClient.Client.Where(&database.ExecutionSQL{Execution: execution.ExecutionName()}).Find(&found)
 				if result.Error == nil && result.RowsAffected == 0 {
 					return true
 				}
@@ -56,7 +56,7 @@ func (execution *RedisToSQLMigration) CanExecute() bool {
 	return false
 }
 
-func (execution *RedisToSQLMigration) Finalize () {
+func (execution *RedisToSQLMigration) Finalize() {
 	execution.Logger.Info("Closing Redis Client")
 	err := execution.RedisCache.Client.Close()
 	if err != nil {
@@ -66,11 +66,11 @@ func (execution *RedisToSQLMigration) Finalize () {
 	}
 }
 
-func (execution *RedisToSQLMigration) UpdateExecution (sqlClient *database.SQLClient, executionName string, result string, success bool) error {
+func (execution *RedisToSQLMigration) UpdateExecution(sqlClient *database.SQLClient, executionName string, result string, success bool) error {
 	return UpdateExecution(sqlClient, executionName, result, success)
 }
 
-func (execution *RedisToSQLMigration) Execute() (map[string]interface{}, error){
+func (execution *RedisToSQLMigration) Execute() (map[string]interface{}, error) {
 
 	execution.Logger.Infof("Executing %v", execution.ExecutionName())
 
@@ -122,5 +122,5 @@ func (execution *RedisToSQLMigration) Execute() (map[string]interface{}, error){
 		return nil, nil
 	}
 	execution.Logger.Infof("%v was successfully executed", execution.ExecutionName())
-	return  nil, nil
+	return nil, nil
 }

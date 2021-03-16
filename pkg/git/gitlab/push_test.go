@@ -18,7 +18,7 @@ package gitlab
 
 import (
 	"encoding/json"
-	"github.com/armory/dinghy/pkg/settings"
+	"github.com/armory/dinghy/pkg/settings/lighthouse"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
@@ -392,7 +392,7 @@ func TestIsMaster(t *testing.T) {
 func TestParseWebhook(t *testing.T) {
 	testCases := map[string]struct {
 		push        *Push
-		settings    *settings.Settings
+		settings    *lighthouse.Settings
 		body        []byte
 		expectedErr error
 	}{
@@ -402,7 +402,7 @@ func TestParseWebhook(t *testing.T) {
 					Ref: "refs/heads/master",
 				},
 			},
-			settings: &settings.Settings{
+			settings: &lighthouse.Settings{
 				GitLabToken:    "token",
 				GitLabEndpoint: "https://my-endpoint",
 			},
