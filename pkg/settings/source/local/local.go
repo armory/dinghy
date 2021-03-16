@@ -6,11 +6,12 @@ import (
 	"github.com/armory/dinghy/pkg/settings/source"
 	"github.com/oleiade/reflections"
 	"log"
+	"strconv"
 )
 
 const (
-	//LocalConfigSourceConst is a variable of type string
-	LocalConfigSourceConst = "LocalSource"
+	//LocalConfigSource is a variable of type string
+	LocalConfigSource = "LocalSource"
 )
 
 //LocalSource is file source
@@ -20,8 +21,8 @@ type LocalSource struct {
 
 //NewLocalSource creates a source which can handler local files
 func NewLocalSource() *LocalSource {
-	memoryConfigSource := new(LocalSource)
-	return memoryConfigSource
+	localConfigSource := new(LocalSource)
+	return localConfigSource
 }
 
 //Load loads configuration
@@ -41,7 +42,7 @@ func (lSource *LocalSource) Load() (*global.Settings, error) {
 
 //GetSourceName get name of source
 func (*LocalSource) GetSourceName() string {
-	return LocalConfigSourceConst
+	return LocalConfigSource
 }
 
 //GetConfigurationByKey get one key value
@@ -59,13 +60,18 @@ func (lSource *LocalSource) GetStringByKey(key source.SettingField) string {
 	return fmt.Sprintf("%v", v)
 }
 
-//GetStringByKey get one key value (string)
+//GetBoolByKey get one key value (bool)
 func (lSource *LocalSource) GetBoolByKey(key source.SettingField) bool {
-	v := lSource.GetConfigurationByKey(key)
-	return v.(bool)
+	v := lSource.GetStringByKey(key)
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return b
+
 }
 
-//GetStringArrayByKey get one key value (string)
+//GetStringArrayByKey get one key value ([]string)
 func (lSource *LocalSource) GetStringArrayByKey(key source.SettingField) []string {
 	v := lSource.GetConfigurationByKey(key)
 	return v.([]string)

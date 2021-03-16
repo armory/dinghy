@@ -17,7 +17,10 @@
 package util
 
 import (
+	"fmt"
+	"io"
 	"os"
+	"os/user"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -51,4 +54,38 @@ func GetenvOrDefaultRedact(envVar, defaultVal string) string {
 	}
 	log.Infof("Checking ENV for %s...  Using default \"%s\"", envVar, redacted)
 	return defaultVal
+}
+
+func CopyToLocalSpinnaker(src, dst string) (int64, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return 0, err
+	}
+
+	os.Mkdir(fmt.Sprintf("%s/.spinnaker", usr.HomeDir), 0755)
+
+	dst = fmt.Sprintf("%s/.spinnaker/%s", usr.HomeDir, dst)
+
+	sourceFileStat, err := os.Stat(src)
+	if err != nil {
+		return 0, err
+	}
+
+	if !sourceFileStat.Mode().IsRegular() {
+		return 0, fmt.Errorf("%s is not a regular file", src)
+	}
+
+	source, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer destination.Close()
+	nBytes, err := io.Copy(destination, source)
+	return nBytes, err
 }

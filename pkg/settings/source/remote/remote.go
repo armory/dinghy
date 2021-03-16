@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	//RemoteConfigSourceConst is a variable of type string
-	RemoteConfigSourceConst = "RemoteSource"
+	//RemoteConfigSource is a variable of type string
+	RemoteConfigSource = "RemoteSource"
 )
 
 //RemoteSource is file source
@@ -42,17 +42,17 @@ func (rSource *RemoteSource) GetStringByKey(key source.SettingField) string {
 	return ""
 }
 
-//GetStringByKey get one key value (string)
+//GetBoolByKey get one key value (bool)
 func (rSource *RemoteSource) GetBoolByKey(key source.SettingField) bool {
 	return false
 }
 
 //GetSourceName get name of source
 func (*RemoteSource) GetSourceName() string {
-	return RemoteConfigSourceConst
+	return RemoteConfigSource
 }
 
-//GetStringArrayByKey get one key value (string)
+//GetStringArrayByKey get one key value ([]string)
 func (rSource *RemoteSource) GetStringArrayByKey(key source.SettingField) []string {
 
 	return nil

@@ -2,6 +2,7 @@ package source
 
 import (
 	"github.com/armory/dinghy/pkg/settings/global"
+	"github.com/armory/dinghy/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -98,4 +99,14 @@ func TestDecodeProfilesToSettings(t *testing.T) {
 
 		})
 	}
+}
+
+func TestInitialize_Autoconfigure(t *testing.T) {
+	util.CopyToLocalSpinnaker("testdata/dinghy-local.yml", "dinghy-local.yml")
+
+	i := &Initialize{}
+	config, err := i.Autoconfigure()
+
+	assert.Nil(t, err)
+	assert.Equal(t, "sample-org", config.TemplateOrg)
 }

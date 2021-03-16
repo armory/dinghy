@@ -32,16 +32,17 @@ const (
 	MultiTenant  DinghyMode = "multi-tenant"
 )
 
+var Mode = flag.String("mode", string(SingleTenant), "Dinghy mode")
+
 // LoadSettings loads the Spring config from the default Spinnaker paths
 // and merges default settings with the loaded settings
 func LoadSettings() (source.Source, error) {
-	mode := flag.String("mode", string(SingleTenant), "Dinghy mode")
 	flag.Parse()
-	log.Infof("Dinghy is running on %s mode", *mode)
+	log.Infof("Dinghy is running on %s mode", *Mode)
 
 	var s source.Source = local.NewLocalSource()
 
-	if *mode == string(MultiTenant) { // multi-tenant
+	if *Mode == string(MultiTenant) { // multi-tenant
 		s = remote.NewRemoteSource()
 	}
 
