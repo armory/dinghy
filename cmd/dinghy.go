@@ -63,6 +63,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		log.Fatalf("failed to load configuration: %s", err.Error())
 	}
 
+	// We need to initialize the configuration for the start-up.
 	config, err := sourceConfiguration.Load()
 	if err != nil {
 		log.Fatalf("%s", err.Error())
@@ -117,7 +118,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 	var persitenceManagerReadOnly dinghyfile.DependencyManager
 
 	// Full SQL mode
-	// for multi-tenant this should be configured by env vars
+	// TODO ensure this is correctly loaded when multi-tenant is used
 	if config.SQL.Enabled && !config.SQL.EventLogsOnly {
 
 		sqlClient, sqlerr := database.NewMySQLClient(&database.SQLConfig{
@@ -185,7 +186,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		// Redis mode
 		redisClient := cache.NewRedisCache(newRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, true)
 		if _, err := redisClient.Client.Ping().Result(); err != nil {
-			log.Fatalf("Redis Server at %s could not be contacted: %v", config.SpinnakerSupplied.Redis.BaseURL, err)
+			log.Errorf("Redis Server at %s could not be contacted: %v", config.SpinnakerSupplied.Redis.BaseURL, err)
 		}
 
 		redisClientReadOnly := cache.RedisCacheReadOnly{
