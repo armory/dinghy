@@ -22,6 +22,7 @@ import (
 	"github.com/armory/dinghy/pkg/settings/source"
 	"github.com/armory/dinghy/pkg/settings/source/local"
 	"github.com/armory/dinghy/pkg/settings/source/remote"
+	log "github.com/sirupsen/logrus"
 )
 
 type DinghyMode string
@@ -36,6 +37,8 @@ const (
 func LoadSettings() (source.Source, error) {
 	mode := flag.String("mode", string(SingleTenant), "Dinghy mode")
 	flag.Parse()
+	log.Infof("Dinghy is running on %s mode", *mode)
+
 	var s source.Source = local.NewLocalSource()
 
 	if *mode == string(MultiTenant) { // multi-tenant
