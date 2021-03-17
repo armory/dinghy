@@ -9,7 +9,7 @@ import (
 func TestNewRemoteSource(t *testing.T) {
 	i := NewRemoteSource()
 
-	var s source.Source = i
+	var s source.SourceConfiguration = i
 	assert.NotNil(t, i)
 	assert.NotNil(t, s)
 }

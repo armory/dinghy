@@ -14,13 +14,14 @@ const (
 type RemoteSource struct {
 }
 
-//NewRemoteSource creates a source which can handler local files
+//NewRemoteSource creates a source which can handler remote settings
 func NewRemoteSource() *RemoteSource {
 	remoteConfigSource := new(RemoteSource)
 	return remoteConfigSource
 }
 
-func (rSource *RemoteSource) Load() (*global.Settings, error) {
+//LoadSetupSettings load setttings for dinghy start-up
+func (lSource *RemoteSource) LoadSetupSettings() (*global.Settings, error) {
 
 	initializer := source.NewInitialize()
 	config, err := initializer.Autoconfigure()
@@ -32,28 +33,12 @@ func (rSource *RemoteSource) Load() (*global.Settings, error) {
 	return config, nil
 }
 
-//GetConfigurationByKey get one key value
-func (rSource *RemoteSource) GetConfigurationByKey(key source.SettingField) interface{} {
-	return nil
-}
-
-//GetStringByKey get one key value (string)
-func (rSource *RemoteSource) GetStringByKey(key source.SettingField) string {
-	return ""
-}
-
-//GetBoolByKey get one key value (bool)
-func (rSource *RemoteSource) GetBoolByKey(key source.SettingField) bool {
-	return false
-}
-
 //GetSourceName get name of source
 func (*RemoteSource) GetSourceName() string {
 	return RemoteConfigSource
 }
 
-//GetStringArrayByKey get one key value ([]string)
-func (rSource *RemoteSource) GetStringArrayByKey(key source.SettingField) []string {
-
-	return nil
+//GetSettings get settings given the key
+func (lSource *RemoteSource) GetSettings(key string) (*global.Settings, error) {
+	return nil, nil
 }

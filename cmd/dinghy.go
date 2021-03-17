@@ -64,7 +64,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 	}
 
 	// We need to initialize the configuration for the start-up.
-	config, err := sourceConfiguration.Load()
+	config, err := sourceConfiguration.LoadSetupSettings()
 	if err != nil {
 		log.Fatalf("%s", err.Error())
 	}

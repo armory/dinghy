@@ -81,7 +81,12 @@ func TestGithubWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode github webhook: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
+	sc := source.NewMockSourceConfiguration(ctrl)
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+		return &global.Settings{}, nil
+	})
+
+	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
@@ -98,7 +103,11 @@ func TestGithubWebhookHandlerNoRef(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Info(gomock.Eq(stringToInterfaceSlice("Possibly a non-Push notification received (blank ref)"))).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
+	sc := source.NewMockSourceConfiguration(ctrl)
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+		return &global.Settings{}, nil
+	})
+	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{}`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
@@ -116,42 +125,25 @@ func TestGithubWebhookHandler(t *testing.T) {
 	logger.EXPECT().Info(gomock.Any()).Times(1)
 	logger.EXPECT().Warnf(gomock.Any(), gomock.Any()).Times(1)
 
-	s := source.NewMockSource(ctrl)
-	s.EXPECT().GetStringByKey(gomock.Eq(source.GithubEndpoint)).AnyTimes().DoAndReturn(func(field source.SettingField) string {
-		return "https://github.com"
-	})
-	s.EXPECT().GetStringByKey(gomock.Eq(source.GitHubToken)).AnyTimes().DoAndReturn(func(field source.SettingField) string {
-		return "GitHubToken"
-	})
-	s.EXPECT().GetStringArrayByKey(gomock.Eq(source.WebhookValidationEnabledProviders)).AnyTimes().DoAndReturn(func(field source.SettingField) []string {
-		return []string{"github"}
-	})
-	s.EXPECT().GetConfigurationByKey(gomock.Eq(source.WebhookValidations)).AnyTimes().DoAndReturn(func(field source.SettingField) interface{} {
-		return []global.WebhookValidation{}
-	})
-	s.EXPECT().GetConfigurationByKey(gomock.Eq(source.Deck)).AnyTimes().DoAndReturn(func(field source.SettingField) interface{} {
-		return global.SpinnakerService{
-			Enabled: "",
-			BaseURL: "",
-		}
-	})
-	s.EXPECT().GetConfigurationByKey(gomock.Eq(source.RepoConfig)).AnyTimes().DoAndReturn(func(field source.SettingField) interface{} {
-		return []global.RepoConfig{}
-	})
-	s.EXPECT().GetStringByKey(gomock.Eq(source.TemplateRepo)).AnyTimes().DoAndReturn(func(field source.SettingField) string {
-		return "GetStringByKey"
-	})
-	s.EXPECT().GetStringByKey(gomock.Eq(source.TemplateOrg)).AnyTimes().DoAndReturn(func(field source.SettingField) string {
-		return "TemplateOrg"
-	})
-	s.EXPECT().GetStringByKey(gomock.Eq(source.DinghyFilename)).AnyTimes().DoAndReturn(func(field source.SettingField) string {
-		return "DinghyFilename"
-	})
-	s.EXPECT().GetStringByKey(gomock.Eq(source.AutoLockPipelines)).AnyTimes().DoAndReturn(func(field source.SettingField) string {
-		return "true"
-	})
-	s.EXPECT().GetBoolByKey(gomock.Eq(source.RepositoryRawdataProcessing)).AnyTimes().DoAndReturn(func(field source.SettingField) bool {
-		return true
+	s := source.NewMockSourceConfiguration(ctrl)
+	s.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+		return &global.Settings{
+			TemplateRepo:                      "my-repo",
+			TemplateOrg:                       "my-org",
+			GitHubToken:                       "GitHubToken",
+			DinghyFilename:                    "dinghyfile",
+			AutoLockPipelines:                 "true",
+			WebhookValidationEnabledProviders: []string{"github"},
+			WebhookValidations:                []global.WebhookValidation{},
+			SpinnakerSupplied: global.SpinnakerSupplied{
+				Deck: global.SpinnakerService{
+					Enabled: "",
+					BaseURL: "",
+				},
+			},
+			RepoConfig:                  []global.RepoConfig{},
+			RepositoryRawdataProcessing: true,
+		}, nil
 	})
 
 	wa := NewWebAPI(s, nil, nil, nil, logger, nil, nil, nil)
@@ -180,7 +172,11 @@ func TestStashWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode stash webhook: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
+	sc := source.NewMockSourceConfiguration(ctrl)
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+		return &global.Settings{}, nil
+	})
+	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/stash", payload)
@@ -198,8 +194,12 @@ func TestStashWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode stash webhook: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
+	sc := source.NewMockSourceConfiguration(ctrl)
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+		return &global.Settings{}, nil
+	})
 
+	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
 	payload := bytes.NewBufferString(`{"event_type": "stash", "refChanges": "not an array"}`)
 
 	req := httptest.NewRequest("POST", "/v1/webhooks/stash", payload)
@@ -216,8 +216,12 @@ func TestBitbucketWebhookHandlerBadJSON(t *testing.T) {
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Unable to determine bitbucket event type: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
+	sc := source.NewMockSourceConfiguration(ctrl)
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+		return &global.Settings{}, nil
+	})
 
+	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket", payload)
 	rr := httptest.NewRecorder()
@@ -234,7 +238,12 @@ func TestBitbucketWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode bitbucket-server webhook: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
+	sc := source.NewMockSourceConfiguration(ctrl)
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+		return &global.Settings{}, nil
+	})
+
+	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "repo:refs_changed", "changes": "not an array"}`)
 
@@ -252,7 +261,12 @@ func TestBitbucketCloudWebhookHandlerBadJSON(t *testing.T) {
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Unable to determine bitbucket event type: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
+	sc := source.NewMockSourceConfiguration(ctrl)
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+		return &global.Settings{}, nil
+	})
+
+	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
@@ -270,7 +284,12 @@ func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode bitbucket-cloud webhook: %s"), gomock.Any()).Times(1)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
+	sc := source.NewMockSourceConfiguration(ctrl)
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+		return &global.Settings{}, nil
+	})
+
+	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "repo:push", "push": {"changes": "not an array"}}`)
 
@@ -286,7 +305,12 @@ func TestUnknownEventType(t *testing.T) {
 
 	logger := mock.NewMockFieldLogger(ctrl)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
+	sc := source.NewMockSourceConfiguration(ctrl)
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+		return &global.Settings{}, nil
+	})
+
+	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "", "changes": "not an array"}`)
 
@@ -423,7 +447,7 @@ func Test_getWebhookSecret(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getWebhookSecret(tt.args.r); got != tt.want {
+			if got := getHeader(tt.args.r, "webhook-secret"); got != tt.want {
 				t.Errorf("getWebhookSecret() = %v, want %v", got, tt.want)
 			}
 		})

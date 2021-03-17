@@ -434,7 +434,7 @@ func TestParseWebhook(t *testing.T) {
 
 	for desc, tc := range testCases {
 		t.Run(desc, func(t *testing.T) {
-			_, err := tc.push.ParseWebhook(tc.settings.GitLabEndpoint, tc.settings.GitLabToken, tc.body)
+			_, err := tc.push.ParseWebhook(tc.settings, tc.body)
 
 			var expectedEvent gitlab.PushEvent
 			// make sure no error is returned

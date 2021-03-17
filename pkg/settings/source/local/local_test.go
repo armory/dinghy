@@ -12,7 +12,7 @@ import (
 func TestNewLocalSource(t *testing.T) {
 	i := NewLocalSource()
 
-	var s source.Source = i
+	var s source.SourceConfiguration = i
 	assert.NotNil(t, i)
 	assert.NotNil(t, s)
 }
@@ -20,7 +20,7 @@ func TestNewLocalSource(t *testing.T) {
 func TestLocalSource_Load(t *testing.T) {
 	localSource := loadTestData()
 
-	config, err := localSource.Load()
+	config, err := localSource.LoadSetupSettings()
 
 	assert.Nil(t, err)
 	assert.Equal(t, LocalConfigSource, localSource.GetSourceName())
@@ -31,38 +31,15 @@ func TestLocalSource_Load(t *testing.T) {
 
 func TestLocalSource_GetConfigurationByKey(t *testing.T) {
 	localSource := loadTestData()
-	_, _ = localSource.Load()
-	config := localSource.GetConfigurationByKey(source.Deck).(global.SpinnakerService)
+	_, _ = localSource.LoadSetupSettings()
+	config, err := localSource.GetSettings("")
 
+	assert.Nil(t, err)
 	assert.NotNil(t, config)
 	assert.Equal(t, global.SpinnakerService{
 		Enabled: "true",
 		BaseURL: "http://localhost:9000",
-	}, config)
-}
-
-func TestLocalSource_GetStringByKey(t *testing.T) {
-	localSource := loadTestData()
-	_, _ = localSource.Load()
-	gitHubToken := localSource.GetStringByKey(source.GitHubToken)
-
-	assert.Equal(t, "xxxxxxxxxx", gitHubToken)
-}
-
-func TestLocalSource_GetBoolByKey(t *testing.T) {
-	localSource := loadTestData()
-	_, _ = localSource.Load()
-	autoLockPipelines := localSource.GetBoolByKey(source.AutoLockPipelines)
-
-	assert.Equal(t, true, autoLockPipelines)
-}
-
-func TestLocalSource_GetStringArrayByKey(t *testing.T) {
-	localSource := loadTestData()
-	_, _ = localSource.Load()
-	webhookValidationEnabledProviders := localSource.GetStringArrayByKey(source.WebhookValidationEnabledProviders)
-
-	assert.Equal(t, []string{"github"}, webhookValidationEnabledProviders)
+	}, config.Deck)
 }
 
 func loadTestData() *LocalSource {

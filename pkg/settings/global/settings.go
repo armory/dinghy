@@ -241,15 +241,6 @@ func (s *Settings) GetRepoConfig(provider, repo string) *RepoConfig {
 	return nil
 }
 
-func GetRepoConfig(r []RepoConfig, provider, repo string) *RepoConfig {
-	for _, c := range r {
-		if c.Provider == provider && c.Repo == repo {
-			return &c
-		}
-	}
-	return nil
-}
-
 // Redacted returns a copy of the Settings object with all the sensitive
 // fields **REDACTED**.
 func (s *Settings) Redacted() *Settings {

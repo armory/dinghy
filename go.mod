@@ -16,7 +16,6 @@ require (
 	github.com/imdario/mergo v0.3.8
 	github.com/jinzhu/copier v0.0.0-20180308034124-7e38e58719c3
 	github.com/mitchellh/mapstructure v1.1.2
-	github.com/oleiade/reflections v1.0.1
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/otiai10/copy v1.5.0

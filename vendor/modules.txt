@@ -180,8 +180,6 @@ github.com/mitchellh/go-homedir
 github.com/mitchellh/mapstructure
 # github.com/mitchellh/reflectwalk v1.0.0
 github.com/mitchellh/reflectwalk
-# github.com/oleiade/reflections v1.0.1
-github.com/oleiade/reflections
 # github.com/otiai10/copy v1.5.0
 github.com/otiai10/copy
 # github.com/pierrec/lz4 v2.3.0+incompatible
