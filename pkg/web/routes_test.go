@@ -18,7 +18,10 @@ package web
 
 import (
 	"bytes"
+	"github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/armory/dinghy/pkg/logevents"
+	"github.com/armory/dinghy/pkg/settings/global"
+	"github.com/armory/dinghy/pkg/settings/source"
 
 	// "errors"
 	"net/http"
@@ -102,6 +105,64 @@ func TestGithubWebhookHandlerNoRef(t *testing.T) {
 	rr := httptest.NewRecorder()
 	wa.githubWebhookHandler(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestGithubWebhookHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).Times(5)
+	logger.EXPECT().Info(gomock.Any()).Times(1)
+	logger.EXPECT().Warnf(gomock.Any(), gomock.Any()).Times(1)
+
+	s := source.NewMockSource(ctrl)
+	s.EXPECT().GetStringByKey(gomock.Eq(source.GithubEndpoint)).AnyTimes().DoAndReturn(func(field source.SettingField) string {
+		return "https://github.com"
+	})
+	s.EXPECT().GetStringByKey(gomock.Eq(source.GitHubToken)).AnyTimes().DoAndReturn(func(field source.SettingField) string {
+		return "GitHubToken"
+	})
+	s.EXPECT().GetStringArrayByKey(gomock.Eq(source.WebhookValidationEnabledProviders)).AnyTimes().DoAndReturn(func(field source.SettingField) []string {
+		return []string{"github"}
+	})
+	s.EXPECT().GetConfigurationByKey(gomock.Eq(source.WebhookValidations)).AnyTimes().DoAndReturn(func(field source.SettingField) interface{} {
+		return []global.WebhookValidation{}
+	})
+	s.EXPECT().GetConfigurationByKey(gomock.Eq(source.Deck)).AnyTimes().DoAndReturn(func(field source.SettingField) interface{} {
+		return global.SpinnakerService{
+			Enabled: "",
+			BaseURL: "",
+		}
+	})
+	s.EXPECT().GetConfigurationByKey(gomock.Eq(source.RepoConfig)).AnyTimes().DoAndReturn(func(field source.SettingField) interface{} {
+		return []global.RepoConfig{}
+	})
+	s.EXPECT().GetStringByKey(gomock.Eq(source.TemplateRepo)).AnyTimes().DoAndReturn(func(field source.SettingField) string {
+		return "GetStringByKey"
+	})
+	s.EXPECT().GetStringByKey(gomock.Eq(source.TemplateOrg)).AnyTimes().DoAndReturn(func(field source.SettingField) string {
+		return "TemplateOrg"
+	})
+	s.EXPECT().GetStringByKey(gomock.Eq(source.DinghyFilename)).AnyTimes().DoAndReturn(func(field source.SettingField) string {
+		return "DinghyFilename"
+	})
+	s.EXPECT().GetStringByKey(gomock.Eq(source.AutoLockPipelines)).AnyTimes().DoAndReturn(func(field source.SettingField) string {
+		return "true"
+	})
+	s.EXPECT().GetBoolByKey(gomock.Eq(source.RepositoryRawdataProcessing)).AnyTimes().DoAndReturn(func(field source.SettingField) bool {
+		return true
+	})
+
+	wa := NewWebAPI(s, nil, nil, nil, logger, nil, nil, nil)
+	wa.Parser = dinghyfile.NewDinghyfileParser(&dinghyfile.PipelineBuilder{})
+	payload := bytes.NewBufferString(`{"ref":"refs/heads/some_branch","repository":{"name":"my-repo","organization":"my-org"}}`)
+	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
+	rr := httptest.NewRecorder()
+	wa.githubWebhookHandler(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, `{"status":"accepted"}`, rr.Body.String())
+
 }
 
 // This function is needed for the not formatted messages after dinghylog implementation
@@ -272,4 +333,139 @@ func TestLogevents(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Equal(t, `[{"org":"org","repo":"repo","files":["file1"],"message":"","date":0,"commits":["12345"],"status":"mystatus","rawdata":"raw","rendereddinghyfile":"dinghyfile","pullrequest":"https://github/pr"}]`, rr.Body.String())
+}
+
+func Test_contains(t *testing.T) {
+	type args struct {
+		whvalidations []string
+		provider      string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Should return false, since provided whvalidations are nil",
+			args: args{
+				whvalidations: nil,
+				provider:      "github",
+			},
+			want: false,
+		},
+		{
+			name: "Should return false, since provider is not within provided whvalidations",
+			args: args{
+				whvalidations: []string{
+					"gitlab",
+				},
+				provider: "github",
+			},
+			want: false,
+		},
+		{
+			name: "Should return true, since provider exist within provided whvalidations",
+			args: args{
+				whvalidations: []string{
+					"github",
+				},
+				provider: "github",
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := contains(tt.args.whvalidations, tt.args.provider); got != tt.want {
+				t.Errorf("contains() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getWebhookSecret(t *testing.T) {
+
+	type args struct {
+		r *http.Request
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "Should be an empty string, since the requested header is not present within http.Request",
+			args: args{
+				r: func() *http.Request {
+					req, err := http.NewRequest("GET", "", nil)
+					if err != nil {
+						t.Fatal(err)
+					}
+					return req
+				}(),
+			},
+			want: "",
+		},
+		{
+			name: "Should be not an empty string, since the requested header is present within http.Request",
+			args: args{
+				r: func() *http.Request {
+					req, err := http.NewRequest("GET", "", nil)
+					req.Header.Add("webhook-secret", "mysecret")
+					if err != nil {
+						t.Fatal(err)
+					}
+					return req
+				}(),
+			},
+			want: "mysecret",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getWebhookSecret(tt.args.r); got != tt.want {
+				t.Errorf("getWebhookSecret() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getRawPayload(t *testing.T) {
+	type args struct {
+		body []byte
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "RawPayload is present, since it is present within JSON payload",
+			args: args{
+				body: []byte(`{"raw_payload":"raw"}`),
+			},
+			want: "raw",
+		},
+		{
+			name: "RawPayload is not present, since it is not present within JSON payload",
+			args: args{
+				body: []byte(`{"key":"value"}`),
+			},
+			want: "",
+		},
+		{
+			name: "RawPayload is not present, since JSON payload is invalid",
+			args: args{
+				body: []byte(``),
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getRawPayload(tt.args.body); got != tt.want {
+				t.Errorf("getRawPayload() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
