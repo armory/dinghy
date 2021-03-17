@@ -51,7 +51,7 @@ func NewDefaultSettings() Settings {
 		StashEndpoint:     "http://localhost:7990/rest/api/1.0",
 		Logging: Logging{
 			File:  "",
-			Level: "INFO",
+			Level: "",
 		},
 		SpinnakerSupplied: SpinnakerSupplied{
 			Orca: SpinnakerService{
