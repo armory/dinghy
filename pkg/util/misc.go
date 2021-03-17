@@ -18,11 +18,10 @@ package util
 
 import (
 	"fmt"
-	"io"
+	"github.com/otiai10/copy"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"os/user"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // GetenvOrDefault will return the value of the given enrvironment variable,
@@ -56,36 +55,10 @@ func GetenvOrDefaultRedact(envVar, defaultVal string) string {
 	return defaultVal
 }
 
-func CopyToLocalSpinnaker(src, dst string) (int64, error) {
-	usr, err := user.Current()
-	if err != nil {
-		return 0, err
+func CopyToLocalSpinnaker(src, dst string) error {
+	if u, err := user.Current(); err != nil {
+		return err
+	} else {
+		return copy.Copy(src, fmt.Sprintf("%s/.spinnaker/%s", u.HomeDir, dst))
 	}
-
-	os.Mkdir(fmt.Sprintf("%s/.spinnaker", usr.HomeDir), 0755)
-
-	dst = fmt.Sprintf("%s/.spinnaker/%s", usr.HomeDir, dst)
-
-	sourceFileStat, err := os.Stat(src)
-	if err != nil {
-		return 0, err
-	}
-
-	if !sourceFileStat.Mode().IsRegular() {
-		return 0, fmt.Errorf("%s is not a regular file", src)
-	}
-
-	source, err := os.Open(src)
-	if err != nil {
-		return 0, err
-	}
-	defer source.Close()
-
-	destination, err := os.Create(dst)
-	if err != nil {
-		return 0, err
-	}
-	defer destination.Close()
-	nBytes, err := io.Copy(destination, source)
-	return nBytes, err
 }

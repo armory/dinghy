@@ -4,6 +4,7 @@ import (
 	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/settings/source"
 	"github.com/armory/dinghy/pkg/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -17,7 +18,7 @@ func TestNewLocalSource(t *testing.T) {
 }
 
 func TestLocalSource_Load(t *testing.T) {
-	localSource := loadTestDate()
+	localSource := loadTestData()
 
 	config, err := localSource.Load()
 
@@ -29,7 +30,7 @@ func TestLocalSource_Load(t *testing.T) {
 }
 
 func TestLocalSource_GetConfigurationByKey(t *testing.T) {
-	localSource := loadTestDate()
+	localSource := loadTestData()
 	_, _ = localSource.Load()
 	config := localSource.GetConfigurationByKey(source.Deck).(global.SpinnakerService)
 
@@ -41,7 +42,7 @@ func TestLocalSource_GetConfigurationByKey(t *testing.T) {
 }
 
 func TestLocalSource_GetStringByKey(t *testing.T) {
-	localSource := loadTestDate()
+	localSource := loadTestData()
 	_, _ = localSource.Load()
 	gitHubToken := localSource.GetStringByKey(source.GitHubToken)
 
@@ -49,7 +50,7 @@ func TestLocalSource_GetStringByKey(t *testing.T) {
 }
 
 func TestLocalSource_GetBoolByKey(t *testing.T) {
-	localSource := loadTestDate()
+	localSource := loadTestData()
 	_, _ = localSource.Load()
 	autoLockPipelines := localSource.GetBoolByKey(source.AutoLockPipelines)
 
@@ -57,14 +58,15 @@ func TestLocalSource_GetBoolByKey(t *testing.T) {
 }
 
 func TestLocalSource_GetStringArrayByKey(t *testing.T) {
-	localSource := loadTestDate()
+	localSource := loadTestData()
 	_, _ = localSource.Load()
 	webhookValidationEnabledProviders := localSource.GetStringArrayByKey(source.WebhookValidationEnabledProviders)
 
 	assert.Equal(t, []string{"github"}, webhookValidationEnabledProviders)
 }
 
-func loadTestDate() *LocalSource {
-	util.CopyToLocalSpinnaker("../testdata/dinghy-local.yml", "dinghy-local.yml")
+func loadTestData() *LocalSource {
+	err := util.CopyToLocalSpinnaker("../testdata/dinghy-local.yml", "dinghy-local.yml")
+	log.Error(err)
 	return NewLocalSource()
 }
