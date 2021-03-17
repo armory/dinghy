@@ -18,6 +18,8 @@ package web
 
 import (
 	"bytes"
+	"github.com/armory/dinghy/pkg/logevents"
+
 	// "errors"
 	"net/http"
 	"net/http/httptest"
@@ -231,4 +233,43 @@ func TestUnknownEventType(t *testing.T) {
 	rr := httptest.NewRecorder()
 	wa.bitbucketWebhookHandler(rr, req)
 	assert.Equal(t, 500, rr.Code)
+}
+
+func TestLogevents(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockFieldLogger(ctrl)
+
+	lec := logevents.NewMockLogEventsClient(ctrl)
+	lec.EXPECT().GetLogEvents().AnyTimes().DoAndReturn(func() ([]logevents.LogEvent, error) {
+		event := logevents.LogEvent{
+			Org:  "org",
+			Repo: "repo",
+			Files: []string{
+				"file1",
+			},
+			Message: "",
+			Date:    0,
+			Commits: []string{
+				"12345",
+			},
+			Status:             "mystatus",
+			RawData:            "raw",
+			RenderedDinghyfile: "dinghyfile",
+			PullRequest:        "https://github/pr",
+		}
+		return []logevents.LogEvent{event}, nil
+	})
+
+	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, lec)
+	req, err := http.NewRequest("GET", "/v1/logevents", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(wa.logevents)
+	handler.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, `[{"org":"org","repo":"repo","files":["file1"],"message":"","date":0,"commits":["12345"],"status":"mystatus","rawdata":"raw","rendereddinghyfile":"dinghyfile","pullrequest":"https://github/pr"}]`, rr.Body.String())
 }
