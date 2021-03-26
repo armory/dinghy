@@ -83,6 +83,10 @@ func NewDefaultSettings() Settings {
 			Port: uint32(dinghyPort),
 		},
 		LogEventTTLMinutes: 1440,
+		SQL: Sqlconfig{
+			Enabled:       false,
+			EventLogsOnly: false,
+		},
 	}
 }
 
