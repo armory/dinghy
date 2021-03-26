@@ -17,9 +17,11 @@
 package util
 
 import (
-	"os"
-
+	"fmt"
+	"github.com/otiai10/copy"
 	log "github.com/sirupsen/logrus"
+	"os"
+	"os/user"
 )
 
 // GetenvOrDefault will return the value of the given enrvironment variable,
@@ -51,4 +53,12 @@ func GetenvOrDefaultRedact(envVar, defaultVal string) string {
 	}
 	log.Infof("Checking ENV for %s...  Using default \"%s\"", envVar, redacted)
 	return defaultVal
+}
+
+func CopyToLocalSpinnaker(src, dst string) error {
+	if u, err := user.Current(); err != nil {
+		return err
+	} else {
+		return copy.Copy(src, fmt.Sprintf("%s/.spinnaker/%s", u.HomeDir, dst))
+	}
 }

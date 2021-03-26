@@ -18,12 +18,16 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
+	github.com/otiai10/copy v1.5.0
 	github.com/prometheus/client_golang v1.7.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/afero v1.1.2 // indirect
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.6.1
 	github.com/xanzy/go-gitlab v0.20.1
+	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	golang.org/x/sys v0.0.0-20210315160823-c6e025ad8005 // indirect
+	golang.org/x/tools v0.1.0 // indirect
 	gorm.io/driver/mysql v1.0.3
 	gorm.io/gorm v1.20.7
 )

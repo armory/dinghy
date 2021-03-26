@@ -16,6 +16,8 @@
 
 package logevents
 
+//go:generate mockgen -destination=logevents_mock.go -package logevents -source logevents.go
+
 type LogEventsClient interface {
 	GetLogEvents() ([]LogEvent, error)
 	SaveLogEvent(logEvent LogEvent) error
