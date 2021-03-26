@@ -24,6 +24,10 @@ require (
 	github.com/spf13/afero v1.1.2 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/xanzy/go-gitlab v0.20.1
+	go.opencensus.io v0.22.1 // indirect
+	go.opentelemetry.io/otel v0.16.0
+	go.opentelemetry.io/otel/exporters/stdout v0.16.0
+	go.opentelemetry.io/otel/sdk v0.16.0
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sys v0.0.0-20210315160823-c6e025ad8005 // indirect

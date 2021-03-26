@@ -120,8 +120,9 @@ func (wa *WebAPI) AddNotifier(n notifiers.Notifier) {
 }
 
 // Router defines the routes for the application.
-func (wa *WebAPI) Router() *mux.Router {
+func (wa *WebAPI) Router(ts TraceSettings) *mux.Router {
 	r := mux.NewRouter()
+	r.Use(ts.TraceExtract())
 	r.Handle("/metrics", promhttp.Handler())
 	r.HandleFunc(wa.MetricsHandler.WrapHandleFunc("/", wa.healthcheck))
 	r.HandleFunc(wa.MetricsHandler.WrapHandleFunc("/health", wa.healthcheck))
@@ -157,7 +158,8 @@ func (wa *WebAPI) healthcheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
+	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
+	dinghyLog := dinghylog.NewDinghyLogs(logger)
 	settings, err := wa.SourceConfig.GetSettings("")
 	if err != nil {
 		dinghyLog.Errorf("Failed to get the settings: %s", err)
@@ -192,7 +194,8 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
+	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
+	dinghyLog := dinghylog.NewDinghyLogs(logger)
 	settings, err := wa.SourceConfig.GetSettings("")
 	if err != nil {
 		dinghyLog.Errorf("Failed to get the settings: %s", err)
@@ -335,7 +338,8 @@ func getHeader(r *http.Request, key string) string {
 }
 
 func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
+	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
+	dinghyLog := dinghylog.NewDinghyLogs(logger)
 	settings, err := wa.SourceConfig.GetSettings("")
 	if err != nil {
 		dinghyLog.Errorf("Failed to get the settings: %s", err)
@@ -370,7 +374,8 @@ func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
+	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
+	dinghyLog := dinghylog.NewDinghyLogs(logger)
 	settings, err := wa.SourceConfig.GetSettings(getHeader(r, ""))
 	if err != nil {
 		dinghyLog.Errorf("Failed to get the settings: %s", err)
@@ -422,7 +427,8 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
+	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
+	dinghyLog := dinghylog.NewDinghyLogs(logger)
 	settings, err := wa.SourceConfig.GetSettings("")
 	if err != nil {
 		dinghyLog.Errorf("Failed to get the settings: %s", err)

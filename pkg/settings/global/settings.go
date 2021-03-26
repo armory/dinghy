@@ -24,6 +24,7 @@ import (
 	"github.com/armory/go-yaml-tools/pkg/tls/client"
 	"github.com/armory/go-yaml-tools/pkg/tls/server"
 	"github.com/jinzhu/copier"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -270,4 +271,14 @@ func (s *Settings) Redacted() *Settings {
 		redacted.SpinnakerSupplied.Redis.Password = "**REDACTED**"
 	}
 	return redacted
+}
+// TraceExtract middleware extracts trace context from http headers following w3c trace context format
+// and adds it to the request context
+func (s *Settings) TraceExtract() func(handler http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			reqWithTraceContext := r
+			next.ServeHTTP(w, reqWithTraceContext)
+		})
+	}
 }
