@@ -118,7 +118,6 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 	var persitenceManagerReadOnly dinghyfile.DependencyManager
 
 	// Full SQL mode
-	// TODO ensure this is correctly loaded when multi-tenant is used
 	if config.SQL.Enabled && !config.SQL.EventLogsOnly {
 
 		sqlClient, sqlerr := database.NewMySQLClient(&database.SQLConfig{
@@ -186,7 +185,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		// Redis mode
 		redisClient := cache.NewRedisCache(newRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, true)
 		if _, err := redisClient.Client.Ping().Result(); err != nil {
-			log.Errorf("Redis Server at %s could not be contacted: %v", config.SpinnakerSupplied.Redis.BaseURL, err)
+			log.Fatalf("Redis Server at %s could not be contacted: %v", config.SpinnakerSupplied.Redis.BaseURL, err)
 		}
 
 		redisClientReadOnly := cache.RedisCacheReadOnly{
