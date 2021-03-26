@@ -17,6 +17,8 @@ type ExtSettings struct {
 	Notifiers notifierConfig `json:"notifiers,omitempty" yaml:"notifiers"`
 	// Metrics configurations
 	Metrics metricsConfig `json:"metrics,omitempty" yaml:"metrics"`
+	// Yeti configuration json:"yeti,omitempty" yaml:"yeti"`
+	Yeti yetiConfig
 	// Dinghy OSS configuration
 	Settings  *global.Settings
 }
@@ -33,8 +35,12 @@ type metricsConfig struct {
 	NewRelic newRelicOpts `json:"newRelic,omitempty" yaml:"newRelic"`
 }
 
-type newRelicOpts struct{
-	ApiKey string `json:"apiKey,omitempty" yaml:"apiKey"`
+type yetiConfig struct {
+	Url string `json:"url,omitempty" yaml:"url"`
+}
+
+type newRelicOpts struct {
+	ApiKey          string `json:"apiKey,omitempty" yaml:"apiKey"`
 	ApplicationName string `json:"applicationName,omitempty" yaml:"applicationName"`
 }
 type slackOpts struct {
