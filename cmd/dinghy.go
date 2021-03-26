@@ -66,7 +66,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 	// We need to initialize the configuration for the start-up.
 	config, err := sourceConfiguration.LoadSetupSettings()
 	if err != nil {
-		log.Fatalf("%s", err.Error())
+		log.Fatal(fmt.Errorf("an error occurred when trying to load configurations: %w", err))
 	}
 
 	if config.Logging.File != "" {
