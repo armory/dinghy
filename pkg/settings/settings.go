@@ -1,11 +1,11 @@
 package settings
 
 import (
+	"github.com/armory/dinghy/pkg/settings/global"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
 
-	"github.com/armory/dinghy/pkg/settings"
 	"github.com/armory/go-yaml-tools/pkg/spring"
 )
 
@@ -15,7 +15,7 @@ type ExtSettings struct {
 	// Metrics configurations
 	Metrics metricsConfig `json:"metrics,omitempty" yaml:"metrics"`
 	// Dinghy OSS configuration
-	Settings  *settings.Settings
+	Settings  *global.Settings
 }
 
 type notifierConfig struct {
@@ -57,7 +57,7 @@ func (g githubOpts) IsEnabled() bool {
 	return strings.ToLower(g.Enabled) == "true"
 }
 
-func LoadExtraSettings(s *settings.Settings) (*ExtSettings, error) {
+func LoadExtraSettings(s *global.Settings) (*ExtSettings, error) {
 	var cfg ExtSettings
 	raw, err := spring.LoadDefault([]string{"spinnaker", "dinghy"})
 	if err != nil {

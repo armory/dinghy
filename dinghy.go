@@ -29,6 +29,7 @@ import (
 	"github.com/armory-io/dinghy/pkg/settings"
 	dinghy "github.com/armory/dinghy/cmd"
 	settings_dinghy "github.com/armory/dinghy/pkg/settings"
+	global_settings_dinghy "github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/web"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	logr "github.com/sirupsen/logrus"
@@ -44,11 +45,13 @@ func (nrm NewRelicMetricsHandler) WrapHandleFunc(pattern string, handler func(ht
 
 func main() {
 	// Load default settings and execute liquibase script
-	dinghySettings, err := settings_dinghy.LoadSettings()
+	dinghySettingsConfig, err := settings_dinghy.LoadSettings()
+	dinghySettings, err := dinghySettingsConfig.LoadSetupSettings()
 	executeLiquibase(dinghySettings)
 
 	log, api := dinghy.Setup()
-	moreConfig, err := settings.LoadExtraSettings(api.Config)
+	dinghySettings, err = api.SourceConfig.LoadSetupSettings()
+	moreConfig, err := settings.LoadExtraSettings(dinghySettings)
 	if err != nil {
 		log.Errorf("Error loading additional settings: %s", err.Error())
 	}
@@ -104,10 +107,10 @@ func main() {
 	}
 
 	api.Client.EnableArmoryEndpoints()
-	dinghy.Start(log, api, api.Config)
+	dinghy.Start(log, api, dinghySettings)
 }
 
-func executeLiquibase(settings *settings_dinghy.Settings) {
+func executeLiquibase(settings *global_settings_dinghy.Settings) {
 	log := logr.New()
 	if settings.SQL.Enabled {
 		log.Info("SQL.Enabled is true so /liquibase/liquibase-upgrade.sh will run")

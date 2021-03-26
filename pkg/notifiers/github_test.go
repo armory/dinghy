@@ -2,7 +2,7 @@ package notifiers
 
 import (
 	"github.com/armory-io/dinghy/pkg/settings"
-	ossSettings "github.com/armory/dinghy/pkg/settings"
+	ossSettings "github.com/armory/dinghy/pkg/settings/global"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"regexp"
