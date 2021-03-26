@@ -30,6 +30,9 @@ func (lSource *RemoteSource) LoadSetupSettings() (*global.Settings, error) {
 		return nil, err
 	}
 
+	config.SQL.Enabled = true
+	config.SQL.EventLogsOnly = false
+
 	return config, nil
 }
 
