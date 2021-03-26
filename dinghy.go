@@ -18,10 +18,12 @@ package main
 
 import (
 	"fmt"
-	dinghy_hcl "github.com/armory-io/dinghy/pkg/parsers/hcl"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
+
+	dinghy_hcl "github.com/armory-io/dinghy/pkg/parsers/hcl"
 
 	"github.com/armory-io/dinghy/pkg/notifiers"
 	// Open Core Dinghy
@@ -46,7 +48,13 @@ func (nrm NewRelicMetricsHandler) WrapHandleFunc(pattern string, handler func(ht
 func main() {
 	// Load default settings and execute liquibase script
 	dinghySettingsConfig, err := settings_dinghy.LoadSettings()
+	if err != nil {
+		log.Fatalf("could not load dinghy settings: %s", err.Error())
+	}
 	dinghySettings, err := dinghySettingsConfig.LoadSetupSettings()
+	if err != nil {
+		log.Fatalf("could not load local dinghy settings: %s", err.Error())
+	}
 	executeLiquibase(dinghySettings)
 
 	log, api := dinghy.Setup()
