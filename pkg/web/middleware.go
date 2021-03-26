@@ -76,7 +76,6 @@ func extractTraceContext(ctx context.Context) (*TraceContext, error) {
 	return &v, nil
 }
 
-
 // TraceContext maps to the w3c traceparent header  https://w3c.github.io/trace-context/#traceparent-header
 type TraceContext struct {
 	Version string
@@ -86,6 +85,7 @@ type TraceContext struct {
 	SpanID  string
 	Sampled string
 }
+
 func ExtractTraceContextHeaders(headers http.Header) TraceContext {
 	var tc TraceContext
 	tp := headers.Get("traceparent")
@@ -96,13 +96,15 @@ func ExtractTraceContextHeaders(headers http.Header) TraceContext {
 		if len(tpParts) == 4 {
 			// We only need trace id for now since version, sampling rate, and span id aren't relevant for correlating logs to traces
 			tc.TraceID = tpParts[1]
+			tc.SpanID = tpParts[2]
 		}
 	} else {
 		exporter, err := stdout.NewExporter(
 			stdout.WithPrettyPrint(),
 		)
 		if err != nil {
-			log.Fatalf("failed to initialize stdout export pipeline: %v", err)
+			log.Errorf("failed to initialize stdout export pipeline: %v", err)
+			return tc
 		}
 		ctx := context.Background()
 		bsp := sdktrace.NewBatchSpanProcessor(exporter)
@@ -112,6 +114,7 @@ func ExtractTraceContextHeaders(headers http.Header) TraceContext {
 		ctx, parentSpan = tracer.Start(ctx, "parentSpan")
 		defer parentSpan.End()
 		tc.TraceID = parentSpan.SpanContext().TraceID.String()
+		tc.SpanID = parentSpan.SpanContext().SpanID.String()
 
 		// Handle this error in a sensible manner where possible
 		defer func() { _ = tp.Shutdown(ctx) }()

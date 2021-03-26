@@ -9,7 +9,6 @@ import (
 // ContextFieldFunc supplies key value pairs for decorating log messages
 type ContextFieldFunc func() map[string]interface{}
 
-
 // RequestContextFields returns a ContextFieldFunc that extracts Trace and User information
 // from request context
 func RequestContextFields(ctx context.Context) ContextFieldFunc {
@@ -32,6 +31,9 @@ func RequestHeaderFields(h http.Header) ContextFieldFunc {
 		if tc.TraceID != "" {
 			fields["traceId"] = tc.TraceID
 		}
+		if tc.SpanID != "" {
+			fields["spanId"] = tc.SpanID
+		}
 		return fields
 	}
 }
@@ -42,7 +44,7 @@ func AdditionalFields(fields map[string]interface{}) ContextFieldFunc {
 	return func() map[string]interface{} { return fields }
 }
 
-func DecorateLogger(logger logrus.FieldLogger, cf ...ContextFieldFunc) *logrus.Entry {
+func DecorateLogger(logger logrus.FieldLogger, cf ...ContextFieldFunc) logrus.FieldLogger {
 	var contextLogger *logrus.Entry
 	for _, c := range cf {
 		if contextLogger == nil {
@@ -50,6 +52,9 @@ func DecorateLogger(logger logrus.FieldLogger, cf ...ContextFieldFunc) *logrus.E
 			continue
 		}
 		contextLogger = contextLogger.WithFields(c())
+	}
+	if contextLogger == nil {
+		return logger
 	}
 	return contextLogger
 }

@@ -80,6 +80,7 @@ func TestGithubWebhookHandlerBadJSON(t *testing.T) {
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode github webhook: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
 	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
@@ -102,6 +103,7 @@ func TestGithubWebhookHandlerNoRef(t *testing.T) {
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Info(gomock.Eq(stringToInterfaceSlice("Possibly a non-Push notification received (blank ref)"))).Times(1)
+	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
 	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
@@ -124,6 +126,7 @@ func TestGithubWebhookHandler(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).Times(5)
 	logger.EXPECT().Info(gomock.Any()).Times(1)
 	logger.EXPECT().Warnf(gomock.Any(), gomock.Any()).Times(1)
+	logger.EXPECT().WithFields(gomock.Any())
 
 	s := source.NewMockSourceConfiguration(ctrl)
 	s.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
@@ -171,6 +174,7 @@ func TestStashWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Reading stash payload body"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode stash webhook: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
 	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
@@ -193,6 +197,7 @@ func TestStashWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Eq("Reading stash payload body"), gomock.Any()).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode stash webhook: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
 	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
@@ -215,6 +220,7 @@ func TestBitbucketWebhookHandlerBadJSON(t *testing.T) {
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Unable to determine bitbucket event type: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
 	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
@@ -237,6 +243,7 @@ func TestBitbucketWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().Info(gomock.Eq(stringToInterfaceSlice("Processing bitbucket-server webhook"))).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode bitbucket-server webhook: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
 	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
@@ -260,6 +267,7 @@ func TestBitbucketCloudWebhookHandlerBadJSON(t *testing.T) {
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Errorf(gomock.Eq("Unable to determine bitbucket event type: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
 	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
@@ -283,6 +291,7 @@ func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().Info(gomock.Eq(stringToInterfaceSlice("Processing bitbucket-cloud webhook"))).Times(1)
 	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode bitbucket-cloud webhook: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
 	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
@@ -304,6 +313,7 @@ func TestUnknownEventType(t *testing.T) {
 	defer ctrl.Finish()
 
 	logger := mock.NewMockFieldLogger(ctrl)
+	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
 	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
