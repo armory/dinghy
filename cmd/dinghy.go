@@ -221,10 +221,10 @@ func AddUnmarshaller(u dinghyfile.DinghyJsonUnmarshaller, api *web.WebAPI) {
 	api.AddDinghyfileUnmarshaller(u)
 }
 
-func Start(log *logr.Logger, api *web.WebAPI, settings2 *settings.Settings) {
+func Start(log *logr.Logger, api *web.WebAPI, settings2 *settings.Settings, ts web.TraceSettings) {
 	log.Infof("Dinghy starting on %s", settings2.Server.GetAddr())
 	api.MetricsHandler = new(web.NoOpMetricsHandler)
-	if err := server.NewServer(&settings2.Server).Start(api.Router()); err != nil {
+	if err := server.NewServer(&settings2.Server).Start(api.Router(ts)); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -17,7 +17,10 @@
 package web
 
 import (
+	"context"
+	"errors"
 	"net/http"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -54,4 +57,43 @@ func RequestLoggingMiddleware(h http.Handler) http.Handler {
 		}()
 		h.ServeHTTP(wrappedWriter, r)
 	})
+}
+
+type TraceSettings interface {
+	TraceExtract() func(handler http.Handler) http.Handler
+}
+
+type TraceContextKey struct{}
+
+func extractTraceContext(ctx context.Context) (*TraceContext, error) {
+	v, ok := ctx.Value(TraceContextKey{}).(TraceContext)
+	if !ok {
+		return nil, errors.New("unable to extract trace context from request")
+	}
+	return &v, nil
+}
+
+
+// TraceContext maps to the w3c traceparent header  https://w3c.github.io/trace-context/#traceparent-header
+type TraceContext struct {
+	Version string
+	TraceID string
+	// SpanID is also known as the parent id
+	// since that is the upstream service's active span when the request was made
+	SpanID  string
+	Sampled string
+}
+func ExtractTraceContextHeaders(headers http.Header) TraceContext {
+	var tc TraceContext
+	tp := headers.Get("traceparent")
+	// traceparent follows format: ${supportedVersion}-${traceID}-${spanID}-${samplingRate}
+	if tp != "" {
+		tpParts := strings.Split(tp, "-")
+		// Only accept properly formatted header
+		if len(tpParts) == 4 {
+			// We only need trace id for now since version, sampling rate, and span id aren't relevant for correlating logs to traces
+			tc.TraceID = tpParts[1]
+		}
+	}
+	return tc
 }

@@ -24,5 +24,5 @@ import (
 func main() {
 	log, d := dinghy.Setup()
 	config := settings.NewDefaultSettings()
-	dinghy.Start(log, d, &config)
+	dinghy.Start(log, d, &config, &config)
 }

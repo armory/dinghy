@@ -120,8 +120,9 @@ func (wa *WebAPI) AddNotifier(n notifiers.Notifier) {
 }
 
 // Router defines the routes for the application.
-func (wa *WebAPI) Router() *mux.Router {
+func (wa *WebAPI) Router(ts TraceSettings) *mux.Router {
 	r := mux.NewRouter()
+	r.Use(ts.TraceExtract())
 	r.Handle("/metrics", promhttp.Handler())
 	r.HandleFunc(wa.MetricsHandler.WrapHandleFunc("/", wa.healthcheck))
 	r.HandleFunc(wa.MetricsHandler.WrapHandleFunc("/health", wa.healthcheck))
