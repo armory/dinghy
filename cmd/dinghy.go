@@ -23,6 +23,7 @@ import (
 	"github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/armory/dinghy/pkg/execution"
 	"github.com/armory/dinghy/pkg/logevents"
+	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/go-yaml-tools/pkg/tls/server"
 	"net/http"
 	"os"
@@ -45,7 +46,7 @@ import (
 	logr "github.com/sirupsen/logrus"
 )
 
-func newRedisOptions(redisOptions settings.Redis) *redis.Options {
+func newRedisOptions(redisOptions global.Redis) *redis.Options {
 	url := strings.TrimPrefix(redisOptions.BaseURL, "redis://")
 	return &redis.Options{
 		MaxRetries: 5,
@@ -57,9 +58,15 @@ func newRedisOptions(redisOptions settings.Redis) *redis.Options {
 
 func Setup() (*logr.Logger, *web.WebAPI) {
 	log := logr.New()
-	config, err := settings.LoadSettings()
+	sourceConfiguration, err := settings.LoadSettings()
 	if err != nil {
 		log.Fatalf("failed to load configuration: %s", err.Error())
+	}
+
+	// We need to initialize the configuration for the start-up.
+	config, err := sourceConfiguration.LoadSetupSettings()
+	if err != nil {
+		log.Fatal(fmt.Errorf("an error occurred when trying to load configurations: %w", err))
 	}
 
 	if config.Logging.File != "" {
@@ -109,14 +116,15 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 	var logEventsClient logevents.LogEventsClient
 	var persitenceManager dinghyfile.DependencyManager
 	var persitenceManagerReadOnly dinghyfile.DependencyManager
+
 	// Full SQL mode
-	if config.SQL.Enabled  && !config.SQL.EventLogsOnly {
+	if config.SQL.Enabled && !config.SQL.EventLogsOnly {
 
 		sqlClient, sqlerr := database.NewMySQLClient(&database.SQLConfig{
 			DbUrl:    config.SQL.BaseUrl,
 			User:     config.SQL.User,
 			Password: config.SQL.Password,
-			DbName:	  config.SQL.DatabaseName,
+			DbName:   config.SQL.DatabaseName,
 		}, log, ctx, stop)
 
 		if sqlerr != nil {
@@ -128,12 +136,11 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 			Logger: sqlClient.Logger,
 		}
 
-		logEventsClient = &(logevents.LogEventSQLClient{ SQLClient: sqlClient, MinutesTTL: config.LogEventTTLMinutes })
+		logEventsClient = &(logevents.LogEventSQLClient{SQLClient: sqlClient, MinutesTTL: config.LogEventTTLMinutes})
 		persitenceManager = sqlClient
 		persitenceManagerReadOnly = &sqlClientReadOnly
 
-
-		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop, false)
+		redisClient := cache.NewRedisCache(newRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, false)
 
 		var migration execution.Execution
 
@@ -147,22 +154,22 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 		migration.Execute()
 		migration.Finalize()
 
-	} else if config.SQL.Enabled  && config.SQL.EventLogsOnly {
+	} else if config.SQL.Enabled && config.SQL.EventLogsOnly {
 		// Hybrid SQL mode just for eventlogs
 		sqlClient, sqlerr := database.NewMySQLClient(&database.SQLConfig{
 			DbUrl:    config.SQL.BaseUrl,
 			User:     config.SQL.User,
 			Password: config.SQL.Password,
-			DbName:	  config.SQL.DatabaseName,
+			DbName:   config.SQL.DatabaseName,
 		}, log, ctx, stop)
 
 		if sqlerr != nil {
 			log.Fatalf("SQL Server at %s could not be contacted: %v", config.SQL.BaseUrl, err)
 		}
 
-		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop, true)
+		redisClient := cache.NewRedisCache(newRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, true)
 		if _, err := redisClient.Client.Ping().Result(); err != nil {
-			log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
+			log.Fatalf("Redis Server at %s could not be contacted: %v", config.SpinnakerSupplied.Redis.BaseURL, err)
 		}
 
 		redisClientReadOnly := cache.RedisCacheReadOnly{
@@ -170,15 +177,15 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 			Logger: redisClient.Logger,
 		}
 
-		logEventsClient = &(logevents.LogEventSQLClient{ SQLClient: sqlClient, MinutesTTL: config.LogEventTTLMinutes })
+		logEventsClient = &(logevents.LogEventSQLClient{SQLClient: sqlClient, MinutesTTL: config.LogEventTTLMinutes})
 		persitenceManager = redisClient
 		persitenceManagerReadOnly = &redisClientReadOnly
 
 	} else {
 		// Redis mode
-		redisClient := cache.NewRedisCache(newRedisOptions(config.Redis), log, ctx, stop, true)
+		redisClient := cache.NewRedisCache(newRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, true)
 		if _, err := redisClient.Client.Ping().Result(); err != nil {
-			log.Fatalf("Redis Server at %s could not be contacted: %v", config.Redis.BaseURL, err)
+			log.Fatalf("Redis Server at %s could not be contacted: %v", config.SpinnakerSupplied.Redis.BaseURL, err)
 		}
 
 		redisClientReadOnly := cache.RedisCacheReadOnly{
@@ -186,13 +193,13 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 			Logger: redisClient.Logger,
 		}
 
-		logEventsClient = logevents.LogEventRedisClient{ RedisClient: redisClient, MinutesTTL: config.LogEventTTLMinutes }
+		logEventsClient = logevents.LogEventRedisClient{RedisClient: redisClient, MinutesTTL: config.LogEventTTLMinutes}
 		persitenceManager = redisClient
 		persitenceManagerReadOnly = &redisClientReadOnly
 
 	}
 
-	api = web.NewWebAPI(config, persitenceManager, client, ec, log, persitenceManagerReadOnly, &clientReadOnly, logEventsClient)
+	api = web.NewWebAPI(sourceConfiguration, persitenceManager, client, ec, log, persitenceManagerReadOnly, &clientReadOnly, logEventsClient)
 
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
 	if config.ParserFormat == "json" {
@@ -201,7 +208,7 @@ func Setup() (*logr.Logger, *web.WebAPI) {
 	return log, api
 }
 
-func setupPlankClient(settings *settings.Settings, log *logr.Logger) *plank.Client {
+func setupPlankClient(settings *global.Settings, log *logr.Logger) *plank.Client {
 	var httpClient *http.Client
 	if log.Level == logr.DebugLevel {
 		httpClient = debug.NewInterceptorHttpClient(log, &settings.Http, true)
@@ -209,11 +216,11 @@ func setupPlankClient(settings *settings.Settings, log *logr.Logger) *plank.Clie
 		httpClient = settings.Http.NewClient()
 	}
 	client := plank.New(plank.WithClient(httpClient),
-		plank.WithFiatUser(settings.Fiat.AuthUser))
+		plank.WithFiatUser(settings.SpinnakerSupplied.Fiat.AuthUser))
 
 	// Update the base URLs based on config
-	client.URLs["orca"] = settings.Orca.BaseURL
-	client.URLs["front50"] = settings.Front50.BaseURL
+	client.URLs["orca"] = settings.SpinnakerSupplied.Orca.BaseURL
+	client.URLs["front50"] = settings.SpinnakerSupplied.Front50.BaseURL
 	return client
 }
 
@@ -221,7 +228,7 @@ func AddUnmarshaller(u dinghyfile.DinghyJsonUnmarshaller, api *web.WebAPI) {
 	api.AddDinghyfileUnmarshaller(u)
 }
 
-func Start(log *logr.Logger, api *web.WebAPI, settings2 *settings.Settings, ts web.TraceSettings) {
+func Start(log *logr.Logger, api *web.WebAPI, settings2 *global.Settings, ts web.TraceSettings) {
 	log.Infof("Dinghy starting on %s", settings2.Server.GetAddr())
 	api.MetricsHandler = new(web.NoOpMetricsHandler)
 	if err := server.NewServer(&settings2.Server).Start(api.Router(ts)); err != nil {
@@ -229,7 +236,7 @@ func Start(log *logr.Logger, api *web.WebAPI, settings2 *settings.Settings, ts w
 	}
 }
 
-func setupRemoteLogging(l *logr.Logger, loggingConfig settings.Logging) error {
+func setupRemoteLogging(l *logr.Logger, loggingConfig global.Logging) error {
 	var hostname string
 	hostname, err := os.Hostname()
 	if err != nil || hostname == "" {

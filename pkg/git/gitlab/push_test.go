@@ -18,7 +18,7 @@ package gitlab
 
 import (
 	"encoding/json"
-	"github.com/armory/dinghy/pkg/settings"
+	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
@@ -214,6 +214,14 @@ func TestFiles(t *testing.T) {
 			},
 			expected: []string{},
 		},
+		"Null commits": {
+			push: &Push{
+				Event: &gitlab.PushEvent{
+					Commits: nil,
+				},
+			},
+			expected: []string{},
+		},
 	}
 
 	for desc, tc := range testCases {
@@ -392,9 +400,9 @@ func TestIsMaster(t *testing.T) {
 func TestParseWebhook(t *testing.T) {
 	testCases := map[string]struct {
 		push        *Push
-		settings    *settings.Settings
+		settings    *global.Settings
 		body        []byte
-		expectedErr error
+		expectedErr bool
 	}{
 		"success": {
 			push: &Push{
@@ -402,12 +410,25 @@ func TestParseWebhook(t *testing.T) {
 					Ref: "refs/heads/master",
 				},
 			},
-			settings: &settings.Settings{
+			settings: &global.Settings{
 				GitLabToken:    "token",
 				GitLabEndpoint: "https://my-endpoint",
 			},
 			body:        loadExample(t),
-			expectedErr: nil,
+			expectedErr: false,
+		},
+		"failed": {
+			push: &Push{
+				Event: &gitlab.PushEvent{
+					Ref: "refs/heads/master",
+				},
+			},
+			settings: &global.Settings{
+				GitLabToken:    "token",
+				GitLabEndpoint: "  https://my-endpoint",
+			},
+			body:        loadExample(t),
+			expectedErr: true,
 		},
 	}
 
@@ -419,8 +440,14 @@ func TestParseWebhook(t *testing.T) {
 			// make sure no error is returned
 			require.Nil(t, json.Unmarshal(tc.body, &expectedEvent))
 
-			assert.Equal(t, &expectedEvent, tc.push.Event)
-			assert.Equal(t, tc.expectedErr, err)
+			if (err != nil) != tc.expectedErr {
+				t.Errorf("ParseWebhook() error = %v, wantErr %v", err, tc.expectedErr)
+				return
+			}
+
+			if !tc.expectedErr {
+				assert.Equal(t, &expectedEvent, tc.push.Event)
+			}
 		})
 	}
 }
