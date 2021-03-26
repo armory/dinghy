@@ -21,8 +21,12 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/afero v1.1.2 // indirect
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.6.1
 	github.com/xanzy/go-gitlab v0.20.1
+	go.opencensus.io v0.22.1
+	go.opentelemetry.io/otel v0.16.0
+	go.opentelemetry.io/otel/exporters/stdout v0.16.0
+	go.opentelemetry.io/otel/sdk v0.16.0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	gorm.io/driver/mysql v1.0.3
 	gorm.io/gorm v1.20.7

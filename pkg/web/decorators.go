@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
@@ -43,17 +42,7 @@ func AdditionalFields(fields map[string]interface{}) ContextFieldFunc {
 	return func() map[string]interface{} { return fields }
 }
 
-// MuxVarsExtractor extracts URL path vars from a request to decorate a logger
-func MuxVarsExtractor(r *http.Request, vars ...string) ContextFieldFunc {
-	fields := map[string]interface{}{}
-	requestVars := mux.Vars(r)
-	for _, f := range vars {
-		fields[f] = requestVars[f]
-	}
-	return AdditionalFields(fields)
-}
-
-func DecorateLogger(logger *logrus.Logger, cf ...ContextFieldFunc) *logrus.Entry {
+func DecorateLogger(logger logrus.FieldLogger, cf ...ContextFieldFunc) *logrus.Entry {
 	var contextLogger *logrus.Entry
 	for _, c := range cf {
 		if contextLogger == nil {

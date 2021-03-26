@@ -23,6 +23,9 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/exporters/stdout"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type statusLoggingResponseWriter struct {
@@ -94,6 +97,25 @@ func ExtractTraceContextHeaders(headers http.Header) TraceContext {
 			// We only need trace id for now since version, sampling rate, and span id aren't relevant for correlating logs to traces
 			tc.TraceID = tpParts[1]
 		}
+	} else {
+		exporter, err := stdout.NewExporter(
+			stdout.WithPrettyPrint(),
+		)
+		if err != nil {
+			log.Fatalf("failed to initialize stdout export pipeline: %v", err)
+		}
+		ctx := context.Background()
+		bsp := sdktrace.NewBatchSpanProcessor(exporter)
+		tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(bsp))
+		tracer := tp.Tracer("dinghyTracer")
+		var parentSpan trace.Span
+		ctx, parentSpan = tracer.Start(ctx, "parentSpan")
+		defer parentSpan.End()
+		tc.TraceID = parentSpan.SpanContext().TraceID.String()
+
+		// Handle this error in a sensible manner where possible
+		defer func() { _ = tp.Shutdown(ctx) }()
+
 	}
 	return tc
 }

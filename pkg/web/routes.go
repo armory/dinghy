@@ -158,7 +158,8 @@ func (wa *WebAPI) healthcheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
+	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
+	dinghyLog := dinghylog.NewDinghyLogs(logger)
 	var fileService = dummy.FileService{}
 
 	builder := &dinghyfile.PipelineBuilder{
@@ -187,7 +188,8 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
+	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
+	dinghyLog := dinghylog.NewDinghyLogs(logger)
 
 	p := github.Push{Logger: dinghyLog}
 
@@ -324,7 +326,8 @@ func getWebhookSecret(r *http.Request) string {
 }
 
 func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
+	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
+	dinghyLog := dinghylog.NewDinghyLogs(logger)
 
 	p := gitlab.Push{Logger: dinghyLog}
 
@@ -353,7 +356,8 @@ func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
+	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
+	dinghyLog := dinghylog.NewDinghyLogs(logger)
 	payload := stash.WebhookPayload{}
 
 	dinghyLog.Infof("Reading stash payload body")
@@ -399,7 +403,8 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
-	dinghyLog := dinghylog.NewDinghyLogs(wa.Logger)
+	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
+	dinghyLog := dinghylog.NewDinghyLogs(logger)
 	// read the response body to check for the type and use NopCloser so it can be decoded later
 	keys := make(map[string]interface{})
 	b, err := ioutil.ReadAll(r.Body)

@@ -18,6 +18,8 @@ package web
 
 import (
 	"bytes"
+	"github.com/armory/dinghy/pkg/settings"
+
 	// "errors"
 	"net/http"
 	"net/http/httptest"
@@ -35,7 +37,7 @@ import (
 func TestRouterSanity(t *testing.T) {
 	wa := &WebAPI{}
 	wa.MetricsHandler = new(NoOpMetricsHandler)
-	r := wa.Router()
+	r := wa.Router(new(settings.Settings))
 	assert.Equal(t, "*mux.Router", reflect.TypeOf(r).String())
 }
 
