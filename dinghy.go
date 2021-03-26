@@ -115,7 +115,7 @@ func main() {
 	}
 
 	api.Client.EnableArmoryEndpoints()
-	dinghy.Start(log, api, dinghySettings)
+	dinghy.Start(log, api, dinghySettings, moreConfig)
 }
 
 func executeLiquibase(settings *global_settings_dinghy.Settings) {
