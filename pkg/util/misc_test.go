@@ -17,8 +17,10 @@
 package util
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"os/user"
 	"testing"
 )
 
@@ -35,4 +37,16 @@ func TestGetenvOrDefault(t *testing.T) {
 
 	notFound := GetenvOrDefault("DOES_NOT_EXIST", "baz")
 	assert.Equal(t, "baz", notFound)
+}
+
+func TestCopyToLocalSpinnaker(t *testing.T) {
+	err := CopyToLocalSpinnaker("testdata/copyfile.yml", "copyfile.yml")
+
+	assert.Nil(t, err)
+	if u, err := user.Current(); err == nil {
+		if _, err := os.Stat(fmt.Sprintf("%s/.spinnaker/%s", u.HomeDir, "copyfile.yml")); err != nil {
+			assert.Equal(t, false, os.IsNotExist(err))
+		}
+	}
+
 }
