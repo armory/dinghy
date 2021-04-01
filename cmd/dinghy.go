@@ -24,6 +24,7 @@ import (
 	"github.com/armory/dinghy/pkg/execution"
 	"github.com/armory/dinghy/pkg/logevents"
 	"github.com/armory/dinghy/pkg/settings/global"
+	"github.com/armory/dinghy/pkg/settings/source"
 	"github.com/armory/go-yaml-tools/pkg/tls/server"
 	"net/http"
 	"os"
@@ -39,7 +40,6 @@ import (
 
 	"github.com/armory/dinghy/pkg/cache"
 	"github.com/armory/dinghy/pkg/events"
-	"github.com/armory/dinghy/pkg/settings"
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/dinghy/pkg/web"
 	"github.com/go-redis/redis"
@@ -56,13 +56,7 @@ func newRedisOptions(redisOptions global.Redis) *redis.Options {
 	}
 }
 
-func Setup() (*logr.Logger, *web.WebAPI) {
-	log := logr.New()
-	sourceConfiguration, err := settings.LoadSettings()
-	if err != nil {
-		log.Fatalf("failed to load configuration: %s", err.Error())
-	}
-
+func Setup(sourceConfiguration source.SourceConfiguration, log *logr.Logger) (*logr.Logger, *web.WebAPI) {
 	// We need to initialize the configuration for the start-up.
 	config, err := sourceConfiguration.LoadSetupSettings()
 	if err != nil {

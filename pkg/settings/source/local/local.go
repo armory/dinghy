@@ -3,6 +3,7 @@ package local
 import (
 	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/settings/source"
+	"net/http"
 )
 
 const (
@@ -41,6 +42,6 @@ func (*LocalSource) GetSourceName() string {
 }
 
 //GetSettings get settings given the key
-func (lSource *LocalSource) GetSettings(key string) (*global.Settings, error) {
+func (lSource *LocalSource) GetSettings(r *http.Request) (*global.Settings, error) {
 	return lSource.Configs, nil
 }
