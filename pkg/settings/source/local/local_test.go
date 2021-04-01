@@ -6,6 +6,7 @@ import (
 	"github.com/armory/dinghy/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"testing"
 )
 
@@ -32,7 +33,8 @@ func TestLocalSource_Load(t *testing.T) {
 func TestLocalSource_GetConfigurationByKey(t *testing.T) {
 	localSource := loadTestData()
 	_, _ = localSource.LoadSetupSettings()
-	config, err := localSource.GetSettings("")
+	r := new (http.Request)
+	config, err := localSource.GetSettings(r)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, config)
