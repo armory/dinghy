@@ -5,35 +5,52 @@
 package source
 
 import (
+	http "net/http"
+	reflect "reflect"
+
 	global "github.com/armory/dinghy/pkg/settings/global"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
-// MockSourceConfiguration is a mock of SourceConfiguration interface
+// MockSourceConfiguration is a mock of SourceConfiguration interface.
 type MockSourceConfiguration struct {
 	ctrl     *gomock.Controller
 	recorder *MockSourceConfigurationMockRecorder
 }
 
-// MockSourceConfigurationMockRecorder is the mock recorder for MockSourceConfiguration
+// MockSourceConfigurationMockRecorder is the mock recorder for MockSourceConfiguration.
 type MockSourceConfigurationMockRecorder struct {
 	mock *MockSourceConfiguration
 }
 
-// NewMockSourceConfiguration creates a new mock instance
+// NewMockSourceConfiguration creates a new mock instance.
 func NewMockSourceConfiguration(ctrl *gomock.Controller) *MockSourceConfiguration {
 	mock := &MockSourceConfiguration{ctrl: ctrl}
 	mock.recorder = &MockSourceConfigurationMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockSourceConfiguration) EXPECT() *MockSourceConfigurationMockRecorder {
 	return m.recorder
 }
 
-// GetSourceName mocks base method
+// GetSettings mocks base method.
+func (m *MockSourceConfiguration) GetSettings(r *http.Request) (*global.Settings, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSettings", r)
+	ret0, _ := ret[0].(*global.Settings)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSettings indicates an expected call of GetSettings.
+func (mr *MockSourceConfigurationMockRecorder) GetSettings(r interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSettings", reflect.TypeOf((*MockSourceConfiguration)(nil).GetSettings), r)
+}
+
+// GetSourceName mocks base method.
 func (m *MockSourceConfiguration) GetSourceName() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSourceName")
@@ -41,13 +58,13 @@ func (m *MockSourceConfiguration) GetSourceName() string {
 	return ret0
 }
 
-// GetSourceName indicates an expected call of GetSourceName
+// GetSourceName indicates an expected call of GetSourceName.
 func (mr *MockSourceConfigurationMockRecorder) GetSourceName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSourceName", reflect.TypeOf((*MockSourceConfiguration)(nil).GetSourceName))
 }
 
-// LoadSetupSettings mocks base method
+// LoadSetupSettings mocks base method.
 func (m *MockSourceConfiguration) LoadSetupSettings() (*global.Settings, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadSetupSettings")
@@ -56,23 +73,8 @@ func (m *MockSourceConfiguration) LoadSetupSettings() (*global.Settings, error) 
 	return ret0, ret1
 }
 
-// LoadSetupSettings indicates an expected call of LoadSetupSettings
+// LoadSetupSettings indicates an expected call of LoadSetupSettings.
 func (mr *MockSourceConfigurationMockRecorder) LoadSetupSettings() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadSetupSettings", reflect.TypeOf((*MockSourceConfiguration)(nil).LoadSetupSettings))
-}
-
-// GetSettings mocks base method
-func (m *MockSourceConfiguration) GetSettings(key string) (*global.Settings, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSettings", key)
-	ret0, _ := ret[0].(*global.Settings)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSettings indicates an expected call of GetSettings
-func (mr *MockSourceConfigurationMockRecorder) GetSettings(key interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSettings", reflect.TypeOf((*MockSourceConfiguration)(nil).GetSettings), key)
 }
