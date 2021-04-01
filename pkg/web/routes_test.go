@@ -83,7 +83,7 @@ func TestGithubWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
 		return &global.Settings{}, nil
 	})
 
@@ -106,7 +106,7 @@ func TestGithubWebhookHandlerNoRef(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
 		return &global.Settings{}, nil
 	})
 	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
@@ -129,7 +129,7 @@ func TestGithubWebhookHandler(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	s := source.NewMockSourceConfiguration(ctrl)
-	s.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+	s.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
 		return &global.Settings{
 			TemplateRepo:                      "my-repo",
 			TemplateOrg:                       "my-org",
@@ -177,7 +177,7 @@ func TestStashWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
 		return &global.Settings{}, nil
 	})
 	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
@@ -200,7 +200,7 @@ func TestStashWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
 		return &global.Settings{}, nil
 	})
 
@@ -223,7 +223,7 @@ func TestBitbucketWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
 		return &global.Settings{}, nil
 	})
 
@@ -246,7 +246,7 @@ func TestBitbucketWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
 		return &global.Settings{}, nil
 	})
 
@@ -270,7 +270,7 @@ func TestBitbucketCloudWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
 		return &global.Settings{}, nil
 	})
 
@@ -294,7 +294,7 @@ func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
 		return &global.Settings{}, nil
 	})
 
@@ -316,7 +316,7 @@ func TestUnknownEventType(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(key string) (*global.Settings, error) {
+	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
 		return &global.Settings{}, nil
 	})
 
