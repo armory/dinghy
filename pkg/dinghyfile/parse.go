@@ -269,7 +269,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// If we are validating then check always against the modules in master since current branch will
 	// not exists in templare repo
 	var moduleBranch = branch
-	if r.Builder.Action == pipebuilder.Validate {
+	if r.Builder.Action == pipebuilder.Validate && r.Builder.TemplateOrg != org {
 		moduleBranch = "master"
 	}
 	// NOTE:  I don't think moduleFunc needs to take branch argument;
