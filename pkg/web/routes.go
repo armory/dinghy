@@ -85,6 +85,7 @@ type WebAPI struct {
 	Notifiers       []notifiers.Notifier
 	Parser          dinghyfile.Parser
 	LogEventsClient logevents.LogEventsClient
+	MuxRouter       *mux.Router
 	MetricsHandler
 }
 

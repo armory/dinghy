@@ -45,3 +45,5 @@ func (*LocalSource) GetSourceName() string {
 func (lSource *LocalSource) GetSettings(r *http.Request) (*global.Settings, error) {
 	return lSource.Configs, nil
 }
+
+func (*LocalSource) BustCacheHandler(w http.ResponseWriter, r *http.Request) {}

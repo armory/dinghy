@@ -46,3 +46,5 @@ func (*RemoteSource) GetSourceName() string {
 func (lSource *RemoteSource) GetSettings(r *http.Request) (*global.Settings, error) {
 	return nil, nil
 }
+
+func (*RemoteSource) BustCacheHandler(w http.ResponseWriter, r *http.Request) {}

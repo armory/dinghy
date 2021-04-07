@@ -11,4 +11,5 @@ type SourceConfiguration interface {
 	GetSourceName() string
 	LoadSetupSettings() (*global.Settings, error)
 	GetSettings(r *http.Request) (*global.Settings, error)
+	BustCacheHandler(w http.ResponseWriter, r *http.Request)
 }
