@@ -215,7 +215,7 @@ func removeModules(input string, gitInfo git.GitInfo) string {
 	}
 
 	// All sprig functions will be changed for a dummy slice
-	for key,_ := range sprig.GenericFuncMap() {
+	for key, _ := range sprig.GenericFuncMap() {
 		funcMap[key] = dummySlice
 	}
 
@@ -231,4 +231,10 @@ func removeModules(input string, gitInfo git.GitInfo) string {
 	}
 
 	return buf.String()
+}
+
+// ContentShouldBeParsedCorrectly content should be parsed correctly
+func ContentShouldBeParsedCorrectly(content string) error {
+	d := make(map[string]interface{})
+	return json.Unmarshal([]byte(content), &d)
 }
