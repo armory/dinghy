@@ -35,6 +35,18 @@ func (m *MockSourceConfiguration) EXPECT() *MockSourceConfigurationMockRecorder 
 	return m.recorder
 }
 
+// BustCacheHandler mocks base method.
+func (m *MockSourceConfiguration) BustCacheHandler(w http.ResponseWriter, r *http.Request) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "BustCacheHandler", w, r)
+}
+
+// BustCacheHandler indicates an expected call of BustCacheHandler.
+func (mr *MockSourceConfigurationMockRecorder) BustCacheHandler(w, r interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BustCacheHandler", reflect.TypeOf((*MockSourceConfiguration)(nil).BustCacheHandler), w, r)
+}
+
 // GetSettings mocks base method.
 func (m *MockSourceConfiguration) GetSettings(r *http.Request) (*global.Settings, error) {
 	m.ctrl.T.Helper()
