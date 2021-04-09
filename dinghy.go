@@ -18,7 +18,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"github.com/armory-io/dinghy/pkg/settings/loader"
 	"net/http"
 	"os"
 	"os/exec"
@@ -28,9 +28,7 @@ import (
 	"github.com/armory-io/dinghy/pkg/notifiers"
 	// Open Core Dinghy
 	dinghy_yaml "github.com/armory-io/dinghy/pkg/parsers/yaml"
-	"github.com/armory-io/dinghy/pkg/settings"
 	dinghy "github.com/armory/dinghy/cmd"
-	settings_dinghy "github.com/armory/dinghy/pkg/settings"
 	global_settings_dinghy "github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/web"
 	"github.com/newrelic/go-agent/v3/newrelic"
@@ -47,39 +45,33 @@ func (nrm NewRelicMetricsHandler) WrapHandleFunc(pattern string, handler func(ht
 
 func main() {
 	// Load default settings and execute liquibase script
-	dinghySettingsConfig, err := settings_dinghy.LoadSettings()
+	log := logr.New()
+	sourceConfiguration, dinghySettings, moreConfig, err := loader.LoadSettings()
 	if err != nil {
 		log.Fatalf("could not load dinghy settings: %s", err.Error())
 	}
-	dinghySettings, err := dinghySettingsConfig.LoadSetupSettings()
-	if err != nil {
-		log.Fatalf("could not load local dinghy settings: %s", err.Error())
-	}
 	executeLiquibase(dinghySettings)
 
-	log, api := dinghy.Setup()
-	dinghySettings, err = api.SourceConfig.LoadSetupSettings()
-	moreConfig, err := settings.LoadExtraSettings(dinghySettings)
-	if err != nil {
-		log.Errorf("Error loading additional settings: %s", err.Error())
-	}
+
+	logger, api := dinghy.Setup(sourceConfiguration, log)
+
 	if moreConfig.Notifiers.Slack.IsEnabled() {
-		log.Infof("Slack notifications enabled, sending to %s", moreConfig.Notifiers.Slack.Channel)
+		logger.Infof("Slack notifications enabled, sending to %s", moreConfig.Notifiers.Slack.Channel)
 		api.AddNotifier(notifiers.NewSlackNotifier(moreConfig))
 	} else {
-		log.Info("Slack notifications disabled/not configured")
+		logger.Info("Slack notifications disabled/not configured")
 	}
 
 	if moreConfig.Notifiers.Github.IsEnabled() {
-		log.Infof("Github notifications enabled")
+		logger.Infof("Github notifications enabled")
 		api.AddNotifier(notifiers.NewGithubNotifier(moreConfig))
 	} else {
-		log.Info("Github notifications disabled")
+		logger.Info("Github notifications disabled")
 	}
 	var app *newrelic.Application
 	if moreConfig.Metrics.NewRelic.ApiKey != "" {
 		if moreConfig.Metrics.NewRelic.ApplicationName == "" {
-			log.Error("An NewRelic application name must be pecified")
+			logger.Error("An NewRelic application name must be pecified")
 		}
 		app, err = newrelic.NewApplication(
 			// Name your application
@@ -105,17 +97,19 @@ func main() {
 	}
 	switch moreConfig.Settings.ParserFormat {
 	case "yaml":
-		log.Info("Setting Dinghyfile parser to YAML")
+		logger.Info("Setting Dinghyfile parser to YAML")
 		api.AddDinghyfileUnmarshaller(&dinghy_yaml.DinghyYaml{})
 		api.SetDinghyfileParser(&dinghy_yaml.DinghyfileYamlParser{})
 	case "hcl":
-		log.Info("Settting Dinghyfile parser to HCL")
+		logger.Info("Settting Dinghyfile parser to HCL")
 		api.AddDinghyfileUnmarshaller(&dinghy_hcl.DinghyHcl{})
 		api.SetDinghyfileParser(&dinghy_hcl.DinghyfileHclParser{})
 	}
 
 	api.Client.EnableArmoryEndpoints()
-	dinghy.Start(log, api, dinghySettings, moreConfig)
+	api.MuxRouter = api.Router(moreConfig)
+	api.MuxRouter.HandleFunc(api.MetricsHandler.WrapHandleFunc("/v1/config/cachebust", api.SourceConfig.BustCacheHandler)).Methods("POST")
+	dinghy.Start(logger, api, dinghySettings)
 }
 
 func executeLiquibase(settings *global_settings_dinghy.Settings) {

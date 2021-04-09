@@ -19,7 +19,7 @@ github.com/Masterminds/sprig/v3
 # github.com/armory-io/monitoring v0.0.7
 github.com/armory-io/monitoring/log/formatters
 github.com/armory-io/monitoring/log/hooks
-# github.com/armory/dinghy v1.0.2-0.20210326220902-7d1049268e41
+# github.com/armory/dinghy v0.0.0-20210409191753-30a52a69879a
 github.com/armory/dinghy/cmd
 github.com/armory/dinghy/pkg/cache
 github.com/armory/dinghy/pkg/cache/local
@@ -40,12 +40,10 @@ github.com/armory/dinghy/pkg/logevents
 github.com/armory/dinghy/pkg/mock
 github.com/armory/dinghy/pkg/notifiers
 github.com/armory/dinghy/pkg/preprocessor
-github.com/armory/dinghy/pkg/settings
 github.com/armory/dinghy/pkg/settings/global
 github.com/armory/dinghy/pkg/settings/secret
 github.com/armory/dinghy/pkg/settings/source
 github.com/armory/dinghy/pkg/settings/source/local
-github.com/armory/dinghy/pkg/settings/source/remote
 github.com/armory/dinghy/pkg/util
 github.com/armory/dinghy/pkg/web
 # github.com/armory/go-yaml-tools v0.0.2
@@ -221,6 +219,8 @@ github.com/newrelic/go-agent/v3/internal/utilization
 github.com/newrelic/go-agent/v3/newrelic
 # github.com/otiai10/copy v1.5.0
 github.com/otiai10/copy
+# github.com/patrickmn/go-cache v2.1.0+incompatible
+github.com/patrickmn/go-cache
 # github.com/pierrec/lz4 v2.5.0+incompatible
 github.com/pierrec/lz4
 github.com/pierrec/lz4/internal/xxh32

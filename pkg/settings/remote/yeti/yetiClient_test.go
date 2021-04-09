@@ -2,7 +2,6 @@ package yeti
 
 import (
 	"bytes"
-	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory-io/dinghy/utils/mocks"
 	ossSettings "github.com/armory/dinghy/pkg/settings/global"
 	"io/ioutil"
@@ -29,7 +28,7 @@ func TestClient_GetSettings(t *testing.T) {
 		fields       fields
 		args         args
 		responseJson string
-		want         settings.ExtSettings
+		want         *ossSettings.Settings
 		wantErr      bool
 	}{
 		{
@@ -64,18 +63,6 @@ func TestClient_GetSettings(t *testing.T) {
 							"enabled": false,
 							"endpoint": "",
 							"version": ""
-						}
-					},
-					"metrics": {
-						"newRelic": {}
-					},
-					"notifiers": {
-						"github": {
-							"enabled": ""
-						},
-						"slack": {
-							"channel": "",
-							"enabled": ""
 						}
 					},
 					"orca": {},
@@ -116,18 +103,15 @@ func TestClient_GetSettings(t *testing.T) {
 					"templateOrg": "testUpdate"
 				}
 			}`,
-
-			want: settings.ExtSettings{
-				Settings: &ossSettings.Settings{
-					TemplateOrg: "testUpdate",
-				},
+			want: &ossSettings.Settings{
+				TemplateOrg: "testUpdate",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			y := &Client{
-				YetiUrl:     tt.fields.YetiUrl,
+				YetiUrl: tt.fields.YetiUrl,
 			}
 			r := ioutil.NopCloser(bytes.NewReader([]byte(tt.responseJson)))
 			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {

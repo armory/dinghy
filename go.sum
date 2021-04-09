@@ -53,6 +53,8 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/armory-io/monitoring v0.0.7 h1:IVVhiqhavr+yH2IXlMZMyqjhBb9Ms9L6qmKswLh+ODQ=
 github.com/armory-io/monitoring v0.0.7/go.mod h1:EqWc/9ldt7teZxnS2xnAMJsthM7ldI4ArLnjBRGCYSo=
+github.com/armory/dinghy v0.0.0-20210409191753-30a52a69879a h1:FPXGyh876NMnkeGyoscUQA0AFWTtC0USUKeoQjCEuFE=
+github.com/armory/dinghy v0.0.0-20210409191753-30a52a69879a/go.mod h1:cvXUr7ZZRv+0G4SQ0wQI4dtu2YBM7hQp2rQ3N0R6GZQ=
 github.com/armory/dinghy v1.0.2-0.20210216204545-a0f9eaa4475d h1:7+eVwGgB56H68eeiQ0auuw9aiWZXBjlZUpzFWYKD55k=
 github.com/armory/dinghy v1.0.2-0.20210216204545-a0f9eaa4475d/go.mod h1:14b6S53fouZNKrtq7qNcAyPARLxOyu/9BR5gbY1ON78=
 github.com/armory/dinghy v1.0.2-0.20210222193722-0ee3187da733 h1:6ESze/9rXjW/R15PI/fgH0aSFTfrFVU5Nd57pCEmBcY=
@@ -318,6 +320,8 @@ github.com/otiai10/curr v1.0.0/go.mod h1:LskTG5wDwr8Rs+nNQ+1LlxRjAtTZZjtJW4rMXl6
 github.com/otiai10/mint v1.3.0/go.mod h1:F5AjcsTsWUqX+Na9fpHb52P8pcRX2CI6A3ctIT91xUo=
 github.com/otiai10/mint v1.3.2/go.mod h1:/yxELlJQ0ufhjUwhshSj+wFjZ78CnZ48/1wtmBH1OTc=
 github.com/pascaldekloe/goe v0.1.0/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
+github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=
+github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=
 github.com/pborman/uuid v0.0.0-20180906182336-adf5a7427709/go.mod h1:VyrYX9gd7irzKovcSS6BIIEwPRkP2Wm2m9ufcdFSJ34=
 github.com/pierrec/lz4 v2.0.5+incompatible/go.mod h1:pdkljMzZIN41W+lC3N2tnIh5sFi+IEE17M5jbnwPHcY=
 github.com/pierrec/lz4 v2.3.0+incompatible h1:CZzRn4Ut9GbUkHlQ7jqBXeZQV41ZSKWFc302ZU6lUTk=

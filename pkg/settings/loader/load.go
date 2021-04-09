@@ -15,13 +15,15 @@
  */
 
 // Package settings is a single place to put all of the application settings.
-package settings
+package loader
 
 import (
 	"flag"
+	"github.com/armory-io/dinghy/pkg/settings"
+	"github.com/armory-io/dinghy/pkg/settings/remote"
+	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/settings/source"
 	"github.com/armory/dinghy/pkg/settings/source/local"
-	"github.com/armory/dinghy/pkg/settings/source/remote"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -36,15 +38,44 @@ var Mode = flag.String("mode", string(SingleTenant), "Dinghy mode")
 
 // LoadSettings loads the Spring config from the default Spinnaker paths
 // and merges default settings with the loaded settings
-func LoadSettings() (source.SourceConfiguration, error) {
+func LoadSettings() (source.SourceConfiguration, *global.Settings, *settings.ExtSettings, error) {
 	flag.Parse()
 	log.Infof("Dinghy is running on %s mode", *Mode)
-
-	var s source.SourceConfiguration = local.NewLocalSource()
+	var dinghySettings *global.Settings
+	var moreConfig *settings.ExtSettings
+	var err error
 
 	if *Mode == string(MultiTenant) { // multi-tenant
-		s = remote.NewRemoteSource()
+		s := remote.NewRemoteSource()
+		dinghySettings, err = s.LoadSetupSettings()
+
+		if err != nil {
+			log.Fatalf("could not load local dinghy settings: %s", err.Error())
+		}
+
+		moreConfig, err = settings.LoadExtraSettings(dinghySettings)
+		if err != nil {
+			log.Errorf("Error loading additional settings: %s", err.Error())
+		}
+		if moreConfig.Yeti.Url != "" {
+			s.SetYetiEndpoint(moreConfig.Yeti.Url)
+		} else {
+			log.Fatalf("Error: Yeti URL must be specified")
+		}
+		return s, dinghySettings, moreConfig, nil
+	} else {
+		s := local.NewLocalSource()
+		dinghySettings, err = s.LoadSetupSettings()
+
+		if err != nil {
+			log.Fatalf("could not load local dinghy settings: %s", err.Error())
+		}
+
+		moreConfig, err = settings.LoadExtraSettings(dinghySettings)
+		if err != nil {
+			log.Errorf("Error loading additional settings: %s", err.Error())
+		}
+		return s, dinghySettings, moreConfig, nil
 	}
 
-	return s, nil
 }

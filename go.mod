@@ -3,7 +3,7 @@ module github.com/armory-io/dinghy
 require (
 	cloud.google.com/go v0.56.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.1.0
-	github.com/armory/dinghy v1.0.2-0.20210326220902-7d1049268e41
+	github.com/armory/dinghy v0.0.0-20210409191753-30a52a69879a
 	github.com/armory/go-yaml-tools v0.0.2
 	github.com/armory/plank/v3 v3.4.5
 	github.com/aws/aws-sdk-go v1.30.7 // indirect
@@ -22,6 +22,7 @@ require (
 	github.com/mitchellh/mapstructure v1.2.2
 	github.com/newrelic/go-agent v3.10.0+incompatible // indirect
 	github.com/newrelic/go-agent/v3 v3.10.0
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pierrec/lz4 v2.5.0+incompatible // indirect
 	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/afero v1.2.2 // indirect

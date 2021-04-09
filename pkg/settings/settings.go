@@ -1,8 +1,8 @@
 package settings
 
 import (
-	"github.com/armory/dinghy/pkg/settings/global"
 	"context"
+	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/web"
 	"net/http"
 	"strings"
@@ -17,8 +17,8 @@ type ExtSettings struct {
 	Notifiers notifierConfig `json:"notifiers,omitempty" yaml:"notifiers"`
 	// Metrics configurations
 	Metrics metricsConfig `json:"metrics,omitempty" yaml:"metrics"`
-	// Yeti configuration json:"yeti,omitempty" yaml:"yeti"`
-	Yeti yetiConfig
+	// Yeti configuration
+	Yeti yetiConfig `json:"yeti,omitempty" yaml:"yeti"`
 	// Dinghy OSS configuration
 	Settings  *global.Settings
 }
