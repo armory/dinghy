@@ -3,6 +3,7 @@ package remote
 import (
 	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/settings/source"
+	"net/http"
 )
 
 const (
@@ -42,6 +43,8 @@ func (*RemoteSource) GetSourceName() string {
 }
 
 //GetSettings get settings given the key
-func (lSource *RemoteSource) GetSettings(key string) (*global.Settings, error) {
+func (lSource *RemoteSource) GetSettings(r *http.Request) (*global.Settings, error) {
 	return nil, nil
 }
+
+func (*RemoteSource) BustCacheHandler(w http.ResponseWriter, r *http.Request) {}

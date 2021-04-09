@@ -18,11 +18,19 @@ package main
 
 import (
 	dinghy "github.com/armory/dinghy/cmd"
+	"github.com/armory/dinghy/pkg/settings"
 	"github.com/armory/dinghy/pkg/settings/global"
+	logr "github.com/sirupsen/logrus"
 )
 
 func main() {
-	log, d := dinghy.Setup()
+	s, err := settings.LoadSettings()
+	log := logr.New()
+	if err != nil {
+		log.Fatalf("failed to load configuration: %s", err.Error())
+	}
+	log, d := dinghy.Setup(s, log)
 	config := global.NewDefaultSettings()
-	dinghy.Start(log, d, &config, &config)
+	d.MuxRouter = d.Router(&config)
+	dinghy.Start(log, d, &config)
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/armory/dinghy/pkg/execution"
 	"github.com/armory/dinghy/pkg/logevents"
 	"github.com/armory/dinghy/pkg/settings/global"
+	"github.com/armory/dinghy/pkg/settings/source"
 	"github.com/armory/go-yaml-tools/pkg/tls/server"
 	"net/http"
 	"os"
@@ -39,7 +40,6 @@ import (
 
 	"github.com/armory/dinghy/pkg/cache"
 	"github.com/armory/dinghy/pkg/events"
-	"github.com/armory/dinghy/pkg/settings"
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/dinghy/pkg/web"
 	"github.com/go-redis/redis"
@@ -56,13 +56,7 @@ func newRedisOptions(redisOptions global.Redis) *redis.Options {
 	}
 }
 
-func Setup() (*logr.Logger, *web.WebAPI) {
-	log := logr.New()
-	sourceConfiguration, err := settings.LoadSettings()
-	if err != nil {
-		log.Fatalf("failed to load configuration: %s", err.Error())
-	}
-
+func Setup(sourceConfiguration source.SourceConfiguration, log *logr.Logger) (*logr.Logger, *web.WebAPI) {
 	// We need to initialize the configuration for the start-up.
 	config, err := sourceConfiguration.LoadSetupSettings()
 	if err != nil {
@@ -228,10 +222,10 @@ func AddUnmarshaller(u dinghyfile.DinghyJsonUnmarshaller, api *web.WebAPI) {
 	api.AddDinghyfileUnmarshaller(u)
 }
 
-func Start(log *logr.Logger, api *web.WebAPI, settings2 *global.Settings, ts web.TraceSettings) {
+func Start(log *logr.Logger, api *web.WebAPI, settings2 *global.Settings) {
 	log.Infof("Dinghy starting on %s", settings2.Server.GetAddr())
 	api.MetricsHandler = new(web.NoOpMetricsHandler)
-	if err := server.NewServer(&settings2.Server).Start(api.Router(ts)); err != nil {
+	if err := server.NewServer(&settings2.Server).Start(api.MuxRouter); err != nil {
 		log.Fatal(err)
 	}
 }
