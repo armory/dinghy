@@ -312,7 +312,8 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 	b.RebuildingModules = true
 	errEncountered := false
 	failedUpdates := []string{}
-	if b.Action == pipebuilder.Validate && b.TemplateOrg != org {
+	// if we are doing a update on template repo, we should test against the branch
+	if b.Action == pipebuilder.Validate && b.TemplateRepo != repo {
 		// Since we are checking for modules, those live in master
 		branch = "master"
 	}
