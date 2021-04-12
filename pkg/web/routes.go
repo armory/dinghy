@@ -678,6 +678,13 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
+			// ensure module is correctly parsed
+			if _, err := builder.Parser.Parse(p.Org(), p.Repo(), file, p.Branch(), nil); err != nil {
+				p.SetCommitStatus(git.StatusError, "module parse failed")
+				dinghyLog.Errorf("module parse failed: %s", err.Error())
+				saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
+				return
+			}
 			if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch()); err != nil {
 				switch err.(type) {
 				case *util.GitHubFileNotFoundErr:

@@ -242,6 +242,16 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 		return nil, err
 	}
 
+	// Validate if module is parsed correctly
+	if r.Builder.Action == pipebuilder.Validate && repo == r.Builder.TemplateRepo {
+		err = preprocessor.ContentShouldBeParsedCorrectly(contents)
+		if err != nil {
+			r.Builder.Logger.Errorf("Failed to parse module:\n %s", contents)
+			r.Builder.EventClient.SendEvent("parse-err-module", event)
+			return nil, err
+		}
+	}
+
 	// Extract global vars if we're processing a dinghyfile (and not a module)
 	if filepath.Base(path) == r.Builder.DinghyfileName {
 		module = false
@@ -269,7 +279,8 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// If we are validating then check always against the modules in master since current branch will
 	// not exists in templare repo
 	var moduleBranch = branch
-	if r.Builder.Action == pipebuilder.Validate {
+	// if we are doing a update on template repo, we should test against the branch
+	if r.Builder.Action == pipebuilder.Validate && r.Builder.TemplateRepo != repo {
 		moduleBranch = "master"
 	}
 	// NOTE:  I don't think moduleFunc needs to take branch argument;

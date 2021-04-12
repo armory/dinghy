@@ -18,6 +18,7 @@ package dinghyfile
 
 import (
 	"errors"
+	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -504,6 +505,12 @@ var fileService = dummy.FileService{
 		// Sprig functions test
 		"sprig_functions": `{
 			"test": {{ splitList "$" "foo$bar$baz" | toJson }}
+		}`,
+		// ParseModuleOnValidation
+		"parse_module_on_validation": `{
+		  "name": value,
+		  "waitTime": 1,
+		  "type": 1
 		}`,
 	},
 	"branch": {
@@ -1312,4 +1319,16 @@ func TestSprigFuncs(t *testing.T) {
 	exp := strings.Join(strings.Fields(expected), "")
 	actual := strings.Join(strings.Fields(buf.String()), "")
 	assert.Equal(t, exp, actual)
+}
+
+func TestParseModuleOnValidation(t *testing.T) {
+	r := testDinghyfileParser()
+	r.Builder.DinghyfileName = "nested_var_df"
+	r.Builder.TemplateOrg = "org"
+	r.Builder.TemplateRepo = "repo"
+	r.Builder.Action = pipebuilder.Validate
+	r.Builder.TemplateRepo = "repo"
+	_, err := r.Parse("org", "repo", "parse_module_on_validation", "master", nil)
+
+	assert.NotNil(t, err)
 }
