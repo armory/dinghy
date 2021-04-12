@@ -5,6 +5,9 @@ metadata:
   labels:
     app: dinghy
 spec:
+  # TODO in the future if we setup external-dns we can have our own DNS
+  # TODO annotations here.
+  type: LoadBalancer
   ports:
   - port: 80
     targetPort: 8081

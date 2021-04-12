@@ -20,3 +20,12 @@ provider "aws" {
 module "db" {
   source = "./module/rds/aurora"
 }
+
+data "aws_sns_topic" "yeti_notification_topic" {
+  name = "armory-cloud-services-prod-yeti-configuration-notifications"
+}
+
+module "cache_bust" {
+  source = "./module/cachebust"
+  notification_topic_arn = data.aws_sns_topic.yeti_notification_topic.arn
+}

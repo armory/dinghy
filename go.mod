@@ -6,6 +6,7 @@ require (
 	github.com/armory/dinghy v0.0.0-20210409191753-30a52a69879a
 	github.com/armory/go-yaml-tools v0.0.2
 	github.com/armory/plank/v3 v3.4.5
+	github.com/aws/aws-lambda-go v1.23.0
 	github.com/aws/aws-sdk-go v1.30.7 // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-redis/redis v6.15.7+incompatible // indirect
@@ -19,6 +20,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0
 	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/leanovate/gopter v0.2.9
 	github.com/mitchellh/mapstructure v1.2.2
 	github.com/newrelic/go-agent v3.10.0+incompatible // indirect
 	github.com/newrelic/go-agent/v3 v3.10.0

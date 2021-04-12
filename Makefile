@@ -110,3 +110,7 @@ docker-push:
 
 .PHONY: lint linux darwin test vet fmt clean run
 
+lambda:
+	GOOS=linux go build -i ${LDFLAGS} -o cachelambda/main ./cachelambda/main.go
+	cd cachelambda && zip lambda_function_payload.zip main
+

@@ -16,3 +16,8 @@ coveragereport.txt
 .armory-dependencies
 
 infrastructure/.terraform
+lambda_function_payload.zip
+.env-telepresence
+cachelambda/main
+coverage.out
+infrastructure/.terraform.lock.hcl
