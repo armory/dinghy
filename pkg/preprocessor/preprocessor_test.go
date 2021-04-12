@@ -18,6 +18,7 @@ package preprocessor
 
 import (
 	"github.com/armory/dinghy/pkg/git"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -102,4 +103,106 @@ func TestPreprocessingGlobalVars(t *testing.T) {
 	assert.Contains(t, gvMap, "system")
 	assert.Equal(t, gvMap["system"], "order_tracking")
 	assert.Nil(t, err)
+}
+
+func TestContentShouldBeParsedCorrectly(t *testing.T) {
+	type args struct {
+		content string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "content should be parsed correctly",
+			args: args{
+				content: `{"app": "myapp"}`,
+			},
+			wantErr: false,
+		},
+		{
+			name: "parse should fail, content contains a invalid JSON",
+			args: args{
+				content: `{"myvalue": non-formatted  }`,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := ContentShouldBeParsedCorrectly(tt.args.content); (err != nil) != tt.wantErr {
+				t.Errorf("ContentShouldBeParsedCorrectly() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_dummyKV(t *testing.T) {
+	type args struct {
+		args []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "should return a dummy KV",
+			want: `"a": "b"`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := dummyKV(tt.args.args...); got != tt.want {
+				t.Errorf("dummyKV() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_dummyVar(t *testing.T) {
+	type args struct {
+		args []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "should return a dummy Var",
+			want: "1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := dummyVar(tt.args.args...); got != tt.want {
+				t.Errorf("dummyVar() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_dummySlice(t *testing.T) {
+	type args struct {
+		args []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "should return a dummy Slice",
+			want: make([]string, 0),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := dummySlice(tt.args.args...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("dummySlice() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
