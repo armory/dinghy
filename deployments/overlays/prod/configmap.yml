@@ -6,6 +6,9 @@ data:
   dinghy.yml: |
     yeti:
       url: http://yeti-service.armory-hosted-services-prod:3088
+    metrics:
+      newRelic:
+        applicationName: Cloud Dinghy - Prod
     sql:
       enabled: true
       baseUrl: dinghy-prod.cluster-cor432xqquey.us-west-2.rds.amazonaws.com:3306

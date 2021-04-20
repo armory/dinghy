@@ -69,9 +69,11 @@ func main() {
 		logger.Info("Github notifications disabled")
 	}
 	var app *newrelic.Application
-	if moreConfig.Metrics.NewRelic.ApiKey != "" {
+	newRelicApiKey := os.Getenv("NEW_RELIC_KEY")
+	if newRelicApiKey != "" {
+		moreConfig.Metrics.NewRelic.ApiKey=newRelicApiKey
 		if moreConfig.Metrics.NewRelic.ApplicationName == "" {
-			logger.Error("An NewRelic application name must be pecified")
+			logger.Error("An NewRelic application name must be specified")
 		}
 		app, err = newrelic.NewApplication(
 			// Name your application
@@ -93,6 +95,7 @@ func main() {
 		mh.app = app
 		api.MetricsHandler = mh
 	} else {
+		moreConfig.Metrics.NewRelic.ApiKey=""
 		api.MetricsHandler = new(web.NoOpMetricsHandler)
 	}
 	switch moreConfig.Settings.ParserFormat {

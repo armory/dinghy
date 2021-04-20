@@ -11,11 +11,19 @@ spec:
     metadata:
       labels:
         app: dinghy
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorm.com/agent-inject-secret-.env: secret/dinghy/new_relic_api_key
+        vault.hashicorp.com/agent-inject-template-.env: |
+          {{- with secret "secret/dinghy/new_relic_api_key" -}}
+             NEW_RELIC_KEY={{.Data.id}}
+          {{- end }}
+        vault.hashicorp.com/role: "control-plane-k8s-role"
     spec:
       containers:
       - name: dinghy
         image: armory-docker-all.jfrog.io/armory/dinghy:${parameters['tag']}
-        command: ["/opt/armory/bin/dinghy"]
+         command: ["source /vault/secrets/.env", "&&", "/opt/armory/bin/dinghy"]
         args: ["-mode", "multi-tenant"]
         imagePullPolicy: Always
         ports:
