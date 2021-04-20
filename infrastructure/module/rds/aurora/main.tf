@@ -19,6 +19,8 @@ module "db" {
   apply_immediately   = true
   storage_encrypted   = true
   backup_retention_period = 15
+  preferred_backup_window = "02:00-03:00"
+  preferred_maintenance_window = "sun:05:00-sun:06:00"
   deletion_protection     = false
 
   enable_http_endpoint    = true
