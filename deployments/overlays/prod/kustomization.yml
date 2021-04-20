@@ -1,4 +1,5 @@
+namespace: armory-hosted-services-prod
+namePrefix: prod-
 resources:
   - ../../base
-namePrefix: staging-
-namespace: armory-hosted-services-prod
+  - configmap.yml

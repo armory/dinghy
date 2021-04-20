@@ -15,6 +15,8 @@ spec:
       containers:
       - name: dinghy
         image: armory-docker-all.jfrog.io/armory/dinghy:${parameters['tag']}
+        command: ["/opt/armory/bin/dinghy"]
+        args: ["-mode", "multi-tenant"]
         imagePullPolicy: Always
         ports:
           - containerPort: 8081
@@ -30,5 +32,12 @@ spec:
             port: 8081
           initialDelaySeconds: 5
           timeoutSeconds: 2
+        volumeMounts:
+          - name: dinghy
+            mountPath: /opt/spinnaker/config
       imagePullSecrets:
         - name: regcred
+      volumes:
+        - name: dinghy
+          configMap:
+            name: dinghy
