@@ -23,7 +23,7 @@ spec:
       containers:
       - name: dinghy
         image: armory-docker-all.jfrog.io/armory/dinghy:${parameters['tag']}
-         command: ["source /vault/secrets/.env && /opt/armory/bin/dinghy"]
+        command: ["source /vault/secrets/.env", "&&", "/opt/armory/bin/dinghy""]
         args: ["-mode", "multi-tenant"]
         imagePullPolicy: Always
         ports:
