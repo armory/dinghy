@@ -15,3 +15,4 @@ data:
       databaseName: dinghy
       user: dinghy
       password: encrypted:s3!r:us-west-2!b:dinghy-cloud-secrets!f:staging!k:dinghy.cloud.sql.password
+      eventlogsOnly: false
