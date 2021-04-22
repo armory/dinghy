@@ -94,7 +94,7 @@ func NewDefaultSettings() Settings {
 
 // Settings contains all information needed to startup and run the dinghy service
 type Settings struct {
-	// InstanceId custom identifier for dinghy instance
+	// InstanceId custom identifier for dinghy instance, used for GH status checks and other notifications
 	InstanceId string `json:"instanceId" yaml:"instanceId"`
 	// Organization account that will have the template repository
 	TemplateOrg string `json:"templateOrg,omitempty" yaml:"templateOrg"`
