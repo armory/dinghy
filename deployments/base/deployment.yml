@@ -14,10 +14,6 @@ spec:
       annotations:
         vault.hashicorp.com/agent-inject: 'true'
         vault.hashicorp.com/agent-inject-secret-.env: secret/dinghy
-        vault.hashicorp.com/agent-inject-template-.env: |
-          {{- with secret "secret/dinghy" -}}
-             NEW_RELIC_KEY={{.Data.new_relic_api_key}}
-          {{- end }}
         vault.hashicorp.com/role: "control-plane-services-k8s-role"
     spec:
       containers:
