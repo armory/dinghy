@@ -13,10 +13,10 @@ spec:
         app: dinghy
       annotations:
         vault.hashicorp.com/agent-inject: 'true'
-        vault.hashicorm.com/agent-inject-secret-.env: secret/dinghy/new_relic_api_key
+        vault.hashicorp.com/agent-inject-secret-.env: secret/dinghy
         vault.hashicorp.com/agent-inject-template-.env: |
-          {{- with secret "secret/dinghy/new_relic_api_key" -}}
-             NEW_RELIC_KEY={{.Data.id}}
+          {{- with secret "secret/dinghy" -}}
+             NEW_RELIC_KEY={{.Data.new_relic_api_key}}
           {{- end }}
         vault.hashicorp.com/role: "control-plane-services-k8s-role"
     spec:
