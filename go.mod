@@ -22,7 +22,6 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/leanovate/gopter v0.2.9
 	github.com/mitchellh/mapstructure v1.2.2
-	github.com/newrelic/go-agent v3.10.0+incompatible // indirect
 	github.com/newrelic/go-agent/v3 v3.10.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pierrec/lz4 v2.5.0+incompatible // indirect

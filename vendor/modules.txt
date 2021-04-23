@@ -55,6 +55,12 @@ github.com/armory/go-yaml-tools/pkg/tls/server
 github.com/armory/go-yaml-tools/pkg/yaml
 # github.com/armory/plank/v3 v3.4.5
 github.com/armory/plank/v3
+# github.com/aws/aws-lambda-go v1.23.0
+github.com/aws/aws-lambda-go/events
+github.com/aws/aws-lambda-go/lambda
+github.com/aws/aws-lambda-go/lambda/handlertrace
+github.com/aws/aws-lambda-go/lambda/messages
+github.com/aws/aws-lambda-go/lambdacontext
 # github.com/aws/aws-sdk-go v1.30.7
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/arn
@@ -198,6 +204,10 @@ github.com/jstemmer/go-junit-report/formatter
 github.com/jstemmer/go-junit-report/parser
 # github.com/konsorten/go-windows-terminal-sequences v1.0.2
 github.com/konsorten/go-windows-terminal-sequences
+# github.com/leanovate/gopter v0.2.9
+github.com/leanovate/gopter
+github.com/leanovate/gopter/gen
+github.com/leanovate/gopter/prop
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/mitchellh/copystructure v1.0.0
@@ -498,7 +508,7 @@ gopkg.in/square/go-jose.v2/json
 gopkg.in/square/go-jose.v2/jwt
 # gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+# gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 gopkg.in/yaml.v3
 # gorm.io/driver/mysql v1.0.3
 gorm.io/driver/mysql

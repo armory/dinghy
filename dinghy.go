@@ -71,6 +71,7 @@ func main() {
 	var app *newrelic.Application
 	newRelicApiKey := os.Getenv("NEW_RELIC_KEY")
 	if newRelicApiKey != "" {
+		logger.Info("New Relic Metrics Enabled")
 		moreConfig.Metrics.NewRelic.ApiKey=newRelicApiKey
 		if moreConfig.Metrics.NewRelic.ApplicationName == "" {
 			logger.Error("An NewRelic application name must be specified")
@@ -95,6 +96,7 @@ func main() {
 		mh.app = app
 		api.MetricsHandler = mh
 	} else {
+		logger.Info("New Relic Not Enabled")
 		moreConfig.Metrics.NewRelic.ApiKey=""
 		api.MetricsHandler = new(web.NoOpMetricsHandler)
 	}
