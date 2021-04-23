@@ -39,9 +39,9 @@ type Status struct {
 // SetCommitStatus sets the commit status
 // TODO: this function needs to return an error but it's currently attached to an interface that does not
 // and changes will affect other types
-func (p *Push) SetCommitStatus(status git.Status, description string) {
+func (p *Push) SetCommitStatus(instanceId string, status git.Status, description string) {
 	for _, c := range p.Commits {
-		s := newStatus(status, p.DeckBaseURL, description)
+		s := newStatus(instanceId, status, p.DeckBaseURL, description)
 		if err := p.Config.CreateStatus(s, p.Org(), p.Repo(), c.ID); err != nil {
 			p.Logger.Error(err)
 			return
@@ -72,9 +72,9 @@ func (p *Push) GetCommits() []string {
 	return result
 }
 
-func newStatus(s git.Status, deckURL string, description string) *Status {
+func newStatus(instanceId string, s git.Status, deckURL string, description string) *Status {
 	state := string(s)
-	context := "dinghy"
+	context := instanceId
 
 	if len(description) > 140 {
 		description = description[0:136] + "..."
