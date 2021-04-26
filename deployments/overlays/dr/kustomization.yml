@@ -1,0 +1,5 @@
+namespace: <update-me>
+namePrefix: dr-
+resources:
+  - ../../base
+  - configmap.yml
