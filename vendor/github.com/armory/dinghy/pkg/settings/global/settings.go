@@ -43,6 +43,7 @@ func NewDefaultSettings() Settings {
 	}
 
 	return Settings{
+		InstanceId:        "dinghy",
 		DinghyFilename:    "dinghyfile",
 		TemplateRepo:      "dinghy-templates",
 		AutoLockPipelines: "true",
@@ -93,6 +94,8 @@ func NewDefaultSettings() Settings {
 
 // Settings contains all information needed to startup and run the dinghy service
 type Settings struct {
+	// InstanceId custom identifier for dinghy instance, used for GH status checks and other notifications
+	InstanceId string `json:"instanceId" yaml:"instanceId"`
 	// Organization account that will have the template repository
 	TemplateOrg string `json:"templateOrg,omitempty" yaml:"templateOrg"`
 	// Repository for templates (modules)
@@ -272,6 +275,7 @@ func (s *Settings) Redacted() *Settings {
 	}
 	return redacted
 }
+
 // TraceExtract middleware extracts trace context from http headers following w3c trace context format
 // and adds it to the request context
 func (s *Settings) TraceExtract() func(handler http.Handler) http.Handler {

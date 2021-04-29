@@ -57,7 +57,7 @@ type Push interface {
 	Branch() string
 	IsBranch(string) bool
 	IsMaster() bool
-	SetCommitStatus(s git.Status, description string)
+	SetCommitStatus(instanceId string, s git.Status, description string)
 	GetCommitStatus() (error, git.Status, string)
 	GetCommits() []string
 	Name() string
@@ -566,7 +566,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder, settings *g
 		b.Logger.Infof("Push does not include %s, skipping.", settings.DinghyFilename)
 		errstat, status, _ := p.GetCommitStatus()
 		if errstat == nil && status == "" {
-			p.SetCommitStatus(git.StatusSuccess, fmt.Sprintf("No changes in %v.", settings.DinghyFilename))
+			p.SetCommitStatus(settings.InstanceId, git.StatusSuccess, fmt.Sprintf("No changes in %v.", settings.DinghyFilename))
 		}
 		return "", nil
 	}
@@ -574,7 +574,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder, settings *g
 	b.Logger.Info("Dinghyfile found in commit for repo " + p.Repo())
 
 	// Set commit status to the pending yellow dot.
-	p.SetCommitStatus(git.StatusPending, git.DefaultMessagesByBuilderAction[b.Action][git.StatusPending])
+	p.SetCommitStatus(settings.InstanceId, git.StatusPending, git.DefaultMessagesByBuilderAction[b.Action][git.StatusPending])
 
 	var dinghyfilesRendered bytes.Buffer
 	for _, filePath := range p.Files() {
@@ -587,14 +587,14 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder, settings *g
 			if err != nil {
 				if err == dinghyfile.ErrMalformedJSON {
 					b.Logger.Errorf("Error processing Dinghyfile (malformed JSON): %s", err.Error())
-					p.SetCommitStatus(git.StatusFailure, "Error processing Dinghyfile (malformed JSON)")
+					p.SetCommitStatus(settings.InstanceId, git.StatusFailure, "Error processing Dinghyfile (malformed JSON)")
 				} else {
 					b.Logger.Errorf("Error processing Dinghyfile: %s", err.Error())
-					p.SetCommitStatus(git.StatusError, fmt.Sprintf("%s", err.Error()))
+					p.SetCommitStatus(settings.InstanceId, git.StatusError, fmt.Sprintf("%s", err.Error()))
 				}
 				return dinghyfilesRendered.String(), err
 			}
-			p.SetCommitStatus(git.StatusSuccess, git.DefaultMessagesByBuilderAction[b.Action][git.StatusSuccess])
+			p.SetCommitStatus(settings.InstanceId, git.StatusSuccess, git.DefaultMessagesByBuilderAction[b.Action][git.StatusSuccess])
 		}
 	}
 	return dinghyfilesRendered.String(), nil
@@ -674,10 +674,17 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	// Check if we're in a template repo
 	if p.Repo() == settings.TemplateRepo {
 		// Set status to pending while we process modules
-		p.SetCommitStatus(git.StatusPending, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusPending])
+		p.SetCommitStatus(settings.InstanceId, git.StatusPending, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusPending])
 
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
+			// ensure module is correctly parsed
+			if _, err := builder.Parser.Parse(p.Org(), p.Repo(), file, p.Branch(), nil); err != nil {
+				p.SetCommitStatus(settings.InstanceId, git.StatusError, "module parse failed")
+				dinghyLog.Errorf("module parse failed: %s", err.Error())
+				saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
+				return
+			}
 			if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch()); err != nil {
 				switch err.(type) {
 				case *util.GitHubFileNotFoundErr:
@@ -685,13 +692,13 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 				default:
 					util.WriteHTTPError(w, http.StatusInternalServerError, err)
 				}
-				p.SetCommitStatus(git.StatusError, "Rebuilding dependent dinghyfiles Failed")
+				p.SetCommitStatus(settings.InstanceId, git.StatusError, "Rebuilding dependent dinghyfiles Failed")
 				dinghyLog.Errorf("RebuildModuleRoots Failed: %s", err.Error())
 				saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
 				return
 			}
 		}
-		p.SetCommitStatus(git.StatusSuccess, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusSuccess])
+		p.SetCommitStatus(settings.InstanceId, git.StatusSuccess, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusSuccess])
 	}
 
 	// Only save event if changed files were in repo or it was having a dinghyfile

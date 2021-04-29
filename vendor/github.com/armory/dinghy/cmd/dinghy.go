@@ -194,7 +194,7 @@ func Setup(sourceConfiguration source.SourceConfiguration, log *logr.Logger) (*l
 	}
 
 	api = web.NewWebAPI(sourceConfiguration, persitenceManager, client, ec, log, persitenceManagerReadOnly, &clientReadOnly, logEventsClient)
-
+	api.MetricsHandler = new(web.NoOpMetricsHandler)
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
 	if config.ParserFormat == "json" {
 		api.SetDinghyfileParser(dinghyfile.NewDinghyfileParser(&dinghyfile.PipelineBuilder{}))
@@ -224,7 +224,6 @@ func AddUnmarshaller(u dinghyfile.DinghyJsonUnmarshaller, api *web.WebAPI) {
 
 func Start(log *logr.Logger, api *web.WebAPI, settings2 *global.Settings) {
 	log.Infof("Dinghy starting on %s", settings2.Server.GetAddr())
-	api.MetricsHandler = new(web.NoOpMetricsHandler)
 	if err := server.NewServer(&settings2.Server).Start(api.MuxRouter); err != nil {
 		log.Fatal(err)
 	}

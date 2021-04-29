@@ -3,7 +3,7 @@ module github.com/armory-io/dinghy
 require (
 	cloud.google.com/go v0.56.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.1.0
-	github.com/armory/dinghy v0.0.0-20210409191753-30a52a69879a
+	github.com/armory/dinghy v0.0.0-20210423214326-f6c60f84bef7
 	github.com/armory/go-yaml-tools v0.0.2
 	github.com/armory/plank/v3 v3.4.5
 	github.com/aws/aws-lambda-go v1.23.0
