@@ -20,7 +20,7 @@
                      "value":"staging"
                   },
                   {
-                     "value":"production"
+                     "value":"prod"
                   }
                ],
                "pinned":true,
