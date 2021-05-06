@@ -14,7 +14,7 @@ resource "aws_lambda_permission" "with_sns" {
 
 // Gives our Lambda permission to assume roles and attach the execution role.
 resource "aws_iam_role" "iam_for_lambda" {
-  name = "iam_for_lambda"
+  name = "iam_for_lambda_${terraform.workspace}"
   managed_policy_arns = [ data.aws_iam_policy.AWSLambdaBasicExecutionRole.arn ]
   assume_role_policy = <<EOF
 {
