@@ -1,4 +1,4 @@
 output "db" {
-  value = module.db
+  value     = module.db
   sensitive = true
 }

@@ -33,17 +33,59 @@ resource "aws_iam_role" "iam_for_lambda" {
 EOF
 }
 
+// policy that defines permissions for the lambda.
+resource "aws_iam_policy" "lambda_policy" {
+  name        = "dinghy_cache_bust_function_policy_${terraform.workspace}"
+  path        = "/"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*",
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+}
+
+// attach the policy to role
+resource "aws_iam_role_policy_attachment" "lambda_logs" {
+  role       = aws_iam_role.iam_for_lambda.name
+  policy_arn = aws_iam_policy.lambda_policy.arn
+}
+
+
 // Define the source for our Lambda.
 resource "aws_lambda_function" "dinghy_cache_bust_function" {
-  filename      = "../cachelambda/lambda_function_payload.zip"
-  function_name = "dinghy_cache_bust_function"
+  s3_bucket     = var.bucket_name
+  s3_key        = "${var.lambda_key}.zip"
+  function_name = "dinghy_cache_bust_function_${terraform.workspace}"
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "main"
 
-  # The filebase64sha256() function is available in Terraform 0.11.12 and later
-  source_code_hash = filebase64sha256("../cachelambda/lambda_function_payload.zip")
-
   runtime = "go1.x"
+
+
+  environment {
+    variables = {
+      DINGHY_URL = var.dinghy_host
+      VERSION    = var.lambda_key
+    }
+  }
+}
+
+// Creates a binding from Yeti's SNS topic to our Lambda so that we always
+resource "aws_cloudwatch_log_group" "dinghy_cache_bust_function" {
+  name              = "/aws/lambda/dinghy_cache_bust_function_${terraform.workspace}"
+  retention_in_days = 30
 }
 
 // Creates a binding from Yeti's SNS topic to our Lambda so that we always

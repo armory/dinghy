@@ -25,6 +25,48 @@
                ],
                "pinned":true,
                "required":true
+            },
+            {
+              "default": "",
+              "description": "Dinghy Host",
+              "hasOptions": false,
+              "label": "Dinghy Host",
+              "name": "dinghyHost",
+              "options": [
+                {
+                  "value": ""
+                }
+              ],
+              "pinned": true,
+              "required": true
+            },
+            {
+              "default": "",
+              "description": "Bucket Name",
+              "hasOptions": false,
+              "label": "Bucket Name",
+              "name": "bucketName",
+              "options": [
+                {
+                  "value": ""
+                }
+              ],
+              "pinned": true,
+              "required": true
+            },
+            {
+              "default": "",
+              "description": "Lambda Key/Tag",
+              "hasOptions": false,
+              "label": "Lambda Key",
+              "name": "lambdaKey",
+              "options": [
+                {
+                  "value": ""
+                }
+              ],
+              "pinned": true,
+              "required": true
             }
          ],
          "stages":[
@@ -46,8 +88,10 @@
                ],
                "dir":"infrastructure",
                "name":"Infrastructure Configuration",
-               "overrides":{
-
+               "overrides": {
+                "dinghy_host": "${ parameters.dinghyHost }",
+                "bucket_name": "${ parameters.bucketName }",
+                "lambda_key": "${ parameters.lambdaKey }"
                },
                "profile":"",
                "refId":"1",
@@ -63,7 +107,11 @@
             }
          ],
          "triggers":[
-
+            {
+              "enabled": true,
+              "source": "dinghy-infrastructure",
+              "type": "webhook"
+            }
          ]
       },
       {

@@ -26,6 +26,9 @@ data "aws_sns_topic" "yeti_notification_topic" {
 }
 
 module "cache_bust" {
-  source = "./module/cachebust"
+  source                 = "./module/cachebust"
   notification_topic_arn = data.aws_sns_topic.yeti_notification_topic.arn
+  bucket_name            = var.bucket_name
+  dinghy_host            = var.dinghy_host
+  lambda_key             = var.lambda_key
 }

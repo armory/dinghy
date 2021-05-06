@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -15,7 +16,7 @@ import (
 
 var (
 	// DinghyURL is the location of our Dinghy service.
-	DinghyURL string = "https://a52b989e4f6fd49c2ae1972f9d49b747-1082375335.us-west-2.elb.amazonaws.com"
+	DinghyURL string = os.Getenv("DINGHY_URL")
 	// DinghyEnvironmentIDHeader is the name of the header to pass along envID.
 	DinghyEnvironmentIDHeader string = "X-Environment-ID"
 )
