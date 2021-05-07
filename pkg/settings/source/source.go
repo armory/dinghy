@@ -14,4 +14,5 @@ type SourceConfiguration interface {
 	LoadSetupSettings(*logr.Logger) (*global.Settings, error)
 	GetSettings(r *http.Request, logr *logr.Logger) (*global.Settings, util.PlankClient, error)
 	BustCacheHandler(w http.ResponseWriter, r *http.Request)
+	IsMultiTenant() bool
 }

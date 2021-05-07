@@ -93,7 +93,7 @@ func Setup(sourceConfiguration source.SourceConfiguration, log *logr.Logger) (*l
 
 	// Create the EventClient
 	ctx, cancel := context.WithCancel(context.Background())
-	ec := events.NewEventClient(ctx, config)
+	ec := events.NewEventClient(ctx, config, sourceConfiguration.IsMultiTenant())
 
 	// spawn stop thread
 	stop := make(chan os.Signal, 1)

@@ -70,3 +70,7 @@ func setupPlankClient(settings *global.Settings, log *logr.Logger) *plank.Client
 	client.URLs["gate"] = settings.SpinnakerSupplied.Gate.BaseURL
 	return client
 }
+
+func (*LocalSource) IsMultiTenant() bool {
+	return false
+}

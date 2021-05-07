@@ -50,3 +50,7 @@ func (lSource *RemoteSource) GetSettings(r *http.Request, logger *logr.Logger) (
 }
 
 func (*RemoteSource) BustCacheHandler(w http.ResponseWriter, r *http.Request) {}
+
+func (*RemoteSource) IsMultiTenant() bool {
+	return true
+}
