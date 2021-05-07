@@ -110,16 +110,9 @@ jobs:
         run: |
           make lambda
 
-      - name: Publish lambda to staging
-        if: github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/release-')
+      - name: Publish lambda
         run: |
           aws s3 cp ${{ github.workspace }}/cachelambda/lambda_function_payload.zip s3://$BUCKET_URL/${{ env.BUILD_NUMBER }}.zip
-
-      - name: Publish lambda to prod
-        if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release-')
-        run: |
-          echo "RELEASE=$(./gradlew -Prelease.useLastTag=true $GRADLE_ARGS  printVersion|grep VERSION|awk -F: '{print $2}')" >> $GITHUB_ENV
-          aws s3 cp ${{ github.workspace }}/cachelambda/lambda_function_payload.zip s3://$BUCKET_URL/${{ env.RELEASE }}.zip
 
       - name: Trigger staging infrastructure
         uses: armory-io/spin-trigger-pipeline-action@dinghy_cloud
@@ -147,7 +140,7 @@ jobs:
           environment: prod
           dinghyHost: http://a4620e289c4b64c748efcb6879913a15-2029009615.us-west-2.elb.amazonaws.com
           bucketName: ${{ env.BUCKET_URL }}
-          lambdaKey: ${{ env.RELEASE }}
+          lambdaKey: ${{ env.BUILD_NUMBER }}
           crtFile: ${{ secrets.ARMORY_CLOUD_SPINNAKER_CLIENT_CERTIFICATE }}
           keyFile: ${{ secrets.ARMORY_CLOUD_SPINNAKER_CLIENT_PRIVATE_KEY }}
           passphrase: ${{ secrets.ARMORY_CLOUD_SPINNAKER_CLIENT_CERTIFICATE_PASSWORD }}
