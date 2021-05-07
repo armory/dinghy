@@ -36,7 +36,7 @@ import (
 
 	"github.com/armory-io/monitoring/log/formatters"
 	"github.com/armory-io/monitoring/log/hooks"
-	"github.com/armory/plank/v3"
+	"github.com/armory/plank/v4"
 
 	"github.com/armory/dinghy/pkg/cache"
 	"github.com/armory/dinghy/pkg/events"
@@ -58,7 +58,7 @@ func newRedisOptions(redisOptions global.Redis) *redis.Options {
 
 func Setup(sourceConfiguration source.SourceConfiguration, log *logr.Logger) (*logr.Logger, *web.WebAPI) {
 	// We need to initialize the configuration for the start-up.
-	config, err := sourceConfiguration.LoadSetupSettings()
+	config, err := sourceConfiguration.LoadSetupSettings(log)
 	if err != nil {
 		log.Fatal(fmt.Errorf("an error occurred when trying to load configurations: %w", err))
 	}
@@ -193,7 +193,7 @@ func Setup(sourceConfiguration source.SourceConfiguration, log *logr.Logger) (*l
 
 	}
 
-	api = web.NewWebAPI(sourceConfiguration, persitenceManager, client, ec, log, persitenceManagerReadOnly, &clientReadOnly, logEventsClient)
+	api = web.NewWebAPI(sourceConfiguration, persitenceManager, ec, log, persitenceManagerReadOnly, &clientReadOnly, logEventsClient, log)
 	api.MetricsHandler = new(web.NoOpMetricsHandler)
 	api.AddDinghyfileUnmarshaller(&dinghyfile.DinghyJsonUnmarshaller{})
 	if config.ParserFormat == "json" {

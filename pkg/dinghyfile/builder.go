@@ -30,7 +30,7 @@ import (
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/notifiers"
 	"github.com/armory/dinghy/pkg/util"
-	"github.com/armory/plank/v3"
+	"github.com/armory/plank/v4"
 )
 
 type VarMap map[string]interface{}
@@ -368,7 +368,7 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 // This is the bit that actually updates the pipeline(s) in Spinnaker
 func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []plank.Pipeline, deleteStale bool, autoLock string) error {
 	var newapp = false
-	_, err := b.Client.GetApplication(app.Name)
+	_, err := b.Client.GetApplication(app.Name, "")
 	if err != nil {
 		newapp = true
 		failedResponse, ok := err.(*plank.FailedResponse)
@@ -379,7 +379,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		if failedResponse.StatusCode == 404 {
 			// Likely just not there...
 			b.Logger.Infof("Creating application '%s'...", app.Name)
-			if err = b.Client.CreateApplication(app); err != nil {
+			if err = b.Client.CreateApplication(app, ""); err != nil {
 				b.Logger.Errorf("Failed to create application (%s)", failedResponse.Error())
 				return err
 			}
@@ -389,7 +389,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		}
 	} else {
 		if val, found := b.GlobalVariablesMap["save_app_on_update"]; found && val == true {
-			errUpdating := b.Client.UpdateApplication(*app)
+			errUpdating := b.Client.UpdateApplication(*app, "")
 			if errUpdating != nil {
 				b.Logger.Errorf("Failed to update application (%s)", errUpdating.Error())
 				return errUpdating
@@ -399,7 +399,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 
 	if val, found := b.GlobalVariablesMap["save_app_on_update"]; (found && val == true) || newapp {
 		b.Logger.Infof("Updating notifications: %s", app.Notifications)
-		errNotif := b.Client.UpdateApplicationNotifications(app.Notifications, app.Name)
+		errNotif := b.Client.UpdateApplicationNotifications(app.Notifications, app.Name, "")
 		if errNotif != nil {
 			b.Logger.Errorf("Failed to update notifications: (%s)", errNotif.Error())
 		}
@@ -431,7 +431,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			p.Lock()
 		}
 
-		if err := b.Client.UpsertPipeline(p, p.ID); err != nil {
+		if err := b.Client.UpsertPipeline(p, p.ID, ""); err != nil {
 			err = unwrapFront50Error(err)
 			b.Logger.Errorf("Upsert failed: %s", err.Error())
 			return err
@@ -441,14 +441,14 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 	if deleteStale {
 		// clear existing pipelines that weren't updated
 		b.Logger.Debug("Pipelines we should ignore because they were just created: ", ignoreList)
-		allPipelines, err := b.Client.GetPipelines(app.Name)
+		allPipelines, err := b.Client.GetPipelines(app.Name, "")
 		if err != nil {
 			b.Logger.Errorf("Could not retrieve pipelines for %s: %s", app.Name, err.Error())
 		} else {
 			for _, p := range allPipelines {
 				if !ignoreList[p.Name] {
 					b.Logger.Infof("Deleting stale pipeline %s", p.Name)
-					if err := b.Client.DeletePipeline(p); err != nil {
+					if err := b.Client.DeletePipeline(p, ""); err != nil {
 						// Not worrying about handling errors here because it just means it
 						// didn't get deleted *this time*.
 						b.Logger.Warnf("Could not delete Pipeline %s (Application %s)", p.Name, p.Application)
@@ -464,7 +464,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 func (b *PipelineBuilder) PipelineIDs(app string) (map[string]string, error) {
 	ids := map[string]string{}
 	b.Logger.Info("Looking up existing pipelines")
-	pipelines, err := b.Client.GetPipelines(app)
+	pipelines, err := b.Client.GetPipelines(app, "")
 	if err != nil {
 		b.Logger.Errorf("Failed to GetPipelines for %s: %s", app, err.Error())
 		return ids, err
@@ -489,7 +489,7 @@ func (b *PipelineBuilder) GetPipelineByID(app, pipelineName string) (string, err
 	err = b.Client.UpsertPipeline(plank.Pipeline{
 		Application: app,
 		Name:        pipelineName,
-	}, "")
+	}, "", "")
 	if err != nil {
 		err = unwrapFront50Error(err)
 		b.Logger.Errorf("Failed to UpsertPipeline for %s (%s): %s", pipelineName, app, err.Error())
@@ -517,7 +517,7 @@ func (b *PipelineBuilder) NotifySuccess(org, repo, path string, notifications pl
 func (b *PipelineBuilder) NotifyFailure(org, repo, path string, err error, dinghyfile string) {
 	var notifications plank.NotificationsType
 	if appName, err := extractApplicationName(dinghyfile); err == nil {
-		if foundNotifications, errGetApp := b.Client.GetApplicationNotifications(appName); errGetApp == nil {
+		if foundNotifications, errGetApp := b.Client.GetApplicationNotifications(appName, ""); errGetApp == nil {
 			notifications = *foundNotifications
 		}
 	}

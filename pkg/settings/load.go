@@ -36,7 +36,7 @@ var Mode = flag.String("mode", string(SingleTenant), "Dinghy mode")
 
 // LoadSettings loads the Spring config from the default Spinnaker paths
 // and merges default settings with the loaded settings
-func LoadSettings() (source.SourceConfiguration, error) {
+func LoadSettings(logr *log.Logger) (source.SourceConfiguration, error) {
 	flag.Parse()
 	log.Infof("Dinghy is running on %s mode", *Mode)
 

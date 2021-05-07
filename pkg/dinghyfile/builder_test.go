@@ -30,7 +30,7 @@ import (
 	"github.com/jinzhu/copier"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/armory/plank/v3"
+	"github.com/armory/plank/v4"
 
 	"github.com/armory/dinghy/pkg/mock"
 	"github.com/armory/dinghy/pkg/notifiers"
@@ -47,8 +47,8 @@ func TestProcessDinghyfile(t *testing.T) {
 	renderer.EXPECT().Parse(gomock.Eq("myorg"), gomock.Eq("myrepo"), gomock.Eq("the/full/path"), gomock.Eq("mybranch"), gomock.Any()).Return(bytes.NewBuffer([]byte(rendered)), nil).Times(1)
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication(gomock.Eq("biff")).Return(&plank.Application{}, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("biff")).Return([]plank.Pipeline{}, nil).Times(1)
+	client.EXPECT().GetApplication(gomock.Eq("biff"), "").Return(&plank.Application{}, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("biff"), "").Return([]plank.Pipeline{}, nil).Times(1)
 
 	logger := mock.NewMockDinghyLog(ctrl)
 	logger.EXPECT().Infof(gomock.Eq("Unmarshalled: %v"), gomock.Any()).Times(1)
@@ -64,7 +64,7 @@ func TestProcessDinghyfile(t *testing.T) {
 	logger.EXPECT().Info(gomock.Eq("Calling DetermineRenderer")).Times(0)
 
 	// Never gets UpsertPipeline because our Render returns no pipelines.
-	client.EXPECT().UpsertPipeline(gomock.Any(), "").Return(nil).Times(0)
+	client.EXPECT().UpsertPipeline(gomock.Any(), "", "").Return(nil).Times(0)
 	pb := testPipelineBuilder()
 	pb.Parser = renderer
 	pb.Client = client
@@ -123,14 +123,14 @@ func TestUpdateApplication(t *testing.T) {
 	testapp := &plank.Application{Name: "testapp"}
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(existing, nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(errors.New("upsert fail test")).Times(1)
+	client.EXPECT().GetApplication("testapp", "").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(existing, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID), "").Return(nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID), "").Return(errors.New("upsert fail test")).Times(1)
 	// Should not get called at all, because of earlier error
-	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Times(0)
-	client.EXPECT().UpdateApplication(gomock.Eq(*testapp)).Return(nil).Times(1)
-	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name)).Return(nil).Times(1)
+	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline), "").Times(0)
+	client.EXPECT().UpdateApplication(gomock.Eq(*testapp), "").Return(nil).Times(1)
+	client.EXPECT().UpdateApplicationNotifications(gomock.Eq(testapp.Notifications), gomock.Eq(testapp.Name), "").Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	var gvMap = make(map[string]interface{})
@@ -201,9 +201,9 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
-	client.EXPECT().CreateApplication(gomock.Any()).Return(errors.New("boom")).Times(1)
-	client.EXPECT().GetApplicationNotifications(gomock.Eq("testapp")).Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
+	client.EXPECT().GetApplication(gomock.Eq("testapp"), "").Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
+	client.EXPECT().CreateApplication(gomock.Any(), "").Return(errors.New("boom")).Times(1)
+	client.EXPECT().GetApplicationNotifications(gomock.Eq("testapp"), "").Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
@@ -271,7 +271,7 @@ func TestProcessDinghyfileFailedValidation(t *testing.T) {
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplicationNotifications(gomock.Eq("foo")).Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
+	client.EXPECT().GetApplicationNotifications(gomock.Eq("foo"), "").Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
@@ -858,9 +858,9 @@ func TestGetPipelineByID(t *testing.T) {
 	}
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(emptyset, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(foundset, nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Any(), gomock.Eq("")).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"),"").Return(emptyset, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(foundset, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Any(), gomock.Eq(""), "").Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -876,8 +876,8 @@ func TestGetPipelineByIDUpsertFail(t *testing.T) {
 
 	emptyset := []plank.Pipeline{}
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(emptyset, nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Any(), gomock.Eq("")).Return(errors.New("upsert fail test")).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(emptyset, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Any(), gomock.Eq(""), "").Return(errors.New("upsert fail test")).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -903,12 +903,12 @@ func TestUpdatePipelinesDeleteStaleWithExisting(t *testing.T) {
 	testapp := &plank.Application{Name: "testapp"}
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(existing, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(combined, nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
-	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Return(errors.New("fake delete failure")).Times(1)
+	client.EXPECT().GetApplication("testapp", "").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(existing, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(combined, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID), "").Return(nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID), "").Return(nil).Times(1)
+	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline), "").Return(errors.New("fake delete failure")).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -931,11 +931,11 @@ func TestUpdatePipelinesNoDeleteStaleWithExisting(t *testing.T) {
 	testapp := &plank.Application{Name: "testapp"}
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(existing, nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
-	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Return(errors.New("fake delete failure")).Times(0)
+	client.EXPECT().GetApplication("testapp", "").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(existing, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID), "").Return(nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID), "").Return(nil).Times(1)
+	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline), "").Return(errors.New("fake delete failure")).Times(0)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -958,13 +958,13 @@ func TestUpdatePipelinesDeleteStaleWithFailure(t *testing.T) {
 	testapp := &plank.Application{Name: "testapp"}
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(existing, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(nil, errors.New("failure to retrieve")).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
+	client.EXPECT().GetApplication("testapp", "").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(existing, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(nil, errors.New("failure to retrieve")).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID), "").Return(nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID), "").Return(nil).Times(1)
 	// Should not be called because we couldn't re-retrieve the combined list.
-	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Return(errors.New("fake delete failure")).Times(0)
+	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline), "").Return(errors.New("fake delete failure")).Times(0)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -987,12 +987,12 @@ func TestUpdatePipelinesUpsertFail(t *testing.T) {
 	testapp := &plank.Application{Name: "testapp"}
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return(existing, nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID)).Return(nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID)).Return(errors.New("upsert fail test")).Times(1)
+	client.EXPECT().GetApplication("testapp", "").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(existing, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(existingPipeline), gomock.Eq(existingPipeline.ID), "").Return(nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(newPipeline), gomock.Eq(newPipeline.ID), "").Return(errors.New("upsert fail test")).Times(1)
 	// Should not get called at all, because of earlier error
-	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline)).Times(0)
+	client.EXPECT().DeletePipeline(gomock.Eq(deletedPipeline), "").Times(0)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -1016,9 +1016,9 @@ func TestUpdatePipelinesRespectsAutoLockOn(t *testing.T) {
 	testapp := &plank.Application{Name: "testapp"}
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return([]plank.Pipeline{}, nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Eq(expectedPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
+	client.EXPECT().GetApplication("testapp","").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return([]plank.Pipeline{}, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(expectedPipeline), gomock.Eq(newPipeline.ID), "").Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -1041,9 +1041,9 @@ func TestUpdatePipelinesRespectsAutoLockOff(t *testing.T) {
 	testapp := &plank.Application{Name: "testapp"}
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication("testapp").Return(nil, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp")).Return([]plank.Pipeline{}, nil).Times(1)
-	client.EXPECT().UpsertPipeline(gomock.Eq(expectedPipeline), gomock.Eq(newPipeline.ID)).Return(nil).Times(1)
+	client.EXPECT().GetApplication("testapp", "").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return([]plank.Pipeline{}, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Eq(expectedPipeline), gomock.Eq(newPipeline.ID), "").Return(nil).Times(1)
 
 	b := testPipelineBuilder()
 	b.Client = client
@@ -1074,8 +1074,8 @@ func TestRebuildModuleRoots(t *testing.T) {
 	b.Parser = renderer
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication(gomock.Eq("testone")).Return(nil, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
+	client.EXPECT().GetApplication(gomock.Eq("testone"), "").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testone"), "").Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
 	b.DinghyfileName = "dinghyfile"
 	b.RepositoryRawdataProcessing = false
@@ -1113,8 +1113,8 @@ func TestRebuildModuleRootsProcessTemplate(t *testing.T) {
 	b.Parser = renderer
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication(gomock.Eq("testone")).Return(nil, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testone")).Return([]plank.Pipeline{}, nil).Times(1)
+	client.EXPECT().GetApplication(gomock.Eq("testone"), "").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testone"), "").Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
 	b.DinghyfileName = "dinghyfile"
 	b.RepositoryRawdataProcessing = true
@@ -1147,8 +1147,8 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	b.Parser = renderer
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication(gomock.Eq("testtwo")).Return(nil, nil).Times(1)
-	client.EXPECT().GetPipelines(gomock.Eq("testtwo")).Return([]plank.Pipeline{}, nil).Times(1)
+	client.EXPECT().GetApplication(gomock.Eq("testtwo"), "").Return(nil, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testtwo"), "").Return([]plank.Pipeline{}, nil).Times(1)
 	b.Client = client
 	b.DinghyfileName = "dinghyfile"
 	b.RepositoryRawdataProcessing = false

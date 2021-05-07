@@ -1,6 +1,6 @@
 package notifiers
 
-import "github.com/armory/plank/v3"
+import "github.com/armory/plank/v4"
 
 type Notifier interface {
 	SendSuccess(org, repo, path string, notifications plank.NotificationsType, content map[string]interface{})
