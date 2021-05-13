@@ -2,6 +2,7 @@ package remote
 
 import (
 	"github.com/armory/dinghy/pkg/settings/source"
+	logr "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -17,7 +18,8 @@ func TestNewRemoteSource(t *testing.T) {
 func TestRemoteSourceIsEnabledWhenRemoteIsActive(t *testing.T) {
 
 	i := NewRemoteSource()
-	s, err := i.LoadSetupSettings()
+	log := logr.New()
+	s, err := i.LoadSetupSettings(log)
 
 	assert.Nil(t, err)
 	assert.Equal(t, true, s.SQL.Enabled)
