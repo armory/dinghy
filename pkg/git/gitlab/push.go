@@ -90,8 +90,13 @@ func (p *Push) IsBranch(branchToTry string) bool {
 }
 
 // IsMaster detects if the branch is master.
-func (p *Push) IsMaster() bool {
-	return p.Event.Ref == "refs/heads/master"
+func (p *Push) IsMaster(dinghyfileBranches []string) bool {
+	for _, branch := range dinghyfileBranches {
+		if p.Event.Ref == "refs/heads/"+branch {
+			return true
+		}
+	}
+	return p.Event.Ref == "refs/heads/master" || p.Event.Ref == "refs/heads/main"
 }
 
 // Name returns the name of the provider to be used in configuration

@@ -18,6 +18,7 @@ package github
 
 import (
 	"github.com/armory/dinghy/pkg/log"
+	"github.com/armory/dinghy/pkg/settings/global"
 	"strings"
 )
 
@@ -29,6 +30,7 @@ type Push struct {
 	Config      Config
 	DeckBaseURL string
 	Logger      log.DinghyLog
+	Settings 	global.Settings
 }
 
 // Commit is a commit received from Github webhook
@@ -114,7 +116,12 @@ func (p *Push) IsBranch(branchToTry string) bool {
 
 // IsMaster detects if the branch is master.
 // Main is the new master
-func (p *Push) IsMaster() bool {
+func (p *Push) IsMaster(dinghyfileBranches []string) bool {
+	for _, branch := range dinghyfileBranches {
+		if p.Ref == "branch" || p.Ref == "refs/heads/"+branch {
+			return true
+		}
+	}
 	return p.Ref == "master" || p.Ref == "refs/heads/master" || p.Ref == "main" || p.Ref == "refs/heads/main"
 }
 

@@ -133,6 +133,8 @@ type Settings struct {
 	ParserFormat string `json:"parserFormat,omitempty" yaml:"parserFormat"`
 	// Enable to process dinghyfiles from other branches
 	RepoConfig []RepoConfig `json:"repoConfig,omitempty" yaml:"repoConfig"`
+	// Custom branchnames that should always be check to see if the dinghy files changes are happening there, master will always be included
+	DinghyfileBranches []string `json:"dinghyfileBranches,omitempty" yaml:"dinghyfileBranches"`
 	// Spinnaker service endpoints
 	SpinnakerSupplied `mapstructure:",squash"`
 	// Server configuration, default dinghy port is 8081

@@ -56,7 +56,7 @@ type Push interface {
 	Org() string
 	Branch() string
 	IsBranch(string) bool
-	IsMaster() bool
+	IsMaster(dinghyfileBranches []string) bool
 	SetCommitStatus(instanceId string, s git.Status, description string)
 	GetCommitStatus() (error, git.Status, string)
 	GetCommits() []string
@@ -614,7 +614,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	} else {
 		// if we didn't find any configurations for this repo, proceed with master
 		dinghyLog.Infof("Found no custom configuration for repo: %s, proceeding with master", p.Repo())
-		if !p.IsMaster() {
+		if !p.IsMaster(settings.DinghyfileBranches) {
 			dinghyLog.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master. Proceeding as validation.", p.Branch())
 			validation = true
 		}

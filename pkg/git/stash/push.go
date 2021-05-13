@@ -63,8 +63,13 @@ type WebhookChange struct {
 }
 
 // IsMaster detects if a change was on master
-func (c *WebhookChange) IsMaster() bool {
-	return c.RefID == "refs/heads/master"
+func (c *WebhookChange) IsMaster(dinghyfileBranches []string) bool {
+	for _, branch := range dinghyfileBranches {
+		if  c.RefID == "refs/heads/"+branch {
+			return true
+		}
+	}
+	return c.RefID == "refs/heads/master" || c.RefID == "refs/heads/main"
 }
 
 // Find the branch in the webhook payload
@@ -225,9 +230,9 @@ func (p *Push) changes() []WebhookChange {
 }
 
 // IsMaster detects if the branch is master.
-func (p *Push) IsMaster() bool {
+func (p *Push) IsMaster(dinghyfileBranches []string) bool {
 	for _, change := range p.changes() {
-		if change.IsMaster() {
+		if change.IsMaster(dinghyfileBranches) {
 			return true
 		}
 	}

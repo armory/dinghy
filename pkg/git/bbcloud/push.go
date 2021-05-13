@@ -146,7 +146,12 @@ func (c *WebhookChange) Branch() string {
 }
 
 // Find in the webhook payload if the change was done in "master" branch
-func (c *WebhookChange) IsMaster() bool {
+func (c *WebhookChange) IsMaster(dinghyfileBranches []string) bool {
+	for _, branch := range dinghyfileBranches {
+		if c.New.Name == branch {
+			return true
+		}
+	}
 	return c.New.Name == "master"
 }
 
@@ -275,9 +280,9 @@ func (p *Push) changes() []WebhookChange {
 }
 
 // IsMaster detects if the branch is master.
-func (p *Push) IsMaster() bool {
+func (p *Push) IsMaster(dinghyfileBranches []string) bool {
 	for _, change := range p.changes() {
-		if change.IsMaster() {
+		if change.IsMaster(dinghyfileBranches) {
 			return true
 		}
 	}
