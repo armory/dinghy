@@ -38,7 +38,7 @@ var Mode = flag.String("mode", string(SingleTenant), "Dinghy mode")
 
 // LoadSettings loads the Spring config from the default Spinnaker paths
 // and merges default settings with the loaded settings
-func LoadSettings() (source.SourceConfiguration, *global.Settings, *settings.ExtSettings, error) {
+func LoadSettings(logr *log.Logger) (source.SourceConfiguration, *global.Settings, *settings.ExtSettings, error) {
 	flag.Parse()
 	log.Infof("Dinghy is running on %s mode", *Mode)
 	var dinghySettings *global.Settings
@@ -47,7 +47,7 @@ func LoadSettings() (source.SourceConfiguration, *global.Settings, *settings.Ext
 
 	if *Mode == string(MultiTenant) { // multi-tenant
 		s := remote.NewRemoteSource()
-		dinghySettings, err = s.LoadSetupSettings()
+		dinghySettings, err = s.LoadSetupSettings(logr)
 
 		if err != nil {
 			log.Fatalf("could not load local dinghy settings: %s", err.Error())
@@ -65,7 +65,7 @@ func LoadSettings() (source.SourceConfiguration, *global.Settings, *settings.Ext
 		return s, dinghySettings, moreConfig, nil
 	} else {
 		s := local.NewLocalSource()
-		dinghySettings, err = s.LoadSetupSettings()
+		dinghySettings, err = s.LoadSetupSettings(logr)
 
 		if err != nil {
 			log.Fatalf("could not load local dinghy settings: %s", err.Error())

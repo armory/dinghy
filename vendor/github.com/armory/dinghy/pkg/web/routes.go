@@ -75,7 +75,6 @@ func (nom *NoOpMetricsHandler) WrapHandleFunc(pattern string, handler func(http.
 
 type WebAPI struct {
 	SourceConfig    source.SourceConfiguration
-	Client          util.PlankClient
 	ClientReadOnly  util.PlankClient
 	Cache           dinghyfile.DependencyManager
 	CacheReadOnly   dinghyfile.DependencyManager
@@ -86,13 +85,13 @@ type WebAPI struct {
 	Parser          dinghyfile.Parser
 	LogEventsClient logevents.LogEventsClient
 	MuxRouter       *mux.Router
+	Logr            *log.Logger
 	MetricsHandler
 }
 
-func NewWebAPI(s source.SourceConfiguration, r dinghyfile.DependencyManager, c util.PlankClient, e *events.Client, l log.FieldLogger, depreadonly dinghyfile.DependencyManager, clientreadonly util.PlankClient, logeventsClient logevents.LogEventsClient) *WebAPI {
+func NewWebAPI(s source.SourceConfiguration, r dinghyfile.DependencyManager, e *events.Client, l log.FieldLogger, depreadonly dinghyfile.DependencyManager, clientreadonly util.PlankClient, logeventsClient logevents.LogEventsClient, logr *log.Logger) *WebAPI {
 	return &WebAPI{
 		SourceConfig:    s,
-		Client:          c,
 		Cache:           r,
 		EventClient:     e,
 		Logger:          l,
@@ -101,6 +100,7 @@ func NewWebAPI(s source.SourceConfiguration, r dinghyfile.DependencyManager, c u
 		ClientReadOnly:  clientreadonly,
 		CacheReadOnly:   depreadonly,
 		LogEventsClient: logeventsClient,
+		Logr:            logr,
 	}
 }
 
@@ -161,7 +161,7 @@ func (wa *WebAPI) healthcheck(w http.ResponseWriter, r *http.Request) {
 func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
 	dinghyLog := dinghylog.NewDinghyLogs(logger)
-	settings, err := wa.SourceConfig.GetSettings(r)
+	settings, plankClient, err := wa.SourceConfig.GetSettings(r, wa.Logr)
 	if err != nil {
 		dinghyLog.Errorf("Failed to get the settings: %s", err)
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
@@ -172,7 +172,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	builder := &dinghyfile.PipelineBuilder{
 		Depman:               cache.NewMemoryCache(),
 		Downloader:           fileService,
-		Client:               wa.Client,
+		Client:               plankClient,
 		DeleteStalePipelines: false,
 		AutolockPipelines:    settings.AutoLockPipelines,
 		Logger:               dinghyLog,
@@ -197,7 +197,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
 	dinghyLog := dinghylog.NewDinghyLogs(logger)
-	settings, err := wa.SourceConfig.GetSettings(r)
+	settings, plankClient, err := wa.SourceConfig.GetSettings(r, wa.Logr)
 	if err != nil {
 		dinghyLog.Errorf("Failed to get the settings: %s", err)
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
@@ -256,7 +256,7 @@ func (wa *WebAPI) githubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	wa.buildPipelines(&p, body, &fileService, w, dinghyLog, pullRequestUrl, settings)
+	wa.buildPipelines(&p, body, &fileService, w, dinghyLog, pullRequestUrl, plankClient, settings)
 }
 
 func contains(whvalidations []string, provider string) bool {
@@ -341,7 +341,7 @@ func getHeader(r *http.Request, key string) string {
 func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
 	dinghyLog := dinghylog.NewDinghyLogs(logger)
-	settings, err := wa.SourceConfig.GetSettings(r)
+	settings, plankClient, err := wa.SourceConfig.GetSettings(r, wa.Logr)
 	if err != nil {
 		dinghyLog.Errorf("Failed to get the settings: %s", err)
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
@@ -371,13 +371,13 @@ func (wa *WebAPI) gitlabWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		saveLogEventError(wa.LogEventsClient, &p, dinghyLog, logevents.LogEvent{RawData: string(body)})
 		return
 	}
-	wa.buildPipelines(&p, body, &fileService, w, dinghyLog, "", settings)
+	wa.buildPipelines(&p, body, &fileService, w, dinghyLog, "", plankClient, settings)
 }
 
 func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
 	dinghyLog := dinghylog.NewDinghyLogs(logger)
-	settings, err := wa.SourceConfig.GetSettings(r)
+	settings, plankClient, err := wa.SourceConfig.GetSettings(r, wa.Logr)
 	if err != nil {
 		dinghyLog.Errorf("Failed to get the settings: %s", err)
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
@@ -424,13 +424,13 @@ func (wa *WebAPI) stashWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		Logger: dinghyLog,
 	}
 	dinghyLog.Infof("Building pipeslines from Stash webhook")
-	wa.buildPipelines(p, body, &fileService, w, dinghyLog, "", settings)
+	wa.buildPipelines(p, body, &fileService, w, dinghyLog, "", plankClient, settings)
 }
 
 func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	logger := DecorateLogger(wa.Logger, RequestContextFields(r.Context()))
 	dinghyLog := dinghylog.NewDinghyLogs(logger)
-	settings, err := wa.SourceConfig.GetSettings(r)
+	settings, plankClient, err := wa.SourceConfig.GetSettings(r, wa.Logr)
 	if err != nil {
 		dinghyLog.Errorf("Failed to get the settings: %s", err)
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
@@ -474,6 +474,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 		}
 		defer r.Body.Close()
 		dinghyLog.Infof("Received payload: %s", string(body))
+		dinghyLog.Infof("Received payload: %s", string(body))
 		if err := json.Unmarshal(body, &payload); err != nil {
 			dinghyLog.Errorf("failed to decode bitbucket-cloud webhook: %s", err.Error())
 			util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
@@ -500,7 +501,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			Logger: dinghyLog,
 		}
 
-		wa.buildPipelines(p, body, &fileService, w, dinghyLog, "", settings)
+		wa.buildPipelines(p, body, &fileService, w, dinghyLog, "", plankClient, settings)
 
 	case "repo:refs_changed", "pr:merged":
 		dinghyLog.Info("Processing bitbucket-server webhook")
@@ -547,7 +548,7 @@ func (wa *WebAPI) bitbucketWebhookHandler(w http.ResponseWriter, r *http.Request
 			Logger: dinghyLog,
 		}
 
-		wa.buildPipelines(p, body, &fileService, w, dinghyLog, "", settings)
+		wa.buildPipelines(p, body, &fileService, w, dinghyLog, "", plankClient, settings)
 
 	default:
 		util.WriteHTTPError(w, http.StatusInternalServerError, errors.New("Unknown bitbucket event type"))
@@ -602,7 +603,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder, settings *g
 
 // TODO: this func should return an error and allow the handlers to return the http response. Additionally,
 // it probably doesn't belong in this file once refactored.
-func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader, w http.ResponseWriter, dinghyLog dinghylog.DinghyLog, pullRequest string, settings *global.Settings) {
+func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader, w http.ResponseWriter, dinghyLog dinghylog.DinghyLog, pullRequest string, plankClient util.PlankClient, settings *global.Settings) {
 	// see if we have any configurations for this repo.
 	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
 	var validation bool
@@ -637,7 +638,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 		DinghyfileName:              settings.DinghyFilename,
 		DeleteStalePipelines:        false,
 		AutolockPipelines:           settings.AutoLockPipelines,
-		Client:                      wa.Client,
+		Client:                      plankClient,
 		EventClient:                 wa.EventClient,
 		Logger:                      dinghyLog,
 		Ums:                         wa.Ums,

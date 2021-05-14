@@ -6,7 +6,7 @@ import (
 	"github.com/armory/dinghy/pkg/cache"
 	"github.com/armory/dinghy/pkg/dinghyfile"
 	"github.com/armory/dinghy/pkg/git/dummy"
-	"github.com/armory/plank/v3"
+	"github.com/armory/plank/v4"
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/hcl"
 	"github.com/stretchr/testify/assert"
@@ -519,7 +519,7 @@ func TestPipelineIDFunc(t *testing.T) {
 	r := testDinghyfileParser()
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetPipelines(gomock.Eq("triggerApp")).Return([]plank.Pipeline{plank.Pipeline{ID: "pipelineID", Name: "triggerPipeline"}}, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("triggerApp"),"").Return([]plank.Pipeline{plank.Pipeline{ID: "pipelineID", Name: "triggerPipeline"}}, nil).Times(1)
 	r.Builder.Client = client
 
 	vars := []dinghyfile.VarMap{
@@ -537,7 +537,7 @@ func TestPipelineIDFuncDefault(t *testing.T) {
 	r := testDinghyfileParser()
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetPipelines(gomock.Eq("triggerApp")).Return(nil, errors.New("fake not found")).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("triggerApp"), "").Return(nil, errors.New("fake not found")).Times(1)
 	r.Builder.Client = client
 
 	vars := []dinghyfile.VarMap{
@@ -555,7 +555,7 @@ func TestPipelineIDRender(t *testing.T) {
 	r := testDinghyfileParser()
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetPipelines(gomock.Eq("triggerApp")).Return([]plank.Pipeline{plank.Pipeline{ID: "pipelineID", Name: "triggerPipeline"}}, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("triggerApp"), "").Return([]plank.Pipeline{plank.Pipeline{ID: "pipelineID", Name: "triggerPipeline"}}, nil).Times(1)
 	r.Builder.Client = client
 
 	expected := `

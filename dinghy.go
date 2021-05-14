@@ -46,7 +46,7 @@ func (nrm NewRelicMetricsHandler) WrapHandleFunc(pattern string, handler func(ht
 func main() {
 	// Load default settings and execute liquibase script
 	log := logr.New()
-	sourceConfiguration, dinghySettings, moreConfig, err := loader.LoadSettings()
+	sourceConfiguration, dinghySettings, moreConfig, err := loader.LoadSettings(log)
 	if err != nil {
 		log.Fatalf("could not load dinghy settings: %s", err.Error())
 	}
@@ -110,8 +110,6 @@ func main() {
 		api.AddDinghyfileUnmarshaller(&dinghy_hcl.DinghyHcl{})
 		api.SetDinghyfileParser(&dinghy_hcl.DinghyfileHclParser{})
 	}
-
-	api.Client.EnableArmoryEndpoints()
 	api.MuxRouter = api.Router(moreConfig)
 	api.MuxRouter.HandleFunc(api.MetricsHandler.WrapHandleFunc("/v1/config/cachebust", api.SourceConfig.BustCacheHandler)).Methods("POST")
 	dinghy.Start(logger, api, dinghySettings)

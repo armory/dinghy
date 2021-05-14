@@ -37,6 +37,7 @@ type Client struct {
 	Client   *retryablehttp.Client
 	Settings *global.Settings
 	Ctx      context.Context
+	IsMultiTenant bool
 }
 
 type Event struct {
@@ -61,13 +62,14 @@ type payload struct {
 	Event   *Event  `json:"content"`
 }
 
-func NewEventClient(ctx context.Context, settings *global.Settings) *Client {
+func NewEventClient(ctx context.Context, settings *global.Settings, isMultiTennant bool) *Client {
 	c := retryablehttp.NewClient()
 	c.HTTPClient.Transport = cleanhttp.DefaultPooledTransport() // reuse the client so we can pipeline stuff
 	return &Client{
 		Client:   c,
 		Settings: settings,
 		Ctx:      ctx,
+		IsMultiTenant: isMultiTennant,
 	}
 }
 
@@ -92,7 +94,12 @@ func (c *Client) postEvent(event payload) error {
 	if err != nil {
 		return err
 	}
-	req, err := retryablehttp.NewRequest(http.MethodPost, c.Settings.SpinnakerSupplied.Echo.BaseURL, postData)
+	var req *retryablehttp.Request
+	if c.IsMultiTenant {
+		req, err = retryablehttp.NewRequest(http.MethodPost, c.Settings.SpinnakerSupplied.Gate.BaseURL, postData)
+	} else {
+		req, err = retryablehttp.NewRequest(http.MethodPost, c.Settings.SpinnakerSupplied.Echo.BaseURL, postData)
+	}
 	if err != nil {
 		return err
 	}

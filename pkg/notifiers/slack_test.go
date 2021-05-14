@@ -2,7 +2,7 @@ package notifiers
 
 import (
 	"encoding/json"
-	"github.com/armory/plank/v3"
+	"github.com/armory/plank/v4"
 	"testing"
 )
 

@@ -78,35 +78,54 @@ func (a Application) MarshalJSON() ([]byte, error) {
 
 // GetApplication returns the Application data struct for the
 // given application name.
-func (c *Client) GetApplication(name string) (*Application, error) {
+func (c *Client) GetApplication(name, traceparent string) (*Application, error) {
 	var app Application
-	if err := c.Get(c.URLs["front50"]+"/v2/applications/"+name, &app); err != nil {
-		return nil, err
+	if c.UseGate {
+		if err := c.Get(c.URLs["gate"]+"/plank/v2/applications/"+name, traceparent, &app); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := c.Get(c.URLs["front50"]+"/v2/applications/"+name, traceparent, &app); err != nil {
+			return nil, err
+		}
 	}
 	return &app, nil
 }
 
 // GetApplications returns all applications (you can see, at least)
-func (c *Client) GetApplications() (*[]Application, error) {
+func (c *Client) GetApplications(traceparent string) (*[]Application, error) {
 	var apps []Application
-	if err := c.Get(c.URLs["front50"]+"/v2/applications", &apps); err != nil {
-		return nil, err
+	if c.UseGate {
+		if err := c.Get(c.URLs["gate"]+"/plank/v2/applications", traceparent, &apps); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := c.Get(c.URLs["front50"]+"/v2/applications", traceparent, &apps); err != nil {
+			return nil, err
+		}
 	}
 	return &apps, nil
 }
 
 // DeleteApplication deletes an application from the configured front50 store.
-func (c *Client) DeleteApplication(name string) error {
-	return c.Delete(fmt.Sprintf("%s/v2/applications/%s", c.URLs["front50"], name))
+func (c *Client) DeleteApplication(name, traceparent string) error {
+	return c.Delete(fmt.Sprintf("%s/v2/applications/%s", c.URLs["front50"], name), traceparent)
 }
 
 // UpdateApplication updates an application in the configured front50 store.
-func (c *Client) UpdateApplication(app Application) error {
+func (c *Client) UpdateApplication(app Application, traceparent string) error {
 	var unused interface{}
-	if err := c.PatchWithRetry(fmt.Sprintf("%s/v2/applications/%s", c.URLs["front50"], app.Name), ApplicationJson, app, &unused); err != nil {
-		return fmt.Errorf("could not update application %q: %w", app.Name, err)
+	if c.UseGate {
+		if err := c.PatchWithRetry(fmt.Sprintf("%s/plank/v2/applications/%s", c.URLs["gate"], app.Name),traceparent, ApplicationJson, app, &unused); err != nil {
+			return fmt.Errorf("could not update application %q: %w", app.Name, err)
+		}
+	} else {
+		if err := c.PatchWithRetry(fmt.Sprintf("%s/v2/applications/%s", c.URLs["front50"], app.Name),traceparent, ApplicationJson, app, &unused); err != nil {
+			return fmt.Errorf("could not update application %q: %w", app.Name, err)
+		}
 	}
-	if err := c.UpdatePermissions(app.Name, app.Permissions); err != nil {
+
+	if err := c.UpdatePermissions(app.Name, traceparent, app.Permissions); err != nil {
 		// UpdatePermissions will print in the log if something failed
 		return err
 	}
@@ -115,13 +134,13 @@ func (c *Client) UpdateApplication(app Application) error {
 }
 
 // UpdatePermissions updates an application permissions in the configured front50 store.
-func (c *Client) UpdatePermissions(appName string, permissions *PermissionsType) error {
+func (c *Client) UpdatePermissions(appName, traceparent string, permissions *PermissionsType) error {
 	var unused interface{}
 	var permissionsfront50 = Front50Permissions{
 		Name:        appName,
 		Permissions: permissions,
 	}
-	if err := c.PutWithRetry(fmt.Sprintf("%s/permissions/applications/%s", c.URLs["front50"], appName), ApplicationJson, permissionsfront50, &unused); err != nil {
+	if err := c.PutWithRetry(fmt.Sprintf("%s/permissions/applications/%s", c.URLs["front50"], appName), traceparent, ApplicationJson, permissionsfront50, &unused); err != nil {
 		return fmt.Errorf("could not update application permissions %q: %w", appName, err)
 	}
 	return nil
@@ -134,13 +153,13 @@ type createApplicationTask struct {
 }
 
 // CreateApplication does what it says.
-func (c *Client) CreateApplication(a *Application) error {
+func (c *Client) CreateApplication(a *Application, traceparent string) error {
 	payload := createApplicationTask{Application: *a, Type: "createApplication"}
-	ref, err := c.CreateTask(a.Name, fmt.Sprintf("Create Application: %s", a.Name), payload)
+	ref, err := c.CreateTask(a.Name, fmt.Sprintf("Create Application: %s", a.Name),traceparent, payload)
 	if err != nil {
 		return fmt.Errorf("could not create application - %v", err)
 	}
-	task, err := c.PollTaskStatus(ref.Ref)
+	task, err := c.PollTaskStatus(ref.Ref, traceparent)
 	if err != nil || task.Status == "TERMINAL" {
 		var errMsg string
 		if err != nil {
@@ -154,25 +173,25 @@ func (c *Client) CreateApplication(a *Application) error {
 	// Not worried if ResyncFiat fails -- if ArmoryEndpoints not enabled, this
 	// is a no-op, if it fails, the polling later might still succeed, or we'll
 	// get an error about not being able to retrieve the Application.
-	c.ResyncFiat()
+	c.ResyncFiat("")
 
 	// This really shouldn't have to be here, but after the task to create an
 	// app is marked complete sometimes the object still doesn't exist. So
 	// after doing the create, and getting back a completion, we still need
 	// to poll till we find the app in order to make sure future operations will
 	// succeed.
-	err = c.pollAppConfig(a.Name)
+	err = c.pollAppConfig(a.Name, traceparent)
 	return err
 }
 
 // pollAppConfig isn't exposed because not sure it's worth exposing.  Just
 // call GetApplication() if you're expecting it to be there.
-func (c *Client) pollAppConfig(appName string) error {
+func (c *Client) pollAppConfig(appName, traceparent string) error {
 	timer := time.NewTimer(4 * time.Minute)
 	t := time.NewTicker(5 * time.Second)
 	defer t.Stop()
 	for range t.C {
-		_, err := c.GetApplication(appName)
+		_, err := c.GetApplication(appName, traceparent)
 		if err == nil {
 			return nil
 		}

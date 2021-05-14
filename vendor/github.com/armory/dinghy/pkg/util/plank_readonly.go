@@ -18,7 +18,7 @@ package util
 
 import (
 	"fmt"
-	"github.com/armory/plank/v3"
+	"github.com/armory/plank/v4"
 	"github.com/google/uuid"
 )
 
@@ -27,28 +27,28 @@ type PlankReadOnly struct {
 	tempPipes	*[]plank.Pipeline
 }
 
-func (p *PlankReadOnly) GetApplication(string string) (*plank.Application, error) {
-	return p.Plank.GetApplication(string)
+func (p *PlankReadOnly) GetApplication(string, traceparent string) (*plank.Application, error) {
+	return p.Plank.GetApplication(string, traceparent)
 }
 
-func (p *PlankReadOnly) UpdateApplicationNotifications(plank.NotificationsType, string) error {
+func (p *PlankReadOnly) UpdateApplicationNotifications(plank.NotificationsType, string, string) error {
 	return nil
 }
 
-func (p *PlankReadOnly) GetApplicationNotifications(app string) (*plank.NotificationsType, error) {
-	return p.Plank.GetApplicationNotifications(app)
+func (p *PlankReadOnly) GetApplicationNotifications(app, traceparent string) (*plank.NotificationsType, error) {
+	return p.Plank.GetApplicationNotifications(app, traceparent)
 }
 
-func (p *PlankReadOnly) CreateApplication(*plank.Application) error {
+func (p *PlankReadOnly) CreateApplication(*plank.Application, string) error {
 	return nil
 }
 
-func (p *PlankReadOnly) UpdateApplication(plank.Application) error {
+func (p *PlankReadOnly) UpdateApplication(plank.Application, string) error {
 	return nil
 }
 
-func (p *PlankReadOnly) GetPipelines(appName string) ([]plank.Pipeline, error) {
-	pipes,err := p.Plank.GetPipelines(appName)
+func (p *PlankReadOnly) GetPipelines(appName, traceparent string) ([]plank.Pipeline, error) {
+	pipes,err := p.Plank.GetPipelines(appName, traceparent)
 	if err != nil {
 		return  pipes,err
 	}
@@ -62,11 +62,11 @@ func (p *PlankReadOnly) GetPipelines(appName string) ([]plank.Pipeline, error) {
 	return pipes, nil
 }
 
-func (p *PlankReadOnly) DeletePipeline(plank.Pipeline) error {
+func (p *PlankReadOnly) DeletePipeline(plank.Pipeline, string) error {
 	return nil
 }
 
-func (p *PlankReadOnly) UpsertPipeline(pipe plank.Pipeline, appName string) error {
+func (p *PlankReadOnly) UpsertPipeline(pipe plank.Pipeline, appName string, traceparent string) error {
 	// This is getting a little complex
 	// When a pipeline does not exists dinghy create it so it can be referenced
 	// Its a recursive call so it loops forever if this temp pipeline is not created
@@ -79,7 +79,7 @@ func (p *PlankReadOnly) UpsertPipeline(pipe plank.Pipeline, appName string) erro
 	return nil
 }
 
-func (p *PlankReadOnly) ResyncFiat() error {
+func (p *PlankReadOnly) ResyncFiat(string) error {
 	return nil
 }
 
@@ -88,4 +88,10 @@ func (p *PlankReadOnly) ArmoryEndpointsEnabled() bool {
 }
 
 func (p *PlankReadOnly) EnableArmoryEndpoints() {
+}
+
+func (p *PlankReadOnly) UseGateEndpoints() {
+}
+
+func (p *PlankReadOnly) UseServiceEndpoints() {
 }

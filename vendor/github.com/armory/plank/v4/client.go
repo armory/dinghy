@@ -53,6 +53,7 @@ type Client struct {
 	URLs            map[string]string
 	FiatUser        string
 	ArmoryEndpoints bool
+	UseGate         bool
 }
 
 type ContentType string
@@ -128,6 +129,7 @@ func New(opts ...ClientOption) *Client {
 		retryIncrement: 100,
 		maxRetry:       20,
 		URLs:           make(map[string]string),
+		UseGate:        false,
 	}
 	// Have to manually copy the DefaultURLs map because otherwise any changes
 	// made to this copy will modify the global.  I can't believe I have to
@@ -183,7 +185,7 @@ func (c *Client) RequestWithRetry(f RequestFunction) error {
 	return err
 }
 
-func (c *Client) request(method Method, url string, contentType ContentType, body interface{}, dest interface{}) error {
+func (c *Client) request(method Method, url string, contentType ContentType, body interface{}, dest interface{}, traceparent string) error {
 	jsonBody, err := json.Marshal(body)
 
 	if err != nil {
@@ -199,6 +201,9 @@ func (c *Client) request(method Method, url string, contentType ContentType, bod
 	if c.FiatUser != "" {
 		req.Header.Set(SpinFiatUserHeader, c.FiatUser)
 		req.Header.Set(SpinFiatAccountHeader, c.FiatUser)
+	}
+	if traceparent != "" {
+		req.Header.Set("traceparent", traceparent)
 	}
 
 	req.Header.Set("Content-Type", string(contentType))
@@ -226,54 +231,57 @@ func (c *Client) request(method Method, url string, contentType ContentType, bod
 }
 
 // Get a JSON payload from the URL then decode it into the 'dest' arguement.
-func (c *Client) Get(url string, dest interface{}) error {
-	return c.request(Get, url, ApplicationJson, nil, dest)
+func (c *Client) Get(url, traceparent string, dest interface{}) error {
+	return c.request(Get, url, ApplicationJson, nil, dest, traceparent)
 }
 
-func (c *Client) GetWithRetry(url string, dest interface{}) error {
+func (c *Client) GetWithRetry(url, traceparent string, dest interface{}) error {
 	return c.RequestWithRetry(func() error {
-		return c.Get(url, dest)
+		return c.Get(url, traceparent, dest)
 	})
 }
 
 // Patch updates a resource for the target URL
-func (c *Client) Patch(url string, contentType ContentType, body interface{}, dest interface{}) error {
-	return c.request(Patch, url, contentType, body, dest)
+func (c *Client) Patch(url, traceparent string, contentType ContentType, body interface{}, dest interface{}) error {
+	return c.request(Patch, url, contentType, body, dest, traceparent)
 }
 
 // PatchWithRetry updates a resource for the target URL
-func (c *Client) PatchWithRetry(url string, contentType ContentType, body interface{}, dest interface{}) error {
+func (c *Client) PatchWithRetry(url, traceparent string, contentType ContentType, body interface{}, dest interface{}) error {
 	return c.RequestWithRetry(func() error {
-		return c.Patch(url, contentType, body, dest)
+		return c.Patch(url, traceparent, contentType, body, dest)
 	})
 }
 
 // Post a JSON payload from the URL then decode it into the 'dest' arguement.
-func (c *Client) Post(url string, contentType ContentType, body interface{}, dest interface{}) error {
-	return c.request(Post, url, contentType, body, dest)
+func (c *Client) Post(url, traceparent string, contentType ContentType, body interface{}, dest interface{}) error {
+	return c.request(Post, url, contentType, body, dest, traceparent)
 }
 
-func (c *Client) PostWithRetry(url string, contentType ContentType, body interface{}, dest interface{}) error {
+func (c *Client) PostWithRetry(url, traceparent string, contentType ContentType, body interface{}, dest interface{}) error {
 	return c.RequestWithRetry(func() error {
-		return c.Post(url, contentType, body, dest)
+		return c.Post(url, traceparent, contentType, body, dest)
 	})
 }
 
 // Post a JSON payload from the URL then decode it into the 'dest' arguement.
-func (c *Client) Put(url string, contentType ContentType, body interface{}, dest interface{}) error {
-	return c.request(Put, url, contentType, body, dest)
+func (c *Client) Put(url, traceparent string, contentType ContentType, body interface{}, dest interface{}) error {
+	return c.request(Put, url, contentType, body, dest, traceparent)
 }
 
-func (c *Client) PutWithRetry(url string, contentType ContentType, body interface{}, dest interface{}) error {
+func (c *Client) PutWithRetry(url, traceparent string, contentType ContentType, body interface{}, dest interface{}) error {
 	return c.RequestWithRetry(func() error {
-		return c.Put(url, contentType, body, dest)
+		return c.Put(url, traceparent, contentType, body, dest)
 	})
 }
 
-func (c *Client) Delete(url string) error {
+func (c *Client) Delete(url, traceparent string) error {
 	request, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return err
+	}
+	if traceparent != "" {
+		request.Header.Set("traceparent", traceparent)
 	}
 	resp, err := c.http.Do(request)
 	if err != nil {
@@ -287,9 +295,9 @@ func (c *Client) Delete(url string) error {
 	return &ErrUnsupportedStatusCode{Code: resp.StatusCode}
 }
 
-func (c *Client) DeleteWithRetry(url string) error {
+func (c *Client) DeleteWithRetry(url, traceparent string) error {
 	return c.RequestWithRetry(func() error {
-		return c.Delete(url)
+		return c.Delete(url, traceparent)
 	})
 }
 
@@ -303,4 +311,11 @@ func (c *Client) EnableArmoryEndpoints() {
 
 func (c *Client) DisableARmoryEndpoints() {
 	c.ArmoryEndpoints = false
+}
+
+func (c *Client) UseGateEndpoints() {
+	c.UseGate = true
+}
+func (c *Client) UseServiceEndpoints() {
+	c.UseGate = false
 }

@@ -12,6 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [4.0.0]
+
+### Added
+- Added Trace Logging Option, this changed the API contract to allow for a traceparent id to be provided. If you do not 
+  wish to add a trace ID simply pass an empty string, and the header will be omitted.
+  
+- Added the ability to route traffic through gate rather than directly to the Spinnaker sub-services
+
+### Fixed
+
+### Removed
+
 ## [3.4.5] 2021-16-02
 
 ### Added

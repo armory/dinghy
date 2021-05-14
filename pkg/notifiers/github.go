@@ -5,7 +5,7 @@ import (
 	ctx "context"
 	"fmt"
 	"github.com/armory-io/dinghy/pkg/settings"
-	"github.com/armory/plank/v3"
+	"github.com/armory/plank/v4"
 	"github.com/google/go-github/github"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"

@@ -58,8 +58,8 @@ func (u *User) HasAppWriteAccess(app string) bool {
 }
 
 // Admin returns whether or not a user is an admin.
-func (c *Client) IsAdmin(username string) (bool, error) {
-	u, err := c.GetUser(username)
+func (c *Client) IsAdmin(username, traceparent string) (bool, error) {
+	u, err := c.GetUser(username, traceparent)
 	if err != nil {
 		return false, err
 	}
@@ -67,8 +67,8 @@ func (c *Client) IsAdmin(username string) (bool, error) {
 }
 
 // HasAppWriteAccess returns whether or not a user can write pipelines/configs/etc. for an app.
-func (c *Client) HasAppWriteAccess(username, app string) (bool, error) {
-	u, err := c.GetUser(username)
+func (c *Client) HasAppWriteAccess(username, app, traceparent string) (bool, error) {
+	u, err := c.GetUser(username, traceparent)
 	if err != nil {
 		return false, err
 	}
@@ -76,9 +76,9 @@ func (c *Client) HasAppWriteAccess(username, app string) (bool, error) {
 }
 
 // GetUser gets a user by name.
-func (c *Client) GetUser(name string) (*User, error) {
+func (c *Client) GetUser(name, traceparent string) (*User, error) {
 	var u User
-	if err := c.Get(c.URLs["fiat"]+"/authorize/"+name, &u); err != nil {
+	if err := c.Get(c.URLs["fiat"]+"/authorize/"+name, traceparent, &u); err != nil {
 		return nil, err
 	}
 	return &u, nil
@@ -88,7 +88,7 @@ func (c *Client) GetUser(name string) (*User, error) {
 // and permissions.  This uses an endpoint specific to Armory's distribution
 // of Fiat; if ArmoryEndpoints is not set (it's false by default) this is
 // a no-op.
-func (c *Client) ResyncFiat() error {
+func (c *Client) ResyncFiat(traceparent string) error {
 	if !c.ArmoryEndpoints {
 		// This only works if Armory endpoints are available
 		return nil
@@ -100,7 +100,12 @@ func (c *Client) ResyncFiat() error {
 	}
 
 	var unused interface{}
-	return c.Post(c.URLs["fiat"]+"/forceRefresh/all", ApplicationJson, nil, &unused)
+	if c.UseGate {
+		return c.Post(c.URLs["gate"]+"/plank/forceRefresh/all",traceparent, ApplicationJson, nil, &unused)
+	} else {
+		return c.Post(c.URLs["fiat"]+"/forceRefresh/all",traceparent, ApplicationJson, nil, &unused)
+	}
+
 }
 
 type FiatRole struct {
@@ -108,10 +113,10 @@ type FiatRole struct {
 	Source string `json:"source"`
 }
 
-func (c *Client) UserRoles(username string) ([]string, error) {
+func (c *Client) UserRoles(username, traceparent string) ([]string, error) {
 	baseUrl := c.URLs["fiat"]
 	var roles []FiatRole
-	if err := c.Get(baseUrl + "/authorize/" + username + "/roles", &roles); err != nil {
+	if err := c.Get(baseUrl + "/authorize/" + username + "/roles", traceparent, &roles); err != nil {
 		return nil, err
 	}
 	var names []string
@@ -132,7 +137,7 @@ type PermissionsEvaluator interface {
 }
 
 type FiatClient interface {
-	UserRoles(username string) ([]string, error)
+	UserRoles(username, traceparent string) ([]string, error)
 }
 
 type FiatClientFactory func(opts ...ClientOption) FiatClient
@@ -147,12 +152,12 @@ type FiatPermissionEvaluator struct {
 	orMode bool
 }
 
-func (f *FiatPermissionEvaluator) HasReadPermission(user string, rp ReadPermissable) (bool, error) {
+func (f *FiatPermissionEvaluator) HasReadPermission(user, traceparent string, rp ReadPermissable) (bool, error) {
 	if isNil(rp) {
 		return false, fmt.Errorf("object for permissions check should not be nil")
 	}
 
-	uroles, err := f.userRoles(user)
+	uroles, err := f.userRoles(user, traceparent)
 	if err != nil {
 		return false, err
 	}
@@ -185,7 +190,7 @@ func isNil(rp ReadPermissable) bool {
 	return rp == nil || (reflect.TypeOf(rp).Kind() == reflect.Ptr && reflect.ValueOf(rp).IsNil())
 }
 
-func (f *FiatPermissionEvaluator) userRoles(username string) ([]string, error) {
+func (f *FiatPermissionEvaluator) userRoles(username, traceparent string) ([]string, error) {
 	if v, ok := f.userRoleCache.Load(username); ok {
 		return v.([]string), nil
 	}
@@ -197,7 +202,7 @@ func (f *FiatPermissionEvaluator) userRoles(username string) ([]string, error) {
 	// i'm not a huge fan of recreating this client every time
 	opts := append([]ClientOption{WithFiatUser(username)}, f.clientOps...)
 	c := f.clientFactory(opts...)
-	uroles, err := c.UserRoles(username)
+	uroles, err := c.UserRoles(username, traceparent)
 	if err != nil {
 		return nil, err
 	}

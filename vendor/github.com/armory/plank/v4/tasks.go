@@ -36,13 +36,13 @@ type ExecutionStatusResponse struct {
 	EndTime int    `json:"endTime"`
 }
 
-func (c *Client) GetTask(refURL string) (*ExecutionStatusResponse, error) {
+func (c *Client) GetTask(refURL, traceparent string) (*ExecutionStatusResponse, error) {
 	var body ExecutionStatusResponse
-	err := c.Get(c.URLs["orca"]+refURL, &body)
+	err := c.Get(c.URLs["orca"]+refURL,traceparent, &body)
 	return &body, err
 }
 
-func (c *Client) PollTaskStatus(refURL string) (*ExecutionStatusResponse, error) {
+func (c *Client) PollTaskStatus(refURL, traceparent string) (*ExecutionStatusResponse, error) {
 	if refURL == "" {
 		return nil, errors.New("no taskRef provided to follow")
 	}
@@ -52,7 +52,11 @@ func (c *Client) PollTaskStatus(refURL string) (*ExecutionStatusResponse, error)
 
 	for range t.C {
 		var body ExecutionStatusResponse
-		c.Get(c.URLs["orca"]+refURL, &body)
+		if c.UseGate {
+			c.Get(c.URLs["gate"]+"/plank/"+refURL, "", &body)
+		} else {
+			c.Get(c.URLs["orca"]+refURL, "", &body)
+		}
 		if body.EndTime > 0 {
 			return &body, nil
 		}
@@ -66,11 +70,17 @@ func (c *Client) PollTaskStatus(refURL string) (*ExecutionStatusResponse, error)
 }
 
 // Create task puts the payload into the Task wrapper.
-func (c *Client) CreateTask(app, desc string, payload interface{}) (*TaskRefResponse, error) {
+func (c *Client) CreateTask(app, desc, traceparent string, payload interface{}) (*TaskRefResponse, error) {
 	task := Task{Application: app, Description: desc, Job: []interface{}{payload}}
 	var ref TaskRefResponse
-	if err := c.Post(c.URLs["orca"]+"/ops", ApplicationContextJson, task, &ref); err != nil {
-		return nil, err
+	if c.UseGate {
+		if err := c.Post(c.URLs["gate"]+"/plank/ops",traceparent, ApplicationContextJson, task, &ref); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := c.Post(c.URLs["orca"]+"/ops",traceparent, ApplicationContextJson, task, &ref); err != nil {
+			return nil, err
+		}
 	}
 	return &ref, nil
 }

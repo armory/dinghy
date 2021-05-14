@@ -191,10 +191,13 @@ type SpinnakerSupplied struct {
 	Deck SpinnakerService `json:"deck,omitempty" yaml:"deck"`
 	// Echo service information
 	Echo SpinnakerService `json:"echo,omitempty" yaml:"echo"`
+	// Gate service information
+	Gate  SpinnakerService `json:"gate,omitempty" yaml:"gate"`
 	// Fiat service information
 	Fiat Fiat `json:"fiat,omitempty" yaml:"fiat"`
 	// Redis service information, user will always be default
 	Redis Redis `json:"redis,omitempty" yaml:"redis"`
+
 }
 
 type Redis struct {

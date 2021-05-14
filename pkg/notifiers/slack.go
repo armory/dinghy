@@ -3,7 +3,7 @@ package notifiers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/armory/plank/v3"
+	"github.com/armory/plank/v4"
 	"net/http"
 
 	"github.com/armory-io/dinghy/pkg/settings"

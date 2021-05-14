@@ -2,7 +2,7 @@ package notifiers
 
 import (
 	"fmt"
-	plank "github.com/armory/plank/v3"
+	plank "github.com/armory/plank/v4"
 	"github.com/mitchellh/mapstructure"
 )
 
