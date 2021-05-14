@@ -22,6 +22,8 @@ import (
 	"github.com/armory/dinghy/pkg/logevents"
 	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/settings/source"
+	"github.com/armory/dinghy/pkg/util"
+	"github.com/sirupsen/logrus"
 
 	// "errors"
 	"net/http"
@@ -52,7 +54,7 @@ func testHealthCheckLogging(t *testing.T, endpoint string) {
 	logger.EXPECT().Debug(gomock.Any()).Times(1)
 	logger.EXPECT().Info(gomock.Any()).Times(0)
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(nil, nil, nil, logger, nil, nil, nil, nil)
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -83,11 +85,11 @@ func TestGithubWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
-		return &global.Settings{}, nil
+	sc.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
+		return &global.Settings{}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
 
-	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(sc, nil, nil, logger, nil, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
@@ -106,10 +108,10 @@ func TestGithubWebhookHandlerNoRef(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
-		return &global.Settings{}, nil
+	sc.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
+		return &global.Settings{}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
-	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(sc, nil, nil, logger, nil, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{}`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
@@ -129,7 +131,7 @@ func TestGithubWebhookHandler(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	s := source.NewMockSourceConfiguration(ctrl)
-	s.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
+	s.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
 		return &global.Settings{
 			TemplateRepo:                      "my-repo",
 			TemplateOrg:                       "my-org",
@@ -146,10 +148,10 @@ func TestGithubWebhookHandler(t *testing.T) {
 			},
 			RepoConfig:                  []global.RepoConfig{},
 			RepositoryRawdataProcessing: true,
-		}, nil
+		}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
 
-	wa := NewWebAPI(s, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(s, nil, nil, logger, nil,nil, nil, nil)
 	wa.Parser = dinghyfile.NewDinghyfileParser(&dinghyfile.PipelineBuilder{})
 	payload := bytes.NewBufferString(`{"ref":"refs/heads/some_branch","repository":{"name":"my-repo","organization":"my-org"}}`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
@@ -177,10 +179,10 @@ func TestStashWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
-		return &global.Settings{}, nil
+	sc.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
+		return &global.Settings{}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
-	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(sc, nil, nil, logger, nil, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/stash", payload)
@@ -200,11 +202,11 @@ func TestStashWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
-		return &global.Settings{}, nil
+	sc.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
+		return &global.Settings{}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
 
-	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(sc, nil, nil, logger, nil, nil, nil, nil)
 	payload := bytes.NewBufferString(`{"event_type": "stash", "refChanges": "not an array"}`)
 
 	req := httptest.NewRequest("POST", "/v1/webhooks/stash", payload)
@@ -223,11 +225,11 @@ func TestBitbucketWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
-		return &global.Settings{}, nil
+	sc.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
+		return &global.Settings{}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
 
-	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(sc, nil, nil, logger, nil,nil, nil, nil)
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket", payload)
 	rr := httptest.NewRecorder()
@@ -246,11 +248,11 @@ func TestBitbucketWebhookBadPayload(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
-		return &global.Settings{}, nil
+	sc.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
+		return &global.Settings{}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
 
-	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(sc, nil, nil, logger, nil, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "repo:refs_changed", "changes": "not an array"}`)
 
@@ -270,11 +272,11 @@ func TestBitbucketCloudWebhookHandlerBadJSON(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
-		return &global.Settings{}, nil
+	sc.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
+		return &global.Settings{}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
 
-	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(sc, nil, nil, logger, nil,nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
@@ -289,16 +291,16 @@ func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Info(gomock.Eq(stringToInterfaceSlice("Processing bitbucket-cloud webhook"))).Times(1)
-	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(1)
+	logger.EXPECT().Infof(gomock.Eq("Received payload: %s"), gomock.Any()).Times(2)
 	logger.EXPECT().Errorf(gomock.Eq("failed to decode bitbucket-cloud webhook: %s"), gomock.Any()).Times(1)
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
-		return &global.Settings{}, nil
+	sc.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
+		return &global.Settings{}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
 
-	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(sc, nil, nil, logger, nil,nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "repo:push", "push": {"changes": "not an array"}}`)
 
@@ -316,11 +318,11 @@ func TestUnknownEventType(t *testing.T) {
 	logger.EXPECT().WithFields(gomock.Any())
 
 	sc := source.NewMockSourceConfiguration(ctrl)
-	sc.EXPECT().GetSettings(gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request) (*global.Settings, error) {
-		return &global.Settings{}, nil
+	sc.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
+		return &global.Settings{}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
 
-	wa := NewWebAPI(sc, nil, nil, nil, logger, nil, nil, nil)
+	wa := NewWebAPI(sc, nil, nil, logger, nil, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "", "changes": "not an array"}`)
 
@@ -357,7 +359,7 @@ func TestLogevents(t *testing.T) {
 		return []logevents.LogEvent{event}, nil
 	})
 
-	wa := NewWebAPI(nil, nil, nil, nil, logger, nil, nil, lec)
+	wa := NewWebAPI(nil, nil, nil, logger, nil, nil, lec, nil)
 	req, err := http.NewRequest("GET", "/v1/logevents", nil)
 	if err != nil {
 		t.Fatal(err)

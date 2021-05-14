@@ -9,7 +9,9 @@ import (
 	reflect "reflect"
 
 	global "github.com/armory/dinghy/pkg/settings/global"
+	util "github.com/armory/dinghy/pkg/util"
 	gomock "github.com/golang/mock/gomock"
+	logrus "github.com/sirupsen/logrus"
 )
 
 // MockSourceConfiguration is a mock of SourceConfiguration interface.
@@ -48,18 +50,19 @@ func (mr *MockSourceConfigurationMockRecorder) BustCacheHandler(w, r interface{}
 }
 
 // GetSettings mocks base method.
-func (m *MockSourceConfiguration) GetSettings(r *http.Request) (*global.Settings, error) {
+func (m *MockSourceConfiguration) GetSettings(r *http.Request, logr *logrus.Logger) (*global.Settings, util.PlankClient, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSettings", r)
+	ret := m.ctrl.Call(m, "GetSettings", r, logr)
 	ret0, _ := ret[0].(*global.Settings)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(util.PlankClient)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetSettings indicates an expected call of GetSettings.
-func (mr *MockSourceConfigurationMockRecorder) GetSettings(r interface{}) *gomock.Call {
+func (mr *MockSourceConfigurationMockRecorder) GetSettings(r, logr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSettings", reflect.TypeOf((*MockSourceConfiguration)(nil).GetSettings), r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSettings", reflect.TypeOf((*MockSourceConfiguration)(nil).GetSettings), r, logr)
 }
 
 // GetSourceName mocks base method.
@@ -76,17 +79,31 @@ func (mr *MockSourceConfigurationMockRecorder) GetSourceName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSourceName", reflect.TypeOf((*MockSourceConfiguration)(nil).GetSourceName))
 }
 
-// LoadSetupSettings mocks base method.
-func (m *MockSourceConfiguration) LoadSetupSettings() (*global.Settings, error) {
+// IsMultiTenant mocks base method.
+func (m *MockSourceConfiguration) IsMultiTenant() bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadSetupSettings")
+	ret := m.ctrl.Call(m, "IsMultiTenant")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsMultiTenant indicates an expected call of IsMultiTenant.
+func (mr *MockSourceConfigurationMockRecorder) IsMultiTenant() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMultiTenant", reflect.TypeOf((*MockSourceConfiguration)(nil).IsMultiTenant))
+}
+
+// LoadSetupSettings mocks base method.
+func (m *MockSourceConfiguration) LoadSetupSettings(arg0 *logrus.Logger) (*global.Settings, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadSetupSettings", arg0)
 	ret0, _ := ret[0].(*global.Settings)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // LoadSetupSettings indicates an expected call of LoadSetupSettings.
-func (mr *MockSourceConfigurationMockRecorder) LoadSetupSettings() *gomock.Call {
+func (mr *MockSourceConfigurationMockRecorder) LoadSetupSettings(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadSetupSettings", reflect.TypeOf((*MockSourceConfiguration)(nil).LoadSetupSettings))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadSetupSettings", reflect.TypeOf((*MockSourceConfiguration)(nil).LoadSetupSettings), arg0)
 }

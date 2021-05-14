@@ -3,6 +3,8 @@ package remote
 import (
 	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/settings/source"
+	"github.com/armory/dinghy/pkg/util"
+	logr "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -22,7 +24,7 @@ func NewRemoteSource() *RemoteSource {
 }
 
 //LoadSetupSettings load setttings for dinghy start-up
-func (lSource *RemoteSource) LoadSetupSettings() (*global.Settings, error) {
+func (lSource *RemoteSource) LoadSetupSettings(*logr.Logger) (*global.Settings, error) {
 
 	initializer := source.NewInitialize()
 	config, err := initializer.Autoconfigure()
@@ -43,8 +45,12 @@ func (*RemoteSource) GetSourceName() string {
 }
 
 //GetSettings get settings given the key
-func (lSource *RemoteSource) GetSettings(r *http.Request) (*global.Settings, error) {
-	return nil, nil
+func (lSource *RemoteSource) GetSettings(r *http.Request, logger *logr.Logger) (*global.Settings, util.PlankClient, error) {
+	return nil,nil, nil
 }
 
 func (*RemoteSource) BustCacheHandler(w http.ResponseWriter, r *http.Request) {}
+
+func (*RemoteSource) IsMultiTenant() bool {
+	return true
+}

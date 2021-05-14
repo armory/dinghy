@@ -4,7 +4,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.1.0
 	github.com/armory-io/monitoring v0.0.7
 	github.com/armory/go-yaml-tools v0.0.2
-	github.com/armory/plank/v3 v3.4.5
+	github.com/armory/plank/v4 v4.0.0 // indirect
 	github.com/go-redis/redis v6.14.1+incompatible
 	github.com/golang/mock v1.3.1
 	github.com/google/go-github/v33 v33.0.0
@@ -24,7 +24,6 @@ require (
 	github.com/spf13/afero v1.1.2 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/xanzy/go-gitlab v0.20.1
-	go.opencensus.io v0.22.1 // indirect
 	go.opentelemetry.io/otel v0.16.0
 	go.opentelemetry.io/otel/exporters/stdout v0.16.0
 	go.opentelemetry.io/otel/sdk v0.16.0

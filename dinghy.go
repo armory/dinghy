@@ -24,8 +24,8 @@ import (
 )
 
 func main() {
-	s, err := settings.LoadSettings()
 	log := logr.New()
+	s, err := settings.LoadSettings(log)
 	if err != nil {
 		log.Fatalf("failed to load configuration: %s", err.Error())
 	}
