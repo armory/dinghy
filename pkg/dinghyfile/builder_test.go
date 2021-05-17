@@ -858,7 +858,7 @@ func TestGetPipelineByID(t *testing.T) {
 	}
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetPipelines(gomock.Eq("testapp"),"").Return(emptyset, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(emptyset, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(foundset, nil).Times(1)
 	client.EXPECT().UpsertPipeline(gomock.Any(), gomock.Eq(""), "").Times(1)
 
@@ -886,6 +886,34 @@ func TestGetPipelineByIDUpsertFail(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, "upsert fail test", err.Error())
 	assert.Equal(t, "", res)
+}
+
+func TestGetPipelineByIDWhenApplicationNotExist(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	emptyset := []plank.Pipeline{}
+	foundset := []plank.Pipeline{
+		plank.Pipeline{Name: "pipelineName", ID: "pipelineID"},
+	}
+
+	client := NewMockPlankClient(ctrl)
+	client.EXPECT().GetApplication(gomock.Eq("testapp"), "").Return(nil, &plank.FailedResponse{StatusCode: 404}).Times(1)
+	client.EXPECT().GetApplication("testapp", "").Return(nil, nil).Times(1)
+	client.EXPECT().CreateApplication(gomock.Any(), "").Return(nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(emptyset, nil).Times(1)
+	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return(foundset, nil).Times(1)
+	client.EXPECT().UpsertPipeline(gomock.Any(), gomock.Eq(""), "").Times(1)
+
+	b := testPipelineBuilder()
+	var gvMap = make(map[string]interface{})
+	gvMap["save_app_on_update"] = true
+	b.GlobalVariablesMap = gvMap
+	b.Client = client
+
+	res, err := b.GetPipelineByID("testapp", "pipelineName")
+	assert.Nil(t, err)
+	assert.Equal(t, "pipelineID", res)
 }
 
 func TestUpdatePipelinesDeleteStaleWithExisting(t *testing.T) {
@@ -1016,7 +1044,7 @@ func TestUpdatePipelinesRespectsAutoLockOn(t *testing.T) {
 	testapp := &plank.Application{Name: "testapp"}
 
 	client := NewMockPlankClient(ctrl)
-	client.EXPECT().GetApplication("testapp","").Return(nil, nil).Times(1)
+	client.EXPECT().GetApplication("testapp", "").Return(nil, nil).Times(1)
 	client.EXPECT().GetPipelines(gomock.Eq("testapp"), "").Return([]plank.Pipeline{}, nil).Times(1)
 	client.EXPECT().UpsertPipeline(gomock.Eq(expectedPipeline), gomock.Eq(newPipeline.ID), "").Return(nil).Times(1)
 
