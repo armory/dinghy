@@ -480,7 +480,8 @@ func (b *PipelineBuilder) PipelineIDs(app string) (map[string]string, error) {
 func (b *PipelineBuilder) GetPipelineByID(app, pipelineName string) (string, error) {
 	if val, found := b.GlobalVariablesMap["save_app_on_update"]; found && val == true {
 		application := &plank.Application{
-			Name: app,
+			Name:  app,
+			Email: DefaultEmail,
 		}
 		_, err := b.Client.GetApplication(app, "")
 		if err != nil {
