@@ -478,6 +478,32 @@ func (b *PipelineBuilder) PipelineIDs(app string) (map[string]string, error) {
 // GetPipelineByID returns a pipeline's UUID by its name; if the pipeline
 // isn't found, one is created one and its ID is returned.
 func (b *PipelineBuilder) GetPipelineByID(app, pipelineName string) (string, error) {
+	if val, found := b.GlobalVariablesMap["save_app_on_update"]; found && val == true {
+		application := &plank.Application{
+			Name:  app,
+			Email: DefaultEmail,
+		}
+		_, err := b.Client.GetApplication(app, "")
+		if err != nil {
+			failedResponse, ok := err.(*plank.FailedResponse)
+			if !ok {
+				b.Logger.Errorf("Failed to create application (%s)", err.Error())
+				return "", err
+			}
+			if failedResponse.StatusCode == 404 {
+				// Likely just not there...
+				b.Logger.Infof("Creating application '%s'...", application.Name)
+				if err = b.Client.CreateApplication(application, ""); err != nil {
+					b.Logger.Errorf("Failed to create application (%s)", failedResponse.Error())
+					return "", err
+				}
+			} else {
+				b.Logger.Errorf("Failed to create application (%s)", failedResponse.Error())
+				return "", err
+			}
+		}
+	}
+
 	ids, err := b.PipelineIDs(app)
 	if err != nil {
 		return "", err
