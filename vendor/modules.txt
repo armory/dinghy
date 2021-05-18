@@ -19,7 +19,7 @@ github.com/Masterminds/sprig/v3
 # github.com/armory-io/monitoring v0.0.7
 github.com/armory-io/monitoring/log/formatters
 github.com/armory-io/monitoring/log/hooks
-# github.com/armory/dinghy v0.0.0-20210514152505-10b43fe1e978
+# github.com/armory/dinghy v0.0.0-20210518161923-6bb7860b1cbe
 github.com/armory/dinghy/cmd
 github.com/armory/dinghy/pkg/cache
 github.com/armory/dinghy/pkg/cache/local
