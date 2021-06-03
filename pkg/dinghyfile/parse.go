@@ -253,7 +253,8 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	}
 
 	// Extract global vars if we're processing a dinghyfile (and not a module)
-	if filepath.Base(path) == r.Builder.DinghyfileName {
+	isDinghyfile := filepath.Base(path) == r.Builder.DinghyfileName
+	if isDinghyfile {
 		module = false
 		gvs, err := preprocessor.ParseGlobalVars(contents, gitInfo)
 		if err != nil {
@@ -291,7 +292,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	// to "master"
 	funcMap := template.FuncMap{
 		"module":       r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
-		"local_module": r.localModuleFunc(org, repo, branch, deps, vars),
+		"local_module": r.localModuleFunc(org, repo, branch, isDinghyfile, deps, vars),
 		"appModule":    r.moduleFunc(r.Builder.TemplateOrg, r.Builder.TemplateRepo, moduleBranch, deps, vars),
 		"pipelineID":   r.pipelineIDFunc(vars),
 		"var":          r.varFunc(vars),
@@ -340,9 +341,9 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	return buf, nil
 }
 
-func (r *DinghyfileParser) localModuleFunc(org string, repo string, branch string, deps map[string]bool, allVars []VarMap) interface{} {
+func (r *DinghyfileParser) localModuleFunc(org string, repo string, branch string, isDinghyfile bool, deps map[string]bool, allVars []VarMap) interface{} {
 	return func(mod string, vars ...interface{}) (string, error) {
-		if r.Builder.TemplateOrg == org && r.Builder.TemplateRepo == repo {
+		if r.Builder.TemplateOrg == org && r.Builder.TemplateRepo == repo && !isDinghyfile {
 			return "", fmt.Errorf("%v is a local_module, calling local_module from a module is not allowed", mod)
 		} else {
 			return moduleFunction(org, mod, r, repo, branch, deps, vars, allVars)
