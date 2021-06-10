@@ -1,0 +1,88 @@
+name: Build CD Images 
+
+on:
+  push:
+    branches:
+      - master
+      - "release-[0-9]+.[0-9]+.x"
+
+jobs:
+  publish_images:
+    env:
+      ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+      ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Fetch full history
+        run: git fetch --prune --tags --unshallow
+
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v1
+
+      - name: Login to Artifactory
+        run: |
+          docker login -u ${{ env.ARTIFACTORY_USER }} -p ${{ env.ARTIFACTORY_PASSWORD }} armory-docker-local.jfrog.io
+
+      - name: Generate Variables
+        id: variables
+        uses: armory-io/astrolabe-build-defaults@main
+        with:
+          red_hat_pid: ${{ secrets.REDHAT_PID }}
+
+      - name: Build Image
+        run: |
+          docker build -t ${{ steps.variables.outputs.artifactory_image_name }} .
+
+      - name: Publish Image To Artifactory
+        run: |
+          jfrog rt config artifactory --interactive=false \
+            --url ${{ steps.variables.outputs.artifactory_url }} \
+            --user ${ARTIFACTORY_USER} \
+            --password ${ARTIFACTORY_PASSWORD}
+          jfrog rt dp ${{ steps.variables.outputs.artifactory_image_name }} ${{ steps.variables.outputs.artifactory_docker_repository }} \
+            --build-name=${{ steps.variables.outputs.build_name }} \
+            --build-number=${{ steps.variables.outputs.build_number }}
+          jfrog rt bag ${{ steps.variables.outputs.build_name }} ${{ steps.variables.outputs.build_number }}
+          jfrog rt bp ${{ steps.variables.outputs.build_name }} ${{ steps.variables.outputs.build_number }} \
+            --build-url=${{ steps.variables.outputs.build_url }}
+
+      - name: Scan Using Aquasec
+        uses: armory-io/aquasec-scan-action@v0.0.10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          username: ${{ secrets.AQUA_USER }}
+          password: ${{ secrets.AQUA_PASSWORD }}
+          url: https://aquasec.armory.io
+          registry: Artifactory
+          image: ${{ steps.variables.outputs.image_name }}
+
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_HUB_USER }} -p '${{ secrets.DOCKER_HUB_PASS }}'
+
+      - name: Publish Image to Docker Hub
+        run: |
+          docker image tag ${{ steps.variables.outputs.artifactory_image_name }} ${{ steps.variables.outputs.image_name }}
+          docker push ${{ steps.variables.outputs.image_name }}
+
+      - name: Create UBI image
+        run: |
+          docker login -u ${{ secrets.REDHAT_REGISTRY_USER }} -p "${{ secrets.REDHAT_REGISTRY_PASSWORD }}" registry.redhat.io
+          docker build . -t ${{ steps.variables.outputs.ubi_image_name }} -f Dockerfile.ubi
+
+      - name: Login to Red Hat
+        run: docker login -u unused -p "${{ secrets.REDHAT_REGISTRY_TOKEN }}" ${{ steps.variables.outputs.red_hat_scan_registry_hostname }} 
+
+      - name: Publish Release to Red Hat Registry
+        run: |
+          echo "Tagging ${{ steps.variables.outputs.ubi_image_name }} to ${{ steps.variables.outputs.artifactory_docker_registry_hostname }}/${{ steps.variables.outputs.ubi_image_name }}"
+          docker image tag ${{ steps.variables.outputs.ubi_image_name }} ${{ steps.variables.outputs.artifactory_docker_registry_hostname }}/${{ steps.variables.outputs.ubi_image_name }}
+          echo "Tagging ${{ steps.variables.outputs.ubi_image_name }} to ${{ steps.variables.outputs.ubi_scan_image_name }}"
+          docker image tag ${{ steps.variables.outputs.ubi_image_name }} ${{ steps.variables.outputs.ubi_scan_image_name }}
+          echo "Pushing images..."
+          docker push ${{ steps.variables.outputs.ubi_image_name }}
+          docker push ${{ steps.variables.outputs.artifactory_docker_registry_hostname }}/${{ steps.variables.outputs.ubi_image_name }}
+          docker push ${{ steps.variables.outputs.ubi_scan_image_name }}
