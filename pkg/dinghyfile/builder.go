@@ -115,12 +115,19 @@ func (b *PipelineBuilder) UpdateDinghyfile(dinghyfile []byte) (Dinghyfile, error
 	d := NewDinghyfile()
 	// try every parser, maybe we'll get lucky
 	parseErrs := 0
+	suceeded := false
+	var parseError error
 	for _, ums := range b.Ums {
 		if err := ums.Unmarshal(dinghyfile, &d); err != nil {
-			b.Logger.Warnf("UpdateDinghyfile malformed syntax: %s", err.Error())
+			parseError = err
 			parseErrs++
 			continue
+		} else {
+			suceeded = true
 		}
+	}
+	if !suceeded && parseErrs != 0 && parseError != nil {
+		b.Logger.Warnf("UpdateDinghyfile malformed syntax: %s", parseError.Error())
 	}
 	event := &events.Event{
 		Start:      time.Now().UTC().Unix(),
