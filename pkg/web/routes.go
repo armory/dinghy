@@ -29,6 +29,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/events"
@@ -672,31 +673,55 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 		return
 	}
 
+	modulesProcessed :=0
 	// Check if we're in a template repo
 	if p.Repo() == settings.TemplateRepo {
 		// Set status to pending while we process modules
 		p.SetCommitStatus(settings.InstanceId, git.StatusPending, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusPending])
-
+		var filesToIgnore []string
+		//check for dinghyignore file
+		patternsToIgnore, err :=f.Download(p.Org(),p.Repo(), ".dinghyignore", p.Branch())
+		if err != nil {
+			dinghyLog.Info(".dinghyignore file not found in template repository, validating all files in the push")
+		} else {
+			dinghyLog.Infof(".dinghyignore file found! Ignoring files that match these globs: %s", patternsToIgnore)
+			filesToIgnore = strings.Split(patternsToIgnore, "\n")
+		}
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
-			// ensure module is correctly parsed
-			if _, err := builder.Parser.Parse(p.Org(), p.Repo(), file, p.Branch(), nil); err != nil {
-				p.SetCommitStatus(settings.InstanceId, git.StatusError, "module parse failed")
-				dinghyLog.Errorf("module parse failed: %s", err.Error())
-				saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
-				return
-			}
-			if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch()); err != nil {
-				switch err.(type) {
-				case *util.GitHubFileNotFoundErr:
-					util.WriteHTTPError(w, http.StatusNotFound, err)
-				default:
-					util.WriteHTTPError(w, http.StatusInternalServerError, err)
+			var shouldIgnore bool
+			//check to see if the file should be ignored
+			for _ ,pattern := range  filesToIgnore {
+				if pattern != ""{
+					shouldIgnore, _ = regexp.MatchString(pattern, file)
+					if shouldIgnore {
+						dinghyLog.Infof("file %s matches pattern %s: %t", file, pattern, shouldIgnore)
+						break
+					}
 				}
-				p.SetCommitStatus(settings.InstanceId, git.StatusError, "Rebuilding dependent dinghyfiles Failed")
-				dinghyLog.Errorf("RebuildModuleRoots Failed: %s", err.Error())
-				saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
-				return
+			}
+			//if file does not match glob in .dinghyignore file then process the module
+			if !shouldIgnore {
+				// ensure module is correctly parsed
+				if _, err := builder.Parser.Parse(p.Org(), p.Repo(), file, p.Branch(), nil); err != nil {
+					p.SetCommitStatus(settings.InstanceId, git.StatusError, "module parse failed")
+					dinghyLog.Errorf("module parse failed: %s", err.Error())
+					saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
+					return
+				}
+				if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch()); err != nil {
+					switch err.(type) {
+					case *util.GitHubFileNotFoundErr:
+						util.WriteHTTPError(w, http.StatusNotFound, err)
+					default:
+						util.WriteHTTPError(w, http.StatusInternalServerError, err)
+					}
+					p.SetCommitStatus(settings.InstanceId, git.StatusError, "Rebuilding dependent dinghyfiles Failed")
+					dinghyLog.Errorf("RebuildModuleRoots Failed: %s", err.Error())
+					saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
+					return
+				}
+				modulesProcessed++
 			}
 		}
 		p.SetCommitStatus(settings.InstanceId, git.StatusSuccess, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusSuccess])
@@ -705,7 +730,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	// Only save event if changed files were in repo or it was having a dinghyfile
 	// TODO: If a template repo is having files not related with dinghy an event will be saved
 	if p.Repo() == settings.TemplateRepo {
-		if len(p.Files()) > 0 {
+		if modulesProcessed > 0 {
 			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
 		}
 	} else {
