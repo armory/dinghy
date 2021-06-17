@@ -126,9 +126,10 @@ func TestGithubWebhookHandler(t *testing.T) {
 
 	logger := mock.NewMockFieldLogger(ctrl)
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).Times(5)
-	logger.EXPECT().Info(gomock.Any()).Times(1)
+	logger.EXPECT().Info(gomock.Any()).Times(2)
 	logger.EXPECT().Warnf(gomock.Any(), gomock.Any()).Times(1)
 	logger.EXPECT().WithFields(gomock.Any())
+	logger.EXPECT().Error(gomock.Any()).Times(1)
 
 	s := source.NewMockSourceConfiguration(ctrl)
 	s.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
