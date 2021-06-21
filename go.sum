@@ -50,6 +50,8 @@ github.com/armory/dinghy v0.0.0-20210518161923-6bb7860b1cbe h1:VTHmVPL+ghx0kKxAS
 github.com/armory/dinghy v0.0.0-20210518161923-6bb7860b1cbe/go.mod h1:3c+3anUaSrGyus99y4FkQ3T734yZyhX06/49UxlkrSM=
 github.com/armory/dinghy v0.0.0-20210603214257-32f2be84d898 h1:yuDnj9iBfZ8pyowaBk/vUVstPlXoxqvb0CG3ygrkGmc=
 github.com/armory/dinghy v0.0.0-20210603214257-32f2be84d898/go.mod h1:3c+3anUaSrGyus99y4FkQ3T734yZyhX06/49UxlkrSM=
+github.com/armory/dinghy v0.0.0-20210616214424-bb766ffc3e2c h1:LFrbzL4Fo7pxEcbEOCrmG7+zNPb2mdtu3cubLOeZs6s=
+github.com/armory/dinghy v0.0.0-20210616214424-bb766ffc3e2c/go.mod h1:3c+3anUaSrGyus99y4FkQ3T734yZyhX06/49UxlkrSM=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
 github.com/armory/go-yaml-tools v0.0.2 h1:IYAbeGQJQKFwBAdl4u9IVrENgHjjUsOxZRSTvypgYk4=
 github.com/armory/go-yaml-tools v0.0.2/go.mod h1:LasFFVo6zuV334Pmx7Diq9L3muOUUI8MF79QUFC1jq0=
