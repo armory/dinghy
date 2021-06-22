@@ -243,7 +243,7 @@ func (r *DinghyfileParser) Parse(org, repo, path, branch string, vars []VarMap) 
 	}
 
 	// Validate if module is parsed correctly
-	if r.Builder.Action == pipebuilder.Validate && repo == r.Builder.TemplateRepo {
+	if (r.Builder.Action == pipebuilder.Validate && repo == r.Builder.TemplateRepo) && r.Builder.JsonValidationDisabled!="true" {
 		err = preprocessor.ContentShouldBeParsedCorrectly(contents)
 		if err != nil {
 			r.Builder.Logger.Errorf("Failed to parse module:\n %s", contents)

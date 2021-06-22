@@ -60,6 +60,7 @@ type PipelineBuilder struct {
 	RepositoryRawdataProcessing bool
 	RebuildingModules           bool
 	Action                      pipebuilder.BuilderAction
+	JsonValidationDisabled      string
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
