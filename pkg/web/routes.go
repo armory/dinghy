@@ -171,14 +171,15 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	var fileService = dummy.FileService{}
 
 	builder := &dinghyfile.PipelineBuilder{
-		Depman:               cache.NewMemoryCache(),
-		Downloader:           fileService,
-		Client:               plankClient,
-		DeleteStalePipelines: false,
-		AutolockPipelines:    settings.AutoLockPipelines,
-		Logger:               dinghyLog,
-		Ums:                  wa.Ums,
-		Action:               pipebuilder.Process,
+		Depman:                 cache.NewMemoryCache(),
+		Downloader:             fileService,
+		Client:                 plankClient,
+		DeleteStalePipelines:   false,
+		AutolockPipelines:      settings.AutoLockPipelines,
+		Logger:                 dinghyLog,
+		Ums:                    wa.Ums,
+		Action:                 pipebuilder.Process,
+		JsonValidationDisabled: settings.JsonValidationDisabled,
 	}
 
 	builder.Parser = wa.Parser
@@ -647,6 +648,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 		PushRaw:                     rawPushData,
 		RepositoryRawdataProcessing: settings.RepositoryRawdataProcessing,
 		Action:                      pipebuilder.Process,
+		JsonValidationDisabled:      settings.JsonValidationDisabled,
 	}
 
 	if validation {
