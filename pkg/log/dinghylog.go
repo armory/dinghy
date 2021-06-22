@@ -115,97 +115,97 @@ func (d DinghyLogs) GetBytesBuffByLoggerKey(key string) (*bytes.Buffer, error) {
 
 func (d DinghyLogs) Debugf(format string, args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Debugf(format, args)
+		log.Logger.Debugf(format, args...)
 	}
 }
 
 func (d DinghyLogs) Infof(format string, args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Infof(format, args)
+		log.Logger.Infof(format, args...)
 	}
 }
 
 func (d DinghyLogs) Printf(format string, args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Printf(format, args)
+		log.Logger.Printf(format, args...)
 	}
 }
 
 func (d DinghyLogs) Warnf(format string, args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Warnf(format, args)
+		log.Logger.Warnf(format, args...)
 	}
 }
 
 func (d DinghyLogs) Warningf(format string, args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Warningf(format, args)
+		log.Logger.Warningf(format, args...)
 	}
 }
 
 func (d DinghyLogs) Errorf(format string, args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Errorf(format, args)
+		log.Logger.Errorf(format, args...)
 	}
 }
 
 func (d DinghyLogs) Fatalf(format string, args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Fatalf(format, args)
+		log.Logger.Fatalf(format, args...)
 	}
 }
 
 func (d DinghyLogs) Panicf(format string, args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Panicf(format, args)
+		log.Logger.Panicf(format, args...)
 	}
 }
 
 func (d DinghyLogs) Debug(args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Debug(args)
+		log.Logger.Debug(args...)
 	}
 }
 
 func (d DinghyLogs) Info(args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Info(args)
+		log.Logger.Info(args...)
 	}
 }
 
 func (d DinghyLogs) Print(args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Print(args)
+		log.Logger.Print(args...)
 	}
 }
 
 func (d DinghyLogs) Warn(args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Warn(args)
+		log.Logger.Warn(args...)
 	}
 }
 
 func (d DinghyLogs) Warning(args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Warning(args)
+		log.Logger.Warning(args...)
 	}
 }
 
 func (d DinghyLogs) Error(args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Error(args)
+		log.Logger.Error(args...)
 	}
 }
 
 func (d DinghyLogs) Fatal(args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Fatal(args)
+		log.Logger.Fatal(args...)
 	}
 }
 
 func (d DinghyLogs) Panic(args ...interface{}) {
 	for _, log := range d.Logs {
-		log.Logger.Panic(args)
+		log.Logger.Panic(args...)
 	}
 }
 
