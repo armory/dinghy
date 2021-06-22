@@ -132,7 +132,7 @@ type Settings struct {
 	// ParserFormat, supported formats are json, yaml and hcl
 	ParserFormat string `json:"parserFormat,omitempty" yaml:"parserFormat"`
 	// JsonValidationDisabled, if true disable the json validation
-	JsonValidationDisabled string `json:"jsonValidationDisabled,omitempty" yaml:"jsonValidationDisabled"`
+	JsonValidationDisabled bool `json:"jsonValidationDisabled,omitempty" yaml:"jsonValidationDisabled"`
 	// Enable to process dinghyfiles from other branches
 	RepoConfig []RepoConfig `json:"repoConfig,omitempty" yaml:"repoConfig"`
 	// Spinnaker service endpoints
