@@ -12,6 +12,8 @@
 		 "owner": {
 			 "login": "dotdotdotpaul"
 		 }
+                 "full_name": "armory-io/dinghy-plank-integration",
+		 "contents_url": "https://api.github.com/repos/armory-io/dinghy-plank-integration/contents/{+path}"
 	 },
 	 "ref": "refs/heads/master"
 }
