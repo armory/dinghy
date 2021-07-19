@@ -18,10 +18,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/armory-io/dinghy/pkg/settings/loader"
 	"net/http"
 	"os"
 	"os/exec"
+
+	"github.com/armory-io/dinghy/pkg/settings/loader"
 
 	dinghy_hcl "github.com/armory-io/dinghy/pkg/parsers/hcl"
 
@@ -52,7 +53,6 @@ func main() {
 	}
 	executeLiquibase(dinghySettings)
 
-
 	logger, api := dinghy.Setup(sourceConfiguration, log)
 
 	if moreConfig.Notifiers.Slack.IsEnabled() {
@@ -64,7 +64,14 @@ func main() {
 
 	if moreConfig.Notifiers.Github.IsEnabled() {
 		logger.Infof("Github notifications enabled")
-		api.AddNotifier(notifiers.NewGithubNotifier(moreConfig))
+		notif, err := notifiers.NewGithubNotifier(moreConfig)
+
+		if err != nil {
+			logger.Warnf("could not configure github notifications: %s", err.Error())
+		} else {
+			api.AddNotifier(notif)
+		}
+
 	} else {
 		logger.Info("Github notifications disabled")
 	}
@@ -72,7 +79,7 @@ func main() {
 	newRelicApiKey := os.Getenv("NEW_RELIC_KEY")
 	if newRelicApiKey != "" {
 		logger.Info("New Relic Metrics Enabled")
-		moreConfig.Metrics.NewRelic.ApiKey=newRelicApiKey
+		moreConfig.Metrics.NewRelic.ApiKey = newRelicApiKey
 		if moreConfig.Metrics.NewRelic.ApplicationName == "" {
 			logger.Error("An NewRelic application name must be specified")
 		}
@@ -97,7 +104,7 @@ func main() {
 		api.MetricsHandler = mh
 	} else {
 		logger.Info("New Relic Not Enabled")
-		moreConfig.Metrics.NewRelic.ApiKey=""
+		moreConfig.Metrics.NewRelic.ApiKey = ""
 		api.MetricsHandler = new(web.NoOpMetricsHandler)
 	}
 	switch moreConfig.Settings.ParserFormat {

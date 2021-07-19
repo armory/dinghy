@@ -4,12 +4,15 @@ import (
 	"bytes"
 	ctx "context"
 	"fmt"
+	"math"
+	"net/url"
+	"strings"
+
 	"github.com/armory-io/dinghy/pkg/settings"
 	"github.com/armory/plank/v4"
 	"github.com/google/go-github/github"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
-	"math"
 )
 
 const (
@@ -94,10 +97,16 @@ func generateNotifications(owner, repo string, content map[string]interface{}, i
 	return githubNotifications
 }
 
-func NewGithubNotifier(s *settings.ExtSettings) *GithubNotifier {
-	return &GithubNotifier{
-		client: newGithubClient(s.Settings.GitHubToken),
+func NewGithubNotifier(s *settings.ExtSettings) (*GithubNotifier, error) {
+	ghClient, err := newGithubClient(s.Settings.GitHubToken, s.Settings.GithubEndpoint)
+
+	if err != nil {
+		return nil, err
 	}
+
+	return &GithubNotifier{
+		client: ghClient,
+	}, nil
 }
 
 func (gn *GithubNotifier) SendOnValidation() bool {
@@ -124,13 +133,35 @@ func (gn *GithubNotifier) SendFailure(org, repo, path string, errorDinghy error,
 	}
 }
 
-func newGithubClient(accessToken string) *github.Client {
+const (
+	// PublicGithubEndpoint is the default endpoint for GitHub.
+	PublicGithubEndpoint string = "https://api.github.com"
+)
+
+func newGithubClient(accessToken, baseURL string) (*github.Client, error) {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: accessToken},
 	)
 	tc := oauth2.NewClient(ctx.Background(), ts)
 
-	return github.NewClient(tc)
+	if baseURL == "" {
+		baseURL = PublicGithubEndpoint
+	}
+
+	// Cribbed from: https://github.com/google/go-github/blob/b338ce623f50aeaf4cbf7f4195a79d0d302f9a65/github/github.go#L318-L324
+	baseEndpoint, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	if !strings.HasSuffix(baseEndpoint.Path, "/") {
+		baseEndpoint.Path += "/"
+	}
+
+	ghClient := github.NewClient(tc)
+	ghClient.BaseURL = baseEndpoint
+
+	return ghClient, nil
 }
 
 func (gn *GithubNotifier) createCommitComment(body, owner, repo, sha string, isError bool) error {

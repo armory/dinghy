@@ -46,14 +46,6 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/armory-io/monitoring v0.0.7 h1:IVVhiqhavr+yH2IXlMZMyqjhBb9Ms9L6qmKswLh+ODQ=
 github.com/armory-io/monitoring v0.0.7/go.mod h1:EqWc/9ldt7teZxnS2xnAMJsthM7ldI4ArLnjBRGCYSo=
-github.com/armory/dinghy v0.0.0-20210518161923-6bb7860b1cbe h1:VTHmVPL+ghx0kKxAST+BbPIr1N3dcij/5pgvhaKI4Mk=
-github.com/armory/dinghy v0.0.0-20210518161923-6bb7860b1cbe/go.mod h1:3c+3anUaSrGyus99y4FkQ3T734yZyhX06/49UxlkrSM=
-github.com/armory/dinghy v0.0.0-20210603214257-32f2be84d898 h1:yuDnj9iBfZ8pyowaBk/vUVstPlXoxqvb0CG3ygrkGmc=
-github.com/armory/dinghy v0.0.0-20210603214257-32f2be84d898/go.mod h1:3c+3anUaSrGyus99y4FkQ3T734yZyhX06/49UxlkrSM=
-github.com/armory/dinghy v0.0.0-20210616214424-bb766ffc3e2c h1:LFrbzL4Fo7pxEcbEOCrmG7+zNPb2mdtu3cubLOeZs6s=
-github.com/armory/dinghy v0.0.0-20210616214424-bb766ffc3e2c/go.mod h1:3c+3anUaSrGyus99y4FkQ3T734yZyhX06/49UxlkrSM=
-github.com/armory/dinghy v0.0.0-20210622164716-8dc0d967014a h1:mOLnRQFecM31GYAiKIwZ+MlwJpxsd7y1sIe5FBQYl3o=
-github.com/armory/dinghy v0.0.0-20210622164716-8dc0d967014a/go.mod h1:3c+3anUaSrGyus99y4FkQ3T734yZyhX06/49UxlkrSM=
 github.com/armory/dinghy v0.0.0-20210622181016-cf2557851cd4 h1:aQqzZ+/8WTJRLQTsqffCrO2DEMoIKy/qZTcsB39mti4=
 github.com/armory/dinghy v0.0.0-20210622181016-cf2557851cd4/go.mod h1:3c+3anUaSrGyus99y4FkQ3T734yZyhX06/49UxlkrSM=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=

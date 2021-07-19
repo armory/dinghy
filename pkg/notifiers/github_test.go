@@ -1,12 +1,17 @@
 package notifiers
 
 import (
-	"github.com/armory-io/dinghy/pkg/settings"
-	ossSettings "github.com/armory/dinghy/pkg/settings/global"
-	"github.com/stretchr/testify/assert"
+	ctx "context"
+	"net/url"
 	"reflect"
 	"regexp"
 	"testing"
+
+	"github.com/armory-io/dinghy/pkg/settings"
+	ossSettings "github.com/armory/dinghy/pkg/settings/global"
+	"github.com/google/go-github/github"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/oauth2"
 )
 
 func Test_newGithubNotification(t *testing.T) {
@@ -53,6 +58,27 @@ func Test_newGithubNotification(t *testing.T) {
 	}
 }
 
+type Helper struct {
+	*GithubNotifier
+	Error error
+}
+
+func helper(token, baseURL string, e error) Helper {
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	tc := oauth2.NewClient(ctx.Background(), ts)
+
+	c := github.NewClient(tc)
+	u, _ := url.Parse(baseURL)
+	c.BaseURL = u
+
+	return Helper{
+		GithubNotifier: &GithubNotifier{client: c},
+		Error:          e,
+	}
+}
+
 func TestNewGithubNotifier(t *testing.T) {
 	type args struct {
 		s *settings.ExtSettings
@@ -60,7 +86,7 @@ func TestNewGithubNotifier(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *GithubNotifier
+		want Helper
 	}{
 		{
 			name: "GithubNotifier should be instantiated",
@@ -71,11 +97,7 @@ func TestNewGithubNotifier(t *testing.T) {
 					},
 				},
 			},
-			want: NewGithubNotifier(&settings.ExtSettings{
-				Settings: &ossSettings.Settings{
-					GitHubToken: "mytoken",
-				},
-			}),
+			want: helper("mytoken", PublicGithubEndpoint+"/", nil),
 		},
 		{
 			name: "GithubNotifier should be instantiated with empty GithubToken",
@@ -86,17 +108,16 @@ func TestNewGithubNotifier(t *testing.T) {
 					},
 				},
 			},
-			want: NewGithubNotifier(&settings.ExtSettings{
-				Settings: &ossSettings.Settings{
-					GitHubToken: "",
-				},
-			}),
+			want: helper("", PublicGithubEndpoint+"/", nil),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewGithubNotifier(tt.args.s); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewGithubNotifier() = %v, want %v", got, tt.want)
+			got, err := NewGithubNotifier(tt.args.s)
+			if tt.want.Error != nil && err != tt.want.Error {
+				t.Errorf("Errors did not match. expected: %v actual: %v", tt.want.Error, err)
+			} else if !reflect.DeepEqual(got, tt.want.GithubNotifier) {
+				t.Errorf("NewGithubNotifier() = %v, want %v", got, tt.want.GithubNotifier)
 			}
 		})
 	}
