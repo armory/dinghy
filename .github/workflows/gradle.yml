@@ -66,18 +66,9 @@ jobs:
           image: armory/${{ env.BASE_PROJECT }}:${{ env.BUILD_NUMBER }}
           registry: Artifactory
 
-      - name: Create UBI image
-        run: |
-          docker login -u ${{ secrets.REDHAT_REGISTRY_USER }} -p "${{ secrets.REDHAT_REGISTRY_PASSWORD }}" registry.redhat.io
-          docker build . -t armory/$BASE_PROJECT:ubi -f Dockerfile.ubi
-
       - name: Login to Docker Hub
         if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release-')
         run: docker login -u ${{ secrets.DOCKER_HUB_USER }} -p '${{ secrets.DOCKER_HUB_PASS }}'
-
-      - name: Login to Red Hat
-        if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release-')
-        run: docker login -u unused -p "${{ secrets.REDHAT_REGISTRY_TOKEN }}" scan.connect.redhat.com
 
       - name: Publish Release to Docker Hub
         if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release-')
@@ -87,24 +78,6 @@ jobs:
           docker image tag armory-docker-local.jfrog.io/armory/$BASE_PROJECT:$RELEASE armory/$BASE_PROJECT:$RELEASE
           echo "Pushing image..."
           docker push armory/$BASE_PROJECT:$RELEASE
-
-      - name: Publish Release to Red Hat Registry
-        if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release-')
-        run: |
-          RELEASE=$(./gradlew -Prelease.useLastTag=true $GRADLE_ARGS  printVersion|grep VERSION|awk -F: '{print $2}')
-          echo "Tagging armory/$BASE_PROJECT:ubi to armory/$BASE_PROJECT:$RELEASE-ubi"
-          docker image tag armory/$BASE_PROJECT:ubi armory/$BASE_PROJECT:$RELEASE-ubi
-
-          echo "Tagging armory/$BASE_PROJECT:ubi to armory-docker-local.jfrog.io/armory/$BASE_PROJECT:$RELEASE-ubi"
-          docker image tag armory/$BASE_PROJECT:ubi armory-docker-local.jfrog.io/armory/$BASE_PROJECT:$RELEASE-ubi
-
-          echo "Tagging armory/$BASE_PROJECT:ubi to scan.connect.redhat.com/${{ secrets.REDHAT_PID }}/$BASE_PROJECT:$RELEASE-ubi for certification"
-          docker image tag armory/$BASE_PROJECT:ubi scan.connect.redhat.com/${{ secrets.REDHAT_PID }}/$BASE_PROJECT:$RELEASE-ubi
-
-          echo "Pushing image..."
-          docker push armory/$BASE_PROJECT:$RELEASE-ubi
-          docker push armory-docker-local.jfrog.io/armory/$BASE_PROJECT:$RELEASE-ubi
-          docker push scan.connect.redhat.com/${{ secrets.REDHAT_PID }}/$BASE_PROJECT:$RELEASE-ubi
 
       - name: Package Lambda
         run: |

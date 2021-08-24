@@ -29,8 +29,6 @@ jobs:
       - name: Generate Variables
         id: variables
         uses: armory-io/astrolabe-build-defaults@main
-        with:
-          red_hat_pid: ${{ secrets.REDHAT_PID }}
 
       - name: Build Image
         run: |
@@ -67,22 +65,3 @@ jobs:
         run: |
           docker image tag ${{ steps.variables.outputs.artifactory_image_name }} ${{ steps.variables.outputs.image_name }}
           docker push ${{ steps.variables.outputs.image_name }}
-
-      - name: Create UBI image
-        run: |
-          docker login -u ${{ secrets.REDHAT_REGISTRY_USER }} -p "${{ secrets.REDHAT_REGISTRY_PASSWORD }}" registry.redhat.io
-          docker build . -t ${{ steps.variables.outputs.ubi_image_name }} -f Dockerfile.ubi
-
-      - name: Login to Red Hat
-        run: docker login -u unused -p "${{ secrets.REDHAT_REGISTRY_TOKEN }}" ${{ steps.variables.outputs.red_hat_scan_registry_hostname }} 
-
-      - name: Publish Release to Red Hat Registry
-        run: |
-          echo "Tagging ${{ steps.variables.outputs.ubi_image_name }} to ${{ steps.variables.outputs.artifactory_docker_registry_hostname }}/${{ steps.variables.outputs.ubi_image_name }}"
-          docker image tag ${{ steps.variables.outputs.ubi_image_name }} ${{ steps.variables.outputs.artifactory_docker_registry_hostname }}/${{ steps.variables.outputs.ubi_image_name }}
-          echo "Tagging ${{ steps.variables.outputs.ubi_image_name }} to ${{ steps.variables.outputs.ubi_scan_image_name }}"
-          docker image tag ${{ steps.variables.outputs.ubi_image_name }} ${{ steps.variables.outputs.ubi_scan_image_name }}
-          echo "Pushing images..."
-          docker push ${{ steps.variables.outputs.ubi_image_name }}
-          docker push ${{ steps.variables.outputs.artifactory_docker_registry_hostname }}/${{ steps.variables.outputs.ubi_image_name }}
-          docker push ${{ steps.variables.outputs.ubi_scan_image_name }}
