@@ -37,14 +37,8 @@ github.com/armory-io/monitoring v0.0.7/go.mod h1:EqWc/9ldt7teZxnS2xnAMJsthM7ldI4
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
 github.com/armory/go-yaml-tools v0.0.2 h1:IYAbeGQJQKFwBAdl4u9IVrENgHjjUsOxZRSTvypgYk4=
 github.com/armory/go-yaml-tools v0.0.2/go.mod h1:LasFFVo6zuV334Pmx7Diq9L3muOUUI8MF79QUFC1jq0=
-github.com/armory/plank/v3 v3.4.5 h1:G3awHEQtxXrIbzQRbDaTH6NzyLJpjKICHyjWBX3MxTI=
-github.com/armory/plank/v3 v3.4.5/go.mod h1:8M359Bf4VNI2NVlgy8PG5+KpyVB8+0DaVI8KqNSpLcQ=
-github.com/armory/plank/v4 v4.0.0-20210506200752-0d08faddba2b h1:ZHlDCqDvzcQBR7nkrbvOgHze6xMo9ZiergD6sQGBRMk=
-github.com/armory/plank/v4 v4.0.0-20210506200752-0d08faddba2b/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
-github.com/armory/plank/v4 v4.0.0-20210507183839-114b4edf7951 h1:XAhFLBG3FkKs9xIbFPYh1wnE0onZ40ck12WjfejaQFo=
-github.com/armory/plank/v4 v4.0.0-20210507183839-114b4edf7951/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
-github.com/armory/plank/v4 v4.0.0 h1:1pGzeq4oq5fr5FL9Bo5NoRm3RLeQSLPNme7VwTMU5KU=
-github.com/armory/plank/v4 v4.0.0/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
+github.com/armory/plank/v4 v4.0.1-0.20210929171217-50ed3c19bf7d h1:x6Spy5DPRlO1TWGjQHIYGdl4CTobEOR2Nl4CffIG3wQ=
+github.com/armory/plank/v4 v4.0.1-0.20210929171217-50ed3c19bf7d/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
 github.com/aws/aws-sdk-go v1.28.9 h1:grIuBQc+p3dTRXerh5+2OxSuWFi0iXuxbFdTSg0jaW0=
 github.com/aws/aws-sdk-go v1.28.9/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/benbjohnson/clock v1.0.3 h1:vkLuvpK4fmtSCuo60+yC63p7y0BmQ8gm5ZXGuBCJyXg=
