@@ -1,13 +1,19 @@
+queue_rules:
+  - name: default
+    conditions:
+      - status-success=main
+
 pull_request_rules:
   - name: Automatically merge into master after build and review
     conditions:
       - base=master
       - status-success=main
+      - 'label=ready to merge'
       - "#approved-reviews-by>=1"
     actions:
-      merge:
+      queue:
         method: squash
-        strict: smart
+        name: default
       label:
         add: ["auto merged"]
   - name: Automatically merge on into release after build and approval
@@ -16,9 +22,9 @@ pull_request_rules:
       - status-success=main
       - "#approved-reviews-by>=1"
     actions:
-      merge:
+      queue:
         method: squash
-        strict: smart
+        name: default
       label:
         add: ["auto merged"]
   - name: Automatically merge backport into release branches
@@ -28,9 +34,9 @@ pull_request_rules:
       - base~=^release-
       - status-success=main
     actions:
-      merge:
+      queue:
         method: squash
-        strict: smart
+        name: default
       label:
         add: ["auto merged"]
   - name: automatic merge on changes to gradle.properties
@@ -39,17 +45,17 @@ pull_request_rules:
       - files=gradle.properties
       - "#files=1"
     actions:
-      merge:
-        method: merge
-        strict: smart
+      queue:
+        method: squash
+        name: default
   - name: Automatically mergify-yaml changes to master
     conditions:
       - base=master
       - title~=^fix(mergify)
     actions:
-      merge:
+      queue:
         method: squash
-        strict: smart
+        name: default
       label:
         add: ["auto merged"]
   - name: Automatically armory-common bump changes to master
@@ -57,8 +63,8 @@ pull_request_rules:
       - title~=^fix\(spinnakerBump\)
       - author=armory-jenkins
     actions:
-      merge:
+      queue:
         method: squash
-        strict: smart
+        name: default
       label:
         add: ["auto merged"]
