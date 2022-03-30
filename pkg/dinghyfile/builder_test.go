@@ -19,12 +19,14 @@ package dinghyfile
 import (
 	"bytes"
 	"errors"
-	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
-	"github.com/armory/dinghy/pkg/events"
-	"github.com/armory/dinghy/pkg/log"
-	"github.com/armory/dinghy/pkg/util"
 	"reflect"
 	"testing"
+
+	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
+	"github.com/armory/dinghy/pkg/events"
+	"github.com/armory/dinghy/pkg/git"
+	"github.com/armory/dinghy/pkg/log"
+	"github.com/armory/dinghy/pkg/util"
 
 	"github.com/golang/mock/gomock"
 	"github.com/jinzhu/copier"
@@ -158,6 +160,58 @@ func TestProcessDinghyfileDefaultRenderer(t *testing.T) {
 	pb.Logger = logger
 	_, res := pb.ProcessDinghyfile("fake", "news", "notfound", "branch")
 	assert.NotNil(t, res)
+}
+
+func TestRepoMatchesWhenFlagEnabled(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Ignore log messages, they're not relevant for this test
+	logger := mock.NewMockDinghyLog(ctrl)
+	logger.EXPECT().Info(gomock.Any()).Times(1)
+
+	dler := NewMockDownloader(ctrl)
+	dler.EXPECT().Slug(gomock.Any()).Return(&git.RepositoryInfo{Org: "armory", Repo: "dinghy", Type: "github"}, nil).Times(1)
+
+	pb := testPipelineBuilder()
+	pb.Downloader = dler
+	pb.Logger = logger
+	pb.PushRaw = map[string]interface{}{
+		"html_url": "https://github.com/armory/dinghy",
+	}
+
+	pb.FeatureFlags.RequireGitRepoMatch.Enabled = true
+	assert.True(t, pb.repoMatches(&plank.Application{
+		RepoProjectKey: "armory",
+		RepoSlug:       "dinghy",
+	}))
+}
+
+func TestRepoMatchesNoopWhenFlagDisabled(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	pb := testPipelineBuilder()
+
+	// Assert that we don't change Dinghy's semantics when the flag is disabled
+	pb.FeatureFlags.RequireGitRepoMatch.Enabled = false
+	assert.True(t, pb.repoMatches(&plank.Application{}))
+}
+
+func TestRepoMatchesNotImplemented(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Ignore log messages, they're not relevant for this test
+	logger := mock.NewMockDinghyLog(ctrl)
+	logger.EXPECT().Error(gomock.Any()).Times(1)
+
+	pb := testPipelineBuilder()
+	pb.Logger = logger
+
+	// If the flag is enabled, and we've used an unsupported provider we should not match the repo.
+	pb.FeatureFlags.RequireGitRepoMatch.Enabled = true
+	assert.False(t, pb.repoMatches(&plank.Application{}))
 }
 
 func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {

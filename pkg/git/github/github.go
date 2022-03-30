@@ -20,7 +20,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/url"
+	"strings"
+
+	"github.com/armory/dinghy/pkg/git"
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/google/go-github/v33/github"
 	"golang.org/x/oauth2"
@@ -169,4 +174,25 @@ func (g *Config) GetEndpoint() string {
 
 func (g *Config) GetToken() string {
 	return g.Token
+}
+
+func (g *Config) Slug(pushEvent map[string]interface{}) (*git.RepositoryInfo, error) {
+
+	if htmlURL, found := pushEvent["html_url"]; found {
+		if repo, ok := htmlURL.(string); ok {
+			repoUrl, err := url.Parse(repo)
+			if err != nil {
+				return nil, errors.New("push event does not contain a valid html url")
+			}
+			splitRepo := strings.Split(repoUrl.Path, "/")
+			if len(splitRepo) < 2 {
+				// Implies that our HTML URL does not parse cleanly into a git project/url string.
+				return nil, errors.New("unable to parse repository, not enough segments")
+			}
+
+			return &git.RepositoryInfo{Org: splitRepo[1], Repo: splitRepo[2], Type: "github"}, nil
+		}
+	}
+
+	return nil, errors.New("unable to find html url from push event")
 }

@@ -16,6 +16,14 @@
 
 package github
 
+import (
+	"errors"
+	"testing"
+
+	"github.com/armory/dinghy/pkg/git"
+	"github.com/stretchr/testify/assert"
+)
+
 type GitHubTest struct {
 	contents string
 	endpoint string
@@ -37,4 +45,44 @@ func (g *GitHubTest) GetEndpoint() string {
 
 func (g *GitHubTest) GetToken() string {
 	return g.token
+}
+
+func TestGitHubSlugger(t *testing.T) {
+
+	cases := []struct {
+		event            map[string]interface{}
+		expectedErr      error
+		expectedRepoInfo *git.RepositoryInfo
+	}{
+		{
+			event: map[string]interface{}{
+				"foo": "bar",
+			},
+			expectedErr: errors.New("unable to find html url from push event"),
+		},
+		{
+			event: map[string]interface{}{
+				"html_url": "https://github.com/armory/dinghy",
+			},
+			expectedRepoInfo: &git.RepositoryInfo{
+				Org:  "armory",
+				Repo: "dinghy",
+				Type: "github",
+			},
+		},
+	}
+
+	cfg := Config{}
+	for _, c := range cases {
+		info, err := cfg.Slug(c.event)
+		if err != nil {
+			if c.expectedErr == nil {
+				t.Fatalf("got an error but wasn't expecting one")
+			}
+
+			assert.Equal(t, err, c.expectedErr)
+		}
+
+		assert.Equal(t, c.expectedRepoInfo, info)
+	}
 }

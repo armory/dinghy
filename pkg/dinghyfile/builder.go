@@ -21,14 +21,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
-	"github.com/armory/dinghy/pkg/log"
 	"path/filepath"
 	"regexp"
 	"time"
 
+	"github.com/armory/dinghy/pkg/dinghyfile/pipebuilder"
+	"github.com/armory/dinghy/pkg/git"
+	"github.com/armory/dinghy/pkg/log"
+
 	"github.com/armory/dinghy/pkg/events"
 	"github.com/armory/dinghy/pkg/notifiers"
+	settings "github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/plank/v4"
 )
@@ -61,6 +64,7 @@ type PipelineBuilder struct {
 	RebuildingModules           bool
 	Action                      pipebuilder.BuilderAction
 	JsonValidationDisabled      bool
+	settings.FeatureFlags
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -376,7 +380,7 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 // This is the bit that actually updates the pipeline(s) in Spinnaker
 func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []plank.Pipeline, deleteStale bool, autoLock string) error {
 	var newapp = false
-	_, err := b.Client.GetApplication(app.Name, "")
+	spinApp, err := b.Client.GetApplication(app.Name, "")
 	if err != nil {
 		newapp = true
 		failedResponse, ok := err.(*plank.FailedResponse)
@@ -387,6 +391,23 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		if failedResponse.StatusCode == 404 {
 			// Likely just not there...
 			b.Logger.Infof("Creating application '%s'...", app.Name)
+
+			if b.FeatureFlags.RequireGitRepoMatch.Enabled == true {
+				if slugger, ok := b.Downloader.(git.Slugger); ok {
+					info, err := slugger.Slug(b.PushRaw)
+
+					if err != nil {
+						return fmt.Errorf("RequireGitRepoMatch: enabled but encountered the following error: %w", err)
+					}
+
+					app.RepoProjectKey = info.Org
+					app.RepoSlug = info.Repo
+					app.RepoType = info.Type
+				} else {
+					return fmt.Errorf("RequireGitRepoMatch: enabled but git provider cannot derive slug info from webhook")
+				}
+			}
+
 			if err = b.Client.CreateApplication(app, ""); err != nil {
 				b.Logger.Errorf("Failed to create application (%s)", failedResponse.Error())
 				return err
@@ -396,20 +417,25 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			return err
 		}
 	} else {
+
 		if val, found := b.GlobalVariablesMap["save_app_on_update"]; found && val == true {
-			errUpdating := b.Client.UpdateApplication(*app, "")
-			if errUpdating != nil {
-				b.Logger.Errorf("Failed to update application (%s)", errUpdating.Error())
-				return errUpdating
+			if b.repoMatches(spinApp) {
+				errUpdating := b.Client.UpdateApplication(*app, "")
+				if errUpdating != nil {
+					b.Logger.Errorf("Failed to update application (%s)", errUpdating.Error())
+					return errUpdating
+				}
 			}
 		}
 	}
 
 	if val, found := b.GlobalVariablesMap["save_app_on_update"]; (found && val == true) || newapp {
-		b.Logger.Infof("Updating notifications: %s", app.Notifications)
-		errNotif := b.Client.UpdateApplicationNotifications(app.Notifications, app.Name, "")
-		if errNotif != nil {
-			b.Logger.Errorf("Failed to update notifications: (%s)", errNotif.Error())
+		if b.repoMatches(spinApp) {
+			b.Logger.Infof("Updating notifications: %s", app.Notifications)
+			errNotif := b.Client.UpdateApplicationNotifications(app.Notifications, app.Name, "")
+			if errNotif != nil {
+				b.Logger.Errorf("Failed to update notifications: (%s)", errNotif.Error())
+			}
 		}
 	}
 
@@ -466,6 +492,42 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		}
 	}
 	return err
+}
+
+// repoMatches is a feature flag enabled method that determines whether an
+// update event is coming from the same repo that created the
+// application/pipeline.
+//
+// When this flag is enabled, if a dinghyfile moves repositories, users will
+// need to manually update their repo config in the UI.
+func (b *PipelineBuilder) repoMatches(spinApp *plank.Application) bool {
+	if b.FeatureFlags.RequireGitRepoMatch.Enabled == false {
+		// Do not validate further if this feature flag is disabled.
+		return true
+	} else if spinApp == nil {
+		// Do not validate further if no application exists, it likely needs to be created
+		return true
+	}
+
+	var incomingRepo string
+	if slugger, ok := b.Downloader.(git.Slugger); ok {
+		info, err := slugger.Slug(b.PushRaw)
+
+		if err != nil {
+			b.Logger.Errorf("RequireGitRepoMatch: unable to slug repo: %w", err)
+			return false
+		}
+
+		incomingRepo = fmt.Sprintf("%s/%s", info.Org, info.Repo)
+	} else {
+		b.Logger.Error("RequireGitRepoMatch: flag enabled but current git provider does not support slugging")
+		return false
+	}
+
+	configuredRepo := fmt.Sprintf("%s/%s", spinApp.RepoProjectKey, spinApp.RepoSlug)
+
+	b.Logger.Info("RequireGitRepoMatch: validating that event repo %q matches configured repo %q", incomingRepo, configuredRepo)
+	return incomingRepo == configuredRepo
 }
 
 // PipelineIDs returns a map of pipeline names -> their UUID.

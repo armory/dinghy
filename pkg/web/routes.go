@@ -649,6 +649,7 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 		RepositoryRawdataProcessing: settings.RepositoryRawdataProcessing,
 		Action:                      pipebuilder.Process,
 		JsonValidationDisabled:      settings.JsonValidationDisabled,
+    FeatureFlags:                settings.Experimental,
 	}
 
 	if validation {

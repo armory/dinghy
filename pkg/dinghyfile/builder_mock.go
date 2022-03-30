@@ -6,8 +6,10 @@ package dinghyfile
 
 import (
 	bytes "bytes"
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	"github.com/armory/dinghy/pkg/git"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockParser is a mock of Parser interface.
@@ -205,4 +207,18 @@ func (m *MockDownloader) DecodeURL(url string) (string, string, string, string) 
 func (mr *MockDownloaderMockRecorder) DecodeURL(url interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecodeURL", reflect.TypeOf((*MockDownloader)(nil).DecodeURL), url)
+}
+
+// Slug implements slugger for the mock type
+func (m *MockDownloader) Slug(r map[string]interface{}) (*git.RepositoryInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Slug", r)
+	ret0, _ := ret[0].(*git.RepositoryInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (mr *MockDownloaderMockRecorder) Slug(r interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Slug", reflect.TypeOf((*MockDownloader)(nil).Slug), r)
 }
