@@ -31,6 +31,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"crypto/tls"
 
 	"github.com/armory/dinghy/pkg/debug"
 
@@ -48,11 +49,20 @@ import (
 
 func newRedisOptions(redisOptions global.Redis) *redis.Options {
 	url := strings.TrimPrefix(redisOptions.BaseURL, "redis://")
+    var tlsConfig *tls.Config
+
+	if strings.HasPrefix(redisOptions.BaseURL, "rediss://") {
+        tlsConfig = &tls.Config{
+            MinVersion: tls.VersionTLS12,
+        }
+	}
+
 	return &redis.Options{
 		MaxRetries: 5,
 		Addr:       url,
 		Password:   redisOptions.Password,
 		DB:         0,
+		TLSConfig: tlsConfig,
 	}
 }
 
