@@ -18,6 +18,7 @@ package dinghy
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"github.com/armory/dinghy/pkg/database"
 	"github.com/armory/dinghy/pkg/dinghyfile"
@@ -31,7 +32,6 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"crypto/tls"
 
 	"github.com/armory/dinghy/pkg/debug"
 
@@ -49,12 +49,12 @@ import (
 
 func newRedisOptions(redisOptions global.Redis) *redis.Options {
 	url := strings.TrimPrefix(redisOptions.BaseURL, "redis://")
-    var tlsConfig *tls.Config
+	var tlsConfig *tls.Config
 
 	if strings.HasPrefix(redisOptions.BaseURL, "rediss://") {
-        tlsConfig = &tls.Config{
-            MinVersion: tls.VersionTLS12,
-        }
+		tlsConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
 	}
 
 	return &redis.Options{
@@ -62,7 +62,7 @@ func newRedisOptions(redisOptions global.Redis) *redis.Options {
 		Addr:       url,
 		Password:   redisOptions.Password,
 		DB:         0,
-		TLSConfig: tlsConfig,
+		TLSConfig:  tlsConfig,
 	}
 }
 
