@@ -89,7 +89,27 @@ func NewDefaultSettings() Settings {
 			Enabled:       false,
 			EventLogsOnly: false,
 		},
+		Experimental: FeatureFlags{
+			RequireGitRepoMatch: RequireGitRepoMatch{Enabled: false},
+			DoNotUpdatePermissions: DoNotUpdatePermissions{Enabled: false},
+		},
 	}
+}
+
+// RequireGitRepoMatch requires the originating repo to match the application's repo for a pipeline.
+type RequireGitRepoMatch struct {
+	// Enabled tells us whether a customer has enabled this feature or not
+	Enabled bool `json:"enabled"`
+}
+
+// DoNotUpdatePermissions only allows the definition of Application permissions through UI
+type DoNotUpdatePermissions struct {
+  Enabled bool `json:"enabled"`
+}
+
+type FeatureFlags struct {
+	RequireGitRepoMatch `json:"requireGitRepoMatch,omitempty"`
+	DoNotUpdatePermissions `json:"doNotUpdatePermissions,omitempty"`
 }
 
 // Settings contains all information needed to startup and run the dinghy service
@@ -154,6 +174,7 @@ type Settings struct {
 	LogEventTTLMinutes time.Duration `json:"LogEventTTLMinutes" yaml:"LogEventTTLMinutes"`
 	// SQL configuration for dinghy
 	SQL Sqlconfig `json:"sql,omitempty" yaml:"sql"`
+	Experimental FeatureFlags `json:"experimental,omitempty"`
 }
 
 type Sqlconfig struct {
