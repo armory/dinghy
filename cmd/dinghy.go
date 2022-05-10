@@ -48,7 +48,7 @@ import (
 )
 
 func newRedisOptions(redisOptions global.Redis) *redis.Options {
-	url := strings.TrimPrefix(redisOptions.BaseURL, "redis://")
+	url := strings.TrimPrefix(strings.TrimPrefix(redisOptions.BaseURL, "redis://"), "rediss://")
 	var tlsConfig *tls.Config
 
 	if strings.HasPrefix(redisOptions.BaseURL, "rediss://") {
