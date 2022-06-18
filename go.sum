@@ -37,12 +37,6 @@ github.com/armory-io/monitoring v0.0.7/go.mod h1:EqWc/9ldt7teZxnS2xnAMJsthM7ldI4
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
 github.com/armory/go-yaml-tools v0.0.2 h1:IYAbeGQJQKFwBAdl4u9IVrENgHjjUsOxZRSTvypgYk4=
 github.com/armory/go-yaml-tools v0.0.2/go.mod h1:LasFFVo6zuV334Pmx7Diq9L3muOUUI8MF79QUFC1jq0=
-github.com/armory/plank/v3 v3.4.5 h1:G3awHEQtxXrIbzQRbDaTH6NzyLJpjKICHyjWBX3MxTI=
-github.com/armory/plank/v3 v3.4.5/go.mod h1:8M359Bf4VNI2NVlgy8PG5+KpyVB8+0DaVI8KqNSpLcQ=
-github.com/armory/plank/v4 v4.0.0-20210506200752-0d08faddba2b h1:ZHlDCqDvzcQBR7nkrbvOgHze6xMo9ZiergD6sQGBRMk=
-github.com/armory/plank/v4 v4.0.0-20210506200752-0d08faddba2b/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
-github.com/armory/plank/v4 v4.0.0-20210507183839-114b4edf7951 h1:XAhFLBG3FkKs9xIbFPYh1wnE0onZ40ck12WjfejaQFo=
-github.com/armory/plank/v4 v4.0.0-20210507183839-114b4edf7951/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
 github.com/armory/plank/v4 v4.0.0 h1:1pGzeq4oq5fr5FL9Bo5NoRm3RLeQSLPNme7VwTMU5KU=
 github.com/armory/plank/v4 v4.0.0/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
 github.com/aws/aws-sdk-go v1.28.9 h1:grIuBQc+p3dTRXerh5+2OxSuWFi0iXuxbFdTSg0jaW0=
@@ -226,7 +220,6 @@ github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1Cpa
 github.com/otiai10/copy v1.5.0 h1:SoXDGnlTUZoqB/wSuj/Y5L6T5i6iN4YRAcMCd+JnLNU=
 github.com/otiai10/copy v1.5.0/go.mod h1:XWfuS3CrI0R6IE0FbgHsEazaXO8G0LpMp9o8tos0x4E=
 github.com/otiai10/curr v0.0.0-20150429015615-9b4961190c95/go.mod h1:9qAhocn7zKJG+0mI8eUu6xqkFDYS2kb2saOteoSB3cE=
-github.com/otiai10/curr v1.0.0 h1:TJIWdbX0B+kpNagQrjgq8bCMrbhiuX73M2XwgtDMoOI=
 github.com/otiai10/curr v1.0.0/go.mod h1:LskTG5wDwr8Rs+nNQ+1LlxRjAtTZZjtJW4rMXl6j4vs=
 github.com/otiai10/mint v1.3.0/go.mod h1:F5AjcsTsWUqX+Na9fpHb52P8pcRX2CI6A3ctIT91xUo=
 github.com/otiai10/mint v1.3.2 h1:VYWnrP5fXmz1MXvjuUvcBrXSjGE6xjON+axB/UrpO3E=
