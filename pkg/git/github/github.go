@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/armory/dinghy/pkg/util"
-	"github.com/google/go-github/v33/github"
+	"github.com/google/go-github/v45/github"
 	"golang.org/x/oauth2"
 )
 

@@ -22,7 +22,7 @@ import (
 	"github.com/armory/dinghy/pkg/cache/local"
 	"github.com/armory/dinghy/pkg/log"
 	"github.com/armory/dinghy/pkg/util"
-	"github.com/google/go-github/v33/github"
+	"github.com/google/go-github/v45/github"
 	"net/http"
 	"regexp"
 	"strings"
