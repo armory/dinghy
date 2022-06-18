@@ -1,7 +1,7 @@
 module github.com/armory/dinghy
 
 require (
-	github.com/Masterminds/sprig/v3 v3.1.0
+	github.com/Masterminds/sprig/v3 v3.2.1
 	github.com/armory-io/monitoring v0.0.7
 	github.com/armory/go-yaml-tools v0.0.2
 	github.com/armory/plank/v4 v4.0.0
@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/mux v1.6.2
 	github.com/hashicorp/go-cleanhttp v0.5.1
 	github.com/hashicorp/go-retryablehttp v0.6.2
-	github.com/imdario/mergo v0.3.8
+	github.com/imdario/mergo v0.3.11
 	github.com/jinzhu/copier v0.0.0-20180308034124-7e38e58719c3
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/otiai10/copy v1.5.0
@@ -32,8 +32,8 @@ require (
 	cloud.google.com/go v0.46.3 // indirect
 	cloud.google.com/go/storage v1.1.1 // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/Masterminds/goutils v1.1.0 // indirect
-	github.com/Masterminds/semver/v3 v3.1.0 // indirect
+	github.com/Masterminds/goutils v1.1.1 // indirect
+	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/aws/aws-sdk-go v1.28.9 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
@@ -72,6 +72,7 @@ require (
 	github.com/prometheus/common v0.10.0 // indirect
 	github.com/prometheus/procfs v0.1.3 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
+	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/afero v1.1.2 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	go.opencensus.io v0.22.1 // indirect
@@ -91,7 +92,7 @@ require (
 	google.golang.org/grpc v1.24.0 // indirect
 	google.golang.org/protobuf v1.23.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.3.1 // indirect
-	gopkg.in/yaml.v2 v2.2.5 // indirect
+	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 	honnef.co/go/tools v0.0.1-2019.2.3 // indirect
 )
