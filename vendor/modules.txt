@@ -16,10 +16,7 @@ github.com/Masterminds/goutils
 github.com/Masterminds/semver/v3
 # github.com/Masterminds/sprig/v3 v3.1.0
 github.com/Masterminds/sprig/v3
-# github.com/armory-io/monitoring v0.0.7
-github.com/armory-io/monitoring/log/formatters
-github.com/armory-io/monitoring/log/hooks
-# github.com/armory/dinghy v0.0.0-20210622181016-cf2557851cd4
+# github.com/armory/dinghy v0.0.0-20220822170319-e088ab97d2a1
 github.com/armory/dinghy/cmd
 github.com/armory/dinghy/pkg/cache
 github.com/armory/dinghy/pkg/cache/local
@@ -36,12 +33,13 @@ github.com/armory/dinghy/pkg/git/github
 github.com/armory/dinghy/pkg/git/gitlab
 github.com/armory/dinghy/pkg/git/stash
 github.com/armory/dinghy/pkg/log
+github.com/armory/dinghy/pkg/log/formatters
+github.com/armory/dinghy/pkg/log/hooks
 github.com/armory/dinghy/pkg/logevents
 github.com/armory/dinghy/pkg/mock
 github.com/armory/dinghy/pkg/notifiers
 github.com/armory/dinghy/pkg/preprocessor
 github.com/armory/dinghy/pkg/settings/global
-github.com/armory/dinghy/pkg/settings/secret
 github.com/armory/dinghy/pkg/settings/source
 github.com/armory/dinghy/pkg/settings/source/local
 github.com/armory/dinghy/pkg/util

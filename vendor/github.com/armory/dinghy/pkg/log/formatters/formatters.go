@@ -17,12 +17,11 @@ type HttpLogFormatter struct {
 	Version    string
 }
 
-
 func NewHttpLogFormatter(hostname, customerID, version string) (*HttpLogFormatter, error) {
 	fields := map[string]string{
-		"hostname": hostname,
+		"hostname":   hostname,
 		"customerID": customerID,
-		"version": version,
+		"version":    version,
 	}
 	for attr, val := range fields {
 		if val == "" {

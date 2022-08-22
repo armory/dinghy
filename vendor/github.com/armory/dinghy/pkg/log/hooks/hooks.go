@@ -2,8 +2,8 @@ package hooks
 
 import (
 	"bytes"
-	"github.com/sirupsen/logrus"
 	http "github.com/hashicorp/go-retryablehttp"
+	"github.com/sirupsen/logrus"
 )
 
 const HTTP_DEBUG_CONTENT_TYPE = "application/text"
@@ -23,8 +23,12 @@ func (hdk *HttpDebugHook) Fire(e *logrus.Entry) error {
 	if err != nil {
 		return err
 	}
-	if _, err := http.Post(hdk.Endpoint, HTTP_DEBUG_CONTENT_TYPE, bytes.NewReader(toSend)); err != nil {
-		return err
-	}
+	go func() {
+		resp, err := http.Post(hdk.Endpoint, HTTP_DEBUG_CONTENT_TYPE, bytes.NewReader(toSend))
+		if err != nil {
+			return
+		}
+		defer resp.Body.Close()
+	}()
 	return nil
 }
