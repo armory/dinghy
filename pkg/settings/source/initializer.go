@@ -1,12 +1,9 @@
 package source
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/armory/dinghy/pkg/settings/global"
-	"github.com/armory/dinghy/pkg/settings/secret"
 	"github.com/armory/go-yaml-tools/pkg/spring"
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/mapstructure"
@@ -36,15 +33,6 @@ func (i *Initialize) Autoconfigure() (*global.Settings, error) {
 	http := config.Http
 	if err = http.Init(); err != nil {
 		return nil, err
-	}
-
-	secretHandler, err := secret.NewSecretHandler(config.Secrets)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := secretHandler.Decrypt(context.TODO(), &config); err != nil {
-		return nil, fmt.Errorf("failed to decrypt secrets: %s", err)
 	}
 
 	return i.configureSettings(config)
