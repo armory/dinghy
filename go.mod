@@ -3,7 +3,7 @@ module github.com/armory/dinghy
 require (
 	github.com/Masterminds/sprig/v3 v3.1.0
 	github.com/armory/go-yaml-tools v0.0.2
-	github.com/armory/plank/v4 v4.0.0
+	github.com/armory/plank/v4 v4.1.0
 	github.com/go-redis/redis v6.14.1+incompatible
 	github.com/golang/mock v1.3.1
 	github.com/google/go-github/v33 v33.0.0
