@@ -16,7 +16,7 @@ github.com/Masterminds/goutils
 github.com/Masterminds/semver/v3
 # github.com/Masterminds/sprig/v3 v3.1.0
 github.com/Masterminds/sprig/v3
-# github.com/armory/dinghy v0.0.0-20220822170319-e088ab97d2a1
+# github.com/armory/dinghy v0.0.0-20220824204115-f695642bddaf
 github.com/armory/dinghy/cmd
 github.com/armory/dinghy/pkg/cache
 github.com/armory/dinghy/pkg/cache/local
@@ -51,7 +51,7 @@ github.com/armory/go-yaml-tools/pkg/tls
 github.com/armory/go-yaml-tools/pkg/tls/client
 github.com/armory/go-yaml-tools/pkg/tls/server
 github.com/armory/go-yaml-tools/pkg/yaml
-# github.com/armory/plank/v4 v4.0.0
+# github.com/armory/plank/v4 v4.1.0
 github.com/armory/plank/v4
 # github.com/aws/aws-lambda-go v1.23.0
 github.com/aws/aws-lambda-go/events

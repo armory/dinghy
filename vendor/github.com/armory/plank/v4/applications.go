@@ -46,31 +46,33 @@ type PermissionsType struct {
 
 // Front50 needs this struct to update permissions
 type Front50Permissions struct {
-	Name          string             `json:"name" mapstructure:"name" yaml:"name" hcl:"name"`
-	Permissions   *PermissionsType   `json:"permissions,omitempty" mapstructure:"permissions" yaml:"permissions,omitempty" hcl:"permissions,omitempty"`
+	Name        string           `json:"name" mapstructure:"name" yaml:"name" hcl:"name"`
+	Permissions *PermissionsType `json:"permissions,omitempty" mapstructure:"permissions" yaml:"permissions,omitempty" hcl:"permissions,omitempty"`
 }
 
 type NotificationsType map[string]interface{}
 
 // Application as returned from the Spinnaker API.
 type Application struct {
-	Name          string             `json:"name" mapstructure:"name" yaml:"name" hcl:"name"`
-	Email         string             `json:"email" mapstructure:"email" yaml:"email" hcl:"email"`
-	Description   string             `json:"description,omitempty" mapstructure:"description" yaml:"description,omitempty" hcl:"description,omitempty"`
-	User          string             `json:"user,omitempty" mapstructure:"user" yaml:"user,omitempty" hcl:"user,omitempty"`
-	DataSources   *DataSourcesType   `json:"dataSources,omitempty" mapstructure:"dataSources" yaml:"datasources,omitempty" hcl:"datasources,omitempty"`
-	Permissions   *PermissionsType   `json:"permissions,omitempty" mapstructure:"permissions" yaml:"permissions,omitempty" hcl:"permissions,omitempty"`
-	Notifications NotificationsType  `json:"notifications,omitempty" mapstructure:"notifications" yaml:"notifications,omitempty" hcl:"notifications,omitempty"`
-	AppMetadata	  map[string]interface{}  `json:"appmetadata,omitempty" mapstructure:"appmetadata" yaml:"appmetadata,omitempty" hcl:"appmetadata,omitempty"`
+	Name           string                 `json:"name" mapstructure:"name" yaml:"name" hcl:"name"`
+	Email          string                 `json:"email" mapstructure:"email" yaml:"email" hcl:"email"`
+	Description    string                 `json:"description,omitempty" mapstructure:"description" yaml:"description,omitempty" hcl:"description,omitempty"`
+	User           string                 `json:"user,omitempty" mapstructure:"user" yaml:"user,omitempty" hcl:"user,omitempty"`
+	DataSources    *DataSourcesType       `json:"dataSources,omitempty" mapstructure:"dataSources" yaml:"datasources,omitempty" hcl:"datasources,omitempty"`
+	Permissions    *PermissionsType       `json:"permissions,omitempty" mapstructure:"permissions" yaml:"permissions,omitempty" hcl:"permissions,omitempty"`
+	Notifications  NotificationsType      `json:"notifications,omitempty" mapstructure:"notifications" yaml:"notifications,omitempty" hcl:"notifications,omitempty"`
+	AppMetadata    map[string]interface{} `json:"appmetadata,omitempty" mapstructure:"appmetadata" yaml:"appmetadata,omitempty" hcl:"appmetadata,omitempty"`
+	RepoSlug       string                 `json:"repoSlug,omitempty" mapstructure:"repoSlug" yaml:"repoSlug,omitempty" hcl:"repoSlug,omitempty"`
+	RepoType       string                 `json:"repoType,omitempty" mapstructure:"repoType" yaml:"repoType,omitempty" hcl:"repoType,omitempty"`
+	RepoProjectKey string                 `json:"repoProjectKey,omitempty" mapstructure:"repoProjectKey" yaml:"repoProjectKey,omitempty" hcl:"repoProjectKey,omitempty"`
 }
-
 
 // All in Metadata will be in root
 func (a Application) MarshalJSON() ([]byte, error) {
 	amap := make(map[string]interface{})
 	mapstructure.Decode(a, &amap)
 	delete(amap, "appmetadata")
-	for key,val := range a.AppMetadata {
+	for key, val := range a.AppMetadata {
 		amap[key] = val
 	}
 	return json.Marshal(amap)
@@ -116,11 +118,11 @@ func (c *Client) DeleteApplication(name, traceparent string) error {
 func (c *Client) UpdateApplication(app Application, traceparent string) error {
 	var unused interface{}
 	if c.UseGate {
-		if err := c.PatchWithRetry(fmt.Sprintf("%s/plank/v2/applications/%s", c.URLs["gate"], app.Name),traceparent, ApplicationJson, app, &unused); err != nil {
+		if err := c.PatchWithRetry(fmt.Sprintf("%s/plank/v2/applications/%s", c.URLs["gate"], app.Name), traceparent, ApplicationJson, app, &unused); err != nil {
 			return fmt.Errorf("could not update application %q: %w", app.Name, err)
 		}
 	} else {
-		if err := c.PatchWithRetry(fmt.Sprintf("%s/v2/applications/%s", c.URLs["front50"], app.Name),traceparent, ApplicationJson, app, &unused); err != nil {
+		if err := c.PatchWithRetry(fmt.Sprintf("%s/v2/applications/%s", c.URLs["front50"], app.Name), traceparent, ApplicationJson, app, &unused); err != nil {
 			return fmt.Errorf("could not update application %q: %w", app.Name, err)
 		}
 	}
@@ -146,7 +148,6 @@ func (c *Client) UpdatePermissions(appName, traceparent string, permissions *Per
 	return nil
 }
 
-
 type createApplicationTask struct {
 	Application Application `json:"application" mapstructure:"application" yaml:"application" hcl:"application"`
 	Type        string      `json:"type" mapstructure:"type" yaml:"type" hcl:"type"`
@@ -155,7 +156,7 @@ type createApplicationTask struct {
 // CreateApplication does what it says.
 func (c *Client) CreateApplication(a *Application, traceparent string) error {
 	payload := createApplicationTask{Application: *a, Type: "createApplication"}
-	ref, err := c.CreateTask(a.Name, fmt.Sprintf("Create Application: %s", a.Name),traceparent, payload)
+	ref, err := c.CreateTask(a.Name, fmt.Sprintf("Create Application: %s", a.Name), traceparent, payload)
 	if err != nil {
 		return fmt.Errorf("could not create application - %v", err)
 	}

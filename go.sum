@@ -44,11 +44,14 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/armory/dinghy v0.0.0-20220822170319-e088ab97d2a1 h1:gbrpx9fLF4gm/NNZDN1lMTsTIn8rJBLFeP8d203ZOe8=
 github.com/armory/dinghy v0.0.0-20220822170319-e088ab97d2a1/go.mod h1:QIPpEM/i7K9cVTzTWhZ77/ntSQChna12UVCUaTtIFZw=
+github.com/armory/dinghy v0.0.0-20220824204115-f695642bddaf h1:WGcmtW+VT7LV7GNjdnqlsxEBSf3eedELY0A25E1r0z0=
+github.com/armory/dinghy v0.0.0-20220824204115-f695642bddaf/go.mod h1:c27WhmN755RCdiICl3G2+nex5giDJ1SMTgrE6IiWB5E=
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
 github.com/armory/go-yaml-tools v0.0.2 h1:IYAbeGQJQKFwBAdl4u9IVrENgHjjUsOxZRSTvypgYk4=
 github.com/armory/go-yaml-tools v0.0.2/go.mod h1:LasFFVo6zuV334Pmx7Diq9L3muOUUI8MF79QUFC1jq0=
-github.com/armory/plank/v4 v4.0.0 h1:1pGzeq4oq5fr5FL9Bo5NoRm3RLeQSLPNme7VwTMU5KU=
 github.com/armory/plank/v4 v4.0.0/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
+github.com/armory/plank/v4 v4.1.0 h1:/kBY0LgA5qm8wGW7IMgbPjxlY40CF6LVSdFoIF+KKkQ=
+github.com/armory/plank/v4 v4.1.0/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
 github.com/aws/aws-lambda-go v1.23.0 h1:Vjwow5COkFJp7GePkk9kjAo/DyX36b7wVPKwseQZbRo=
 github.com/aws/aws-lambda-go v1.23.0/go.mod h1:jJmlefzPfGnckuHdXX7/80O3BvUUi12XOkbv4w9SGLU=
 github.com/aws/aws-sdk-go v1.28.9/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
