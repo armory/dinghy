@@ -27,6 +27,7 @@ func TestSettings_GetRepoConfig(t *testing.T) {
 		settings Settings
 		provider string
 		repo     string
+		branch   string
 		expected *RepoConfig
 	}{
 		"happy path": {
@@ -38,6 +39,11 @@ func TestSettings_GetRepoConfig(t *testing.T) {
 						Branch:   "ghbranch",
 					},
 					{
+						Provider: "github",
+						Repo:     "ghrepo",
+						Branch:   "ghanotherbranch",
+					},
+					{
 						Provider: "bitbucket",
 						Repo:     "bbrepo",
 						Branch:   "bbbranch",
@@ -46,6 +52,7 @@ func TestSettings_GetRepoConfig(t *testing.T) {
 			},
 			provider: "bitbucket",
 			repo:     "bbrepo",
+			branch:   "bbbranch",
 			expected: &RepoConfig{
 				Provider: "bitbucket",
 				Repo:     "bbrepo",
@@ -69,17 +76,38 @@ func TestSettings_GetRepoConfig(t *testing.T) {
 			},
 			provider: "stash",
 			repo:     "repo",
+			branch:   "branch",
 			expected: nil,
 		},
 		"no repo configuration": {
 			settings: Settings{RepoConfig: []RepoConfig{}},
 			expected: nil,
 		},
+		"branch mismatch": {
+			settings: Settings{
+				RepoConfig: []RepoConfig{
+					{
+						Provider: "github",
+						Repo:     "ghrepo",
+						Branch:   "main",
+					},
+					{
+						Provider: "github",
+						Repo:     "ghrepo",
+						Branch:   "release",
+					},
+				},
+			},
+			provider: "github",
+			repo:     "ghrepo",
+			branch:   "featurebranch",
+			expected: nil,
+		},
 	}
 
 	for testName, c := range cases {
 		t.Run(testName, func(t *testing.T) {
-			actual := c.settings.GetRepoConfig(c.provider, c.repo)
+			actual := c.settings.GetRepoConfig(c.provider, c.repo, c.branch)
 			assert.Equal(t, c.expected, actual)
 		})
 	}

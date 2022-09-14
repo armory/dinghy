@@ -609,14 +609,9 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	// see if we have any configurations for this repo.
 	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
 	var validation bool
-	if rc := settings.GetRepoConfig(p.Name(), p.Repo()); rc != nil {
-		if !p.IsBranch(rc.Branch) {
-			dinghyLog.Infof("Received request from branch %s. Does not match configured branch %s. Proceeding as validation.", p.Branch(), rc.Branch)
-			validation = true
-		}
-	} else {
-		// if we didn't find any configurations for this repo, proceed with master
-		dinghyLog.Infof("Found no custom configuration for repo: %s, proceeding with master", p.Repo())
+	if rc := settings.GetRepoConfig(p.Name(), p.Repo(), p.Branch()); rc == nil {
+		// if we didn't find any configurations for this repo and branch, proceed with master
+		dinghyLog.Infof("Found no custom configuration for repo: %s and branch: %s proceeding with master", p.Repo(), p.Branch())
 		if !p.IsMaster() {
 			dinghyLog.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master. Proceeding as validation.", p.Branch())
 			validation = true
@@ -675,14 +670,14 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 		return
 	}
 
-	modulesProcessed :=0
+	modulesProcessed := 0
 	// Check if we're in a template repo
 	if p.Repo() == settings.TemplateRepo {
 		// Set status to pending while we process modules
 		p.SetCommitStatus(settings.InstanceId, git.StatusPending, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusPending])
 		var filesToIgnore []string
 		//check for dinghyignore file
-		patternsToIgnore, err :=f.Download(p.Org(),p.Repo(), ".dinghyignore", p.Branch())
+		patternsToIgnore, err := f.Download(p.Org(), p.Repo(), ".dinghyignore", p.Branch())
 		if err != nil {
 			dinghyLog.Info(".dinghyignore file not found in template repository, validating all files in the push")
 		} else {
@@ -693,8 +688,8 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 		for _, file := range p.Files() {
 			var shouldIgnore bool
 			//check to see if the file should be ignored
-			for _ ,pattern := range  filesToIgnore {
-				if pattern != ""{
+			for _, pattern := range filesToIgnore {
+				if pattern != "" {
 					shouldIgnore, _ = regexp.MatchString(pattern, file)
 					if shouldIgnore {
 						dinghyLog.Infof("file %s matches pattern %s: %t", file, pattern, shouldIgnore)
