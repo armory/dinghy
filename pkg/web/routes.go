@@ -29,7 +29,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/events"
@@ -46,6 +45,7 @@ import (
 	"github.com/armory/dinghy/pkg/git/stash"
 	"github.com/armory/dinghy/pkg/notifiers"
 	"github.com/armory/dinghy/pkg/util"
+	"github.com/dlclark/regexp2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -675,28 +675,34 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	if p.Repo() == settings.TemplateRepo {
 		// Set status to pending while we process modules
 		p.SetCommitStatus(settings.InstanceId, git.StatusPending, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusPending])
-		var filesToIgnore []string
+		var regexpToIgnore []*regexp2.Regexp
 		//check for dinghyignore file
 		patternsToIgnore, err := f.Download(p.Org(), p.Repo(), ".dinghyignore", p.Branch())
 		if err != nil {
 			dinghyLog.Info(".dinghyignore file not found in template repository, validating all files in the push")
 		} else {
 			dinghyLog.Infof(".dinghyignore file found! Ignoring files that match these globs: %s", patternsToIgnore)
-			filesToIgnore = strings.Split(patternsToIgnore, "\n")
+
+			for _, pattern := range strings.Split(patternsToIgnore, "\n") {
+				if pattern != "" {
+					regexpToIgnore = append(regexpToIgnore, regexp2.MustCompile(pattern, 0))
+				}
+			}
 		}
+
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
 			var shouldIgnore bool
 			//check to see if the file should be ignored
-			for _, pattern := range filesToIgnore {
-				if pattern != "" {
-					shouldIgnore, _ = regexp.MatchString(pattern, file)
-					if shouldIgnore {
-						dinghyLog.Infof("file %s matches pattern %s: %t", file, pattern, shouldIgnore)
-						break
-					}
+			for _, re := range regexpToIgnore {
+				shouldIgnore, _ = re.MatchString(file)
+
+				if shouldIgnore {
+					dinghyLog.Infof("file %s matches pattern %s: %t", file, re.String(), shouldIgnore)
+					break
 				}
 			}
+
 			//if file does not match glob in .dinghyignore file then process the module
 			if !shouldIgnore {
 				// ensure module is correctly parsed
