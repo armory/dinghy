@@ -35,8 +35,8 @@ import (
 
 	"github.com/armory/dinghy/pkg/debug"
 
-	"github.com/armory-io/monitoring/log/formatters"
-	"github.com/armory-io/monitoring/log/hooks"
+	"github.com/armory/dinghy/pkg/log/formatters"
+	"github.com/armory/dinghy/pkg/log/hooks"
 	"github.com/armory/plank/v4"
 
 	"github.com/armory/dinghy/pkg/cache"

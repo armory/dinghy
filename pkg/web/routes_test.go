@@ -18,11 +18,15 @@ package web
 
 import (
 	"bytes"
+	"errors"
 	"github.com/armory/dinghy/pkg/dinghyfile"
+	"github.com/armory/dinghy/pkg/git/github"
+	dinghylog "github.com/armory/dinghy/pkg/log"
 	"github.com/armory/dinghy/pkg/logevents"
 	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/dinghy/pkg/settings/source"
 	"github.com/armory/dinghy/pkg/util"
+	"github.com/dlclark/regexp2"
 	"github.com/sirupsen/logrus"
 
 	// "errors"
@@ -152,7 +156,7 @@ func TestGithubWebhookHandler(t *testing.T) {
 		}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
 
-	wa := NewWebAPI(s, nil, nil, logger, nil,nil, nil, nil)
+	wa := NewWebAPI(s, nil, nil, logger, nil, nil, nil, nil)
 	wa.Parser = dinghyfile.NewDinghyfileParser(&dinghyfile.PipelineBuilder{})
 	payload := bytes.NewBufferString(`{"ref":"refs/heads/some_branch","repository":{"name":"my-repo","organization":"my-org"}}`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/github", payload)
@@ -230,7 +234,7 @@ func TestBitbucketWebhookHandlerBadJSON(t *testing.T) {
 		return &global.Settings{}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
 
-	wa := NewWebAPI(sc, nil, nil, logger, nil,nil, nil, nil)
+	wa := NewWebAPI(sc, nil, nil, logger, nil, nil, nil, nil)
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket", payload)
 	rr := httptest.NewRecorder()
@@ -277,7 +281,7 @@ func TestBitbucketCloudWebhookHandlerBadJSON(t *testing.T) {
 		return &global.Settings{}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
 
-	wa := NewWebAPI(sc, nil, nil, logger, nil,nil, nil, nil)
+	wa := NewWebAPI(sc, nil, nil, logger, nil, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{broken`)
 	req := httptest.NewRequest("POST", "/v1/webhooks/bitbucket-cloud", payload)
@@ -301,7 +305,7 @@ func TestBitbucketCloudWebhookBadPayload(t *testing.T) {
 		return &global.Settings{}, dinghyfile.NewMockPlankClient(ctrl), nil
 	})
 
-	wa := NewWebAPI(sc, nil, nil, logger, nil,nil, nil, nil)
+	wa := NewWebAPI(sc, nil, nil, logger, nil, nil, nil, nil)
 
 	payload := bytes.NewBufferString(`{"event_type": "repo:push", "push": {"changes": "not an array"}}`)
 
@@ -505,4 +509,174 @@ func Test_getRawPayload(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestShouldRunValidationWhenBranchIsCorrect(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+	l.EXPECT().Infof(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+	dl := dinghylog.NewDinghyLogs(l)
+
+	p := github.Push{
+		Logger: dl,
+		Repository: github.Repository{
+			Name: "test_repo",
+		},
+		Ref: "test_branch",
+	}
+	s := &global.Settings{
+		DinghyFilename: "dinghyfile",
+		TemplateOrg:    "test_org",
+		TemplateRepo:   "test_repo",
+		RepoConfig: []global.RepoConfig{
+			{
+				Provider: "github",
+				Repo:     "test_repo",
+				Branch:   "test_branch",
+			},
+		},
+		GitHubToken: "test_github_token",
+	}
+
+	assert.False(t, shouldRunValidation(&p, s, dl))
+}
+
+func TestShouldRunValidationWhenBranchIsWrongAndIsNotMaster(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+	l.EXPECT().Infof(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+	l.EXPECT().Infof(gomock.Any(), gomock.Any()).Times(1)
+
+	dl := dinghylog.NewDinghyLogs(l)
+
+	p := github.Push{
+		Logger: dl,
+		Repository: github.Repository{
+			Name: "test_repo",
+		},
+		Ref: "wrong_branch",
+	}
+	s := &global.Settings{
+		DinghyFilename: "dinghyfile",
+		TemplateOrg:    "test_org",
+		TemplateRepo:   "test_repo",
+		RepoConfig: []global.RepoConfig{
+			{
+				Provider: "github",
+				Repo:     "test_repo",
+				Branch:   "test_branch",
+			},
+		},
+		GitHubToken: "test_github_token",
+	}
+
+	assert.True(t, shouldRunValidation(&p, s, dl))
+}
+
+func TestShouldRunValidationWhenBranchIsWrongAndIsMaster(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+	l.EXPECT().Infof(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
+	dl := dinghylog.NewDinghyLogs(l)
+
+	p := github.Push{
+		Logger: dl,
+		Repository: github.Repository{
+			Name: "test_repo",
+		},
+		Ref: "master",
+	}
+	s := &global.Settings{
+		DinghyFilename: "dinghyfile",
+		TemplateOrg:    "test_org",
+		TemplateRepo:   "test_repo",
+		RepoConfig: []global.RepoConfig{
+			{
+				Provider: "github",
+				Repo:     "test_repo",
+				Branch:   "test_branch",
+			},
+		},
+		GitHubToken: "test_github_token",
+	}
+
+	assert.False(t, shouldRunValidation(&p, s, dl))
+}
+
+func TestGetIgnoreFileRegExpsWhenDinghyIgnoreFetched(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+	l.EXPECT().Infof(gomock.Any(), gomock.Any()).Times(1)
+
+	dl := dinghylog.NewDinghyLogs(l)
+	p := github.Push{
+		Logger: dl,
+		Repository: github.Repository{
+			Organization: "test_org",
+			Name:         "test_repo",
+		},
+		Ref: "test_branch",
+	}
+
+	f := dinghyfile.NewMockDownloader(c)
+	f.EXPECT().Download(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("ab\ncd", nil)
+
+	result := getIgnoreFileRegExps(&p, f, dl)
+
+	assert.Equal(t, result[0].String(), "ab")
+	assert.Equal(t, result[1].String(), "cd")
+}
+
+func TestGetIgnoreFileRegExpsWhenDinghyIgnoreFetchingFailed(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+	l.EXPECT().Info(gomock.Any()).Times(1)
+
+	dl := dinghylog.NewDinghyLogs(l)
+	p := github.Push{
+		Logger: dl,
+		Repository: github.Repository{
+			Organization: "test_org",
+			Name:         "test_repo",
+		},
+		Ref: "test_branch",
+	}
+
+	f := dinghyfile.NewMockDownloader(c)
+	f.EXPECT().Download(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("something went wrong"))
+
+	result := getIgnoreFileRegExps(&p, f, dl)
+
+	assert.Equal(t, len(result), 0)
+}
+
+func TestShouldIgnoreFile(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+	l.EXPECT().Infof(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3)
+
+	dl := dinghylog.NewDinghyLogs(l)
+
+	ignoreFileRegExps := []*regexp2.Regexp{regexp2.MustCompile("^(?!.*(.stage.module)|(dinghyfile)).*", 0)}
+
+	assert.True(t, shouldIgnoreFile("file.js", ignoreFileRegExps, dl))
+	assert.True(t, shouldIgnoreFile("file.ts", ignoreFileRegExps, dl))
+	assert.True(t, shouldIgnoreFile("file.css", ignoreFileRegExps, dl))
+	assert.False(t, shouldIgnoreFile("dinghyfile", ignoreFileRegExps, dl))
+	assert.False(t, shouldIgnoreFile("minimum-wait.stage.module", ignoreFileRegExps, dl))
+	assert.False(t, shouldIgnoreFile("maximum-wait.stage.module", ignoreFileRegExps, dl))
 }

@@ -194,12 +194,11 @@ type SpinnakerSupplied struct {
 	// Echo service information
 	Echo SpinnakerService `json:"echo,omitempty" yaml:"echo"`
 	// Gate service information
-	Gate  SpinnakerService `json:"gate,omitempty" yaml:"gate"`
+	Gate SpinnakerService `json:"gate,omitempty" yaml:"gate"`
 	// Fiat service information
 	Fiat Fiat `json:"fiat,omitempty" yaml:"fiat"`
 	// Redis service information, user will always be default
 	Redis Redis `json:"redis,omitempty" yaml:"redis"`
-
 }
 
 type Redis struct {
@@ -245,9 +244,9 @@ type RepoConfig struct {
 	Branch string `json:"branch,omitempty" yaml:"branch"`
 }
 
-func (s *Settings) GetRepoConfig(provider, repo string) *RepoConfig {
+func (s *Settings) GetRepoConfig(provider, repo, branch string) *RepoConfig {
 	for _, c := range s.RepoConfig {
-		if c.Provider == provider && c.Repo == repo {
+		if c.Provider == provider && c.Repo == repo && c.Branch == branch {
 			return &c
 		}
 	}
