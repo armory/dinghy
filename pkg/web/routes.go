@@ -29,7 +29,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/events"
@@ -46,7 +45,6 @@ import (
 	"github.com/armory/dinghy/pkg/git/stash"
 	"github.com/armory/dinghy/pkg/notifiers"
 	"github.com/armory/dinghy/pkg/util"
-	"github.com/dlclark/regexp2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -687,26 +685,19 @@ func (wa *WebAPI) buildPipelines(
 		// Set status to pending while we process modules
 		setCommitStatusByAction(p, s.InstanceId, git.StatusPending, builder.Action)
 
-		var ignoreFileRegExps []*regexp2.Regexp
-		var ignoreFilePatterns []string
+		ignoreFilePatterns := getIgnoreFilePatterns(p, d, l)
+
+		var ignoreFile IgnoreFile
 
 		if s.DinghyIgnoreRegexp2Enabled {
-			ignoreFileRegExps = getIgnoreFileRegExps(p, d, l)
+			ignoreFile = NewRegexp2IgnoreFile(ignoreFilePatterns, l)
 		} else {
-			ignoreFilePatterns = getIgnoreFilePatterns(p, d, l)
+			ignoreFile = NewRegexpIgnoreFile(ignoreFilePatterns, l)
 		}
 
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
-			var shouldIgnoreFile bool
-
-			if s.DinghyIgnoreRegexp2Enabled {
-				shouldIgnoreFile = isFileMatchRegExps(file, ignoreFileRegExps, l)
-			} else {
-				shouldIgnoreFile = isFileMatchPatterns(file, ignoreFilePatterns, l)
-			}
-
-			if !shouldIgnoreFile {
+			if !ignoreFile.ShouldIgnore(file) {
 				// ensure module is correctly parsed
 				if _, err := builder.Parser.Parse(p.Org(), p.Repo(), file, p.Branch(), nil); err != nil {
 					setCommitStatus(p, s.InstanceId, git.StatusError, "module parse failed")
@@ -777,13 +768,12 @@ func shouldRunValidation(p Push, s *global.Settings, l dinghylog.DinghyLog) bool
 	return false
 }
 
-func getIgnoreFileRegExps(p Push, f dinghyfile.Downloader, l dinghylog.DinghyLog) []*regexp2.Regexp {
-	var ignoreFileRegExps []*regexp2.Regexp
-	ignoreFilePatterns := getIgnoreFilePatterns(p, f, l)
-	for _, pattern := range ignoreFilePatterns {
-		ignoreFileRegExps = append(ignoreFileRegExps, regexp2.MustCompile(pattern, 0))
-	}
-	return ignoreFileRegExps
+func setCommitStatus(p Push, instanceId string, s git.Status, description string) {
+	p.SetCommitStatus(instanceId, s, description)
+}
+
+func setCommitStatusByAction(p Push, instanceId string, s git.Status, action pipebuilder.BuilderAction) {
+	setCommitStatus(p, instanceId, s, git.DefaultMessagesByBuilderAction[action][s])
 }
 
 func getIgnoreFilePatterns(p Push, f dinghyfile.Downloader, l dinghylog.DinghyLog) []string {
@@ -800,32 +790,4 @@ func getIgnoreFilePatterns(p Push, f dinghyfile.Downloader, l dinghylog.DinghyLo
 		}
 	}
 	return ignoreFilePatterns
-}
-
-func isFileMatchRegExps(file string, regExps []*regexp2.Regexp, l dinghylog.DinghyLog) bool {
-	for _, regExp := range regExps {
-		if result, _ := regExp.MatchString(file); result {
-			l.Infof("file %s matches pattern %s: %t", file, regExp.String(), result)
-			return true
-		}
-	}
-	return false
-}
-
-func isFileMatchPatterns(file string, patterns []string, l dinghylog.DinghyLog) bool {
-	for _, pattern := range patterns {
-		if result, _ := regexp.MatchString(pattern, file); result {
-			l.Infof("file %s matches pattern %s: %t", file, pattern, result)
-			return true
-		}
-	}
-	return false
-}
-
-func setCommitStatus(p Push, instanceId string, s git.Status, description string) {
-	p.SetCommitStatus(instanceId, s, description)
-}
-
-func setCommitStatusByAction(p Push, instanceId string, s git.Status, action pipebuilder.BuilderAction) {
-	setCommitStatus(p, instanceId, s, git.DefaultMessagesByBuilderAction[action][s])
 }
