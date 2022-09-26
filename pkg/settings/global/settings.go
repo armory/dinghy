@@ -154,6 +154,8 @@ type Settings struct {
 	LogEventTTLMinutes time.Duration `json:"LogEventTTLMinutes" yaml:"LogEventTTLMinutes"`
 	// SQL configuration for dinghy
 	SQL Sqlconfig `json:"sql,omitempty" yaml:"sql"`
+	// Enable regexp2 for .dinghyignore file
+	DinghyIgnoreRegexp2Enabled bool `json:"DinghyIgnoreRegexp2Enabled" yaml:"DinghyIgnoreRegexp2Enabled"`
 }
 
 type Sqlconfig struct {

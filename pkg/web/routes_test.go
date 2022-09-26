@@ -611,6 +611,57 @@ func TestShouldRunValidationWhenBranchIsWrongAndIsMaster(t *testing.T) {
 	assert.False(t, shouldRunValidation(&p, s, dl))
 }
 
+func TestGetIgnoreFilePatternsWhenDinghyIgnoreFetched(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+	l.EXPECT().Infof(gomock.Any(), gomock.Any()).Times(1)
+
+	dl := dinghylog.NewDinghyLogs(l)
+	p := github.Push{
+		Logger: dl,
+		Repository: github.Repository{
+			Organization: "test_org",
+			Name:         "test_repo",
+		},
+		Ref: "test_branch",
+	}
+
+	f := dinghyfile.NewMockDownloader(c)
+	f.EXPECT().Download(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("ab\ncd", nil)
+
+	result := getIgnoreFilePatterns(&p, f, dl)
+
+	assert.Equal(t, result[0], "ab")
+	assert.Equal(t, result[1], "cd")
+}
+
+func TestGetIgnoreFilePatternsWhenDinghyIgnoreFetchingFailed(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+	l.EXPECT().Info(gomock.Any()).Times(1)
+
+	dl := dinghylog.NewDinghyLogs(l)
+	p := github.Push{
+		Logger: dl,
+		Repository: github.Repository{
+			Organization: "test_org",
+			Name:         "test_repo",
+		},
+		Ref: "test_branch",
+	}
+
+	f := dinghyfile.NewMockDownloader(c)
+	f.EXPECT().Download(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("something went wrong"))
+
+	result := getIgnoreFilePatterns(&p, f, dl)
+
+	assert.Equal(t, len(result), 0)
+}
+
 func TestGetIgnoreFileRegExpsWhenDinghyIgnoreFetched(t *testing.T) {
 	c := gomock.NewController(t)
 	defer c.Finish()
@@ -662,7 +713,26 @@ func TestGetIgnoreFileRegExpsWhenDinghyIgnoreFetchingFailed(t *testing.T) {
 	assert.Equal(t, len(result), 0)
 }
 
-func TestShouldIgnoreFile(t *testing.T) {
+func TestIsFileMatchRegExps(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+	l.EXPECT().Infof(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3)
+
+	dl := dinghylog.NewDinghyLogs(l)
+
+	ignoreFileRegExps := []*regexp2.Regexp{regexp2.MustCompile("file.(js|ts|css)", 0)}
+
+	assert.True(t, isFileMatchRegExps("file.js", ignoreFileRegExps, dl))
+	assert.True(t, isFileMatchRegExps("file.ts", ignoreFileRegExps, dl))
+	assert.True(t, isFileMatchRegExps("file.css", ignoreFileRegExps, dl))
+	assert.False(t, isFileMatchRegExps("dinghyfile", ignoreFileRegExps, dl))
+	assert.False(t, isFileMatchRegExps("minimum-wait.stage.module", ignoreFileRegExps, dl))
+	assert.False(t, isFileMatchRegExps("maximum-wait.stage.module", ignoreFileRegExps, dl))
+}
+
+func TestIsFileMatchRegExpsWhenNegativeExpression(t *testing.T) {
 	c := gomock.NewController(t)
 	defer c.Finish()
 
@@ -673,10 +743,161 @@ func TestShouldIgnoreFile(t *testing.T) {
 
 	ignoreFileRegExps := []*regexp2.Regexp{regexp2.MustCompile("^(?!.*(.stage.module)|(dinghyfile)).*", 0)}
 
-	assert.True(t, shouldIgnoreFile("file.js", ignoreFileRegExps, dl))
-	assert.True(t, shouldIgnoreFile("file.ts", ignoreFileRegExps, dl))
-	assert.True(t, shouldIgnoreFile("file.css", ignoreFileRegExps, dl))
-	assert.False(t, shouldIgnoreFile("dinghyfile", ignoreFileRegExps, dl))
-	assert.False(t, shouldIgnoreFile("minimum-wait.stage.module", ignoreFileRegExps, dl))
-	assert.False(t, shouldIgnoreFile("maximum-wait.stage.module", ignoreFileRegExps, dl))
+	assert.True(t, isFileMatchRegExps("file.js", ignoreFileRegExps, dl))
+	assert.True(t, isFileMatchRegExps("file.ts", ignoreFileRegExps, dl))
+	assert.True(t, isFileMatchRegExps("file.css", ignoreFileRegExps, dl))
+	assert.False(t, isFileMatchRegExps("dinghyfile", ignoreFileRegExps, dl))
+	assert.False(t, isFileMatchRegExps("minimum-wait.stage.module", ignoreFileRegExps, dl))
+	assert.False(t, isFileMatchRegExps("maximum-wait.stage.module", ignoreFileRegExps, dl))
+}
+
+func TestIsFileMatchPatterns(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+	l.EXPECT().Infof(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3)
+
+	dl := dinghylog.NewDinghyLogs(l)
+
+	ignoreFilePatterns := []string{"file.(js|ts|css)"}
+
+	assert.True(t, isFileMatchPatterns("file.js", ignoreFilePatterns, dl))
+	assert.True(t, isFileMatchPatterns("file.ts", ignoreFilePatterns, dl))
+	assert.True(t, isFileMatchPatterns("file.css", ignoreFilePatterns, dl))
+	assert.False(t, isFileMatchPatterns("dinghyfile", ignoreFilePatterns, dl))
+	assert.False(t, isFileMatchPatterns("minimum-wait.stage.module", ignoreFilePatterns, dl))
+	assert.False(t, isFileMatchPatterns("maximum-wait.stage.module", ignoreFilePatterns, dl))
+}
+
+func TestIsFileMatchPatternsWhenNegativeExpression(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+
+	dl := dinghylog.NewDinghyLogs(l)
+
+	ignoreFilePatterns := []string{"^(?!.*(.stage.module)|(dinghyfile)).*"}
+
+	assert.False(t, isFileMatchPatterns("file.js", ignoreFilePatterns, dl))
+	assert.False(t, isFileMatchPatterns("file.ts", ignoreFilePatterns, dl))
+	assert.False(t, isFileMatchPatterns("file.css", ignoreFilePatterns, dl))
+	assert.False(t, isFileMatchPatterns("dinghyfile", ignoreFilePatterns, dl))
+	assert.False(t, isFileMatchPatterns("minimum-wait.stage.module", ignoreFilePatterns, dl))
+	assert.False(t, isFileMatchPatterns("maximum-wait.stage.module", ignoreFilePatterns, dl))
+}
+
+func TestBuildPipelinesWhenDinghyIgnoreRegexp2Enabled(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+	l.EXPECT().Info(gomock.Any()).Times(1)
+	l.EXPECT().Error(gomock.Any()).Times(2)
+	l.EXPECT().Infof(gomock.Any(), gomock.Any()).Times(6)
+	l.EXPECT().Warnf(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
+	dl := dinghylog.NewDinghyLogs(l)
+
+	p := github.Push{
+		Logger: dl,
+		Repository: github.Repository{
+			Organization: "test_org",
+			Name:         "test_repo",
+		},
+		Commits: []github.Commit{
+			{Added: []string{"file.js", "file.css", "file.html"}},
+		},
+		Ref: "test_branch",
+	}
+	s := &global.Settings{
+		DinghyFilename: "dinghyfile",
+		TemplateOrg:    "test_org",
+		TemplateRepo:   "test_repo",
+		RepoConfig: []global.RepoConfig{
+			{
+				Provider: "github",
+				Repo:     "test_repo",
+				Branch:   "test_branch",
+			},
+		},
+		GitHubToken:                "test_github_token",
+		DinghyIgnoreRegexp2Enabled: true,
+	}
+
+	sc := source.NewMockSourceConfiguration(c)
+	sc.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
+		return s, dinghyfile.NewMockPlankClient(c), nil
+	})
+
+	wa := NewWebAPI(sc, nil, nil, l, nil, nil, nil, nil)
+	wa.Parser = dinghyfile.NewDinghyfileParser(&dinghyfile.PipelineBuilder{})
+
+	r := httptest.NewRecorder()
+
+	d := dinghyfile.NewMockDownloader(c)
+	d.EXPECT().Download("test_org", "test_repo", ".dinghyignore", "test_branch").Return("file.(js|css|html)", nil)
+
+	wa.buildPipelines(&p, []byte("{}"), d, r, dl, "", nil, s)
+
+	assert.Equal(t, http.StatusOK, r.Code)
+	assert.Equal(t, `{"status":"accepted"}`, r.Body.String())
+}
+
+func TestBuildPipelinesWhenDinghyIgnoreRegexp2Disabled(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	l := mock.NewMockFieldLogger(c)
+	l.EXPECT().Info(gomock.Any()).Times(1)
+	l.EXPECT().Error(gomock.Any()).Times(2)
+	l.EXPECT().Infof(gomock.Any(), gomock.Any()).Times(6)
+	l.EXPECT().Warnf(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
+	dl := dinghylog.NewDinghyLogs(l)
+
+	p := github.Push{
+		Logger: dl,
+		Repository: github.Repository{
+			Organization: "test_org",
+			Name:         "test_repo",
+		},
+		Commits: []github.Commit{
+			{Added: []string{"file.js", "file.css", "file.html"}},
+		},
+		Ref: "test_branch",
+	}
+	s := &global.Settings{
+		DinghyFilename: "dinghyfile",
+		TemplateOrg:    "test_org",
+		TemplateRepo:   "test_repo",
+		RepoConfig: []global.RepoConfig{
+			{
+				Provider: "github",
+				Repo:     "test_repo",
+				Branch:   "test_branch",
+			},
+		},
+		GitHubToken:                "test_github_token",
+		DinghyIgnoreRegexp2Enabled: false,
+	}
+
+	sc := source.NewMockSourceConfiguration(c)
+	sc.EXPECT().GetSettings(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(r *http.Request, logger2 *logrus.Logger) (*global.Settings, util.PlankClient, error) {
+		return s, dinghyfile.NewMockPlankClient(c), nil
+	})
+
+	wa := NewWebAPI(sc, nil, nil, l, nil, nil, nil, nil)
+	wa.Parser = dinghyfile.NewDinghyfileParser(&dinghyfile.PipelineBuilder{})
+
+	r := httptest.NewRecorder()
+
+	d := dinghyfile.NewMockDownloader(c)
+	d.EXPECT().Download("test_org", "test_repo", ".dinghyignore", "test_branch").Return("file.(js|css|html)", nil)
+
+	wa.buildPipelines(&p, []byte("{}"), d, r, dl, "", nil, s)
+
+	assert.Equal(t, http.StatusOK, r.Code)
+	assert.Equal(t, `{"status":"accepted"}`, r.Body.String())
 }
