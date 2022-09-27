@@ -155,7 +155,7 @@ type Settings struct {
 	// SQL configuration for dinghy
 	SQL Sqlconfig `json:"sql,omitempty" yaml:"sql"`
 	// Enable regexp2 for .dinghyignore file
-	DinghyIgnoreRegexp2Enabled bool `json:"DinghyIgnoreRegexp2Enabled" yaml:"DinghyIgnoreRegexp2Enabled"`
+	DinghyIgnoreRegexp2Enabled bool `json:"dinghyIgnoreRegexp2Enabled" yaml:"dinghyIgnoreRegexp2Enabled"`
 }
 
 type Sqlconfig struct {
