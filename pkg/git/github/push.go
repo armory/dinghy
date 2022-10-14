@@ -29,6 +29,7 @@ type Push struct {
 	Config      Config
 	DeckBaseURL string
 	Logger      log.DinghyLog
+	Pusher      Pusher `json:"pusher"`
 }
 
 // Commit is a commit received from Github webhook
@@ -47,6 +48,10 @@ type Repository struct {
 
 type RepositoryOwner struct {
 	Login string `json:"login"`
+}
+
+type Pusher struct {
+	Name string `json:"name"`
 }
 
 func inSlice(arr []string, val string) bool {
@@ -121,4 +126,8 @@ func (p *Push) IsMaster() bool {
 // Name returns the name of the provider to be used in configuration
 func (p *Push) Name() string {
 	return "github"
+}
+
+func (p *Push) PusherName() string {
+	return p.Pusher.Name
 }

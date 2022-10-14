@@ -300,3 +300,9 @@ func (p *Push) GetCommits() []string {
 func (p *Push) Name() string {
 	return "bitbucket-cloud"
 }
+
+// PusherName returns the name of the pusher of last commit
+func (p *Push) PusherName() string {
+	//Not implemented for now
+	return ""
+}

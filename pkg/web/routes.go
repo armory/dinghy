@@ -61,6 +61,7 @@ type Push interface {
 	GetCommitStatus() (error, git.Status, string)
 	GetCommits() []string
 	Name() string
+	PusherName() string
 }
 
 type MetricsHandler interface {

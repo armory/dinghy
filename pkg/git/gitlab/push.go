@@ -99,6 +99,12 @@ func (p *Push) Name() string {
 	return "gitlab"
 }
 
+// PusherName returns the name of the pusher of last commit
+func (p *Push) PusherName() string {
+	//Not implemented for now
+	return ""
+}
+
 // ParseWebhook parses the webhook into the struct and returns a file service
 // instance (and error)
 func (p *Push) ParseWebhook(cfg *global.Settings, body []byte) (FileService, error) {
