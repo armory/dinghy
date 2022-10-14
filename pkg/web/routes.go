@@ -191,7 +191,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	fileService["master"]["dinghyfile"] = buf.String()
 	wa.Logger.Infof("Received payload: %s", fileService["master"]["dinghyfile"])
 
-	if _, err := builder.ProcessDinghyfile("", "", "dinghyfile", ""); err != nil {
+	if _, err := builder.ProcessDinghyfile("", "", "dinghyfile", "", ""); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 	}
 }
@@ -584,7 +584,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder, settings *g
 		components := strings.Split(filePath, "/")
 		if components[len(components)-1] == settings.DinghyFilename {
 			// Process the dinghyfile.
-			dinghyRendered, err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath, p.Branch())
+			dinghyRendered, err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath, p.Branch(), p.PusherName())
 			dinghyfilesRendered.WriteString(dinghyRendered)
 			// Set commit status based on result of processing.
 			if err != nil {
@@ -710,7 +710,7 @@ func (wa *WebAPI) buildPipelines(
 					})
 					return
 				}
-				if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch()); err != nil {
+				if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch(), p.PusherName()); err != nil {
 					switch err.(type) {
 					case *util.GitHubFileNotFoundErr:
 						util.WriteHTTPError(w, http.StatusNotFound, err)
