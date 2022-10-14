@@ -212,3 +212,8 @@ func (mr *MockPlankClientMockRecorder) UseServiceEndpoints() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UseServiceEndpoints", reflect.TypeOf((*MockPlankClient)(nil).UseServiceEndpoints))
 }
+
+func (mr *MockPlankClient) UserRoles(string, string) ([]string, error) {
+	//TODO kkotula
+	return nil, nil
+}

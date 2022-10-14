@@ -23,8 +23,8 @@ import (
 )
 
 type PlankReadOnly struct {
-	Plank 		*plank.Client
-	tempPipes	*[]plank.Pipeline
+	Plank     *plank.Client
+	tempPipes *[]plank.Pipeline
 }
 
 func (p *PlankReadOnly) GetApplication(string, traceparent string) (*plank.Application, error) {
@@ -48,13 +48,13 @@ func (p *PlankReadOnly) UpdateApplication(plank.Application, string) error {
 }
 
 func (p *PlankReadOnly) GetPipelines(appName, traceparent string) ([]plank.Pipeline, error) {
-	pipes,err := p.Plank.GetPipelines(appName, traceparent)
+	pipes, err := p.Plank.GetPipelines(appName, traceparent)
 	if err != nil {
-		return  pipes,err
+		return pipes, err
 	}
 	// Here we will get the previously created pipelines
 	if p.tempPipes != nil {
-		for _, val := range *p.tempPipes{
+		for _, val := range *p.tempPipes {
 			pipes = append(pipes, val)
 		}
 	}
@@ -77,6 +77,10 @@ func (p *PlankReadOnly) UpsertPipeline(pipe plank.Pipeline, appName string, trac
 	pipe.ID = fmt.Sprintf("auto-generated-dummy-id-%v", uuid.New().String())
 	(*p.tempPipes) = append(*p.tempPipes, pipe)
 	return nil
+}
+
+func (p *PlankReadOnly) UserRoles(username, traceparent string) ([]string, error) {
+	return p.Plank.UserRoles(username, traceparent)
 }
 
 func (p *PlankReadOnly) ResyncFiat(string) error {
