@@ -37,6 +37,7 @@ import (
 type WebhookPayload struct {
 	Repository WebhookRepository `json:"repository"`
 	Push       WebhookPush       `json:"push"`
+	Actor      string            `json:"actor"`
 }
 
 type WebhookProject struct {
@@ -99,6 +100,7 @@ type Push struct {
 	Payload      WebhookPayload
 	ChangedFiles []string
 	Logger       log.DinghyLog
+	Pusher       string
 }
 
 // -----------------------------------------------------------------------------
@@ -112,6 +114,7 @@ func NewPush(payload WebhookPayload, cfg Config) (*Push, error) {
 		Payload:      payload,
 		ChangedFiles: make([]string, 0),
 		Logger:       cfg.Logger,
+		Pusher:       payload.Actor,
 	}
 
 	changedFilesMap := map[string]bool{}
@@ -303,6 +306,5 @@ func (p *Push) Name() string {
 
 // PusherName returns the name of the pusher of last commit
 func (p *Push) PusherName() string {
-	//Not implemented for now
-	return ""
+	return p.Pusher
 }

@@ -101,8 +101,7 @@ func (p *Push) Name() string {
 
 // PusherName returns the name of the pusher of last commit
 func (p *Push) PusherName() string {
-	//Not implemented for now
-	return ""
+	return p.Event.UserName
 }
 
 // ParseWebhook parses the webhook into the struct and returns a file service
