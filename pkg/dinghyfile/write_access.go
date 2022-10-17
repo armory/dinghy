@@ -61,7 +61,7 @@ func (v FiatPermissionsValidator) Validate(pusher string) error {
 		return err
 	}
 
-	log.Debugf("%s's roles were found", pusher)
+	log.Infof("%s's write roles were found: %s", pusher, v.application.Permissions.Write)
 
 	for _, applicationPermission := range v.application.Permissions.Write {
 		for _, role := range userRoles {

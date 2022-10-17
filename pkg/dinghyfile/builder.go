@@ -406,7 +406,6 @@ func (b *PipelineBuilder) updatePipelines(dinghyfile Dinghyfile, pusher string) 
 			//doesn't have write access to the application, thus we need to prevent from updating the app.
 			err := GetWritePermissionsValidator(b.UserWritePermissionsCheckEnabled, b.Client, app).Validate(pusher)
 			if err != nil {
-				b.Logger.Errorf("User %s doesn't have write permission for application %s", pusher, &app.Name)
 				return err
 			}
 			errUpdating := b.Client.UpdateApplication(app, "")
