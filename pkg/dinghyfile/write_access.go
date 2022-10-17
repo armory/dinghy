@@ -22,8 +22,6 @@ import (
 	"github.com/armory/plank/v4"
 )
 
-const WritePermissionsCheckEnabledFlag = "check_user_write_access"
-
 var UserNotFoundError = errors.New("user was not found")
 var UserNotAuthorized = errors.New("user not authorized")
 
@@ -49,7 +47,7 @@ type FiatPermissionsValidator struct {
 	application plank.Application
 }
 
-func (v *FiatPermissionsValidator) Validate(pusher string) error {
+func (v FiatPermissionsValidator) Validate(pusher string) error {
 	userRoles, err := v.client.UserRoles(pusher, "")
 	if err != nil {
 		if failedResponse, ok := err.(*plank.FailedResponse); ok {
@@ -76,9 +74,8 @@ func (v *FiatPermissionsValidator) Validate(pusher string) error {
 
 // A GetWritePermissionsValidator is a factory method that produces
 // implementation of WritePermissionsValidator based on settings value
-func GetWritePermissionsValidator(settings map[string]interface{}, client util.PlankClient, application plank.Application) WritePermissionsValidator {
-	val, found := settings[WritePermissionsCheckEnabledFlag]
-	if found && val == true {
+func GetWritePermissionsValidator(userWritePermissionCheck bool, client util.PlankClient, application plank.Application) WritePermissionsValidator {
+	if userWritePermissionCheck {
 		return &FiatPermissionsValidator{
 			client:      client,
 			application: application,

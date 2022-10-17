@@ -35,7 +35,15 @@ func TestNoOpValidatorReturnsNil(t *testing.T) {
 }
 
 func TestFiatValidationRunsOnlyWhenFiatIsEnabled(t *testing.T) {
-	t.Errorf("Is not yet implemented")
+
+	noApp := plank.Application{}
+	fiatValidator := GetWritePermissionsValidator(true, nil, noApp)
+	_, ok := fiatValidator.(*FiatPermissionsValidator)
+	assert.True(t, ok)
+
+	noOpValidator := GetWritePermissionsValidator(false, nil, noApp)
+	_, ok = noOpValidator.(*NoOpWritePermissionValidator)
+	assert.True(t, ok)
 }
 
 func TestValidationPassesWhenUserRolesMatchApplicationWritePermissions(t *testing.T) {

@@ -42,25 +42,26 @@ type Parser interface {
 
 // PipelineBuilder is responsible for downloading dinghyfiles/modules, compiling them, and sending them to Spinnaker
 type PipelineBuilder struct {
-	Downloader                  Downloader
-	Depman                      DependencyManager
-	TemplateRepo                string
-	TemplateOrg                 string
-	DinghyfileName              string
-	Client                      util.PlankClient
-	DeleteStalePipelines        bool
-	AutolockPipelines           string
-	EventClient                 events.EventClient
-	Parser                      Parser
-	Logger                      log.DinghyLog
-	Ums                         []Unmarshaller
-	Notifiers                   []notifiers.Notifier
-	PushRaw                     map[string]interface{}
-	GlobalVariablesMap          map[string]interface{}
-	RepositoryRawdataProcessing bool
-	RebuildingModules           bool
-	Action                      pipebuilder.BuilderAction
-	JsonValidationDisabled      bool
+	Downloader                       Downloader
+	Depman                           DependencyManager
+	TemplateRepo                     string
+	TemplateOrg                      string
+	DinghyfileName                   string
+	Client                           util.PlankClient
+	DeleteStalePipelines             bool
+	AutolockPipelines                string
+	EventClient                      events.EventClient
+	Parser                           Parser
+	Logger                           log.DinghyLog
+	Ums                              []Unmarshaller
+	Notifiers                        []notifiers.Notifier
+	PushRaw                          map[string]interface{}
+	GlobalVariablesMap               map[string]interface{}
+	RepositoryRawdataProcessing      bool
+	RebuildingModules                bool
+	Action                           pipebuilder.BuilderAction
+	JsonValidationDisabled           bool
+	UserWritePermissionsCheckEnabled bool
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -403,7 +404,7 @@ func (b *PipelineBuilder) updatePipelines(dinghyfile Dinghyfile, pusher string) 
 		if b.saveAppOnUpdate() {
 			//UpdateApplication method updates application permissions. It is possible that a user, who pushed changes to repository
 			//doesn't have write access to the application, thus we need to prevent from updating the app.
-			err := GetWritePermissionsValidator(b.GlobalVariablesMap, b.Client, app).Validate(pusher)
+			err := GetWritePermissionsValidator(b.UserWritePermissionsCheckEnabled, b.Client, app).Validate(pusher)
 			if err != nil {
 				b.Logger.Errorf("User %s doesn't have write permission for application %s", pusher, &app.Name)
 				return err
