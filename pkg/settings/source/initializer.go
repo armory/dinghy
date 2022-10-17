@@ -88,6 +88,12 @@ func (i *Initialize) configureSettings(settings global.Settings) (*global.Settin
 		settings.SpinnakerSupplied.Fiat.AuthUser = settings.FiatUser
 	}
 
+	if settings.UserWritePermissionsCheckEnabled && settings.SpinnakerSupplied.Fiat.Enabled != "true" {
+		log.Warn("Cannot enable UserWritePermissionCheck when Fiat is disabled")
+		log.Warn("Overriding UserWritePermissionCheck to false")
+		settings.UserWritePermissionsCheckEnabled = false
+	}
+
 	if settings.ParserFormat == "" {
 		settings.ParserFormat = "json"
 	}

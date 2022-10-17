@@ -20,6 +20,7 @@ import (
 	"errors"
 	"github.com/armory/dinghy/pkg/util"
 	"github.com/armory/plank/v4"
+	log "github.com/sirupsen/logrus"
 )
 
 var UserNotFoundError = errors.New("user was not found")
@@ -52,23 +53,27 @@ func (v FiatPermissionsValidator) Validate(pusher string) error {
 	if err != nil {
 		if failedResponse, ok := err.(*plank.FailedResponse); ok {
 			if failedResponse.StatusCode == 404 {
-				//TODO add logs
+				log.Errorf("Either user %s or their roles were not found", pusher)
 				return UserNotFoundError
 			}
 		}
-		//TODO add logs
+		log.Errorf("Failed to fetch %s's roles from Fiat, because of: %s", pusher, err)
 		return err
 	}
+
+	log.Debugf("%s's roles were found", pusher)
 
 	for _, applicationPermission := range v.application.Permissions.Write {
 		for _, role := range userRoles {
 			if applicationPermission == role {
 				//It's a match! No error to return
+				log.Infof("%s has write permissions to application %s", pusher, v.application.Name)
 				return nil
 			}
 		}
 	}
 
+	log.Errorf("%s doesn't have write permissions to application %s", pusher, v.application.Name)
 	return UserNotAuthorized
 }
 
