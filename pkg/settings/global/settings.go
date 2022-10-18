@@ -159,6 +159,8 @@ type Settings struct {
 	DinghyIgnoreRegexp2Enabled bool `json:"dinghyIgnoreRegexp2Enabled" yaml:"dinghyIgnoreRegexp2Enabled"`
 	// Check user's write permissions by calling Fiat /authorize/${user}/roles before updating application
 	UserWritePermissionsCheckEnabled bool `json:"userWritePermissionsCheckEnabled" yaml:"userWritePermissionsCheckEnabled"`
+	// Users for whom we should ignore and skip write permissions validations
+	IgnoreUsersPermissions []string `json:"ignoreUsersWritePermissions" yaml:"ignoreUsersPermissions"`
 }
 
 type Sqlconfig struct {

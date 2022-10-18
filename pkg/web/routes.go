@@ -603,6 +603,9 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder, settings *g
 	return dinghyfilesRendered.String(), nil
 }
 
+type UserWriteAccessValidation struct {
+}
+
 // TODO: this func should return an error and allow the handlers to return the http response. Additionally,
 // it probably doesn't belong in this file once refactored.
 func (wa *WebAPI) buildPipelines(
@@ -642,6 +645,12 @@ func (wa *WebAPI) buildPipelines(
 		Action:                           pipebuilder.Process,
 		JsonValidationDisabled:           s.JsonValidationDisabled,
 		UserWritePermissionsCheckEnabled: s.UserWritePermissionsCheckEnabled,
+		UserWriteAccessValidation: dinghyfile.UserWriteAccessValidation{
+			Enabled: s.UserWritePermissionsCheckEnabled,
+			Client:  pc,
+			Ignore:  s.IgnoreUsersPermissions,
+			Logger:  l,
+		},
 	}
 
 	if shouldRunValidation(p, s, l) {

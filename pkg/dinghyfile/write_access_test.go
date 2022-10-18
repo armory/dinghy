@@ -17,6 +17,7 @@ package dinghyfile
 
 import (
 	"errors"
+	"fmt"
 	"github.com/armory/plank/v4"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -27,14 +28,14 @@ const (
 	pusher = "test_pusher"
 )
 
-func TestNoOpValidatorReturnsNil(t *testing.T) {
+func TestNoOpWritePermissionValidator_NoPermissionsChecked(t *testing.T) {
 	noOp := &NoOpWritePermissionValidator{}
 	result := noOp.Validate(pusher)
 
 	assert.Nil(t, result)
 }
 
-func TestFiatValidationRunsOnlyWhenFiatIsEnabled(t *testing.T) {
+func TestPermissionValidator_CorrectImplementationSelected(t *testing.T) {
 
 	noApp := plank.Application{}
 	fiatValidator := GetWritePermissionsValidator(true, nil, noApp)
@@ -46,7 +47,7 @@ func TestFiatValidationRunsOnlyWhenFiatIsEnabled(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestValidationPassesWhenUserRolesMatchApplicationWritePermissions(t *testing.T) {
+func TestFiatPermissionsValidator_NoErrorWhenUserHasWritePermissions(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -68,7 +69,7 @@ func TestValidationPassesWhenUserRolesMatchApplicationWritePermissions(t *testin
 	assert.Nil(t, permissionsValidator.Validate(pusher))
 }
 
-func TestValidationFailsWhenUserRolesDontMatchApplicationWritePermissions(t *testing.T) {
+func TestFiatPermissionsValidator_UserNotAuthorized(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -92,7 +93,7 @@ func TestValidationFailsWhenUserRolesDontMatchApplicationWritePermissions(t *tes
 	assert.Equal(t, validationResult, UserNotAuthorized)
 }
 
-func TestValidationFailsWhenUserNotFound(t *testing.T) {
+func TestFiatPermissionsValidator_UserNotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -114,7 +115,7 @@ func TestValidationFailsWhenUserNotFound(t *testing.T) {
 	assert.Equal(t, validationResult, UserNotFoundError)
 }
 
-func TestValidationFailsWhenGenericErrorReturned(t *testing.T) {
+func TestFiatPermissionsValidator_ErrorReturnedWhenUnexpectedIssue(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -134,4 +135,34 @@ func TestValidationFailsWhenGenericErrorReturned(t *testing.T) {
 	assert.NotNil(t, validationResult)
 	assert.NotEqual(t, validationResult, UserNotFoundError)
 	assert.NotEqual(t, validationResult, UserNotAuthorized)
+}
+
+func TestWritePermissionsUserFilter_ShouldProcess(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		fields   []string
+		arg      string
+		expected bool
+	}{
+		{
+			name:     "Should not ignore user if they are not on a list of users to ignore",
+			fields:   []string{"jon", "danny"},
+			arg:      "matt",
+			expected: false,
+		},
+		{
+			name:     "Should ignore user if they are on a list of users to ignore ",
+			fields:   []string{"jon", "danny"},
+			arg:      "danny",
+			expected: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filter := &WritePermissionUserFilter{
+				usersToIgnore: tt.fields}
+			assert.Equal(t, tt.expected, filter.ShouldIgnore(tt.arg), fmt.Sprintf("ShouldIgnore(%v)", tt.arg))
+		})
+	}
 }

@@ -88,3 +88,19 @@ func GetWritePermissionsValidator(userWritePermissionCheck bool, client util.Pla
 	}
 	return &NoOpWritePermissionValidator{}
 }
+
+type WritePermissionUserFilter struct {
+	usersToIgnore []string
+}
+
+// ShouldIgnore function tells whether we should ignore user when checking for write permissions to an application
+// Returns true when user is in the ignore list, and we should skip checking for write permissions
+// Returns false when user is not in the list and should check theirs write permissions
+func (filter *WritePermissionUserFilter) ShouldIgnore(username string) bool {
+	for _, name := range filter.usersToIgnore {
+		if username == name {
+			return true
+		}
+	}
+	return false
+}

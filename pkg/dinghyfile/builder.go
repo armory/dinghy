@@ -62,6 +62,7 @@ type PipelineBuilder struct {
 	Action                           pipebuilder.BuilderAction
 	JsonValidationDisabled           bool
 	UserWritePermissionsCheckEnabled bool
+	UserWriteAccessValidation        UserWriteAccessValidation
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -88,6 +89,23 @@ type Dinghyfile struct {
 	DeleteStalePipelines bool                   `json:"deleteStalePipelines" yaml:"deleteStalePipelines" hcl:"deleteStalePipelines"`
 	Globals              map[string]interface{} `json:"globals" yaml:"globals" hcl:"globals"`
 	Pipelines            []plank.Pipeline       `json:"pipelines" yaml:"pipelines" hcl:"pipelines"`
+}
+
+type UserWriteAccessValidation struct {
+	Logger  log.DinghyLog
+	Client  util.PlankClient
+	Enabled bool
+	Ignore  []string
+}
+
+func (v *UserWriteAccessValidation) Validate(application plank.Application, pusher string) error {
+	filter := WritePermissionUserFilter{v.Ignore}
+	if filter.ShouldIgnore(pusher) {
+		v.Logger.Infof("Skipping permissions check for user %s, because it is on a ignore list", pusher)
+		return nil
+	}
+	validator := GetWritePermissionsValidator(v.Enabled, v.Client, application)
+	return validator.Validate(pusher)
 }
 
 func NewDinghyfile() Dinghyfile {
@@ -404,7 +422,7 @@ func (b *PipelineBuilder) updatePipelines(dinghyfile Dinghyfile, pusher string) 
 		if b.saveAppOnUpdate() {
 			//UpdateApplication method updates application permissions. It is possible that a user, who pushed changes to repository
 			//doesn't have write access to the application, thus we need to prevent from updating the app.
-			err := GetWritePermissionsValidator(b.UserWritePermissionsCheckEnabled, b.Client, app).Validate(pusher)
+			err := b.UserWriteAccessValidation.Validate(app, pusher)
 			if err != nil {
 				return err
 			}
