@@ -25,6 +25,7 @@ import (
 
 var UserNotFoundError = errors.New("user was not found")
 var UserNotAuthorized = errors.New("user not authorized")
+var UserNameEmpty = errors.New("pusher is empty string")
 
 // A WritePermissionsValidator interface is used to determine
 // whether given user has write permissions to application
@@ -49,6 +50,10 @@ type FiatPermissionsValidator struct {
 }
 
 func (v FiatPermissionsValidator) Validate(pusher string) error {
+	if pusher == "" {
+		log.Errorf("Got empty string as pusher. Either that attribute is mising in a webhook, or there's problem with mapping")
+		return UserNameEmpty
+	}
 	userRoles, err := v.client.UserRoles(pusher, "")
 	if err != nil {
 		if failedResponse, ok := err.(*plank.FailedResponse); ok {

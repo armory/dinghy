@@ -88,6 +88,7 @@ func (i *Initialize) configureSettings(settings global.Settings) (*global.Settin
 		settings.SpinnakerSupplied.Fiat.AuthUser = settings.FiatUser
 	}
 
+	// Since it is impossible to obtain user write roles without fiat, warning is logged and check is disabled
 	if settings.UserWritePermissionsCheckEnabled && settings.SpinnakerSupplied.Fiat.Enabled != "true" {
 		log.Warn("Cannot enable UserWritePermissionCheck when Fiat is disabled")
 		log.Warn("Overriding UserWritePermissionCheck to false")

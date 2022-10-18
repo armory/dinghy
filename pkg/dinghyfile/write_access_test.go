@@ -137,6 +137,25 @@ func TestFiatPermissionsValidator_ErrorReturnedWhenUnexpectedIssue(t *testing.T)
 	assert.NotEqual(t, validationResult, UserNotAuthorized)
 }
 
+func TestFiatPermissionsValidator_UserNameEmpty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	application := plank.Application{
+		Name:        "ApplicationName",
+		Permissions: &plank.PermissionsType{Write: []string{"developer", "devops"}},
+	}
+
+	mockedPlankClient := NewMockPlankClient(ctrl)
+	permissionsValidator := FiatPermissionsValidator{
+		client:      mockedPlankClient,
+		application: application,
+	}
+
+	validationResult := permissionsValidator.Validate("")
+	assert.Equal(t, validationResult, UserNameEmpty)
+}
+
 func TestWritePermissionsUserFilter_ShouldProcess(t *testing.T) {
 
 	tests := []struct {
