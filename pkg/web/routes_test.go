@@ -549,7 +549,6 @@ func TestShouldRunValidationWhenBranchIsWrongAndIsNotMaster(t *testing.T) {
 
 	l := mock.NewMockFieldLogger(c)
 	l.EXPECT().Infof(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
-	l.EXPECT().Infof(gomock.Any(), gomock.Any()).Times(1)
 
 	dl := dinghylog.NewDinghyLogs(l)
 
@@ -582,7 +581,7 @@ func TestShouldRunValidationWhenBranchIsWrongAndIsMaster(t *testing.T) {
 	defer c.Finish()
 
 	l := mock.NewMockFieldLogger(c)
-	l.EXPECT().Infof(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+	l.EXPECT().Infof(gomock.Any(), gomock.Any()).Times(1)
 
 	dl := dinghylog.NewDinghyLogs(l)
 
@@ -594,9 +593,10 @@ func TestShouldRunValidationWhenBranchIsWrongAndIsMaster(t *testing.T) {
 		Ref: "master",
 	}
 	s := &global.Settings{
-		DinghyFilename: "dinghyfile",
-		TemplateOrg:    "test_org",
-		TemplateRepo:   "test_repo",
+		MultipleBranchesEnabled: true,
+		DinghyFilename:          "dinghyfile",
+		TemplateOrg:             "test_org",
+		TemplateRepo:            "test_repo",
 		RepoConfig: []global.RepoConfig{
 			{
 				Provider: "github",

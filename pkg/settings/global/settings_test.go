@@ -83,8 +83,9 @@ func TestSettings_GetRepoConfig(t *testing.T) {
 			settings: Settings{RepoConfig: []RepoConfig{}},
 			expected: nil,
 		},
-		"branch mismatch": {
+		"when feature flag enabled, search by provider and repo and branch": {
 			settings: Settings{
+				MultipleBranchesEnabled: true,
 				RepoConfig: []RepoConfig{
 					{
 						Provider: "github",
@@ -102,6 +103,31 @@ func TestSettings_GetRepoConfig(t *testing.T) {
 			repo:     "ghrepo",
 			branch:   "featurebranch",
 			expected: nil,
+		},
+		"when feature flag disabled, search just by provider and repo": {
+			settings: Settings{
+				MultipleBranchesEnabled: false,
+				RepoConfig: []RepoConfig{
+					{
+						Provider: "github",
+						Repo:     "ghrepo",
+						Branch:   "main",
+					},
+					{
+						Provider: "github",
+						Repo:     "ghrepo",
+						Branch:   "release",
+					},
+				},
+			},
+			provider: "github",
+			repo:     "ghrepo",
+			branch:   "featurebranch",
+			expected: &RepoConfig{
+				Provider: "github",
+				Repo:     "ghrepo",
+				Branch:   "main",
+			},
 		},
 	}
 
