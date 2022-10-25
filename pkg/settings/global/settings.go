@@ -161,6 +161,8 @@ type Settings struct {
 	UserWritePermissionsCheckEnabled bool `json:"userWritePermissionsCheckEnabled" yaml:"userWritePermissionsCheckEnabled"`
 	// Users for whom we should ignore and skip write permissions validations
 	IgnoreUsersPermissions []string `json:"ignoreUsersWritePermissions" yaml:"ignoreUsersPermissions"`
+	// Enable processing of multiple branches in single repository
+	MultipleBranchesEnabled bool `json:"multipleBranchesEnabled" yaml:"multipleBranchesEnabled"`
 }
 
 type Sqlconfig struct {
@@ -252,8 +254,15 @@ type RepoConfig struct {
 }
 
 func (s *Settings) GetRepoConfig(provider, repo, branch string) *RepoConfig {
+	var match = func(repositoryConfiguration RepoConfig) bool {
+		if s.MultipleBranchesEnabled {
+			return repositoryConfiguration.Provider == provider && repositoryConfiguration.Repo == repo && repositoryConfiguration.Branch == branch
+		}
+		return repositoryConfiguration.Provider == provider && repositoryConfiguration.Repo == repo
+	}
+
 	for _, c := range s.RepoConfig {
-		if c.Provider == provider && c.Repo == repo && c.Branch == branch {
+		if match(c) {
 			return &c
 		}
 	}

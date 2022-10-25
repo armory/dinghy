@@ -767,11 +767,17 @@ func (wa *WebAPI) buildPipelines(
 	w.Write([]byte(`{"status":"accepted"}`))
 }
 
-func shouldRunValidation(p Push, s *global.Settings, l dinghylog.DinghyLog) bool {
-	if rc := s.GetRepoConfig(p.Name(), p.Repo(), p.Branch()); rc == nil {
-		l.Infof("Found no custom configuration for repo: %s and branch: %s proceeding with master", p.Repo(), p.Branch())
+func shouldRunValidation(p Push, settings *global.Settings, dinghyLog dinghylog.DinghyLog) bool {
+	if rc := settings.GetRepoConfig(p.Name(), p.Repo(), p.Branch()); rc != nil {
+		if !p.IsBranch(rc.Branch) {
+			dinghyLog.Infof("Received request from branch %s. Does not match configured branch %s. Proceeding as validation.", p.Branch(), rc.Branch)
+			return true
+		}
+	} else {
+		// if we didn't find any configurations for this repo, proceed with master
+		dinghyLog.Infof("Found no custom configuration for repo: %s, proceeding with master", p.Repo())
 		if !p.IsMaster() {
-			l.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master. Proceeding as validation.", p.Branch())
+			dinghyLog.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master. Proceeding as validation.", p.Branch())
 			return true
 		}
 	}
