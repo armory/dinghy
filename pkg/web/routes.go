@@ -61,6 +61,7 @@ type Push interface {
 	GetCommitStatus() (error, git.Status, string)
 	GetCommits() []string
 	Name() string
+	PusherName() string
 }
 
 type MetricsHandler interface {
@@ -190,7 +191,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	fileService["master"]["dinghyfile"] = buf.String()
 	wa.Logger.Infof("Received payload: %s", fileService["master"]["dinghyfile"])
 
-	if _, err := builder.ProcessDinghyfile("", "", "dinghyfile", ""); err != nil {
+	if _, err := builder.ProcessDinghyfile("", "", "dinghyfile", "", ""); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 	}
 }
@@ -583,7 +584,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder, settings *g
 		components := strings.Split(filePath, "/")
 		if components[len(components)-1] == settings.DinghyFilename {
 			// Process the dinghyfile.
-			dinghyRendered, err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath, p.Branch())
+			dinghyRendered, err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath, p.Branch(), p.PusherName())
 			dinghyfilesRendered.WriteString(dinghyRendered)
 			// Set commit status based on result of processing.
 			if err != nil {
@@ -600,6 +601,9 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder, settings *g
 		}
 	}
 	return dinghyfilesRendered.String(), nil
+}
+
+type UserWriteAccessValidation struct {
 }
 
 // TODO: this func should return an error and allow the handlers to return the http response. Additionally,
@@ -640,6 +644,12 @@ func (wa *WebAPI) buildPipelines(
 		RepositoryRawdataProcessing: s.RepositoryRawdataProcessing,
 		Action:                      pipebuilder.Process,
 		JsonValidationDisabled:      s.JsonValidationDisabled,
+		UserWriteAccessValidation: dinghyfile.UserWriteAccessValidation{
+			Enabled: s.UserWritePermissionsCheckEnabled,
+			Client:  pc,
+			Ignore:  s.IgnoreUsersPermissions,
+			Logger:  l,
+		},
 	}
 
 	if shouldRunValidation(p, s, l) {
@@ -709,7 +719,7 @@ func (wa *WebAPI) buildPipelines(
 					})
 					return
 				}
-				if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch()); err != nil {
+				if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch(), p.PusherName()); err != nil {
 					switch err.(type) {
 					case *util.GitHubFileNotFoundErr:
 						util.WriteHTTPError(w, http.StatusNotFound, err)

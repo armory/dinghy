@@ -251,3 +251,8 @@ func (p *Push) GetCommits() []string {
 func (p *Push) Name() string {
 	return "bitbucket-server"
 }
+
+// PusherName returns the name of the pusher of last commit
+func (p *Push) PusherName() string {
+	return p.StashUsername
+}

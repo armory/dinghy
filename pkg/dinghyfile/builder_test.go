@@ -69,7 +69,8 @@ func TestProcessDinghyfile(t *testing.T) {
 	pb.Parser = renderer
 	pb.Client = client
 	pb.Logger = logger
-	if _, err := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch"); err != nil {
+
+	if _, err := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch", "pusher"); err != nil {
 		t.Fail()
 	}
 }
@@ -103,7 +104,7 @@ func TestProcessDinghyfileValidate(t *testing.T) {
 	pb.Client = client
 	pb.Logger = logger
 
-	if _, err := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch"); err != nil {
+	if _, err := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch", "pusher"); err != nil {
 		t.Fail()
 	}
 }
@@ -137,8 +138,15 @@ func TestUpdateApplication(t *testing.T) {
 	gvMap["save_app_on_update"] = true
 	b.GlobalVariablesMap = gvMap
 	b.Client = client
+	b.AutolockPipelines = "true"
 
-	err := b.updatePipelines(testapp, newPipelines, true, "true")
+	dinghyfile := Dinghyfile{
+		ApplicationSpec:      *testapp,
+		Pipelines:            newPipelines,
+		DeleteStalePipelines: true,
+	}
+
+	err := b.updatePipelines(dinghyfile, "pusher")
 	assert.NotNil(t, err)
 	assert.Equal(t, "upsert fail test", err.Error())
 }
@@ -156,7 +164,7 @@ func TestProcessDinghyfileDefaultRenderer(t *testing.T) {
 
 	pb := testPipelineBuilder()
 	pb.Logger = logger
-	_, res := pb.ProcessDinghyfile("fake", "news", "notfound", "branch")
+	_, res := pb.ProcessDinghyfile("fake", "news", "notfound", "branch", "pusher")
 	assert.NotNil(t, res)
 }
 
@@ -178,7 +186,7 @@ func TestProcessDinghyfileFailedUnmarshal(t *testing.T) {
 	pb := testPipelineBuilder()
 	pb.Logger = logger
 	pb.Parser = renderer
-	dinghyfileParsed, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	dinghyfileParsed, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch", "pusher")
 	assert.Equal(t, rendered, dinghyfileParsed)
 	assert.NotNil(t, res)
 }
@@ -209,7 +217,7 @@ func TestProcessDinghyfileFailedUpdate(t *testing.T) {
 	pb.Logger = logger
 	pb.Parser = renderer
 	pb.Client = client
-	dinghyfileParsed, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	dinghyfileParsed, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch", "pusher")
 	assert.Equal(t, rendered, dinghyfileParsed)
 	assert.NotNil(t, res)
 	assert.Equal(t, "boom", res.Error())
@@ -277,7 +285,7 @@ func TestProcessDinghyfileFailedValidation(t *testing.T) {
 	pb.Logger = logger
 	pb.Parser = renderer
 	pb.Client = client
-	dinghyfileParsed, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch")
+	dinghyfileParsed, res := pb.ProcessDinghyfile("myorg", "myrepo", "the/full/path", "mybranch", "pusher")
 	assert.Equal(t, rendered, dinghyfileParsed)
 	assert.NotNil(t, res)
 	assert.Equal(t, "Duplicate stage refId mj2 field found", res.Error())
@@ -940,8 +948,15 @@ func TestUpdatePipelinesDeleteStaleWithExisting(t *testing.T) {
 
 	b := testPipelineBuilder()
 	b.Client = client
+	b.AutolockPipelines = "true"
 
-	err := b.updatePipelines(testapp, newPipelines, true, "true")
+	dinghyfile := Dinghyfile{
+		ApplicationSpec:      *testapp,
+		Pipelines:            newPipelines,
+		DeleteStalePipelines: true,
+	}
+
+	err := b.updatePipelines(dinghyfile, "pusher")
 	assert.Nil(t, err)
 }
 
@@ -967,8 +982,15 @@ func TestUpdatePipelinesNoDeleteStaleWithExisting(t *testing.T) {
 
 	b := testPipelineBuilder()
 	b.Client = client
+	b.AutolockPipelines = "true"
 
-	err := b.updatePipelines(testapp, newPipelines, false, "true")
+	dinghyfile := Dinghyfile{
+		ApplicationSpec:      *testapp,
+		Pipelines:            newPipelines,
+		DeleteStalePipelines: false,
+	}
+
+	err := b.updatePipelines(dinghyfile, "pusher")
 	assert.Nil(t, err)
 }
 
@@ -996,8 +1018,15 @@ func TestUpdatePipelinesDeleteStaleWithFailure(t *testing.T) {
 
 	b := testPipelineBuilder()
 	b.Client = client
+	b.AutolockPipelines = "true"
 
-	err := b.updatePipelines(testapp, newPipelines, true, "true")
+	dinghyfile := Dinghyfile{
+		ApplicationSpec:      *testapp,
+		Pipelines:            newPipelines,
+		DeleteStalePipelines: true,
+	}
+
+	err := b.updatePipelines(dinghyfile, "true")
 	assert.Nil(t, err)
 }
 
@@ -1024,8 +1053,14 @@ func TestUpdatePipelinesUpsertFail(t *testing.T) {
 
 	b := testPipelineBuilder()
 	b.Client = client
+	b.AutolockPipelines = "true"
 
-	err := b.updatePipelines(testapp, newPipelines, true, "true")
+	dinghyfile := Dinghyfile{
+		ApplicationSpec:      *testapp,
+		Pipelines:            newPipelines,
+		DeleteStalePipelines: true,
+	}
+	err := b.updatePipelines(dinghyfile, "true")
 	assert.NotNil(t, err)
 	assert.Equal(t, "upsert fail test", err.Error())
 }
@@ -1050,8 +1085,14 @@ func TestUpdatePipelinesRespectsAutoLockOn(t *testing.T) {
 
 	b := testPipelineBuilder()
 	b.Client = client
+	b.AutolockPipelines = "true"
 
-	err := b.updatePipelines(testapp, []plank.Pipeline{newPipeline}, false, "true")
+	dinghyfile := Dinghyfile{
+		ApplicationSpec:      *testapp,
+		Pipelines:            []plank.Pipeline{newPipeline},
+		DeleteStalePipelines: false,
+	}
+	err := b.updatePipelines(dinghyfile, "true")
 	assert.Nil(t, err)
 }
 
@@ -1076,7 +1117,12 @@ func TestUpdatePipelinesRespectsAutoLockOff(t *testing.T) {
 	b := testPipelineBuilder()
 	b.Client = client
 
-	err := b.updatePipelines(testapp, []plank.Pipeline{newPipeline}, false, "")
+	dinghyfile := Dinghyfile{
+		ApplicationSpec:      *testapp,
+		Pipelines:            []plank.Pipeline{newPipeline},
+		DeleteStalePipelines: false,
+	}
+	err := b.updatePipelines(dinghyfile, "")
 	assert.Nil(t, err)
 }
 
@@ -1108,7 +1154,7 @@ func TestRebuildModuleRoots(t *testing.T) {
 	b.DinghyfileName = "dinghyfile"
 	b.RepositoryRawdataProcessing = false
 
-	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch")
+	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch", "pusher")
 	assert.Nil(t, err)
 }
 
@@ -1147,7 +1193,7 @@ func TestRebuildModuleRootsProcessTemplate(t *testing.T) {
 	b.DinghyfileName = "dinghyfile"
 	b.RepositoryRawdataProcessing = true
 
-	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch")
+	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch", "pusher")
 	assert.Nil(t, err)
 }
 
@@ -1181,7 +1227,7 @@ func TestRebuildModuleRootsFailureCase(t *testing.T) {
 	b.DinghyfileName = "dinghyfile"
 	b.RepositoryRawdataProcessing = false
 
-	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch")
+	err := b.RebuildModuleRoots("org", "repo", "template_repo", "branch", "pusher")
 	assert.NotNil(t, err)
 	assert.Equal(t, "Not all upstream dinghyfiles were updated successfully", err.Error())
 }
