@@ -18,4 +18,5 @@ type PlankClient interface {
 	EnableArmoryEndpoints()
 	UseGateEndpoints()
 	UseServiceEndpoints()
+	UserRoles(string, string) ([]string, error)
 }

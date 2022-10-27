@@ -16,7 +16,7 @@ github.com/Masterminds/goutils
 github.com/Masterminds/semver/v3
 # github.com/Masterminds/sprig/v3 v3.1.0
 github.com/Masterminds/sprig/v3
-# github.com/armory/dinghy v0.0.0-20220824204115-f695642bddaf
+# github.com/armory/dinghy v0.0.0-20221025163127-2d465e0cea94
 github.com/armory/dinghy/cmd
 github.com/armory/dinghy/pkg/cache
 github.com/armory/dinghy/pkg/cache/local
@@ -112,6 +112,9 @@ github.com/beorn7/perks/quantile
 github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/dlclark/regexp2 v1.7.0
+github.com/dlclark/regexp2
+github.com/dlclark/regexp2/syntax
 # github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
 # github.com/ghodss/yaml v1.0.0

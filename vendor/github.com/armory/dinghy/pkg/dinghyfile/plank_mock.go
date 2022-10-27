@@ -212,3 +212,18 @@ func (mr *MockPlankClientMockRecorder) UseServiceEndpoints() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UseServiceEndpoints", reflect.TypeOf((*MockPlankClient)(nil).UseServiceEndpoints))
 }
+
+// GetPipelines mocks base method.
+func (m *MockPlankClient) UserRoles(arg0, arg1 string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UserRoles", arg0, arg1)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPipelines indicates an expected call of GetPipelines.
+func (mr *MockPlankClientMockRecorder) UserRoles(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserRoles", reflect.TypeOf((*MockPlankClient)(nil).UserRoles), arg0, arg1)
+}

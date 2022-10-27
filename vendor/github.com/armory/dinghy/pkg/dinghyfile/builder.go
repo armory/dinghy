@@ -61,6 +61,7 @@ type PipelineBuilder struct {
 	RebuildingModules           bool
 	Action                      pipebuilder.BuilderAction
 	JsonValidationDisabled      bool
+	UserWriteAccessValidation   UserWriteAccessValidation
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -87,6 +88,23 @@ type Dinghyfile struct {
 	DeleteStalePipelines bool                   `json:"deleteStalePipelines" yaml:"deleteStalePipelines" hcl:"deleteStalePipelines"`
 	Globals              map[string]interface{} `json:"globals" yaml:"globals" hcl:"globals"`
 	Pipelines            []plank.Pipeline       `json:"pipelines" yaml:"pipelines" hcl:"pipelines"`
+}
+
+type UserWriteAccessValidation struct {
+	Logger  log.DinghyLog
+	Client  util.PlankClient
+	Enabled bool
+	Ignore  []string
+}
+
+func (v *UserWriteAccessValidation) Validate(application plank.Application, pusher string) error {
+	filter := WritePermissionUserFilter{v.Ignore}
+	if filter.ShouldIgnore(pusher) {
+		v.Logger.Infof("Skipping permissions check for user %s, because it is on a ignore list", pusher)
+		return nil
+	}
+	validator := GetWritePermissionsValidator(v.Enabled, v.Client, application)
+	return validator.Validate(pusher)
 }
 
 func NewDinghyfile() Dinghyfile {
@@ -231,7 +249,7 @@ func (b *PipelineBuilder) DetermineParser(path string) Parser {
 }
 
 // ProcessDinghyfile downloads a dinghyfile and uses it to update Spinnaker's pipelines.
-func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) (string, error) {
+func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch, pusher string) (string, error) {
 	if b.Parser == nil {
 		// Set the renderer based on evaluation of the path, if not already set
 		b.Logger.Info("Calling DetermineParser")
@@ -250,16 +268,16 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) (str
 		}
 	}
 	b.Logger.Infof("Compiled: %s", buf.String())
-	d, err := b.UpdateDinghyfile(buf.Bytes())
+	dinghyfile, err := b.UpdateDinghyfile(buf.Bytes())
 	if err != nil {
 		b.Logger.Errorf("Failed to update dinghyfile %s: %s", path, err.Error())
 		b.NotifyFailure(org, repo, path, err, buf.String())
 		return buf.String(), err
 	}
 	b.Logger.Infof("Updated: %s", buf.String())
-	b.Logger.Infof("Dinghyfile struct: %v", d)
+	b.Logger.Infof("Dinghyfile struct: %v", dinghyfile)
 
-	err = b.ValidatePipelines(d, buf.Bytes())
+	err = b.ValidatePipelines(dinghyfile, buf.Bytes())
 	if err != nil {
 		b.Logger.Errorf("Failed to validate pipelines %s", path)
 		b.NotifyFailure(org, repo, path, err, buf.String())
@@ -267,9 +285,9 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) (str
 	}
 	b.Logger.Info("Validations for stage refs were successful")
 
-	err = b.ValidateAppNotifications(d, buf.Bytes())
+	err = b.ValidateAppNotifications(dinghyfile, buf.Bytes())
 	if err != nil {
-		b.Logger.Errorf("Failed to validate application notifications %s", d.ApplicationSpec.Notifications)
+		b.Logger.Errorf("Failed to validate application notifications %s", dinghyfile.ApplicationSpec.Notifications)
 		b.NotifyFailure(org, repo, path, err, buf.String())
 		return buf.String(), err
 	}
@@ -278,14 +296,14 @@ func (b *PipelineBuilder) ProcessDinghyfile(org, repo, path, branch string) (str
 	if b.Action == pipebuilder.Validate {
 		b.Logger.Info("Validation finished successfully")
 	} else {
-		if err := b.updatePipelines(&d.ApplicationSpec, d.Pipelines, d.DeleteStalePipelines, b.AutolockPipelines); err != nil {
+		if err := b.updatePipelines(dinghyfile, pusher); err != nil {
 			b.Logger.Errorf("Failed to update Pipelines for %s: %s", path, err.Error())
 			b.NotifyFailure(org, repo, path, err, buf.String())
 			return buf.String(), err
 		}
 	}
 
-	b.NotifySuccess(org, repo, path, d.ApplicationSpec.Notifications)
+	b.NotifySuccess(org, repo, path, dinghyfile.ApplicationSpec.Notifications)
 	return buf.String(), nil
 }
 
@@ -316,7 +334,7 @@ func (e *Front50BadRequestError) Error() string {
 }
 
 // RebuildModuleRoots rebuilds all dinghyfiles which are roots of the specified file
-func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) error {
+func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch, pusher string) error {
 	b.RebuildingModules = true
 	errEncountered := false
 	failedUpdates := []string{}
@@ -349,7 +367,7 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 				}
 			}
 
-			if _, err := b.ProcessDinghyfile(org, repo, path, branch); err != nil {
+			if _, err := b.ProcessDinghyfile(org, repo, path, branch, pusher); err != nil {
 				errEncountered = true
 				failedUpdates = append(failedUpdates, url)
 			}
@@ -373,8 +391,12 @@ func (b *PipelineBuilder) RebuildModuleRoots(org, repo, path, branch string) err
 	return nil
 }
 
-// This is the bit that actually updates the pipeline(s) in Spinnaker
-func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []plank.Pipeline, deleteStale bool, autoLock string) error {
+// This is the bit that actually updates the pipeline(s) and application in Spinnaker
+func (b *PipelineBuilder) updatePipelines(dinghyfile Dinghyfile, pusher string) error {
+	app := dinghyfile.ApplicationSpec
+	pipelines := dinghyfile.Pipelines
+	deleteStale := dinghyfile.DeleteStalePipelines
+
 	var newapp = false
 	_, err := b.Client.GetApplication(app.Name, "")
 	if err != nil {
@@ -387,7 +409,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		if failedResponse.StatusCode == 404 {
 			// Likely just not there...
 			b.Logger.Infof("Creating application '%s'...", app.Name)
-			if err = b.Client.CreateApplication(app, ""); err != nil {
+			if err = b.Client.CreateApplication(&app, ""); err != nil {
 				b.Logger.Errorf("Failed to create application (%s)", failedResponse.Error())
 				return err
 			}
@@ -396,8 +418,14 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			return err
 		}
 	} else {
-		if val, found := b.GlobalVariablesMap["save_app_on_update"]; found && val == true {
-			errUpdating := b.Client.UpdateApplication(*app, "")
+		if b.saveAppOnUpdate() {
+			//UpdateApplication method updates application permissions. It is possible that a user, who pushed changes to repository
+			//doesn't have write access to the application, thus we need to prevent from updating the app.
+			err := b.UserWriteAccessValidation.Validate(app, pusher)
+			if err != nil {
+				return err
+			}
+			errUpdating := b.Client.UpdateApplication(app, "")
 			if errUpdating != nil {
 				b.Logger.Errorf("Failed to update application (%s)", errUpdating.Error())
 				return errUpdating
@@ -405,7 +433,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 		}
 	}
 
-	if val, found := b.GlobalVariablesMap["save_app_on_update"]; (found && val == true) || newapp {
+	if b.saveAppOnUpdate() || newapp {
 		b.Logger.Infof("Updating notifications: %s", app.Notifications)
 		errNotif := b.Client.UpdateApplicationNotifications(app.Notifications, app.Name, "")
 		if errNotif != nil {
@@ -434,7 +462,7 @@ func (b *PipelineBuilder) updatePipelines(app *plank.Application, pipelines []pl
 			ignoreList[p.Name] = true
 			b.Logger.Info("Creating pipeline: " + p.Name)
 		}
-		if autoLock == "true" {
+		if b.AutolockPipelines == "true" {
 			b.Logger.Debug("Locking pipeline ", p.Name)
 			p.Lock()
 		}
@@ -604,4 +632,9 @@ func (b *PipelineBuilder) getNotificationContent() map[string]interface{} {
 		content["rawdata"] = b.PushRaw
 	}
 	return content
+}
+
+func (b *PipelineBuilder) saveAppOnUpdate() bool {
+	val, found := b.GlobalVariablesMap["save_app_on_update"]
+	return found && val == true
 }

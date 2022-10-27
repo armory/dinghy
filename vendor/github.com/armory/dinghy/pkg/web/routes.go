@@ -29,7 +29,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/armory/dinghy/pkg/events"
@@ -62,6 +61,7 @@ type Push interface {
 	GetCommitStatus() (error, git.Status, string)
 	GetCommits() []string
 	Name() string
+	PusherName() string
 }
 
 type MetricsHandler interface {
@@ -191,7 +191,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	fileService["master"]["dinghyfile"] = buf.String()
 	wa.Logger.Infof("Received payload: %s", fileService["master"]["dinghyfile"])
 
-	if _, err := builder.ProcessDinghyfile("", "", "dinghyfile", ""); err != nil {
+	if _, err := builder.ProcessDinghyfile("", "", "dinghyfile", "", ""); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 	}
 }
@@ -584,7 +584,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder, settings *g
 		components := strings.Split(filePath, "/")
 		if components[len(components)-1] == settings.DinghyFilename {
 			// Process the dinghyfile.
-			dinghyRendered, err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath, p.Branch())
+			dinghyRendered, err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath, p.Branch(), p.PusherName())
 			dinghyfilesRendered.WriteString(dinghyRendered)
 			// Set commit status based on result of processing.
 			if err != nil {
@@ -603,55 +603,56 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder, settings *g
 	return dinghyfilesRendered.String(), nil
 }
 
+type UserWriteAccessValidation struct {
+}
+
 // TODO: this func should return an error and allow the handlers to return the http response. Additionally,
 // it probably doesn't belong in this file once refactored.
-func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader, w http.ResponseWriter, dinghyLog dinghylog.DinghyLog, pullRequest string, plankClient util.PlankClient, settings *global.Settings) {
-	// see if we have any configurations for this repo.
-	// if we do have configurations, see if this is the branch we want to use. If it's not, skip and return.
-	var validation bool
-	if rc := settings.GetRepoConfig(p.Name(), p.Repo()); rc != nil {
-		if !p.IsBranch(rc.Branch) {
-			dinghyLog.Infof("Received request from branch %s. Does not match configured branch %s. Proceeding as validation.", p.Branch(), rc.Branch)
-			validation = true
-		}
-	} else {
-		// if we didn't find any configurations for this repo, proceed with master
-		dinghyLog.Infof("Found no custom configuration for repo: %s, proceeding with master", p.Repo())
-		if !p.IsMaster() {
-			dinghyLog.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master. Proceeding as validation.", p.Branch())
-			validation = true
-		}
-	}
+func (wa *WebAPI) buildPipelines(
+	p Push,
+	rawPushBytes []byte,
+	d dinghyfile.Downloader,
+	w http.ResponseWriter,
+	l dinghylog.DinghyLog,
+	pullRequest string,
+	pc util.PlankClient,
+	s *global.Settings,
+) {
+	l.Infof("Processing request for branch: %s", p.Branch())
 
-	dinghyLog.Infof("Processing request for branch: %s", p.Branch())
-
-	// deserialze push data to a map.  used in template logic later
-	rawPushData := make(map[string]interface{})
-	if err := json.Unmarshal(rawPush, &rawPushData); err != nil {
-		dinghyLog.Errorf("unable to deserialze raw data to map")
+	// deserialize push data to a map.  used in template logic later
+	rawPush := make(map[string]interface{})
+	if err := json.Unmarshal(rawPushBytes, &rawPush); err != nil {
+		l.Errorf("unable to deserialize raw data to map")
 	}
 
 	// Construct a pipeline builder using provided downloader
 	builder := &dinghyfile.PipelineBuilder{
-		Downloader:                  f,
+		Downloader:                  d,
 		Depman:                      wa.Cache,
-		TemplateRepo:                settings.TemplateRepo,
-		TemplateOrg:                 settings.TemplateOrg,
-		DinghyfileName:              settings.DinghyFilename,
+		TemplateRepo:                s.TemplateRepo,
+		TemplateOrg:                 s.TemplateOrg,
+		DinghyfileName:              s.DinghyFilename,
 		DeleteStalePipelines:        false,
-		AutolockPipelines:           settings.AutoLockPipelines,
-		Client:                      plankClient,
+		AutolockPipelines:           s.AutoLockPipelines,
+		Client:                      pc,
 		EventClient:                 wa.EventClient,
-		Logger:                      dinghyLog,
+		Logger:                      l,
 		Ums:                         wa.Ums,
 		Notifiers:                   wa.Notifiers,
-		PushRaw:                     rawPushData,
-		RepositoryRawdataProcessing: settings.RepositoryRawdataProcessing,
+		PushRaw:                     rawPush,
+		RepositoryRawdataProcessing: s.RepositoryRawdataProcessing,
 		Action:                      pipebuilder.Process,
-		JsonValidationDisabled:      settings.JsonValidationDisabled,
+		JsonValidationDisabled:      s.JsonValidationDisabled,
+		UserWriteAccessValidation: dinghyfile.UserWriteAccessValidation{
+			Enabled: s.UserWritePermissionsCheckEnabled,
+			Client:  pc,
+			Ignore:  s.IgnoreUsersPermissions,
+			Logger:  l,
+		},
 	}
 
-	if validation {
+	if shouldRunValidation(p, s, l) {
 		builder.Client = wa.ClientReadOnly
 		builder.Depman = wa.CacheReadOnly
 		builder.Action = pipebuilder.Validate
@@ -661,90 +662,148 @@ func (wa *WebAPI) buildPipelines(p Push, rawPush []byte, f dinghyfile.Downloader
 	builder.Parser.SetBuilder(builder)
 
 	// Process the push.
-	dinghyLog.Info("Processing Push")
-	dinghyfilesRendered, err := wa.ProcessPush(p, builder, settings)
+	l.Info("Processing Push")
+
+	renderedDinghyfile, err := wa.ProcessPush(p, builder, s)
+
 	if err == dinghyfile.ErrMalformedJSON {
 		util.WriteHTTPError(w, http.StatusUnprocessableEntity, err)
-		dinghyLog.Errorf("ProcessPush Failed (malformed JSON): %s", err.Error())
-		saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
-		return
-	} else if err != nil {
-		dinghyLog.Errorf("ProcessPush Failed (other): %s", err.Error())
-		util.WriteHTTPError(w, http.StatusInternalServerError, err)
-		saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
+		l.Errorf("ProcessPush Failed (malformed JSON): %s", err.Error())
+		saveLogEventError(wa.LogEventsClient, p, l, logevents.LogEvent{
+			RawData:            string(rawPushBytes),
+			PullRequest:        pullRequest,
+			RenderedDinghyfile: renderedDinghyfile,
+		})
 		return
 	}
 
-	modulesProcessed :=0
+	if err != nil {
+		l.Errorf("ProcessPush Failed (other): %s", err.Error())
+		util.WriteHTTPError(w, http.StatusInternalServerError, err)
+		saveLogEventError(wa.LogEventsClient, p, l, logevents.LogEvent{
+			RawData:            string(rawPushBytes),
+			PullRequest:        pullRequest,
+			RenderedDinghyfile: renderedDinghyfile,
+		})
+		return
+	}
+
 	// Check if we're in a template repo
-	if p.Repo() == settings.TemplateRepo {
+	if p.Repo() == s.TemplateRepo {
+		modulesProcessed := 0
+
 		// Set status to pending while we process modules
-		p.SetCommitStatus(settings.InstanceId, git.StatusPending, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusPending])
-		var filesToIgnore []string
-		//check for dinghyignore file
-		patternsToIgnore, err :=f.Download(p.Org(),p.Repo(), ".dinghyignore", p.Branch())
-		if err != nil {
-			dinghyLog.Info(".dinghyignore file not found in template repository, validating all files in the push")
+		setCommitStatusByAction(p, s.InstanceId, git.StatusPending, builder.Action)
+
+		ignoreFilePatterns := getIgnoreFilePatterns(p, d, l)
+
+		var ignoreFile IgnoreFile
+
+		if s.DinghyIgnoreRegexp2Enabled {
+			ignoreFile = NewRegexp2IgnoreFile(ignoreFilePatterns, l)
 		} else {
-			dinghyLog.Infof(".dinghyignore file found! Ignoring files that match these globs: %s", patternsToIgnore)
-			filesToIgnore = strings.Split(patternsToIgnore, "\n")
+			ignoreFile = NewRegexpIgnoreFile(ignoreFilePatterns, l)
 		}
+
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
-			var shouldIgnore bool
-			//check to see if the file should be ignored
-			for _ ,pattern := range  filesToIgnore {
-				if pattern != ""{
-					shouldIgnore, _ = regexp.MatchString(pattern, file)
-					if shouldIgnore {
-						dinghyLog.Infof("file %s matches pattern %s: %t", file, pattern, shouldIgnore)
-						break
-					}
-				}
-			}
-			//if file does not match glob in .dinghyignore file then process the module
-			if !shouldIgnore {
+			if !ignoreFile.ShouldIgnore(file) {
 				// ensure module is correctly parsed
 				if _, err := builder.Parser.Parse(p.Org(), p.Repo(), file, p.Branch(), nil); err != nil {
-					p.SetCommitStatus(settings.InstanceId, git.StatusError, "module parse failed")
-					dinghyLog.Errorf("module parse failed: %s", err.Error())
-					saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
+					setCommitStatus(p, s.InstanceId, git.StatusError, "module parse failed")
+					l.Errorf("module parse failed: %s", err.Error())
+					saveLogEventError(wa.LogEventsClient, p, l, logevents.LogEvent{
+						RawData:            string(rawPushBytes),
+						PullRequest:        pullRequest,
+						RenderedDinghyfile: renderedDinghyfile,
+					})
 					return
 				}
-				if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch()); err != nil {
+				if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch(), p.PusherName()); err != nil {
 					switch err.(type) {
 					case *util.GitHubFileNotFoundErr:
 						util.WriteHTTPError(w, http.StatusNotFound, err)
 					default:
 						util.WriteHTTPError(w, http.StatusInternalServerError, err)
 					}
-					p.SetCommitStatus(settings.InstanceId, git.StatusError, "Rebuilding dependent dinghyfiles Failed")
-					dinghyLog.Errorf("RebuildModuleRoots Failed: %s", err.Error())
-					saveLogEventError(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
+					setCommitStatus(p, s.InstanceId, git.StatusError, "Rebuilding dependent dinghyfiles Failed")
+					l.Errorf("RebuildModuleRoots Failed: %s", err.Error())
+					saveLogEventError(wa.LogEventsClient, p, l, logevents.LogEvent{
+						RawData:            string(rawPushBytes),
+						PullRequest:        pullRequest,
+						RenderedDinghyfile: renderedDinghyfile,
+					})
 					return
 				}
 				modulesProcessed++
 			}
 		}
-		p.SetCommitStatus(settings.InstanceId, git.StatusSuccess, git.DefaultMessagesByBuilderAction[builder.Action][git.StatusSuccess])
-	}
+		setCommitStatusByAction(p, s.InstanceId, git.StatusSuccess, builder.Action)
 
-	// Only save event if changed files were in repo or it was having a dinghyfile
-	// TODO: If a template repo is having files not related with dinghy an event will be saved
-	if p.Repo() == settings.TemplateRepo {
 		if modulesProcessed > 0 {
-			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
+			saveLogEventSuccess(wa.LogEventsClient, p, l, logevents.LogEvent{
+				RawData:            string(rawPushBytes),
+				PullRequest:        pullRequest,
+				RenderedDinghyfile: renderedDinghyfile,
+			})
 		}
 	} else {
-		dinghyfiles := []string{}
-		for _, currfile := range p.Files() {
-			if filepath.Base(currfile) == builder.DinghyfileName {
-				dinghyfiles = append(dinghyfiles, currfile)
+		var dinghyfiles []string
+		for _, file := range p.Files() {
+			if filepath.Base(file) == builder.DinghyfileName {
+				dinghyfiles = append(dinghyfiles, file)
 			}
 		}
 		if len(dinghyfiles) > 0 {
-			saveLogEventSuccess(wa.LogEventsClient, p, dinghyLog, logevents.LogEvent{RawData: string(rawPush), Files: dinghyfiles, PullRequest: pullRequest, RenderedDinghyfile: dinghyfilesRendered})
+			saveLogEventSuccess(wa.LogEventsClient, p, l, logevents.LogEvent{
+				RawData:            string(rawPushBytes),
+				Files:              dinghyfiles,
+				PullRequest:        pullRequest,
+				RenderedDinghyfile: renderedDinghyfile,
+			})
 		}
 	}
+
 	w.Write([]byte(`{"status":"accepted"}`))
+}
+
+func shouldRunValidation(p Push, settings *global.Settings, dinghyLog dinghylog.DinghyLog) bool {
+	if rc := settings.GetRepoConfig(p.Name(), p.Repo(), p.Branch()); rc != nil {
+		if !p.IsBranch(rc.Branch) {
+			dinghyLog.Infof("Received request from branch %s. Does not match configured branch %s. Proceeding as validation.", p.Branch(), rc.Branch)
+			return true
+		}
+	} else {
+		// if we didn't find any configurations for this repo, proceed with master
+		dinghyLog.Infof("Found no custom configuration for repo: %s, proceeding with master", p.Repo())
+		if !p.IsMaster() {
+			dinghyLog.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master. Proceeding as validation.", p.Branch())
+			return true
+		}
+	}
+	return false
+}
+
+func setCommitStatus(p Push, instanceId string, s git.Status, description string) {
+	p.SetCommitStatus(instanceId, s, description)
+}
+
+func setCommitStatusByAction(p Push, instanceId string, s git.Status, action pipebuilder.BuilderAction) {
+	setCommitStatus(p, instanceId, s, git.DefaultMessagesByBuilderAction[action][s])
+}
+
+func getIgnoreFilePatterns(p Push, f dinghyfile.Downloader, l dinghylog.DinghyLog) []string {
+	var ignoreFilePatterns []string
+	ignoreFilePatternsRaw, err := f.Download(p.Org(), p.Repo(), ".dinghyignore", p.Branch())
+	if err != nil {
+		l.Info(".dinghyignore file not found in template repository, validating all files in the push")
+	} else {
+		l.Infof(".dinghyignore file found! Ignoring files that match these globs: %s", ignoreFilePatternsRaw)
+		for _, pattern := range strings.Split(ignoreFilePatternsRaw, "\n") {
+			if pattern != "" {
+				ignoreFilePatterns = append(ignoreFilePatterns, pattern)
+			}
+		}
+	}
+	return ignoreFilePatterns
 }
