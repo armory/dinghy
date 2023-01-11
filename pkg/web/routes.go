@@ -45,7 +45,6 @@ import (
 	"github.com/armory/dinghy/pkg/git/stash"
 	"github.com/armory/dinghy/pkg/notifiers"
 	"github.com/armory/dinghy/pkg/util"
-	"github.com/dlclark/regexp2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -62,6 +61,7 @@ type Push interface {
 	GetCommitStatus() (error, git.Status, string)
 	GetCommits() []string
 	Name() string
+	PusherName() string
 }
 
 type MetricsHandler interface {
@@ -191,7 +191,7 @@ func (wa *WebAPI) manualUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	fileService["master"]["dinghyfile"] = buf.String()
 	wa.Logger.Infof("Received payload: %s", fileService["master"]["dinghyfile"])
 
-	if _, err := builder.ProcessDinghyfile("", "", "dinghyfile", ""); err != nil {
+	if _, err := builder.ProcessDinghyfile("", "", "dinghyfile", "", ""); err != nil {
 		util.WriteHTTPError(w, http.StatusInternalServerError, err)
 	}
 }
@@ -584,7 +584,7 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder, settings *g
 		components := strings.Split(filePath, "/")
 		if components[len(components)-1] == settings.DinghyFilename {
 			// Process the dinghyfile.
-			dinghyRendered, err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath, p.Branch())
+			dinghyRendered, err := b.ProcessDinghyfile(p.Org(), p.Repo(), filePath, p.Branch(), p.PusherName())
 			dinghyfilesRendered.WriteString(dinghyRendered)
 			// Set commit status based on result of processing.
 			if err != nil {
@@ -601,6 +601,9 @@ func (wa *WebAPI) ProcessPush(p Push, b *dinghyfile.PipelineBuilder, settings *g
 		}
 	}
 	return dinghyfilesRendered.String(), nil
+}
+
+type UserWriteAccessValidation struct {
 }
 
 // TODO: this func should return an error and allow the handlers to return the http response. Additionally,
@@ -641,6 +644,12 @@ func (wa *WebAPI) buildPipelines(
 		RepositoryRawdataProcessing: s.RepositoryRawdataProcessing,
 		Action:                      pipebuilder.Process,
 		JsonValidationDisabled:      s.JsonValidationDisabled,
+		UserWriteAccessValidation: dinghyfile.UserWriteAccessValidation{
+			Enabled: s.UserWritePermissionsCheckEnabled,
+			Client:  pc,
+			Ignore:  s.IgnoreUsersPermissions,
+			Logger:  l,
+		},
 	}
 
 	if shouldRunValidation(p, s, l) {
@@ -686,11 +695,19 @@ func (wa *WebAPI) buildPipelines(
 		// Set status to pending while we process modules
 		setCommitStatusByAction(p, s.InstanceId, git.StatusPending, builder.Action)
 
-		ignoreFileRegExps := getIgnoreFileRegExps(p, d, l)
+		ignoreFilePatterns := getIgnoreFilePatterns(p, d, l)
+
+		var ignoreFile IgnoreFile
+
+		if s.DinghyIgnoreRegexp2Enabled {
+			ignoreFile = NewRegexp2IgnoreFile(ignoreFilePatterns, l)
+		} else {
+			ignoreFile = NewRegexpIgnoreFile(ignoreFilePatterns, l)
+		}
 
 		// For each module pushed, rebuild dependent dinghyfiles
 		for _, file := range p.Files() {
-			if !shouldIgnoreFile(file, ignoreFileRegExps, l) {
+			if !ignoreFile.ShouldIgnore(file) {
 				// ensure module is correctly parsed
 				if _, err := builder.Parser.Parse(p.Org(), p.Repo(), file, p.Branch(), nil); err != nil {
 					setCommitStatus(p, s.InstanceId, git.StatusError, "module parse failed")
@@ -702,7 +719,7 @@ func (wa *WebAPI) buildPipelines(
 					})
 					return
 				}
-				if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch()); err != nil {
+				if err := builder.RebuildModuleRoots(p.Org(), p.Repo(), file, p.Branch(), p.PusherName()); err != nil {
 					switch err.(type) {
 					case *util.GitHubFileNotFoundErr:
 						util.WriteHTTPError(w, http.StatusNotFound, err)
@@ -750,40 +767,17 @@ func (wa *WebAPI) buildPipelines(
 	w.Write([]byte(`{"status":"accepted"}`))
 }
 
-func shouldRunValidation(p Push, s *global.Settings, l dinghylog.DinghyLog) bool {
-	if rc := s.GetRepoConfig(p.Name(), p.Repo(), p.Branch()); rc == nil {
-		l.Infof("Found no custom configuration for repo: %s and branch: %s proceeding with master", p.Repo(), p.Branch())
-		if !p.IsMaster() {
-			l.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master. Proceeding as validation.", p.Branch())
+func shouldRunValidation(p Push, settings *global.Settings, dinghyLog dinghylog.DinghyLog) bool {
+	if rc := settings.GetRepoConfig(p.Name(), p.Repo(), p.Branch()); rc != nil {
+		if !p.IsBranch(rc.Branch) {
+			dinghyLog.Infof("Received request from branch %s. Does not match configured branch %s. Proceeding as validation.", p.Branch(), rc.Branch)
 			return true
 		}
-	}
-	return false
-}
-
-func getIgnoreFileRegExps(p Push, f dinghyfile.Downloader, l dinghylog.DinghyLog) []*regexp2.Regexp {
-	var ignoreFileRegExps []*regexp2.Regexp
-
-	ignoreFilePatterns, err := f.Download(p.Org(), p.Repo(), ".dinghyignore", p.Branch())
-
-	if err != nil {
-		l.Info(".dinghyignore file not found in template repository, validating all files in the push")
 	} else {
-		l.Infof(".dinghyignore file found! Ignoring files that match these globs: %s", ignoreFilePatterns)
-
-		for _, pattern := range strings.Split(ignoreFilePatterns, "\n") {
-			if pattern != "" {
-				ignoreFileRegExps = append(ignoreFileRegExps, regexp2.MustCompile(pattern, 0))
-			}
-		}
-	}
-	return ignoreFileRegExps
-}
-
-func shouldIgnoreFile(file string, ignoreFileRegExps []*regexp2.Regexp, l dinghylog.DinghyLog) bool {
-	for _, re := range ignoreFileRegExps {
-		if shouldIgnore, _ := re.MatchString(file); shouldIgnore {
-			l.Infof("file %s matches pattern %s: %t", file, re.String(), shouldIgnore)
+		// if we didn't find any configurations for this repo, proceed with master
+		dinghyLog.Infof("Found no custom configuration for repo: %s, proceeding with master", p.Repo())
+		if !p.IsMaster() {
+			dinghyLog.Infof("Skipping Spinnaker pipeline update because this branch (%s) is not master. Proceeding as validation.", p.Branch())
 			return true
 		}
 	}
@@ -796,4 +790,20 @@ func setCommitStatus(p Push, instanceId string, s git.Status, description string
 
 func setCommitStatusByAction(p Push, instanceId string, s git.Status, action pipebuilder.BuilderAction) {
 	setCommitStatus(p, instanceId, s, git.DefaultMessagesByBuilderAction[action][s])
+}
+
+func getIgnoreFilePatterns(p Push, f dinghyfile.Downloader, l dinghylog.DinghyLog) []string {
+	var ignoreFilePatterns []string
+	ignoreFilePatternsRaw, err := f.Download(p.Org(), p.Repo(), ".dinghyignore", p.Branch())
+	if err != nil {
+		l.Info(".dinghyignore file not found in template repository, validating all files in the push")
+	} else {
+		l.Infof(".dinghyignore file found! Ignoring files that match these globs: %s", ignoreFilePatternsRaw)
+		for _, pattern := range strings.Split(ignoreFilePatternsRaw, "\n") {
+			if pattern != "" {
+				ignoreFilePatterns = append(ignoreFilePatterns, pattern)
+			}
+		}
+	}
+	return ignoreFilePatterns
 }
