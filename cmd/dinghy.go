@@ -47,7 +47,7 @@ import (
 	logr "github.com/sirupsen/logrus"
 )
 
-func newRedisOptions(redisOptions global.Redis) *redis.Options {
+func NewRedisOptions(redisOptions global.Redis) *redis.Options {
 	url := strings.TrimPrefix(strings.TrimPrefix(redisOptions.BaseURL, "redis://"), "rediss://")
 	var tlsConfig *tls.Config
 
@@ -144,7 +144,7 @@ func Setup(sourceConfiguration source.SourceConfiguration, log *logr.Logger) (*l
 		persitenceManager = sqlClient
 		persitenceManagerReadOnly = &sqlClientReadOnly
 
-		redisClient := cache.NewRedisCache(newRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, false)
+		redisClient := cache.NewRedisCache(NewRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, false)
 
 		var migration execution.Execution
 
@@ -171,7 +171,7 @@ func Setup(sourceConfiguration source.SourceConfiguration, log *logr.Logger) (*l
 			log.Fatalf("SQL Server at %s could not be contacted: %v", config.SQL.BaseUrl, err)
 		}
 
-		redisClient := cache.NewRedisCache(newRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, true)
+		redisClient := cache.NewRedisCache(NewRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, true)
 		if _, err := redisClient.Client.Ping().Result(); err != nil {
 			log.Fatalf("Redis Server at %s could not be contacted: %v", config.SpinnakerSupplied.Redis.BaseURL, err)
 		}
@@ -187,7 +187,7 @@ func Setup(sourceConfiguration source.SourceConfiguration, log *logr.Logger) (*l
 
 	} else {
 		// Redis mode
-		redisClient := cache.NewRedisCache(newRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, true)
+		redisClient := cache.NewRedisCache(NewRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, true)
 		if _, err := redisClient.Client.Ping().Result(); err != nil {
 			log.Fatalf("Redis Server at %s could not be contacted: %v", config.SpinnakerSupplied.Redis.BaseURL, err)
 		}
