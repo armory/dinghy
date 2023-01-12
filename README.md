@@ -43,3 +43,32 @@ How it might work:
 
 <!-- made using ./bin/makeDiagrams.sh -->
 ![](diagrams/workflow.mmd.svg)
+
+### Updating oss dinghy version
+
+This dinghy implementation (armory-io) has dependency on oss implementation. Once new code is added to oss, armory-io dinghy needs to be updated with new library version.
+Update is as simple as changing current oss dinghy version with new one in two files:
+- vendor/modules.txt
+- go.mod
+
+Of course, you want to keep the version in those two file the same to prevent from inconsistent behaviour and build issues.
+Dinghy's version has format like that: v0.0.0-X-Y where `X` is a date and time of commit and `Y` is shortened commit hash.
+An example of that may be: `v0.0.0-20221025163127-2d465e0cea94`
+
+Once updated oss dinghy version, run:
+
+```bash
+go mod vendor
+go mod tidy
+```
+
+It should pull specified version from oss repository.
+
+Don't forget about interfaces implementation. If interface definition is in oss dinghy, but there's additional implementation in armory-io dinghy, add missing methods.
+
+### Backporting oss features
+
+In order to backport new feature to older release, you need to:
+1. Create new branch from destination release branch: git checkout -b "bp/A.BC.D/ossprX", where `A.BC.D` is a destination release, `X` is a number of PR in oss repository
+2. Update oss dinghy version - [Update](#updating-oss-dinghy-version)
+3. Merge your branch `bp/A.BC.D/ossprX` to release branch `release-A.BC.D`
