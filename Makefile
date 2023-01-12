@@ -74,12 +74,6 @@ integration: dependencies
 	    go test -c -o ${BUILD_DIR}/tests/$$EXENAME $$TESTPKG ; \
 	done
 
-golint:
-	go get -v golang.org/x/lint/golint
-
-lint: golint
-	@golint $(PKGS)
-
 vet:
 	go vet -v ./...
 
@@ -108,7 +102,7 @@ docker-push:
 	[[ -f build/docker-labels.json ]] || (echo 'You must run make docker, before running make docker-push' && exit 1) ; \
 	docker push $$(cat build/docker-labels.json | jq -r ".name")
 
-.PHONY: lint linux darwin test vet fmt clean run
+.PHONY: linux darwin test vet fmt clean run
 
 lambda:
 	GOOS=linux go build -i ${LDFLAGS} -o cachelambda/main ./cachelambda/main.go

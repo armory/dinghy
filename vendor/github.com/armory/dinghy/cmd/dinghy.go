@@ -18,6 +18,7 @@ package dinghy
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"github.com/armory/dinghy/pkg/database"
 	"github.com/armory/dinghy/pkg/dinghyfile"
@@ -46,13 +47,22 @@ import (
 	logr "github.com/sirupsen/logrus"
 )
 
-func newRedisOptions(redisOptions global.Redis) *redis.Options {
-	url := strings.TrimPrefix(redisOptions.BaseURL, "redis://")
+func NewRedisOptions(redisOptions global.Redis) *redis.Options {
+	url := strings.TrimPrefix(strings.TrimPrefix(redisOptions.BaseURL, "redis://"), "rediss://")
+	var tlsConfig *tls.Config
+
+	if strings.HasPrefix(redisOptions.BaseURL, "rediss://") {
+		tlsConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
 	return &redis.Options{
 		MaxRetries: 5,
 		Addr:       url,
 		Password:   redisOptions.Password,
 		DB:         0,
+		TLSConfig:  tlsConfig,
 	}
 }
 
@@ -134,7 +144,7 @@ func Setup(sourceConfiguration source.SourceConfiguration, log *logr.Logger) (*l
 		persitenceManager = sqlClient
 		persitenceManagerReadOnly = &sqlClientReadOnly
 
-		redisClient := cache.NewRedisCache(newRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, false)
+		redisClient := cache.NewRedisCache(NewRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, false)
 
 		var migration execution.Execution
 
@@ -161,7 +171,7 @@ func Setup(sourceConfiguration source.SourceConfiguration, log *logr.Logger) (*l
 			log.Fatalf("SQL Server at %s could not be contacted: %v", config.SQL.BaseUrl, err)
 		}
 
-		redisClient := cache.NewRedisCache(newRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, true)
+		redisClient := cache.NewRedisCache(NewRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, true)
 		if _, err := redisClient.Client.Ping().Result(); err != nil {
 			log.Fatalf("Redis Server at %s could not be contacted: %v", config.SpinnakerSupplied.Redis.BaseURL, err)
 		}
@@ -177,7 +187,7 @@ func Setup(sourceConfiguration source.SourceConfiguration, log *logr.Logger) (*l
 
 	} else {
 		// Redis mode
-		redisClient := cache.NewRedisCache(newRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, true)
+		redisClient := cache.NewRedisCache(NewRedisOptions(config.SpinnakerSupplied.Redis), log, ctx, stop, true)
 		if _, err := redisClient.Client.Ping().Result(); err != nil {
 			log.Fatalf("Redis Server at %s could not be contacted: %v", config.SpinnakerSupplied.Redis.BaseURL, err)
 		}

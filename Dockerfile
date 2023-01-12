@@ -4,7 +4,6 @@ FROM golang:1.14.15-alpine3.13 as builder
 # so we fetch golint before running make
 # and setting the env variable
 RUN apk update && apk add git make bash build-base gcc bc
-RUN go get -u golang.org/x/lint/golint
 
 ENV GO111MODULE=on GOFLAGS='-mod=vendor' GOOS=linux GOARCH=amd64
 WORKDIR /opt/armory/build/
