@@ -160,7 +160,7 @@ type Settings struct {
 	// Check user's write permissions by calling Fiat /authorize/${user}/roles before updating application
 	UserWritePermissionsCheckEnabled bool `json:"userWritePermissionsCheckEnabled" yaml:"userWritePermissionsCheckEnabled"`
 	// Users for whom we should ignore and skip write permissions validations
-	IgnoreUsersPermissions []string `json:"ignoreUsersWritePermissions" yaml:"ignoreUsersPermissions"`
+	IgnoreUsersPermissions []string `json:"ignoreUsersWritePermissions" yaml:"ignoreUsersWritePermissions"`
 	// Enable processing of multiple branches in single repository
 	MultipleBranchesEnabled bool `json:"multipleBranchesEnabled" yaml:"multipleBranchesEnabled"`
 }
