@@ -3,7 +3,7 @@ buildscript {
         repoLevel = 'dev'
         baseService = 'dinghy'
         spinnakerRelease    = "1.26.1"
-        armoryGradleVersion = '1.3.3'
+        armoryGradleVersion = '1.6.0'
     }
 
     repositories {

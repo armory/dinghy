@@ -36,10 +36,14 @@ jobs:
           mkdir -p build
           ln -sf $(pwd) $(pwd)/build/docker
 
+      - name: Generate Variables
+        id: variables
+        uses: armory-io/astrolabe-build-defaults@main
+
       - name: Publish devSnapshot
         if: github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/release-')
         run: |
-          ./gradlew devSnapshot docker dockerPush $GRADLE_ARGS
+          ./gradlew -Prelease.version=${{ steps.variables.outputs.version_as_semver }} devSnapshot docker dockerPush $GRADLE_ARGS --stacktrace
           echo "BUILD_NUMBER=$(./gradlew $GRADLE_ARGS printVersion|grep VERSION|awk -F: '{print $2}')" >> $GITHUB_ENV
 
       - name: Run Security Scan
@@ -51,5 +55,5 @@ jobs:
           username: ${{ secrets.AQUA_USER }}
           password: ${{ secrets.AQUA_PASSWORD }}
           url: https://aquasec.armory.io
-          image: armory/${{ env.BASE_PROJECT }}:${{ env.BUILD_NUMBER }}
+          image: armory/${{ env.BASE_PROJECT }}:${{ steps.variables.outputs.version_as_semver }}
           registry: Artifactory
