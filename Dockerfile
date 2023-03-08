@@ -11,7 +11,7 @@ ADD ./ /opt/armory/build/
 
 RUN make
 
-FROM alpine:3.11
+FROM alpine:3.16
 
 ENV PATH $PATH:/liquibase
 
