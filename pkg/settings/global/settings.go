@@ -90,6 +90,7 @@ func NewDefaultSettings() Settings {
 			EventLogsOnly: false,
 		},
 		UserWritePermissionsCheckEnabled: false,
+		MultipleBranchesEnabled:          true,
 	}
 }
 
