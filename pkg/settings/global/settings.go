@@ -91,6 +91,7 @@ func NewDefaultSettings() Settings {
 		},
 		UserWritePermissionsCheckEnabled: false,
 		MultipleBranchesEnabled:          true,
+		DinghyIgnoreRegexp2Enabled:       true,
 	}
 }
 
