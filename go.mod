@@ -3,7 +3,7 @@ module github.com/armory/dinghy
 require (
 	github.com/Masterminds/sprig/v3 v3.1.0
 	github.com/armory/go-yaml-tools v0.0.2
-	github.com/armory/plank/v4 v4.1.0
+	github.com/armory/plank/v4 v4.1.1
 	github.com/dlclark/regexp2 v1.7.0
 	github.com/go-redis/redis v6.14.1+incompatible
 	github.com/golang/mock v1.3.1
@@ -36,5 +36,7 @@ require (
 )
 
 replace git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
+
+//replace github.com/armory/plank/v4 v4.1.0 => ../plank
 
 go 1.13

@@ -33,8 +33,8 @@ github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
 github.com/armory/go-yaml-tools v0.0.2 h1:IYAbeGQJQKFwBAdl4u9IVrENgHjjUsOxZRSTvypgYk4=
 github.com/armory/go-yaml-tools v0.0.2/go.mod h1:LasFFVo6zuV334Pmx7Diq9L3muOUUI8MF79QUFC1jq0=
-github.com/armory/plank/v4 v4.1.0 h1:/kBY0LgA5qm8wGW7IMgbPjxlY40CF6LVSdFoIF+KKkQ=
-github.com/armory/plank/v4 v4.1.0/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
+github.com/armory/plank/v4 v4.1.1 h1:z/+PCCtra5EW0tfOCeE5K5ewRTIOAsYMxP8zqhdXcS8=
+github.com/armory/plank/v4 v4.1.1/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
 github.com/aws/aws-sdk-go v1.28.9 h1:grIuBQc+p3dTRXerh5+2OxSuWFi0iXuxbFdTSg0jaW0=
 github.com/aws/aws-sdk-go v1.28.9/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/benbjohnson/clock v1.0.3 h1:vkLuvpK4fmtSCuo60+yC63p7y0BmQ8gm5ZXGuBCJyXg=
