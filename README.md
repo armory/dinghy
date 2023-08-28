@@ -56,7 +56,7 @@ kubectl -n spinnaker port-forward svc/spin-echo    8089
 curl -X POST \
   -H "Content-Type: application/json" \
   -d "@example/github_payload.json" \
-  http://localhost:8089/webhooks/git/github
+  http://localhost:8081/webhooks/git/github
 ```
 
 (The github_payload.json file in the example directory is a minimal set for
