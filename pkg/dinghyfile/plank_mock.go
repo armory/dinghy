@@ -190,17 +190,17 @@ func (mr *MockPlankClientMockRecorder) UpsertPipeline(arg0, arg1, arg2 interface
 }
 
 // UpsertPipeline mocks base method.
-func (m *MockPlankClient) UpsertPipelineUsingGate(arg0 plank.Pipeline, arg1, arg2 string) error {
+func (m *MockPlankClient) UpsertPipelineUsingOrca(arg0 plank.Pipeline, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpsertPipeline", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "UpsertPipelineUsingOrca", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpsertPipeline indicates an expected call of UpsertPipeline.
-func (mr *MockPlankClientMockRecorder) UpsertPipelineUsingGate(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockPlankClientMockRecorder) UpsertPipelineUsingOrca(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertPipeline", reflect.TypeOf((*MockPlankClient)(nil).UpsertPipeline), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertPipelineUsingOrca", reflect.TypeOf((*MockPlankClient)(nil).UpsertPipeline), arg0, arg1, arg2)
 }
 
 // UseGateEndpoints mocks base method.
