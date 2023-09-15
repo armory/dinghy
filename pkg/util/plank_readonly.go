@@ -79,6 +79,19 @@ func (p *PlankReadOnly) UpsertPipeline(pipe plank.Pipeline, appName string, trac
 	return nil
 }
 
+func (p *PlankReadOnly) UpsertPipelineUsingOrca(pipe plank.Pipeline, appName string, traceparent string) error {
+	// This is getting a little complex
+	// When a pipeline does not exists dinghy create it so it can be referenced
+	// Its a recursive call so it loops forever if this temp pipeline is not created
+	if p.tempPipes == nil {
+		p.tempPipes = &[]plank.Pipeline{}
+	}
+	// Auto generate a dummy id
+	pipe.ID = fmt.Sprintf("auto-generated-dummy-id-%v", uuid.New().String())
+	(*p.tempPipes) = append(*p.tempPipes, pipe)
+	return nil
+}
+
 func (p *PlankReadOnly) UserRoles(username, traceparent string) ([]string, error) {
 	return p.Plank.UserRoles(username, traceparent)
 }

@@ -35,6 +35,8 @@ github.com/armory/go-yaml-tools v0.0.2 h1:IYAbeGQJQKFwBAdl4u9IVrENgHjjUsOxZRSTvy
 github.com/armory/go-yaml-tools v0.0.2/go.mod h1:LasFFVo6zuV334Pmx7Diq9L3muOUUI8MF79QUFC1jq0=
 github.com/armory/plank/v4 v4.1.1 h1:z/+PCCtra5EW0tfOCeE5K5ewRTIOAsYMxP8zqhdXcS8=
 github.com/armory/plank/v4 v4.1.1/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
+github.com/armory/plank/v4 v4.1.2 h1:FwDazjvSE5S6BUZ/Pmr6wnis8/OixhDz2LTnGiOp/g0=
+github.com/armory/plank/v4 v4.1.2/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
 github.com/aws/aws-sdk-go v1.28.9 h1:grIuBQc+p3dTRXerh5+2OxSuWFi0iXuxbFdTSg0jaW0=
 github.com/aws/aws-sdk-go v1.28.9/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/benbjohnson/clock v1.0.3 h1:vkLuvpK4fmtSCuo60+yC63p7y0BmQ8gm5ZXGuBCJyXg=

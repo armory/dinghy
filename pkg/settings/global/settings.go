@@ -165,6 +165,8 @@ type Settings struct {
 	IgnoreUsersPermissions []string `json:"ignoreUsersWritePermissions" yaml:"ignoreUsersWritePermissions"`
 	// Enable processing of multiple branches in single repository
 	MultipleBranchesEnabled bool `json:"multipleBranchesEnabled" yaml:"multipleBranchesEnabled"`
+	// Enable using savePipeline and updatePipeline tasks from Orca
+	UpsertPipelineUsingOrcaTaskEnabled bool `json:"upsertPipelineUsingOrcaTaskEnabled" yaml:"upsertPipelineUsingOrcaTaskEnabled"`
 }
 
 type Sqlconfig struct {

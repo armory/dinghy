@@ -650,6 +650,7 @@ func (wa *WebAPI) buildPipelines(
 			Ignore:  s.IgnoreUsersPermissions,
 			Logger:  l,
 		},
+		UpsertPipelineUsingOrcaTaskEnabled: s.UpsertPipelineUsingOrcaTaskEnabled,
 	}
 
 	if shouldRunValidation(p, s, l) {
