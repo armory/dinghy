@@ -42,26 +42,27 @@ type Parser interface {
 
 // PipelineBuilder is responsible for downloading dinghyfiles/modules, compiling them, and sending them to Spinnaker
 type PipelineBuilder struct {
-	Downloader                  Downloader
-	Depman                      DependencyManager
-	TemplateRepo                string
-	TemplateOrg                 string
-	DinghyfileName              string
-	Client                      util.PlankClient
-	DeleteStalePipelines        bool
-	AutolockPipelines           string
-	EventClient                 events.EventClient
-	Parser                      Parser
-	Logger                      log.DinghyLog
-	Ums                         []Unmarshaller
-	Notifiers                   []notifiers.Notifier
-	PushRaw                     map[string]interface{}
-	GlobalVariablesMap          map[string]interface{}
-	RepositoryRawdataProcessing bool
-	RebuildingModules           bool
-	Action                      pipebuilder.BuilderAction
-	JsonValidationDisabled      bool
-	UserWriteAccessValidation   UserWriteAccessValidation
+	Downloader                         Downloader
+	Depman                             DependencyManager
+	TemplateRepo                       string
+	TemplateOrg                        string
+	DinghyfileName                     string
+	Client                             util.PlankClient
+	DeleteStalePipelines               bool
+	AutolockPipelines                  string
+	EventClient                        events.EventClient
+	Parser                             Parser
+	Logger                             log.DinghyLog
+	Ums                                []Unmarshaller
+	Notifiers                          []notifiers.Notifier
+	PushRaw                            map[string]interface{}
+	GlobalVariablesMap                 map[string]interface{}
+	RepositoryRawdataProcessing        bool
+	RebuildingModules                  bool
+	Action                             pipebuilder.BuilderAction
+	JsonValidationDisabled             bool
+	UserWriteAccessValidation          UserWriteAccessValidation
+	UpsertPipelineUsingOrcaTaskEnabled bool
 }
 
 // DependencyManager is an interface for assigning dependencies and looking up root nodes
@@ -467,10 +468,17 @@ func (b *PipelineBuilder) updatePipelines(dinghyfile Dinghyfile, pusher string) 
 			p.Lock()
 		}
 
-		if err := b.Client.UpsertPipeline(p, p.ID, ""); err != nil {
-			err = unwrapFront50Error(err)
-			b.Logger.Errorf("Upsert failed: %s", err.Error())
-			return err
+		if b.UpsertPipelineUsingOrcaTaskEnabled {
+			if err := b.Client.UpsertPipelineUsingOrca(p, p.ID, ""); err != nil {
+				b.Logger.Errorf("Upsert failed: %s", err.Error())
+				return err
+			}
+		} else {
+			if err := b.Client.UpsertPipeline(p, p.ID, ""); err != nil {
+				err = unwrapFront50Error(err)
+				b.Logger.Errorf("Upsert failed: %s", err.Error())
+				return err
+			}
 		}
 		b.Logger.Info("Upsert succeeded.")
 	}
