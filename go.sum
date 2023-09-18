@@ -42,13 +42,25 @@ github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
+<<<<<<< HEAD
 github.com/armory/dinghy v0.0.0-20230201103309-a73a68c80965 h1:LM8b8NsoLtwZkg+G1pV8/L4CqD7uejTqXlWsFZISISQ=
 github.com/armory/dinghy v0.0.0-20230201103309-a73a68c80965/go.mod h1:TOmb1zLb6NMEaUanuXn7R01kGcavr4AMitYZde2fKFk=
+=======
+github.com/armory/dinghy v0.0.0-20230918080952-22ef6f78d576 h1:vI1VwEisJQkjunVw3OBbEhoC8mIkGzxX5ts6CHJ3lvg=
+github.com/armory/dinghy v0.0.0-20230918080952-22ef6f78d576/go.mod h1:2ka23HyzUmHHsXcXErJfWfE4LY94LvRcKSD6oPVmemA=
+>>>>>>> 51f3194 (chore(log): Bumped up dinghy and plank versions. (#490))
 github.com/armory/go-yaml-tools v0.0.0-20180620164822-5d0947924d8e/go.mod h1:rHIvkswnJs3bWHmIDC8l+JHHpChXI/jsJBjl2JNck2w=
 github.com/armory/go-yaml-tools v0.0.2 h1:IYAbeGQJQKFwBAdl4u9IVrENgHjjUsOxZRSTvypgYk4=
 github.com/armory/go-yaml-tools v0.0.2/go.mod h1:LasFFVo6zuV334Pmx7Diq9L3muOUUI8MF79QUFC1jq0=
+<<<<<<< HEAD
 github.com/armory/plank/v4 v4.1.0 h1:/kBY0LgA5qm8wGW7IMgbPjxlY40CF6LVSdFoIF+KKkQ=
 github.com/armory/plank/v4 v4.1.0/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
+=======
+github.com/armory/go-yaml-tools v1.0.1 h1:vy1XEtiEn8PYzKARMjq3BDUkYqhv5M90WGK8iX612Xs=
+github.com/armory/go-yaml-tools v1.0.1/go.mod h1:LasFFVo6zuV334Pmx7Diq9L3muOUUI8MF79QUFC1jq0=
+github.com/armory/plank/v4 v4.1.2 h1:FwDazjvSE5S6BUZ/Pmr6wnis8/OixhDz2LTnGiOp/g0=
+github.com/armory/plank/v4 v4.1.2/go.mod h1:xH8nrFDGCXEL+zZpLMxrdTq395DHvtrHgJmEdg9Ygo4=
+>>>>>>> 51f3194 (chore(log): Bumped up dinghy and plank versions. (#490))
 github.com/aws/aws-lambda-go v1.23.0 h1:Vjwow5COkFJp7GePkk9kjAo/DyX36b7wVPKwseQZbRo=
 github.com/aws/aws-lambda-go v1.23.0/go.mod h1:jJmlefzPfGnckuHdXX7/80O3BvUUi12XOkbv4w9SGLU=
 github.com/aws/aws-sdk-go v1.28.9/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
