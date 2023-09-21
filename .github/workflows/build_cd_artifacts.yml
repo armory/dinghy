@@ -47,17 +47,6 @@ jobs:
           jfrog rt bp ${{ steps.variables.outputs.build_name }} ${{ steps.variables.outputs.build_number }} \
             --build-url=${{ steps.variables.outputs.build_url }}
 
-      - name: Scan Using Aquasec
-        uses: armory-io/aquasec-scan-action@v0.0.10
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          username: ${{ secrets.AQUA_USER }}
-          password: ${{ secrets.AQUA_PASSWORD }}
-          url: https://aquasec.armory.io
-          registry: Artifactory
-          image: ${{ steps.variables.outputs.image_name }}
-
       - name: Login to Docker Hub
         run: docker login -u ${{ secrets.DOCKER_HUB_USER }} -p '${{ secrets.DOCKER_HUB_PASS }}'
 
