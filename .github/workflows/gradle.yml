@@ -45,15 +45,3 @@ jobs:
         run: |
           ./gradlew -Prelease.version=${{ steps.variables.outputs.version_as_semver }} devSnapshot docker dockerPush $GRADLE_ARGS --stacktrace
           echo "BUILD_NUMBER=$(./gradlew $GRADLE_ARGS printVersion|grep VERSION|awk -F: '{print $2}')" >> $GITHUB_ENV
-
-      - name: Run Security Scan
-        if: github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/release-')
-        uses: armory-io/aquasec-scan-action@v0.0.10
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          username: ${{ secrets.AQUA_USER }}
-          password: ${{ secrets.AQUA_PASSWORD }}
-          url: https://aquasec.armory.io
-          image: armory/${{ env.BASE_PROJECT }}:${{ steps.variables.outputs.version_as_semver }}
-          registry: Artifactory
