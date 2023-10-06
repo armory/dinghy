@@ -20,7 +20,6 @@
         <addAutoIncrement
                 columnDataType="int"
                 columnName="id"
-                incrementBy="1"
                 startWith="1"
                 tableName="fileurls"/>
 
@@ -87,7 +86,6 @@
         <addAutoIncrement
                 columnDataType="int"
                 columnName="id"
-                incrementBy="1"
                 startWith="1"
                 tableName="logevents"/>
 
