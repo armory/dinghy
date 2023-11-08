@@ -1,7 +1,7 @@
 module github.com/armory/dinghy
 
 require (
-	github.com/Masterminds/sprig/v3 v3.1.0
+	github.com/Masterminds/sprig/v3 v3.2.0
 	github.com/armory/go-yaml-tools v0.0.2
 	github.com/armory/plank/v4 v4.1.2
 	github.com/dlclark/regexp2 v1.7.0
@@ -13,7 +13,7 @@ require (
 	github.com/gorilla/mux v1.6.2
 	github.com/hashicorp/go-cleanhttp v0.5.1
 	github.com/hashicorp/go-retryablehttp v0.6.2
-	github.com/imdario/mergo v0.3.8
+	github.com/imdario/mergo v0.3.11
 	github.com/jinzhu/copier v0.0.0-20180308034124-7e38e58719c3
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/onsi/ginkgo v1.8.0 // indirect
