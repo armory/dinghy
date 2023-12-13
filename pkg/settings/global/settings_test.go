@@ -85,7 +85,7 @@ func TestSettings_GetRepoConfig(t *testing.T) {
 		},
 		"when feature flag enabled, search by provider and repo and branch": {
 			settings: Settings{
-				MultipleBranchesEnabled: true,
+				MultipleBranchesEnabled: "true",
 				RepoConfig: []RepoConfig{
 					{
 						Provider: "github",
@@ -106,7 +106,7 @@ func TestSettings_GetRepoConfig(t *testing.T) {
 		},
 		"when feature flag disabled, search just by provider and repo": {
 			settings: Settings{
-				MultipleBranchesEnabled: false,
+				MultipleBranchesEnabled: "false",
 				RepoConfig: []RepoConfig{
 					{
 						Provider: "github",

@@ -593,7 +593,7 @@ func TestShouldRunValidationWhenBranchIsWrongAndIsMaster(t *testing.T) {
 		Ref: "master",
 	}
 	s := &global.Settings{
-		MultipleBranchesEnabled: true,
+		MultipleBranchesEnabled: "true",
 		DinghyFilename:          "dinghyfile",
 		TemplateOrg:             "test_org",
 		TemplateRepo:            "test_repo",
@@ -696,7 +696,7 @@ func TestBuildPipelinesWhenDinghyIgnoreRegexp2Enabled(t *testing.T) {
 			},
 		},
 		GitHubToken:                "test_github_token",
-		DinghyIgnoreRegexp2Enabled: true,
+		DinghyIgnoreRegexp2Enabled: "true",
 	}
 
 	sc := source.NewMockSourceConfiguration(c)
@@ -753,7 +753,7 @@ func TestBuildPipelinesWhenDinghyIgnoreRegexp2Disabled(t *testing.T) {
 			},
 		},
 		GitHubToken:                "test_github_token",
-		DinghyIgnoreRegexp2Enabled: false,
+		DinghyIgnoreRegexp2Enabled: "false",
 	}
 
 	sc := source.NewMockSourceConfiguration(c)
