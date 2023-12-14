@@ -700,7 +700,7 @@ func (wa *WebAPI) buildPipelines(
 
 		var ignoreFile IgnoreFile
 
-		if s.DinghyIgnoreRegexp2Enabled {
+		if "true" == s.DinghyIgnoreRegexp2Enabled {
 			ignoreFile = NewRegexp2IgnoreFile(ignoreFilePatterns, l)
 		} else {
 			ignoreFile = NewRegexpIgnoreFile(ignoreFilePatterns, l)

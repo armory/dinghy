@@ -90,8 +90,8 @@ func NewDefaultSettings() Settings {
 			EventLogsOnly: false,
 		},
 		UserWritePermissionsCheckEnabled: false,
-		MultipleBranchesEnabled:          true,
-		DinghyIgnoreRegexp2Enabled:       true,
+		MultipleBranchesEnabled:          "true",
+		DinghyIgnoreRegexp2Enabled:       "true",
 	}
 }
 
@@ -158,13 +158,13 @@ type Settings struct {
 	// SQL configuration for dinghy
 	SQL Sqlconfig `json:"sql,omitempty" yaml:"sql"`
 	// Enable regexp2 for .dinghyignore file
-	DinghyIgnoreRegexp2Enabled bool `json:"dinghyIgnoreRegexp2Enabled" yaml:"dinghyIgnoreRegexp2Enabled"`
+	DinghyIgnoreRegexp2Enabled string `json:"dinghyIgnoreRegexp2Enabled" yaml:"dinghyIgnoreRegexp2Enabled"`
 	// Check user's write permissions by calling Fiat /authorize/${user}/roles before updating application
 	UserWritePermissionsCheckEnabled bool `json:"userWritePermissionsCheckEnabled" yaml:"userWritePermissionsCheckEnabled"`
 	// Users for whom we should ignore and skip write permissions validations
 	IgnoreUsersPermissions []string `json:"ignoreUsersWritePermissions" yaml:"ignoreUsersWritePermissions"`
 	// Enable processing of multiple branches in single repository
-	MultipleBranchesEnabled bool `json:"multipleBranchesEnabled" yaml:"multipleBranchesEnabled"`
+	MultipleBranchesEnabled string `json:"multipleBranchesEnabled" yaml:"multipleBranchesEnabled"`
 	// Enable using savePipeline and updatePipeline tasks from Orca
 	UpsertPipelineUsingOrcaTaskEnabled bool `json:"upsertPipelineUsingOrcaTaskEnabled" yaml:"upsertPipelineUsingOrcaTaskEnabled"`
 }
@@ -259,7 +259,7 @@ type RepoConfig struct {
 
 func (s *Settings) GetRepoConfig(provider, repo, branch string) *RepoConfig {
 	var match = func(repositoryConfiguration RepoConfig) bool {
-		if s.MultipleBranchesEnabled {
+		if "true" == s.MultipleBranchesEnabled {
 			return repositoryConfiguration.Provider == provider && repositoryConfiguration.Repo == repo && repositoryConfiguration.Branch == branch
 		}
 		return repositoryConfiguration.Provider == provider && repositoryConfiguration.Repo == repo
