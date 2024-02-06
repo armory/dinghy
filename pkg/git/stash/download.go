@@ -100,8 +100,10 @@ func (f *FileService) Download(org, repo, path, branch string) (string, error) {
 	// It is not always clear which branch is the true master branch due to different naming conventions.
 	// Therefore, we will need to try one of them [main, master] to ensure we can access the necessary files.
 	var branchAlternatives = map[string]string{
-		"master": "main",
-		"main":   "master",
+		"master":            "main",
+		"refs/heads/master": "refs/heads/main",
+		"main":              "master",
+		"refs/heads/main":   "refs/heads/master",
 	}
 
 	if alternativeBranchName, ok := branchAlternatives[branch]; ok {
