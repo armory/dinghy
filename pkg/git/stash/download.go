@@ -89,24 +89,37 @@ func (f *FileService) downloadLines(url string, start int) (lines []string, next
 // Download downloads a file from Stash.
 // Stash's API returns the file's contents as a paginated list of lines
 func (f *FileService) Download(org, repo, path, branch string) (string, error) {
-	url := f.EncodeURL(org, repo, path, branch)
-	body := f.cache.Get(url)
-	if body != "" {
-		return body, nil
+
+	var err error
+
+	if file, err := f.getFile(org, repo, path, branch); err == nil {
+		return file, nil
 	}
-	allLines := make([]string, 0)
-	start := -1
-	for start != 0 {
-		lines, nextStart, err := f.downloadLines(url, start)
-		if err != nil {
-			return "", err
+
+	// If we are unable to retrieve files from the designated branch, we should attempt to access an alternative branch.
+	// It is not always clear which branch is the true master branch due to different naming conventions.
+	// Therefore, we will need to try one of them [main, master] to ensure we can access the necessary files.
+	var branchAlternatives = map[string]string{
+		"master":            "main",
+		"refs/heads/master": "refs/heads/main",
+		"main":              "master",
+		"refs/heads/main":   "refs/heads/master",
+	}
+
+	if alternativeBranchName, ok := branchAlternatives[branch]; ok {
+		f.Logger.Info(fmt.Sprintf("DownloadContents failed with %v branch, trying with %v branch", branch, alternativeBranchName))
+
+		if altFile, altErr := f.getFile(org, repo, path, alternativeBranchName); altErr == nil {
+			f.Logger.Infof("Download from secondary branch %v succeeded", alternativeBranchName)
+			return altFile, nil
 		}
-		allLines = append(allLines, lines...)
-		start = nextStart
+
+		f.Logger.Errorf("Download failed also for branch %v", alternativeBranchName)
+		// We deliberately want to return the original err, not altErr
+		return "", err
 	}
-	ret := strings.Join(allLines, "\n")
-	f.cache.Add(url, ret)
-	return ret, nil
+
+	return "", nil
 }
 
 // EncodeURL returns the git url for a given org, repo, path and branch
@@ -123,4 +136,40 @@ func (f *FileService) DecodeURL(url string) (org, repo, path, branch string) {
 	path = match[3]
 	branch = match[4]
 	return
+}
+
+func (f *FileService) getFile(org, repo, path, branch string) (string, error) {
+	url := f.EncodeURL(org, repo, path, branch)
+	body := f.cache.Get(url)
+	if body != "" {
+		f.Logger.Infof(fmt.Sprintf("Found cached file for key: %v\n", url))
+		return body, nil
+	}
+
+	f.Logger.Infof(fmt.Sprintf("Didn't find any cached files for key: %v. Will proceed to download\n", url))
+
+	result, err := f.getAllLines(url)
+
+	if err != nil {
+		f.Logger.Errorf(fmt.Sprintf("Failed to download file from: %v\n", url))
+		return "", err
+	}
+
+	f.Logger.Debug(fmt.Sprintf("Successfully downloaded file from %v branch", branch))
+	f.cache.Add(url, result)
+	return result, nil
+}
+
+func (f *FileService) getAllLines(url string) (string, error) {
+	allLines := make([]string, 0)
+	start := -1
+	for start != 0 {
+		lines, nextStart, err := f.downloadLines(url, start)
+		if err != nil {
+			return "", err
+		}
+		allLines = append(allLines, lines...)
+		start = nextStart
+	}
+	return strings.Join(allLines, "\n"), nil
 }
