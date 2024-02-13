@@ -1,10 +1,10 @@
 {
-    "application": "dinghy",
+    "application": "test-dinghy",
     "keepWaitingPipelines": false,
     "limitConcurrent": true,
-    "name": "Simple",
+    "name": "test pipeline module",
     "stages": [
-        {{ module wait.stage.module }}
+      {{ module "wait.stage.module" "waitTime" 200 }}
     ],
     "triggers": []
 }
