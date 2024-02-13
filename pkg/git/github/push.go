@@ -17,8 +17,9 @@
 package github
 
 import (
-	"github.com/armory/dinghy/pkg/log"
 	"strings"
+
+	"github.com/armory/dinghy/pkg/log"
 )
 
 // Push is the payload received from a GitHub webhook.
@@ -44,6 +45,7 @@ type Repository struct {
 	Name         string          `json:"name"`
 	Organization string          `json:"organization"`
 	Owner        RepositoryOwner `json:"owner"`
+	FullName     string          `json:"full_name"`
 }
 
 type RepositoryOwner struct {
@@ -99,11 +101,8 @@ func (p *Push) Repo() string {
 
 // Org returns the organization of the push
 func (p *Push) Org() string {
-	if p.Repository.Organization != "" {
-		return p.Repository.Organization
-	}
-
-	return p.Repository.Owner.Login
+	segments := strings.Split(p.Repository.FullName, "/")
+	return strings.Join(segments[:len(segments)-1], "/")
 }
 
 // Branch returns the branch of the push
