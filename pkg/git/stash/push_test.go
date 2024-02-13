@@ -70,3 +70,51 @@ func TestIsBranch(t *testing.T) {
 		})
 	}
 }
+
+func TestIsMaster(t *testing.T) {
+
+	testCases := map[string]struct {
+		webhookBranchName string
+		expected          bool
+	}{
+		"master": {
+			webhookBranchName: "master",
+			expected:          true,
+		},
+		"refs/heads/master": {
+			webhookBranchName: "refs/heads/master",
+			expected:          true,
+		},
+		"main": {
+			webhookBranchName: "main",
+			expected:          true,
+		},
+		"refs/heads/main": {
+			webhookBranchName: "refs/heads/main",
+			expected:          true,
+		},
+		"somethingelse": {
+			webhookBranchName: "somethingelse",
+			expected:          false,
+		},
+		"refs/heads/somethingelse": {
+			webhookBranchName: "refs/heads/somethingelse",
+			expected:          false,
+		},
+	}
+
+	for desc, tc := range testCases {
+		t.Run(desc, func(t *testing.T) {
+			payload := fmt.Sprintf(`{"changes": [{"refId": "%s"}]}`, tc.webhookBranchName)
+			webhookPayload := WebhookPayload{}
+			if err := json.NewDecoder(bytes.NewBufferString(payload)).Decode(&webhookPayload); err != nil {
+				t.Fatalf(err.Error())
+			}
+
+			p := &Push{Payload: webhookPayload}
+
+			actual := p.IsMaster()
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
