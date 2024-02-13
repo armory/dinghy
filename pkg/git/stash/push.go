@@ -64,7 +64,7 @@ type WebhookChange struct {
 
 // IsMaster detects if a change was on master
 func (c *WebhookChange) IsMaster() bool {
-	return c.RefID == "refs/heads/master"
+	return c.RefID == "master" || c.RefID == "refs/heads/master" || c.RefID == "main" || c.RefID == "refs/heads/main"
 }
 
 // Find the branch in the webhook payload

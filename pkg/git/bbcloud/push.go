@@ -150,7 +150,7 @@ func (c *WebhookChange) Branch() string {
 
 // Find in the webhook payload if the change was done in "master" branch
 func (c *WebhookChange) IsMaster() bool {
-	return c.New.Name == "master"
+	return c.New.Name == "master" || c.New.Name == "refs/heads/master" || c.New.Name == "main" || c.New.Name == "refs/heads/main"
 }
 
 func getFilesChanged(fromCommitHash, toCommitHash string, page int, cfg Config,
