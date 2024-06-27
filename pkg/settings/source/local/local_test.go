@@ -35,7 +35,7 @@ func TestLocalSource_GetConfigurationByKey(t *testing.T) {
 	localSource := loadTestData()
 	logrus := logr.New()
 	_, _ = localSource.LoadSetupSettings(logrus)
-	r := new (http.Request)
+	r := new(http.Request)
 	config, _, err := localSource.GetSettings(r, logrus)
 
 	assert.Nil(t, err)

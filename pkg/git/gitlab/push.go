@@ -107,17 +107,14 @@ func (p *Push) PusherName() string {
 // ParseWebhook parses the webhook into the struct and returns a file service
 // instance (and error)
 func (p *Push) ParseWebhook(cfg *global.Settings, body []byte) (FileService, error) {
+	client, err := gitlab.NewClient(cfg.GitLabToken, gitlab.WithBaseURL(cfg.GitLabEndpoint))
+	if err != nil {
+		return FileService{}, err
+	}
 	fs := FileService{
 		Logger: p.Logger,
-		Client: gitlab.NewClient(nil, cfg.GitLabToken),
+		Client: client,
 	}
-
-	// Note:  SetBaseURL will ensure a trailing slash as needed.
-	err := fs.Client.SetBaseURL(cfg.GitLabEndpoint)
-	if err != nil {
-		return fs, err
-	}
-
 	// Let go-gitlab do all the work.
 	event, err := gitlab.ParseWebhook(gitlab.EventTypePush, body)
 	if err != nil {

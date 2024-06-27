@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.14.15']
+        go: [ '1.20', '1.21' ]
     name: Go ${{ matrix.go }} build
     steps:
       - name: Check out code into the Go module directory

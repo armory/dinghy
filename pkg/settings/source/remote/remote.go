@@ -13,17 +13,17 @@ const (
 	RemoteConfigSource = "RemoteSource"
 )
 
-//RemoteSource is file source
+// RemoteSource is file source
 type RemoteSource struct {
 }
 
-//NewRemoteSource creates a source which can handler remote settings
+// NewRemoteSource creates a source which can handler remote settings
 func NewRemoteSource() *RemoteSource {
 	remoteConfigSource := new(RemoteSource)
 	return remoteConfigSource
 }
 
-//LoadSetupSettings load setttings for dinghy start-up
+// LoadSetupSettings load setttings for dinghy start-up
 func (lSource *RemoteSource) LoadSetupSettings(*logr.Logger) (*global.Settings, error) {
 
 	initializer := source.NewInitialize()
@@ -39,14 +39,14 @@ func (lSource *RemoteSource) LoadSetupSettings(*logr.Logger) (*global.Settings, 
 	return config, nil
 }
 
-//GetSourceName get name of source
+// GetSourceName get name of source
 func (*RemoteSource) GetSourceName() string {
 	return RemoteConfigSource
 }
 
-//GetSettings get settings given the key
+// GetSettings get settings given the key
 func (lSource *RemoteSource) GetSettings(r *http.Request, logger *logr.Logger) (*global.Settings, util.PlankClient, error) {
-	return nil,nil, nil
+	return nil, nil, nil
 }
 
 func (*RemoteSource) BustCacheHandler(w http.ResponseWriter, r *http.Request) {}

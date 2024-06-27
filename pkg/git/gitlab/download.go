@@ -38,7 +38,7 @@ type FileService struct {
 	Logger log.DinghyLog
 }
 
-//eDownload a file from gitlab
+// eDownload a file from gitlab
 // note that "path" is the full path relative to the repo root
 // eg: src/foo/bar/filename
 func (f *FileService) Download(org, repo, path, branch string) (string, error) {

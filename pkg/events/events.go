@@ -34,9 +34,9 @@ type EventClient interface {
 }
 
 type Client struct {
-	Client   *retryablehttp.Client
-	Settings *global.Settings
-	Ctx      context.Context
+	Client        *retryablehttp.Client
+	Settings      *global.Settings
+	Ctx           context.Context
 	IsMultiTenant bool
 }
 
@@ -66,9 +66,9 @@ func NewEventClient(ctx context.Context, settings *global.Settings, isMultiTenna
 	c := retryablehttp.NewClient()
 	c.HTTPClient.Transport = cleanhttp.DefaultPooledTransport() // reuse the client so we can pipeline stuff
 	return &Client{
-		Client:   c,
-		Settings: settings,
-		Ctx:      ctx,
+		Client:        c,
+		Settings:      settings,
+		Ctx:           ctx,
 		IsMultiTenant: isMultiTennant,
 	}
 }
