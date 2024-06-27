@@ -38,6 +38,7 @@ jobs:
           parallel: true
           flag-name: Go-${{ matrix.go }}
           path-to-profile: profile.cov
+
   finish:
     needs: test
     runs-on: ubuntu-latest
