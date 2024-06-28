@@ -39,10 +39,10 @@ type FileurlChilds struct {
 }
 
 type ExecutionSQL struct {
-	Execution      	string `gorm:"primaryKey;column:execution"`
-	Result 			string `gorm:"column:result"`
-	Success 		string 	`gorm:"column:success"`
-	LastUpdatedDate int 	`gorm:"column:lastupdateddate"`
+	Execution       string `gorm:"primaryKey;column:execution"`
+	Result          string `gorm:"column:result"`
+	Success         string `gorm:"column:success"`
+	LastUpdatedDate int    `gorm:"column:lastupdateddate"`
 }
 
 func (ExecutionSQL) TableName() string {

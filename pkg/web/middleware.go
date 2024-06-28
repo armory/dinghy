@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel/exporters/stdout"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -99,9 +99,7 @@ func ExtractTraceContextHeaders(headers http.Header) TraceContext {
 			tc.SpanID = tpParts[2]
 		}
 	} else {
-		exporter, err := stdout.NewExporter(
-			stdout.WithPrettyPrint(),
-		)
+		exporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
 		if err != nil {
 			log.Errorf("failed to initialize stdout export pipeline: %v", err)
 			return tc
@@ -113,8 +111,12 @@ func ExtractTraceContextHeaders(headers http.Header) TraceContext {
 		var parentSpan trace.Span
 		ctx, parentSpan = tracer.Start(ctx, "parentSpan")
 		defer parentSpan.End()
-		tc.TraceID = parentSpan.SpanContext().TraceID.String()
-		tc.SpanID = parentSpan.SpanContext().SpanID.String()
+		if parentSpan.SpanContext().HasTraceID() {
+			tc.TraceID = parentSpan.SpanContext().TraceID().String()
+		}
+		if parentSpan.SpanContext().HasSpanID() {
+			tc.SpanID = parentSpan.SpanContext().SpanID().String()
+		}
 
 		// Handle this error in a sensible manner where possible
 		defer func() { _ = tp.Shutdown(ctx) }()

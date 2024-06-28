@@ -1,11 +1,11 @@
 package source
 
 import (
+	"dario.cat/mergo"
 	"encoding/json"
 	"errors"
 	"github.com/armory/dinghy/pkg/settings/global"
 	"github.com/armory/go-yaml-tools/pkg/spring"
-	"github.com/imdario/mergo"
 	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"

@@ -74,7 +74,6 @@ func NewDinghylog() log.DinghyLog {
 	}}
 }
 
-
 func NewDinghylogWithContent(content string) log.DinghyLog {
 	memLog := &bytes.Buffer{}
 	memLog.Write([]byte(content))
@@ -89,4 +88,3 @@ func NewDinghylogWithContent(content string) log.DinghyLog {
 		},
 	}}
 }
-

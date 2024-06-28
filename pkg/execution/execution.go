@@ -27,7 +27,7 @@ type Execution interface {
 	Finalize()
 }
 
-func CreateExecution (sqlClient *database.SQLClient, executionName string) error {
+func CreateExecution(sqlClient *database.SQLClient, executionName string) error {
 	nanos := time.Now().UnixNano()
 	milis := nanos / 1000000
 	execution := database.ExecutionSQL{
@@ -39,7 +39,7 @@ func CreateExecution (sqlClient *database.SQLClient, executionName string) error
 	return sqlClient.Client.Create(&execution).Error
 }
 
-func UpdateExecution (sqlClient *database.SQLClient, executionName string, result string, success bool) error {
+func UpdateExecution(sqlClient *database.SQLClient, executionName string, result string, success bool) error {
 	nanos := time.Now().UnixNano()
 	milis := nanos / 1000000
 	succVal := "false"

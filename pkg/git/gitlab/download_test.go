@@ -46,8 +46,8 @@ func NewTestClient(statusCode int, contents string) *gitlab.Client {
 			Header:     make(http.Header),
 		}
 	})
-
-	return gitlab.NewClient(httpClient, "token")
+	client, _ := gitlab.NewClient("token", gitlab.WithHTTPClient(httpClient))
+	return client
 }
 
 func TestEncodeUrl(t *testing.T) {

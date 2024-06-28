@@ -15,19 +15,19 @@ const (
 	LocalConfigSource = "LocalSource"
 )
 
-//LocalSource is file source
+// LocalSource is file source
 type LocalSource struct {
 	Configs *global.Settings
-	Client util.PlankClient
+	Client  util.PlankClient
 }
 
-//NewLocalSource creates a source which can handler local settings
+// NewLocalSource creates a source which can handler local settings
 func NewLocalSource() *LocalSource {
 	localConfigSource := new(LocalSource)
 	return localConfigSource
 }
 
-//LoadSetupSettings load setttings for dinghy start-up
+// LoadSetupSettings load setttings for dinghy start-up
 func (lSource *LocalSource) LoadSetupSettings(logr *logr.Logger) (*global.Settings, error) {
 
 	initializer := source.NewInitialize()
@@ -47,7 +47,7 @@ func (*LocalSource) GetSourceName() string {
 	return LocalConfigSource
 }
 
-//GetSettings get settings given the key
+// GetSettings get settings given the key
 func (lSource *LocalSource) GetSettings(r *http.Request, logr *logr.Logger) (*global.Settings, util.PlankClient, error) {
 	return lSource.Configs, lSource.Client, nil
 }

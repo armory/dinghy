@@ -503,7 +503,7 @@ var fileService = dummy.FileService{
 		"dict_keys_error": "",
 
 		// Sprig functions test
-		"sprig_functions": `{
+		"sprout_functions": `{
 			"test": {{ splitList "$" "foo$bar$baz" | toJson }}
 		}`,
 		// ParseModuleOnValidation
@@ -1102,9 +1102,10 @@ func TestRawDataInDinghyfile(t *testing.T) {
 }
 
 // TODO:  This test is currently a negative test -- the example inputs do NOT work properly,
-//        and currently, this is expected behavior; we should change this test when we decide
-//        if a) we should be catching the error in the Render, or b) we should handle this
-//        kind of nested markup.
+//
+//	and currently, this is expected behavior; we should change this test when we decide
+//	if a) we should be catching the error in the Render, or b) we should handle this
+//	kind of nested markup.
 func TestVarParams(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1307,7 +1308,7 @@ func TestDifferentTemplateBranch(t *testing.T) {
 
 func TestSprigFuncs(t *testing.T) {
 	r := testDinghyfileParser()
-	filepath := "sprig_functions"
+	filepath := "sprout_functions"
 	r.Builder.DinghyfileName = filepath
 	buf, _ := r.Parse("org", "repo", filepath, "master", nil)
 

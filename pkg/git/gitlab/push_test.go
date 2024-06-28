@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
-	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 )
@@ -30,6 +30,7 @@ import (
 type commitsStruct []*struct {
 	ID        string     `json:"id"`
 	Message   string     `json:"message"`
+	Title     string     `json:"title"`
 	Timestamp *time.Time `json:"timestamp"`
 	URL       string     `json:"url"`
 	Author    struct {
@@ -42,6 +43,7 @@ type commitsStruct []*struct {
 }
 
 type projectStruct struct {
+	ID                int                    `json:"id"`
 	Name              string                 `json:"name"`
 	Description       string                 `json:"description"`
 	AvatarURL         string                 `json:"avatar_url"`
@@ -59,7 +61,7 @@ type projectStruct struct {
 }
 
 func loadExample(t *testing.T) []byte {
-	content, err := ioutil.ReadFile("example_payload.json")
+	content, err := os.ReadFile("example_payload.json")
 	require.Equal(t, err, nil)
 	return content
 }

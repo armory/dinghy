@@ -216,7 +216,6 @@ func (c *RedisCache) Clear() {
 	c.Client.Del(keys...)
 }
 
-
 // Get all Dinghyfiles
 func (c *RedisCache) GetAllDinghyfiles() []string {
 	loge := log.WithFields(log.Fields{"func": "GetAllDinghyfiles"})
@@ -228,7 +227,7 @@ func (c *RedisCache) GetAllDinghyfiles() []string {
 		keys, nextcursor, err := c.Client.Scan(cursor, key, 1000).Result()
 		cursor = nextcursor
 		if err != nil {
-			loge.WithFields(log.Fields{"operation": "scan key", "key": CompileKey("parents","*")}).Error(err)
+			loge.WithFields(log.Fields{"operation": "scan key", "key": CompileKey("parents", "*")}).Error(err)
 			return result
 		}
 		for _, key := range keys {
@@ -269,4 +268,3 @@ func (c *RedisCache) GetChildren(url string) []string {
 
 	return childrens
 }
-

@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/Masterminds/sprig/v3"
 	"github.com/armory/dinghy/pkg/git"
+	"github.com/go-sprout/sprout"
 	"strconv"
 	"strings"
 	"text/template"
@@ -214,8 +214,8 @@ func removeModules(input string, gitInfo git.GitInfo) string {
 		"if":           dummySlice,
 	}
 
-	// All sprig functions will be changed for a dummy slice
-	for key, _ := range sprig.GenericFuncMap() {
+	// All sprout functions will be changed for a dummy slice
+	for key, _ := range sprout.GenericFuncMap() {
 		funcMap[key] = dummySlice
 	}
 
