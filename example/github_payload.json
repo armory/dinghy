@@ -1,17 +1,28 @@
 {
-	 "commits": [
-		 {
-			 "id": "EXAMPLE",
-		         "added": [],
-		         "modified": ["dinghyfile"]
-		 }
-	 ],
-	 "repository": {
-		 "name": "dinghy-plank-integration",
-		 "organization": "armory-io",
-		 "owner": {
-			 "login": "dotdotdotpaul"
-		 }
-	 },
-	 "ref": "refs/heads/master"
+  "ref": "refs/heads/master",
+  "repository": {
+    "name": "dinghy-plank-integration",
+    "organization": "armory-io",
+    "full_name": "armory-io/dinghy-plank-integration",
+    "private": true,
+    "owner": {
+      "name": "dotdotdotpaul",
+      "login": "dotdotdotpaul"
+    }
+  },
+  "pusher": {
+    "name": "dotdotdotpaul"
+  },
+  "organization": {
+    "login": "armory-io"
+  },
+  "commits": [
+    {
+      "id": "example",
+      "tree_id": "example",
+      "added": [],
+      "removed": [],
+      "modified": ["dinghyfile"]
+    }
+  ]
 }
