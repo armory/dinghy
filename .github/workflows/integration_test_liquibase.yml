@@ -1,0 +1,98 @@
+name: Liquibase MySQL Upgrade Test
+
+on:
+  pull_request:
+
+jobs:
+  test-upgrade:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testdb
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Download Liquibase
+        run: |
+          mkdir -p /opt/liquibase/lib
+          wget -q https://repo1.maven.org/maven2/mysql/mysql-connector-java/8.0.28/mysql-connector-java-8.0.28.jar
+          wget -q https://github.com/liquibase/liquibase/releases/download/v3.10.3/liquibase-3.10.3.tar.gz -nc
+          tar --skip-old-files -xzf liquibase-3.10.3.tar.gz -C /opt/liquibase
+          sudo ln -sf /opt/liquibase/liquibase /usr/local/bin/liquibase
+          mv mysql-connector-java-8.0.28.jar /opt/liquibase/lib/
+
+      - name: Set up MySQL CLI
+        run: |
+          ## Setup mysql
+          sudo apt-get update
+          sudo apt-get install mysql-client -y
+
+      - name: Fetch previous version of changelog
+        run: |
+          # Replace 'previous-branch' with your actual branch name
+          git checkout 3e7cedcc70e6142eebe0dd6ee6d994597fe92f0e
+
+      - name: Initialize database with previous schema
+        env:
+          JDBC_URL: "jdbc:mysql://localhost:3306/testdb?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false"
+        run: |
+          # Create database if it doesn't exist
+          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS testdb;"
+          
+          # Apply previous version of the changelog
+          liquibase \
+          --driver=com.mysql.cj.jdbc.Driver \
+          --changeLogFile=./liquibase/dbchangelog.xml \
+          --url="$JDBC_URL" \
+          --username=root \
+          --password=root update
+
+      - name:  Switch to current branch
+        run: |
+          # Switch back to the current branch
+          git checkout -
+
+      - name: Download Current Liquibase
+        run: |
+          rm -rf /opt/liquibase
+          mkdir -p /opt/liquibase/lib
+          wget -q https://github.com/liquibase/liquibase/releases/download/v4.24.0/liquibase-4.24.0.tar.gz -nc
+          wget -q https://repo1.maven.org/maven2/mysql/mysql-connector-java/8.0.28/mysql-connector-java-8.0.28.jar
+          tar --skip-old-files -xzf liquibase-4.24.0.tar.gz -C /opt/liquibase
+          sudo ln -sf /opt/liquibase/liquibase /usr/local/bin/liquibase
+          mv mysql-connector-java-8.0.28.jar /opt/liquibase/lib/
+
+      - name: Apply current changes
+        env:
+          JDBC_URL: "jdbc:mysql://localhost:3306/testdb?allowPublicKeyRetrieval=true&useSSL=false"
+        run: |
+          # Apply current version of the changelog
+          cd liquibase
+          liquibase \
+            --url="$JDBC_URL" \
+            --username="root" \
+            --password="root" \
+            --changeLogFile="dbchangelog.xml" \
+            update
+
+      - name: Verify upgrade
+        run: |
+          # Add verification queries here
+          echo "Current database state:"
+          mysql -h 127.0.0.1 -u root -proot testdb -e "SHOW TABLES;"
+          # Add more verification queries as needed

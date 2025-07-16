@@ -7,6 +7,9 @@
     logicalFilePath="/liquibase/dbchangelog.xml">
     
     <changeSet id="1" author="jossuecito">
+        <!-- Handle change in the file path on latest releases due to the logical file path change -->
+        <validCheckSum>8:4e93950e37ef651a1ae465a62b3c4abf</validCheckSum>
+
         <!-- Dependencies table -->
         <createTable tableName="fileurls">
             <column name="id" type="int">
